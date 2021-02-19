@@ -1,19 +1,20 @@
-import haxsim/clexer
+import haxsim/[clexer, cparser]
 import std/[unittest]
 
-suite "Base tokenizer":
-  test "1":
-    let tokens = tokenize("""
-struct Test {
-  long int zzz;
-  long long int qqq;
-};
-
+const str = """
 for(int i = 0; i < 10; ++i) {
   puts("123");
   Test auql;
   auql.zzz;
 }
-""")
+"""
+
+suite "Base tokenizer":
+  test "Tokenize":
+    let tokens = tokenize(str)
     for tok in tokens:
       echo tok.lispRepr()
+
+  test "Parse":
+    let tokens = tokenize(str)
+    let tree = parse(tokens)
