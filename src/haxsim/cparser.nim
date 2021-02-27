@@ -14,7 +14,7 @@ using
 
 proc next(par) = inc par.pos
 proc finished(par; offset: int = 0): bool =
-  (par.pos + offset) >= par.toks.high
+  (par.pos + offset) >= par.toks.len
 
 proc at(par; tokKind: CTokenKind): bool =
   not par.finished() and par.toks[par.pos].kind == tokKind
@@ -44,12 +44,12 @@ proc skip(par; expected: CTokenKind) =
     raiseImplementError(
       &"Expected {expected}, but parser is at {par.at()}")
 
-
+proc parseIdent(par): CNode = newTree(cnkIdent, par.pop())
 proc parseStmtList(par): CNode
 proc parseFieldExpr(par): CNode =
-  let obj = newTree(cnkIdent, par.pop())
+  let obj = par.parseIdent()
   par.skip(ctkDot)
-  let fld = newTree(cnkIdent, par.pop())
+  let fld = par.parseIdent()
   result = newTree(cnkFieldExpr, obj, fld)
 
 
@@ -64,8 +64,18 @@ proc parseExpr(par): CNode =
     of ctkStrLit:
       result = newTree(cnkStrLit, par.pop())
 
+    of ctkLBrack:
+      result = newTree(cnkBracket)
+      par.skip(ctkLBrack)
+      while not par.at(ctkRBrack):
+        result.add parseExpr(par)
+        if not par.at(ctkRBrack):
+          par.skip(ctkComma)
+
+      par.skip(ctkRBrack)
+
     else:
-      raiseImplementError("")
+      raiseImplementError($par.at().kind)
 
 proc parseVarDecl(par): CNode =
   result = newTree(cnkVarDecl)
@@ -90,28 +100,17 @@ proc parseCallStmt(par): CNode =
       par.skip(ctkComma)
 
   par.skip(ctkRPar)
+  par.skip(ctkSemicolon)
 
 proc parseForStmt(par): CNode =
   result = newTree(cnkForStmt)
   par.skip(ctkForKwd)
-  par.skip(ctkLPar)
-
-  for exprIdx in [0, 1, 2]:
-    if par.at(ctkSemicolon):
-      result.add newEmptyCNode()
-
-    else:
-      case exprIdx:
-        of 0: result.add parseVarDecl(par)
-        else: result.add parseExpr(par)
-
-    if exprIdx != 2:
-      par.skip(ctkSemicolon)
-
-  par.skip(ctkRPar)
+  result.add par.parseIdent()
+  par.skip(ctkInKwd)
+  result.add par.parseExpr()
   par.skip(ctkLCurly)
   result.add parseStmtList(par)
-  # par.skip(ctkRCurly)
+  par.skip(ctkRCurly)
 
 proc parseStmtList(par): CNode =
   result = newTree(cnkStmtList)
@@ -122,7 +121,7 @@ proc parseStmtList(par): CNode =
       of ctkIdent:
         if par.at(+1, ctkLPar):
           result.add parseCallStmt(par)
-          par.skip(ctkSemicolon)
+          # par.skip(ctkSemicolon)
 
         elif par.at(+1, ctkIdent):
           result.add parseVarDecl(par)

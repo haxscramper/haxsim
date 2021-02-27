@@ -1,11 +1,9 @@
-import haxsim/[clexer, cparser]
+import haxsim/[clexer, cparser, ceval]
 import std/[unittest]
 
 const str = """
-for(int i = 0; 10; i) {
-  puts("123");
-  Test auql;
-  auql.zzz;
+for i in [1, 2, 3] {
+  print(i);
 }
 """
 
@@ -19,3 +17,10 @@ suite "Base tokenizer":
     let tokens = tokenize(str)
     let tree = parse(tokens)
     echo treeRepr(tree)
+
+  test "Eval":
+    let tokens = tokenize(str)
+    let tree = parse(tokens)
+    var ctx: CEvalCtx
+    ctx.pushScope()
+    discard eval(tree, ctx)

@@ -43,11 +43,14 @@ type
     ctkRPar
     ctkLCurly
     ctkRCurly
+    ctkLBrack
+    ctkRBrack
 
     ctkForKwd
     ctkIfKwd
     ctkElseKwd
     ctkWhileKwd
+    ctkInKwd
 
     ctkStructKwd
     ctkEnumKwd
@@ -89,6 +92,7 @@ type
     cnkStrLit
 
     cnkCall
+    cnkBracket
 
     cnkIdent
     cnkStructDecl
@@ -119,6 +123,9 @@ func len*(node: CNode): int = node.subnodes.len
 iterator items*(node: CNode): CNode =
   for subnode in node.subnodes:
     yield subnode
+
+proc `[]`*(node: CNode, idx: int | HSLice[int, BackwardsIndex]): auto =
+  node.subnodes[idx]
 
 proc newTree*(kind: CNodeKind, subnodes: varargs[CNode]): CNode =
   result = CNode(kind: kind)
@@ -178,3 +185,32 @@ proc treeRepr*(
             result &= "\n"
 
   return aux(pnode, 0, @[])
+
+type
+  CValueKind* = enum
+    cvkInt
+    cvkString
+    cvkFloat
+    cvkRecord
+    cvkArray
+
+  CValue* = object
+    case kind*: CValueKind
+      of cvkInt:
+        intVal*: int
+
+      of cvkString:
+        strVal*: string
+
+      of cvkFloat:
+        floatVal*: float
+
+      of cvkRecord:
+        discard
+
+      of cvkArray:
+        elements*: seq[CValue]
+
+iterator items*(value: CValue): CValue =
+  for item in value.elements:
+    yield item
