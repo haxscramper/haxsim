@@ -6,22 +6,49 @@ import hmisc/[helpers, hdebug_misc]
 
 startHax()
 
+type
+  CLexer = object
+    str: string
+    pos: int
+    line: int
+    column: int
+
+func at(lex: var CLexer): char = lex.str[lex.pos]
+func finished(lex: CLexer): bool = lex.pos >= lex.str.high
+func match(lex: CLexer, re: Regex, matches: var openarray[string]): bool =
+  result = match(lex.str, re, matches, lex.pos)
+
+func `[]`(lex: CLexer, slice: HSlice[int, BackwardsIndex]): string =
+  lex.str[lex.pos + slice.a .. slice.b]
+
+func advance(lex: var CLexer, chars: int) =
+  for _ in 0 ..< chars:
+    inc lex.pos
+    if lex.at() == '\n':
+      inc lex.line
+      lex.column = 0
+    else:
+      inc lex.column
+
+func initTok(kind: CTokenKind, lex: CLexer, str: string): CToken =
+  initTok(kind, lex.pos, str, line = lex.line, column = lex.column)
+
 proc tokenize*(str: string): seq[CToken] =
-  var pos = 0
+  var lex = CLexer(str: str)
 
   template ok(regex: Regex): untyped =
     var matches {.inject.}: array[10, string]
-    let res = match(str, regex, matches, pos)
+    let res = match(lex, regex, matches)
     res
 
   template push(kind: CTokenKind, group: int): untyped =
-    result.add initTok(kind, pos, matches[group])
-    pos += matches[group].len
+    result.add initTok(kind, lex, matches[group])
+    lex.advance matches[group].len
 
   template skip(group: int): untyped =
-    pos += matches[group].len
+    lex.advance matches[group].len
 
-  while pos < str.len:
+  while not lex.finished:
     if ok(re"(for)"):               push(ctkForKwd,    0)
     elif ok(re"(while)"):           push(ctkWhileKwd,  0)
     elif ok(re"(if)"):              push(ctkIfKwd,     0)
@@ -44,5 +71,5 @@ proc tokenize*(str: string): seq[CToken] =
 
 
     else:
-      echov "ignore: ", str[pos .. ^1]
+      echov "ignore: ", lex[0 .. ^1]
       raiseImplementError("")

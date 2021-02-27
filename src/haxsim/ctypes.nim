@@ -56,17 +56,25 @@ type
   CToken* = object
     kind*: CTokenKind
     str*: string
+    line* {.requiresinit.}: int
+    column* {.requiresinit.}: int
     extent*: Slice[int]
 
-proc initTok*(kind: CTokenKind, start: int, tokenStr: string): CToken =
-  CToken(kind: kind, extent: start ..< (start + tokenStr.len), str: tokenStr)
+proc initTok*(
+    kind: CTokenKind, start: int, tokenStr: string,
+    line, column: int
+  ): CToken =
+  CToken(
+    kind: kind, extent: start ..< (start + tokenStr.len),
+    str: tokenStr, line: line, column: column
+  )
 
 proc lispRepr*(tok: CToken, colored: bool = true): string =
   "(" & toBlue(($tok.kind)[3 ..^ 1], colored) & " " &
     toYellow("\"" & tok.str & "\"", colored) & ")"
 
 proc lispRepr*(toks: seq[CToken], colored: bool = true): string =
-  "(" & mapIt(toks, lispRepr(it)).join(" ") & ")"
+  "(" & mapPairs(toks, lispRepr(rhs)).join(" ") & ")"
 
 #===========================  AST definitions  ===========================#
 
