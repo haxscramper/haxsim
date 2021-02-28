@@ -3,26 +3,28 @@ import std/[tables, strformat]
 import hmisc/base_errors
 
 type
-  HLEvalCtx* = object
+  HLAstEvalCtx* = object
     scope: seq[Table[string, HLValue]]
 
-proc pushScope*(ctx: var HLEvalCtx) =
+using ctx: var HLAstEvalCtx
+
+proc pushScope*(ctx) =
   ctx.scope.add initTable[string, HLValue]()
 
-proc popScope*(ctx: var HLEvalCtx) =
+proc popScope*(ctx) =
   discard ctx.scope.pop
 
-proc `[]=`(ctx: var HLEvalCtx; varname: string, value: HLValue) =
+proc `[]=`(ctx; varname: string, value: HLValue) =
   ctx.scope[^1][varname] = value
 
-proc `[]`(ctx: HLEvalCtx; varname: string): HLValue =
+proc `[]`(ctx; varname: string): HLValue =
   for scope in ctx.scope:
     if varname in scope:
       return scope[varname]
 
   raiseImplementError("")
 
-proc evalAst*(tree: HLNode, ctx: var HLEvalCtx): HLValue =
+proc evalAst*(tree: HLNode, ctx): HLValue =
   case tree.kind:
     of hnkFile, hnkStmtList:
       for node in tree:

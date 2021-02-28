@@ -1,4 +1,4 @@
-import haxsim/[hl_lexer, hl_parser, hl_eval_ast]
+import haxsim/[hl_lexer, hl_parser, hl_eval_ast, hl_eval_stack]
 import std/[unittest]
 
 const str = """
@@ -18,9 +18,16 @@ suite "Base tokenizer":
     let tree = parse(tokens)
     echo treeRepr(tree)
 
-  test "Eval":
+  test "Eval AST":
     let tokens = tokenize(str)
     let tree = parse(tokens)
-    var ctx: HLEvalCtx
+    var ctx: HLAstEvalCtx
     ctx.pushScope()
     discard evalAST(tree, ctx)
+
+  test "Eval stack":
+    let tokens = tokenize(str)
+    let tree = parse(tokens)
+    var ctx: HLStackEvalCtx
+    ctx.pushScope()
+    discard evalStack(tree, ctx)
