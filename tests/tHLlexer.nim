@@ -1,4 +1,4 @@
-import haxsim/[clexer, cparser, ceval]
+import haxsim/[hl_lexer, hl_parser, hl_eval_ast]
 import std/[unittest]
 
 const str = """
@@ -21,6 +21,6 @@ suite "Base tokenizer":
   test "Eval":
     let tokens = tokenize(str)
     let tree = parse(tokens)
-    var ctx: CEvalCtx
+    var ctx: HLEvalCtx
     ctx.pushScope()
-    discard eval(tree, ctx)
+    discard evalAST(tree, ctx)

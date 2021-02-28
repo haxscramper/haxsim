@@ -25,134 +25,134 @@ proc toMapString*[T, N](arr: array[N, T]): string =
 #==========================  Token definitions  ==========================#
 
 type
-  CTokenKind* = enum
-    ctkIntLit
-    ctkCharLit
-    ctkStrLit
+  HLTokenKind* = enum
+    htkIntLit
+    htkCharLit
+    htkStrLit
 
-    ctkEq
-    ctkLess
-    ctkIncr
-    ctkPlus
-    ctkDot
+    htkEq
+    htkLess
+    htkIncr
+    htkPlus
+    htkDot
 
-    ctkIdent
-    ctkSemicolon
-    ctkComma
-    ctkLPar
-    ctkRPar
-    ctkLCurly
-    ctkRCurly
-    ctkLBrack
-    ctkRBrack
+    htkIdent
+    htkSemicolon
+    htkComma
+    htkLPar
+    htkRPar
+    htkLCurly
+    htkRCurly
+    htkLBrack
+    htkRBrack
 
-    ctkForKwd
-    ctkIfKwd
-    ctkElseKwd
-    ctkWhileKwd
-    ctkInKwd
+    htkForKwd
+    htkIfKwd
+    htkElseKwd
+    htkWhileKwd
+    htkInKwd
 
-    ctkStructKwd
-    ctkEnumKwd
-    ctkTypedefKwd
+    htkStructKwd
+    htkEnumKwd
+    htkTypedefKwd
 
-  CToken* = object
-    kind*: CTokenKind
+  HLToken* = object
+    kind*: HLTokenKind
     str*: string
     line* {.requiresinit.}: int
     column* {.requiresinit.}: int
     extent*: Slice[int]
 
 proc initTok*(
-    kind: CTokenKind, start: int, tokenStr: string,
+    kind: HLTokenKind, start: int, tokenStr: string,
     line, column: int
-  ): CToken =
-  CToken(
+  ): HLToken =
+  HLToken(
     kind: kind, extent: start ..< (start + tokenStr.len),
     str: tokenStr, line: line, column: column
   )
 
-proc lispRepr*(tok: CToken, colored: bool = true): string =
+proc lispRepr*(tok: HLToken, colored: bool = true): string =
   "(" & toBlue(($tok.kind)[3 ..^ 1], colored) & " " &
     toYellow("\"" & tok.str & "\"", colored) & ")"
 
-proc lispRepr*(toks: seq[CToken], colored: bool = true): string =
+proc lispRepr*(toks: seq[HLToken], colored: bool = true): string =
   "(" & mapPairs(toks, lispRepr(rhs)).join(" ") & ")"
 
 #===========================  AST definitions  ===========================#
 
 type
-  CNodeKind* = enum
-    cnkForStmt
-    cnkWhileStmt
-    cnkIfStmt
-    cnkElseStmt
+  HLNodeKind* = enum
+    hnkForStmt
+    hnkWhileStmt
+    hnkIfStmt
+    hnkElseStmt
 
-    cnkIntLit
-    cnkStrLit
+    hnkIntLit
+    hnkStrLit
 
-    cnkCall
-    cnkBracket
+    hnkCall
+    hnkBracket
 
-    cnkIdent
-    cnkStructDecl
-    cnkIdentDefs
-    cnkVarDecl
-    cnkFieldExpr
+    hnkIdent
+    hnkStructDecl
+    hnkIdentDefs
+    hnkVarDecl
+    hnkFieldExpr
 
-    cnkFile
-    cnkStmtList
-    cnkEmptyNode
+    hnkFile
+    hnkStmtList
+    hnkEmptyNode
 
-  CNode* = ref object
-    case kind*: CNodeKind
-      of cnkIntLit:
+  HLNode* = ref object
+    case kind*: HLNodeKind
+      of hnkIntLit:
         intVal*: int
 
-      of cnkStrLit, cnkIdent:
+      of hnkStrLit, hnkIdent:
         strVal*: string
 
       else:
-        subnodes*: seq[CNode]
+        subnodes*: seq[HLNode]
 
 const
-  cnkTokenKinds* = {cnkIntLit, cnkStrLit, cnkIdent}
+  hnkTokenKinds* = {hnkIntLit, hnkStrLit, hnkIdent}
 
-func add*(node: var CNode, node2: CNode) = node.subnodes.add node2
-func len*(node: CNode): int = node.subnodes.len
-iterator items*(node: CNode): CNode =
+func add*(node: var HLNode, node2: HLNode) = node.subnodes.add node2
+func len*(node: HLNode): int = node.subnodes.len
+iterator items*(node: HLNode): HLNode =
   for subnode in node.subnodes:
     yield subnode
 
-proc `[]`*(node: CNode, idx: int | HSLice[int, BackwardsIndex]): auto =
+proc `[]`*(node: HLNode, idx: int | HSLice[int, BackwardsIndex]): auto =
   node.subnodes[idx]
 
-proc newTree*(kind: CNodeKind, subnodes: varargs[CNode]): CNode =
-  result = CNode(kind: kind)
+proc newTree*(kind: HLNodeKind, subnodes: varargs[HLNode]): HLNode =
+  result = HLNode(kind: kind)
   for node in subnodes:
     result.subnodes.add node
 
-proc newTree*(kind: CNodeKind, token: CToken): CNode =
-  result = CNode(kind: kind)
+proc newTree*(kind: HLNodeKind, token: HLToken): HLNode =
+  result = HLNode(kind: kind)
   case kind:
-    of cnkIntLit:
+    of hnkIntLit:
       result.intVal = parseInt(token.str)
 
-    of cnkStrLit, cnkIdent:
+    of hnkStrLit, hnkIdent:
       result.strVal = token.str
 
     else:
       raiseImplementError("")
 
-proc newEmptyCNode*(): CNode = newTree(cnkEmptyNode)
+proc newEmptyCNode*(): HLNode = newTree(hnkEmptyNode)
 
 
 proc treeRepr*(
-    pnode: CNode, colored: bool = true,
+    pnode: HLNode, colored: bool = true,
     indexed: bool = false, maxdepth: int = 120
   ): string =
 
-  proc aux(n: CNode, level: int, idx: seq[int]): string =
+  proc aux(n: HLNode, level: int, idx: seq[int]): string =
     let pref =
       if indexed:
         idx.join("", ("[", "]")) & "    "
@@ -166,13 +166,13 @@ proc treeRepr*(
 
     result &= pref & ($n.kind)[3 ..^ 1]
     case n.kind:
-      of cnkStrLit:
+      of hnkStrLit:
         result &= " \"" & toYellow(n.strVal, colored) & "\""
 
-      of cnkIntLit:
+      of hnkIntLit:
         result &= " " & toBlue($n.intVal, colored)
 
-      of cnkIdent:
+      of hnkIdent:
         result &= " " & toGreen(n.strVal, colored)
 
       else:
@@ -187,30 +187,30 @@ proc treeRepr*(
   return aux(pnode, 0, @[])
 
 type
-  CValueKind* = enum
-    cvkInt
-    cvkString
-    cvkFloat
-    cvkRecord
-    cvkArray
+  HLValueKind* = enum
+    hvkInt
+    hvkString
+    hvkFloat
+    hvkRecord
+    hvkArray
 
-  CValue* = object
-    case kind*: CValueKind
-      of cvkInt:
+  HLValue* = object
+    case kind*: HLValueKind
+      of hvkInt:
         intVal*: int
 
-      of cvkString:
+      of hvkString:
         strVal*: string
 
-      of cvkFloat:
+      of hvkFloat:
         floatVal*: float
 
-      of cvkRecord:
+      of hvkRecord:
         discard
 
-      of cvkArray:
-        elements*: seq[CValue]
+      of hvkArray:
+        elements*: seq[HLValue]
 
-iterator items*(value: CValue): CValue =
+iterator items*(value: HLValue): HLValue =
   for item in value.elements:
     yield item

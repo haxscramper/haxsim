@@ -1,42 +1,42 @@
-import ctypes
-export ctypes
+import hl_types
+export hl_types
 
 import std/[strformat]
 import hmisc/[base_errors, hdebug_misc]
 
 type
-  CParser* = object
+  HLParser* = object
     pos: int
-    toks: seq[CToken]
+    toks: seq[HLToken]
 
 using
-  par: var CParser
+  par: var HLParser
 
 proc next(par) = inc par.pos
 proc finished(par; offset: int = 0): bool =
   (par.pos + offset) >= par.toks.len
 
-proc at(par; tokKind: CTokenKind): bool =
+proc at(par; tokKind: HLTokenKind): bool =
   not par.finished() and par.toks[par.pos].kind == tokKind
 
-proc at(par; tokKinds: set[CTokenKind]): bool =
+proc at(par; tokKinds: set[HLTokenKind]): bool =
   not par.finished() and par.toks[par.pos].kind in tokKinds
 
-proc ahead(par; offset: int = 5): seq[CToken] =
+proc ahead(par; offset: int = 5): seq[HLToken] =
   par.toks[par.pos ..< min(par.pos + offset, par.toks.len)]
 
-proc at(par; offset: int): CToken =
+proc at(par; offset: int): HLToken =
   par.toks[par.pos + offset]
 
-proc at(par; offset: int, kind: CTokenKind): bool =
+proc at(par; offset: int, kind: HLTokenKind): bool =
   not par.finished(offset) and par.at(offset).kind == kind
 
-proc at(par): CToken = par.toks[par.pos]
-proc pop(par): CToken =
+proc at(par): HLToken = par.toks[par.pos]
+proc pop(par): HLToken =
   result = par.at()
   par.next()
 
-proc skip(par; expected: CTokenKind) =
+proc skip(par; expected: HLTokenKind) =
   if par.at(expected):
     par.next()
 
@@ -44,92 +44,92 @@ proc skip(par; expected: CTokenKind) =
     raiseImplementError(
       &"Expected {expected}, but parser is at {par.at()}")
 
-proc parseIdent(par): CNode = newTree(cnkIdent, par.pop())
-proc parseStmtList(par): CNode
-proc parseFieldExpr(par): CNode =
+proc parseIdent(par): HLNode = newTree(hnkIdent, par.pop())
+proc parseStmtList(par): HLNode
+proc parseFieldExpr(par): HLNode =
   let obj = par.parseIdent()
-  par.skip(ctkDot)
+  par.skip(htkDot)
   let fld = par.parseIdent()
-  result = newTree(cnkFieldExpr, obj, fld)
+  result = newTree(hnkFieldExpr, obj, fld)
 
 
-proc parseExpr(par): CNode =
+proc parseExpr(par): HLNode =
   case par.at().kind:
-    of ctkIntLit:
-      result = newTree(cnkIntLit, par.pop())
+    of htkIntLit:
+      result = newTree(hnkIntLit, par.pop())
 
-    of ctkIdent:
-      result = newTree(cnkIdent, par.pop())
+    of htkIdent:
+      result = newTree(hnkIdent, par.pop())
 
-    of ctkStrLit:
-      result = newTree(cnkStrLit, par.pop())
+    of htkStrLit:
+      result = newTree(hnkStrLit, par.pop())
 
-    of ctkLBrack:
-      result = newTree(cnkBracket)
-      par.skip(ctkLBrack)
-      while not par.at(ctkRBrack):
+    of htkLBrack:
+      result = newTree(hnkBracket)
+      par.skip(htkLBrack)
+      while not par.at(htkRBrack):
         result.add parseExpr(par)
-        if not par.at(ctkRBrack):
-          par.skip(ctkComma)
+        if not par.at(htkRBrack):
+          par.skip(htkComma)
 
-      par.skip(ctkRBrack)
+      par.skip(htkRBrack)
 
     else:
       raiseImplementError($par.at().kind)
 
-proc parseVarDecl(par): CNode =
-  result = newTree(cnkVarDecl)
-  var buf: seq[CToken]
-  while not par.at({ctkSemicolon, ctkEq, ctkComma}):
+proc parseVarDecl(par): HLNode =
+  result = newTree(hnkVarDecl)
+  var buf: seq[HLToken]
+  while not par.at({htkSemicolon, htkEq, htkComma}):
     buf.add par.pop()
 
   var initExpr = newEmptyCNode()
-  if par.at(ctkEq):
-    par.skip(ctkEq)
+  if par.at(htkEq):
+    par.skip(htkEq)
     initExpr.add par.parseExpr()
 
-  let id = newTree(cnkIdent, buf.pop)
+  let id = newTree(hnkIdent, buf.pop)
 
 
-proc parseCallStmt(par): CNode =
-  result = newTree(cnkCall, newTree(cnkIdent, par.pop()))
-  par.skip(ctkLPar)
-  while not par.at(ctkRPar):
+proc parseCallStmt(par): HLNode =
+  result = newTree(hnkCall, newTree(hnkIdent, par.pop()))
+  par.skip(htkLPar)
+  while not par.at(htkRPar):
     result.add parseExpr(par)
-    if par.at(ctkComma):
-      par.skip(ctkComma)
+    if par.at(htkComma):
+      par.skip(htkComma)
 
-  par.skip(ctkRPar)
-  par.skip(ctkSemicolon)
+  par.skip(htkRPar)
+  par.skip(htkSemicolon)
 
-proc parseForStmt(par): CNode =
-  result = newTree(cnkForStmt)
-  par.skip(ctkForKwd)
+proc parseForStmt(par): HLNode =
+  result = newTree(hnkForStmt)
+  par.skip(htkForKwd)
   result.add par.parseIdent()
-  par.skip(ctkInKwd)
+  par.skip(htkInKwd)
   result.add par.parseExpr()
-  par.skip(ctkLCurly)
+  par.skip(htkLCurly)
   result.add parseStmtList(par)
-  par.skip(ctkRCurly)
+  par.skip(htkRCurly)
 
-proc parseStmtList(par): CNode =
-  result = newTree(cnkStmtList)
+proc parseStmtList(par): HLNode =
+  result = newTree(hnkStmtList)
 
-  while not par.at(ctkRCurly) and not par.finished():
+  while not par.at(htkRCurly) and not par.finished():
     case par.at().kind:
-      of ctkForKwd: result.add parseForStmt(par)
-      of ctkIdent:
-        if par.at(+1, ctkLPar):
+      of htkForKwd: result.add parseForStmt(par)
+      of htkIdent:
+        if par.at(+1, htkLPar):
           result.add parseCallStmt(par)
-          # par.skip(ctkSemicolon)
+          # par.skip(htkSemicolon)
 
-        elif par.at(+1, ctkIdent):
+        elif par.at(+1, htkIdent):
           result.add parseVarDecl(par)
-          par.skip(ctkSemicolon)
+          par.skip(htkSemicolon)
 
-        elif par.at(+1, ctkDot):
+        elif par.at(+1, htkDot):
           result.add parseFieldExpr(par)
-          par.skip(ctkSemicolon)
+          par.skip(htkSemicolon)
 
         else:
           raiseImplementError("")
@@ -138,9 +138,9 @@ proc parseStmtList(par): CNode =
         raiseImplementError(&"Kind {par.at().kind} {instantiationInfo()} ]#")
 
 
-proc parseFile(par): CNode =
-  newTree(cnkFile, parseStmtList(par))
+proc parseFile(par): HLNode =
+  newTree(hnkFile, parseStmtList(par))
 
-proc parse*(toks: seq[CToken]): CNode =
-  var pars = CParser(toks: toks)
+proc parse*(toks: seq[HLToken]): HLNode =
+  var pars = HLParser(toks: toks)
   return parseFile(pars)
