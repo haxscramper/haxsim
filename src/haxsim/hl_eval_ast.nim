@@ -57,5 +57,16 @@ proc evalAst*(tree: HLNode, ctx): HLValue =
     of hnkIdent:
       result = ctx[tree.strVal]
 
+    of hnkIfStmt:
+      for branch in tree:
+        if branch.kind == hnkElifBranch:
+          let val = evalAst(branch[0], ctx)
+          if val.boolVal == true:
+            discard evalAst(branch[1], ctx)
+            break
+
+        else:
+          discard evalAst(branch[0], ctx)
+
     else:
-      raiseImplementError(&"Kind {tree.kind}" & treeRepr(tree))
+      raiseImplementError(&"Kind {tree.kind} " & treeRepr(tree))

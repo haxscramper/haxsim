@@ -31,6 +31,7 @@ type
     htkStrLit
 
     htkEq
+    htkCmp
     htkLess
     htkIncr
     htkPlus
@@ -86,7 +87,8 @@ type
     hnkForStmt
     hnkWhileStmt
     hnkIfStmt
-    hnkElseStmt
+    hnkElifBranch
+    hnkElseBranch
 
     hnkIntLit
     hnkStrLit
@@ -104,12 +106,17 @@ type
     hnkStmtList
     hnkEmptyNode
 
+const
+  hnkIntKinds* = {hnkIntLit}
+  hnkStrKinds* = {hnkStrLit, hnkIdent}
+
+type
   HLNode* = ref object
     case kind*: HLNodeKind
-      of hnkIntLit:
+      of hnkIntKinds:
         intVal*: int
 
-      of hnkStrLit, hnkIdent:
+      of hnkStrKinds:
         strVal*: string
 
       else:
@@ -186,11 +193,38 @@ proc treeRepr*(
 
   return aux(pnode, 0, @[])
 
+import hpprint, hpprint/hpprint_repr
+import hmisc/types/colorstring
+
+proc prettyPrintConverter*(
+    val: HLNode,
+    conf: var PPrintConf,
+    path: ObjPath,
+  ): ObjTree =
+
+  case val.kind:
+    of hnkIntKinds:
+      pptObj($val.kind & " ", pptConst($val.intVal, initStyle(fgBlue)))
+
+    of hnkStrKinds:
+      pptObj($val.kind & " ", pptConst($val.strVal, initStyle(fgYellow)))
+
+    else:
+      var subn: seq[ObjTree]
+      for node in items(val):
+        subn.add prettyPrintConverter(val, conf, path)
+
+      pptObj($val.kind, {
+        "subnodes" : pptSeq(subn)
+      })
+
+
 type
   HLValueKind* = enum
     hvkInt
     hvkString
     hvkFloat
+    hvkBool
     hvkRecord
     hvkArray
 
@@ -204,6 +238,9 @@ type
 
       of hvkFloat:
         floatVal*: float
+
+      of hvkBool:
+        boolVal*: bool
 
       of hvkRecord:
         discard

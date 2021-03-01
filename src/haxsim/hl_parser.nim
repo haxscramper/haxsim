@@ -3,6 +3,7 @@ export hl_types
 
 import std/[strformat]
 import hmisc/[base_errors, hdebug_misc]
+import hpprint
 
 type
   HLParser* = object
@@ -53,6 +54,23 @@ proc parseFieldExpr(par): HLNode =
   result = newTree(hnkFieldExpr, obj, fld)
 
 
+proc parseExpr(par): HLNode
+
+proc getInfix(par): seq[HLNode] =
+  var cnt = 1
+  par.skip(htkLPar)
+  while cnt > 0:
+    case par.at().kind:
+      of htkRPar:
+        dec cnt
+        par.next()
+
+      of htkCmp:
+        result.add newTree(hnkIdent, par.pop())
+
+      else:
+        result.add parseExpr(par)
+
 proc parseExpr(par): HLNode =
   case par.at().kind:
     of htkIntLit:
@@ -73,6 +91,15 @@ proc parseExpr(par): HLNode =
           par.skip(htkComma)
 
       par.skip(htkRBrack)
+
+    of htkLPar:
+      let infix = getInfix(par)
+
+      pprint infix
+
+      result = newTree(hnkEmptyNode)
+
+
 
     else:
       raiseImplementError($par.at().kind)
@@ -112,30 +139,45 @@ proc parseForStmt(par): HLNode =
   result.add parseStmtList(par)
   par.skip(htkRCurly)
 
+proc parseIfStmt(par): HLNode =
+  result = newTree(hnkIfStmt)
+  par.skip(htkIfKwd)
+  result.add newTree(hnkElifBranch, parseExpr(par), parseStmtList(par))
+  if par.at(htkElseKwd):
+    par.skip(htkElseKwd)
+    result.add newTree(hnkElseBranch, parseStmtList(par))
+
 proc parseStmtList(par): HLNode =
-  result = newTree(hnkStmtList)
 
-  while not par.at(htkRCurly) and not par.finished():
-    case par.at().kind:
-      of htkForKwd: result.add parseForStmt(par)
-      of htkIdent:
-        if par.at(+1, htkLPar):
-          result.add parseCallStmt(par)
-          # par.skip(htkSemicolon)
+  if par.at(htkLCurly):
+    par.skip(htkLCurly)
+    result = parseStmtList(par)
+    par.skip(htkRCurly)
 
-        elif par.at(+1, htkIdent):
-          result.add parseVarDecl(par)
-          par.skip(htkSemicolon)
+  else:
+    result = newTree(hnkStmtList)
+    while not par.at(htkRCurly) and not par.finished():
+      case par.at().kind:
+        of htkForKwd: result.add parseForStmt(par)
+        of htkIfKwd: result.add parseIfStmt(par)
+        of htkIdent:
+          if par.at(+1, htkLPar):
+            result.add parseCallStmt(par)
+            # par.skip(htkSemicolon)
 
-        elif par.at(+1, htkDot):
-          result.add parseFieldExpr(par)
-          par.skip(htkSemicolon)
+          elif par.at(+1, htkIdent):
+            result.add parseVarDecl(par)
+            par.skip(htkSemicolon)
+
+          elif par.at(+1, htkDot):
+            result.add parseFieldExpr(par)
+            par.skip(htkSemicolon)
+
+          else:
+            raiseImplementError("")
 
         else:
-          raiseImplementError("")
-
-      else:
-        raiseImplementError(&"Kind {par.at().kind} {instantiationInfo()} ]#")
+          raiseImplementError(&"Kind {par.at().kind} {instantiationInfo()} ]#")
 
 
 proc parseFile(par): HLNode =

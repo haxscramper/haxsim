@@ -3,8 +3,13 @@ import std/[unittest]
 
 const str = """
 for i in [1, 2, 3] {
-  print(i);
+  if (i == 2) {
+    print("Found 2");
+  } else {
+    print(i);
+  }
 }
+
 """
 
 suite "Base tokenizer":

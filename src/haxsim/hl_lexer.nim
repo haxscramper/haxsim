@@ -13,7 +13,12 @@ type
     line: int
     column: int
 
-func at(lex: var HLLexer): char = lex.str[lex.pos]
+func at(lex: var HLLexer): char =
+  if lex.pos >= lex.str.len:
+    '\x00'
+  else:
+    lex.str[lex.pos]
+
 func finished(lex: HLLexer): bool = lex.pos >= lex.str.high
 func match(lex: HLLexer, re: Regex, matches: var openarray[string]): bool =
   result = match(lex.str, re, matches, lex.pos)
@@ -55,21 +60,22 @@ proc tokenize*(str: string): seq[HLToken] =
     elif ok(re"(else)"):            push(htkElseKwd,   0)
     elif ok(re"(enum)"):            push(htkEnumKwd,   0)
     elif ok(re"(struct)"):          push(htkEnumKwd,   0)
-    elif ok(re"(in)"): push(htkInKwd, 0)
+    elif ok(re"(in)"):              push(htkInKwd,     0)
     elif ok(re"(\()"):              push(htkLPar,      0)
     elif ok(re"(\))"):              push(htkRPar,      0)
-    elif ok(re"(\[)"):              push(htkLBrack, 0)
-    elif ok(re"(])"):               push(htkRBrack, 0)
+    elif ok(re"(\[)"):              push(htkLBrack,    0)
+    elif ok(re"(])"):               push(htkRBrack,    0)
     elif ok(re"(<)"):               push(htkLess,      0)
     elif ok(re"(\+\+)"):            push(htkIncr,      0)
     elif ok(re"({)"):               push(htkLCurly,    0)
     elif ok(re"(})"):               push(htkRCurly,    0)
     elif ok(re"(0|([1-9][0-9]*))"): push(htkIntLit,    0)
     elif ok(re"([_a-zA-Z0-9]+)"):   push(htkIdent,     0)
-    elif ok(re"(\s+)"):             skip(0)
+    elif ok(re"(\s+)"):             skip(              0)
+    elif ok(re"(==)"):              push(htkCmp,       0)
     elif ok(re"(=)"):               push(htkEq,        0)
     elif ok(re"(;)"):               push(htkSemicolon, 0)
-    elif ok(re"(,)"):               push(htkComma, 0)
+    elif ok(re"(,)"):               push(htkComma,     0)
     elif ok(re"(\.)"):              push(htkDot,       0)
     elif ok(re"""(".*?")"""):       push(htkStrLit,    0)
 
