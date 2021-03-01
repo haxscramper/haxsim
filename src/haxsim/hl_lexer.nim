@@ -67,6 +67,8 @@ proc tokenize*(str: string): seq[HLToken] =
     elif ok(re"(])"):               push(htkRBrack,    0)
     elif ok(re"(<)"):               push(htkLess,      0)
     elif ok(re"(\+\+)"):            push(htkIncr,      0)
+    elif ok(re"(\*)"):              push(htkStar,      0)
+    elif ok(re"(\-)"):              push(htkMinus,     0)
     elif ok(re"({)"):               push(htkLCurly,    0)
     elif ok(re"(})"):               push(htkRCurly,    0)
     elif ok(re"(0|([1-9][0-9]*))"): push(htkIntLit,    0)

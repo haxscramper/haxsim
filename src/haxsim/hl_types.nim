@@ -35,7 +35,9 @@ type
     htkLess
     htkIncr
     htkPlus
+    htkMinus
     htkDot
+    htkStar
 
     htkIdent
     htkSemicolon
@@ -95,6 +97,7 @@ type
 
     hnkCall
     hnkBracket
+    hnkInfix
 
     hnkIdent
     hnkStructDecl
@@ -170,6 +173,9 @@ proc treeRepr*(
       return pref & " ..."
 
 
+    if isNil(n):
+      return pref & toCyan(" <nil>")
+
 
     result &= pref & ($n.kind)[3 ..^ 1]
     case n.kind:
@@ -202,21 +208,26 @@ proc prettyPrintConverter*(
     path: ObjPath,
   ): ObjTree =
 
-  case val.kind:
-    of hnkIntKinds:
-      pptObj($val.kind & " ", pptConst($val.intVal, initStyle(fgBlue)))
+  if conf.idCounter.isVisited(val):
+    return pptConst("<visisted>")
 
-    of hnkStrKinds:
-      pptObj($val.kind & " ", pptConst($val.strVal, initStyle(fgYellow)))
+  else:
+    conf.idCounter.visit(val)
+    case val.kind:
+      of hnkIntKinds:
+        pptObj($val.kind & " ", pptConst($val.intVal, initStyle(fgBlue)))
 
-    else:
-      var subn: seq[ObjTree]
-      for node in items(val):
-        subn.add prettyPrintConverter(val, conf, path)
+      of hnkStrKinds:
+        pptObj($val.kind & " ", pptConst($val.strVal, initStyle(fgYellow)))
 
-      pptObj($val.kind, {
-        "subnodes" : pptSeq(subn)
-      })
+      else:
+        var subn: seq[ObjTree]
+        for node in items(val):
+          subn.add prettyPrintConverter(val, conf, path)
+
+        pptObj($val.kind, {
+          "subnodes" : pptSeq(subn)
+        })
 
 
 type

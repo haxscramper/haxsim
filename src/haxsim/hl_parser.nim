@@ -65,11 +65,49 @@ proc getInfix(par): seq[HLNode] =
         dec cnt
         par.next()
 
-      of htkCmp:
+      of htkCmp, htkStar, htkMinus:
         result.add newTree(hnkIdent, par.pop())
 
       else:
         result.add parseExpr(par)
+
+proc precLevel(node: HLNode): int =
+  if node.kind == hnkIdent:
+    case node.strVal:
+      of "+": 8
+      of "-": 8
+      of "*": 2
+      of "/": 2
+      of "==": 5
+      else: 0
+
+  else:
+    0
+
+proc parseExprAux(tokens: seq[HLNode], pos: var int, prec: int = 0): HLNode
+
+proc parseInfix(
+    left: HLNode, token: HLNode, tokens: seq[HLNode], pos: var int, prec: int
+  ): HLNode =
+
+  if token.kind in {hnkIdent} and token.strVal in ["+", "-", "*", "/", "=="]:
+    result = newTree(hnkInfix, token, left, parseExprAux(tokens, pos, prec))
+
+proc parsePrefix(token: HLNode): HLNode =
+  if token.kind in {hnkIntLit}:
+    result = token
+
+proc parseExprAux(tokens: seq[HLNode], pos: var int, prec: int = 0): HLNode =
+  result = tokens[pos]
+  inc(pos)
+  while pos < tokens.len and prec < tokens[pos].precLevel():
+    let token = tokens[pos]
+    if pos >= tokens.len:
+      break
+
+    inc(pos)
+    result = parseInfix(result, token, tokens, pos, prec)
+
 
 proc parseExpr(par): HLNode =
   case par.at().kind:
@@ -93,13 +131,9 @@ proc parseExpr(par): HLNode =
       par.skip(htkRBrack)
 
     of htkLPar:
-      let infix = getInfix(par)
-
-      pprint infix
-
-      result = newTree(hnkEmptyNode)
-
-
+      var pos: int = 0
+      result = parseExprAux(getInfix(par), pos)
+      echov isNil(result)
 
     else:
       raiseImplementError($par.at().kind)
