@@ -65,7 +65,7 @@ proc getInfix(par): seq[HLNode] =
         dec cnt
         par.next()
 
-      of htkCmp, htkStar, htkMinus:
+      of htkCmp, htkStar, htkMinus, htkPlus:
         result.add newTree(hnkIdent, par.pop())
 
       else:
@@ -76,8 +76,8 @@ proc precLevel(node: HLNode): int =
     case node.strVal:
       of "+": 8
       of "-": 8
-      of "*": 2
-      of "/": 2
+      of "*": 9
+      of "/": 9
       of "==": 5
       else: 0
 
@@ -133,7 +133,6 @@ proc parseExpr(par): HLNode =
     of htkLPar:
       var pos: int = 0
       result = parseExprAux(getInfix(par), pos)
-      echov isNil(result)
 
     else:
       raiseImplementError($par.at().kind)
@@ -154,13 +153,8 @@ proc parseVarDecl(par): HLNode =
 
 proc parseCallStmt(par): HLNode =
   result = newTree(hnkCall, newTree(hnkIdent, par.pop()))
-  par.skip(htkLPar)
-  while not par.at(htkRPar):
-    result.add parseExpr(par)
-    if par.at(htkComma):
-      par.skip(htkComma)
-
-  par.skip(htkRPar)
+  var pos: int = 0
+  result.add parseExprAux(getInfix(par), pos)
   par.skip(htkSemicolon)
 
 proc parseForStmt(par): HLNode =

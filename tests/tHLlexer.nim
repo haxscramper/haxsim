@@ -3,7 +3,8 @@ import std/[unittest]
 
 const str = """
 for i in [1, 2, 3] {
-  if ((i * 3 - 2) == 4) {
+  print(i + 2);
+  if ((i + 2) == 4) {
     print("Found 2");
   } else {
     print(i);

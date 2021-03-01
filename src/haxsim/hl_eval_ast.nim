@@ -43,8 +43,8 @@ proc evalAst*(tree: HLNode, ctx): HLValue =
       for item in tree:
         result.elements.add evalAst(item, ctx)
 
-    of hnkIntLit:
-      result = HLValue(kind: hvkInt, intVal: tree.intVal)
+    of hnkIntLit: result = initHLValue(tree.intVal)
+    of hnkStrLit: result = initHLValue(tree.strVal)
 
     of hnkCall:
       let name = tree[0].strVal
@@ -52,7 +52,7 @@ proc evalAst*(tree: HLNode, ctx): HLValue =
       for arg in tree[1 .. ^1]:
         args.add evalAst(arg, ctx)
 
-      echo name, $args
+      echo name, " ", $args
 
     of hnkIdent:
       result = ctx[tree.strVal]
@@ -67,6 +67,18 @@ proc evalAst*(tree: HLNode, ctx): HLValue =
 
         else:
           discard evalAst(branch[0], ctx)
+
+
+    of hnkInfix:
+      let lhs = evalAst(tree[1], ctx)
+      let rhs = evalAst(tree[2], ctx)
+      case tree[0].strVal:
+        of "==": result = initHLValue(lhs == rhs)
+        of "+": result = lhs + rhs
+        of "-": result = lhs - rhs
+        of "*": result = lhs * rhs
+        else:
+          raiseImplementError(&"Unhandled infix operator: {tree[0].strVal}")
 
     else:
       raiseImplementError(&"Kind {tree.kind} " & treeRepr(tree))

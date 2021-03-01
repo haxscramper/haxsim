@@ -209,7 +209,7 @@ proc prettyPrintConverter*(
   ): ObjTree =
 
   if conf.idCounter.isVisited(val):
-    return pptConst("<visisted>")
+    return pptConst("<visisted>@" & $(cast[int](unsafeAddr val)))
 
   else:
     conf.idCounter.visit(val)
@@ -223,7 +223,7 @@ proc prettyPrintConverter*(
       else:
         var subn: seq[ObjTree]
         for node in items(val):
-          subn.add prettyPrintConverter(val, conf, path)
+          subn.add prettyPrintConverter(node, conf, path)
 
         pptObj($val.kind, {
           "subnodes" : pptSeq(subn)
@@ -258,6 +258,45 @@ type
 
       of hvkArray:
         elements*: seq[HLValue]
+
+func `==`*(a, b: HLValue): bool =
+  a.kind == b.kind and
+  (
+    case a.kind:
+      of hvkInt: a.intVal == b.intVal
+      of hvkString: a.strVal == b.strVal
+      of hvkFloat: a.floatVal == b.floatVal
+      of hvkBool: a.boolVal == b.boolVal
+      of hvkRecord: true
+      of hvkArray: subnodesEq(a, b, elements)
+  )
+
+func initHLValue*(val: bool): HLValue =
+  HLValue(boolVal: val, kind: hvkBool)
+
+func initHLValue*(val: int): HLValue =
+  HLValue(intVal: val, kind: hvkInt)
+
+func initHLValue*(val: string): HLValue =
+  HLValue(strVal: val, kind: hvkString)
+
+template opAux(a, b: HLValue, op: untyped): untyped =
+  case a.kind:
+    of hvkInt:
+      case b.kind:
+        of hvkInt:
+          result = initHLValue(op(a.intVal, b.intVal))
+
+        else:
+          raiseImplementError("")
+
+    else:
+      raiseImplementError("")
+
+
+func `+`*(a, b: HLValue): HLValue = opAux(a, b, `+`)
+func `-`*(a, b: HLValue): HLValue = opAux(a, b, `-`)
+func `*`*(a, b: HLValue): HLValue = opAux(a, b, `*`)
 
 iterator items*(value: HLValue): HLValue =
   for item in value.elements:
