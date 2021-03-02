@@ -280,6 +280,13 @@ func initHLValue*(val: int): HLValue =
 func initHLValue*(val: string): HLValue =
   HLValue(strVal: val, kind: hvkString)
 
+func initHLValue*(tree: HLNode): HLValue =
+  case tree.kind:
+    of hnkIntLit: initHLValue(tree.intVal)
+    of hnkStrLit: initHLValue(tree.strVal)
+    else:
+      raiseImplementError("")
+
 template opAux(a, b: HLValue, op: untyped): untyped =
   case a.kind:
     of hvkInt:
