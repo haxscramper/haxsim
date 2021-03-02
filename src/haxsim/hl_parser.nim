@@ -84,20 +84,16 @@ proc precLevel(node: HLNode): int =
   else:
     0
 
-proc parseExprAux(tokens: seq[HLNode], pos: var int, prec: int = 0): HLNode
+proc foldExprAux(tokens: seq[HLNode], pos: var int, prec: int = 0): HLNode
 
-proc parseInfix(
+proc foldInfix(
     left: HLNode, token: HLNode, tokens: seq[HLNode], pos: var int, prec: int
   ): HLNode =
 
   if token.kind in {hnkIdent} and token.strVal in ["+", "-", "*", "/", "=="]:
-    result = newTree(hnkInfix, token, left, parseExprAux(tokens, pos, prec))
+    result = newTree(hnkInfix, token, left, foldExprAux(tokens, pos, precLevel(token)))
 
-proc parsePrefix(token: HLNode): HLNode =
-  if token.kind in {hnkIntLit}:
-    result = token
-
-proc parseExprAux(tokens: seq[HLNode], pos: var int, prec: int = 0): HLNode =
+proc foldExprAux(tokens: seq[HLNode], pos: var int, prec: int = 0): HLNode =
   result = tokens[pos]
   inc(pos)
   while pos < tokens.len and prec < tokens[pos].precLevel():
@@ -106,20 +102,14 @@ proc parseExprAux(tokens: seq[HLNode], pos: var int, prec: int = 0): HLNode =
       break
 
     inc(pos)
-    result = parseInfix(result, token, tokens, pos, prec)
+    result = foldInfix(result, token, tokens, pos, prec)
 
 
 proc parseExpr(par): HLNode =
   case par.at().kind:
-    of htkIntLit:
-      result = newTree(hnkIntLit, par.pop())
-
-    of htkIdent:
-      result = newTree(hnkIdent, par.pop())
-
-    of htkStrLit:
-      result = newTree(hnkStrLit, par.pop())
-
+    of htkIntLit: result = newTree(hnkIntLit, par.pop())
+    of htkIdent: result = newTree(hnkIdent, par.pop())
+    of htkStrLit: result = newTree(hnkStrLit, par.pop())
     of htkLBrack:
       result = newTree(hnkBracket)
       par.skip(htkLBrack)
@@ -132,7 +122,7 @@ proc parseExpr(par): HLNode =
 
     of htkLPar:
       var pos: int = 0
-      result = parseExprAux(getInfix(par), pos)
+      result = foldExprAux(getInfix(par), pos)
 
     else:
       raiseImplementError($par.at().kind)
@@ -150,11 +140,10 @@ proc parseVarDecl(par): HLNode =
 
   let id = newTree(hnkIdent, buf.pop)
 
-
 proc parseCallStmt(par): HLNode =
   result = newTree(hnkCall, newTree(hnkIdent, par.pop()))
   var pos: int = 0
-  result.add parseExprAux(getInfix(par), pos)
+  result.add foldExprAux(getInfix(par), pos)
   par.skip(htkSemicolon)
 
 proc parseForStmt(par): HLNode =

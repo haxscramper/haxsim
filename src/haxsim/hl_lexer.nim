@@ -19,7 +19,7 @@ func at(lex: var HLLexer): char =
   else:
     lex.str[lex.pos]
 
-func finished(lex: HLLexer): bool = lex.pos >= lex.str.high
+func finished(lex: HLLexer): bool = lex.pos >= lex.str.len
 func match(lex: HLLexer, re: Regex, matches: var openarray[string]): bool =
   result = match(lex.str, re, matches, lex.pos)
 
@@ -81,8 +81,6 @@ proc tokenize*(str: string): seq[HLToken] =
     elif ok(re"(,)"):               push(htkComma,     0)
     elif ok(re"(\.)"):              push(htkDot,       0)
     elif ok(re"""(".*?")"""):       push(htkStrLit,    0)
-
-
     else:
       echov "ignore: ", lex[0 .. ^1]
       raiseImplementError("")
