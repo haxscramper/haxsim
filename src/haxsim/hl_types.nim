@@ -1,4 +1,4 @@
-import std/[strutils, parseutils, sequtils, strformat]
+import std/[strutils, parseutils, sequtils, strformat, options]
 import hmisc/[base_errors]
 import hmisc/types/[colorstring]
 import hmisc/helpers
@@ -257,6 +257,7 @@ type
         discard
 
       of hvkArray:
+        idx: int
         elements*: seq[HLValue]
 
 func `==`*(a, b: HLValue): bool =
@@ -271,6 +272,12 @@ func `==`*(a, b: HLValue): bool =
       of hvkArray: subnodesEq(a, b, elements)
   )
 
+func nextValue*(value: var HLValue): Option[HLValue] =
+  if value.idx < value.elements.len:
+    result = some value.elements[value.idx]
+    inc value.idx
+
+
 func initHLValue*(val: bool): HLValue =
   HLValue(boolVal: val, kind: hvkBool)
 
@@ -282,8 +289,13 @@ func initHLValue*(val: string): HLValue =
 
 func initHLValue*(tree: HLNode): HLValue =
   case tree.kind:
-    of hnkIntLit: initHLValue(tree.intVal)
-    of hnkStrLit: initHLValue(tree.strVal)
+    of hnkIntLit: result = initHLValue(tree.intVal)
+    of hnkStrLit: result = initHLValue(tree.strVal)
+    of hnkBracket:
+      result = HLValue(kind: hvkArray)
+      for node in tree:
+        result.elements.add initHLValue(node)
+
     else:
       raiseImplementError("")
 
@@ -295,10 +307,10 @@ template opAux(a, b: HLValue, op: untyped): untyped =
           result = initHLValue(op(a.intVal, b.intVal))
 
         else:
-          raiseImplementError("")
+          raiseImplementError($a.kind & " " & $b.kind)
 
     else:
-      raiseImplementError("")
+      raiseImplementError($a.kind & " " & $b.kind)
 
 
 func `+`*(a, b: HLValue): HLValue = opAux(a, b, `+`)

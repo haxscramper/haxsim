@@ -1,32 +1,66 @@
 import hl_types
 import hmisc/[base_errors, hdebug_misc]
-import std/[options]
+import std/[options, tables, macros, strformat]
 import hpprint, hpprint/hpprint_repr
+import hmisc/types/colorstring
+import fusion/matching
 
 type
   HLStackEvalCtx* = object
+    names*: Table[string, HLValue]
 
   HLStackOpKind = enum
     hsoLoad
     hsoCallFunc
     hsoForIter
-    hsoJumpForward
-    hsoJumpAbsolute
+    hsoJump
+    hsoPopJumpIfFalse
+    hsoPopTop
+    hsoGetIter
+    hsoStoreName
+    hsoLoadName
 
   HLStackOp = object
+    annotation*: string
     case kind*: HLStackOpKind
       of hsoLoad:
         value*: HLValue
 
       of hsoCallFunc:
-        name*: string
+        funcName*: string
         argc*: int
+
+      of hsoForIter:
+        afterLoopPos*: int
+
+      of hsoJump, hsoPopJumpIfFalse:
+        jumpOffset*: int
+
+      of hsoStoreName, hsoLoadName:
+        varName*: string
 
       else:
         discard
 
-
 using ctx: var HLStackEvalCtx
+
+func `$`(op: HLStackOp): string =
+  result &= ($op.kind)[3 ..^ 1]
+  case op.kind:
+    of hsoLoad:
+      result &= " " & $op.value
+
+    of hsoCallFunc:
+      result &= " '" & op.funcName & "' " & $op.argc
+
+    of hsoJump, hsoPopJumpIfFalse:
+      result &= " " & $op.jumpOffset
+
+    of hsoStoreName, hsoLoadName:
+      result &= " " & $op.varName
+
+    else:
+      discard
 
 proc prettyPrintConverter*(
   op: HLStackOp | HLValue, conf: var PPRintConf, path: ObjPath): ObjTree =
@@ -35,10 +69,27 @@ proc prettyPrintConverter*(
 proc pushScope*(ctx) = discard
 
 func initOpCallFunc*(call: HLNode): HLStackOp =
-  HLStackOp(kind: hsoCallFunc, name: call[0].strVal, argc: call.len - 1)
+  HLStackOp(kind: hsoCallFunc, funcName: call[0].strVal, argc: call.len - 1)
 
 func initOpLoadConst*(call: HLNode): HLStackOp =
   HLStackOp(kind: hsoLoad, value: initHLValue(call))
+
+macro initOp*(kind: HLStackOpKind, args: varargs[untyped]): HLStackOp =
+  result = newStmtList()
+  let res = genSym(nskVar)
+  result.add quote do:
+    var `res` = HLStackOp(kind: `kind`)
+
+  for arg in args:
+    ExprEqExpr[@fldName, @value] := arg
+    result.add quote do:
+      `res`.`fldname` = `value`
+
+  result.add res
+
+func msg*(op: sink HLStackOp, msg: string): HLStackOp =
+  result = op
+  result.annotation = msg
 
 proc compileStack*(tree: HLNode): seq[HLStackOp] =
   case tree.kind:
@@ -57,45 +108,158 @@ proc compileStack*(tree: HLNode): seq[HLStackOp] =
       result.add compileStack(tree[2])
       result.add initOpCallFunc(tree)
 
-    of hnkIntLit:
+    of hnkIntLit, hnkStrLit:
       result.add initOpLoadConst(tree)
+
+    of hnkIdent:
+      result.add initOp(hsoLoadName, varName = tree.strVal)
+
+    of hnkForStmt:
+      result.add compileStack(tree[1])
+      let forPos = result.len
+      result.add initOp(hsoForIter).msg("For loop target")
+      result.add initOp(hsoStoreName, varName = tree[0].strVal)
+        .msg("Store iteration variable value")
+
+      result.add compileStack(tree[2])
+      result.add initOp(hsoPopTop)
+        .msg("Pop iteration variable from stack")
+
+      result.add initOp(hsoJump, jumpOffset = forPos - result.len)
+        .msg("Next iteration jump")
+
+      result[forPos].afterLoopPos = result.len
+
+    of hnkBracket:
+      result.add initOp(hsoLoad, value = initHLValue(tree))
+
+
+    of hnkIfStmt:
+      var falseJump = -1
+      var endJumps: seq[int]
+      for branch in tree:
+        if falseJump > 0:
+          result[falseJump].jumpOffset = result.len - falseJump
+
+        if branch.kind == hnkElifBranch:
+          result.add compileStack(branch[0])
+          falseJump = result.len
+          result.add initOp(hsoPopJumpIfFalse)
+            .msg("Elif branch condition jump")
+
+          result.add compileStack(branch[1])
+          endJumps.add result.len
+          result.add initOp(hsoJump)
+            .msg("Successful elif branch end")
+
+        else:
+          result.add compileStack(branch[0])
+
+      for jump in endJumps:
+        result[jump].jumpOffset = result.len - jump
 
     else:
       echo treeRepr(tree)
-      raiseImplementError("")
+      raiseImplementError($tree.kind)
 
 proc evalFunc(name: string, args: seq[HLValue]): Option[HLValue] =
   case name:
     of "+": result = some(args[0] + args[1])
     of "-": result = some(args[0] - args[1])
     of "*": result = some(args[0] * args[1])
+    of "==": result = some(initHLValue(args[0] == args[1]))
     of "print":
-      echo args[0]
+      echo "Called print ", args[0]
 
     else:
-      raiseImplementError(name)
+      raiseImplementError("Unimplemented function " & name)
+
+
+template top[T](s: seq[T]): untyped = s[^1]
+
+import hmisc/hasts/graphviz_ast
+
+proc dotRepr(ops: seq[HLStackOp]): DotGraph =
+  result = makeDotGraph()
+  # result.splines = spsOrtho
+  for idx, op in pairs(ops):
+    result.add makeDotNode(idx, &"#{idx} {op}\n[{op.annotation}]")
+    if op.kind != hsoJump:
+      result.add makeDotEdge(idx, idx + 1, "next")
+
+    case op.kind:
+      of hsoJump, hsoPopJumpIfFalse:
+        result.add makeDotEdge(idx, idx + op.jumpOffset, "jump")
+
+      of hsoForIter:
+        result.add makeDotEdge(idx, idx + op.afterLoopPos, "jump")
+
+      else:
+        discard
 
 
 
 proc evalStack*(ops: seq[HLStackOp], ctx): HLValue =
   var idx = 0
+  # pprint(ops, ignore = @["**/annotation*"]) # FIXME `ignore` does not work,
+  # # but this is most certainly a compound bug - I don't set path correctly
+  # # **and** it is not fully checked somewhere like `prettyPrintConverter`
   var stack: seq[HLValue]
+  ops.dotRepr().toPng("/tmp/graph.png")
   while idx < ops.len:
     let op = ops[idx]
     case op.kind:
       of hsoLoad:
         stack.add op.value
 
+        inc idx
+
       of hsoCallFunc:
         var args: seq[HLValue]
         for _ in 0 ..< op.argc:
           args.add stack.pop()
 
-        let res = evalFunc(op.name, args)
+        let res = evalFunc(op.funcName, args)
         if res.isSome():
           stack.add res.get()
 
-      else:
-        discard
+        inc idx
 
-    inc idx
+      of hsoForIter:
+        let val = stack.top().nextValue()
+        if val.isSome():
+          stack.add val.get()
+
+          inc idx
+
+        else:
+          idx += op.afterLoopPos
+
+      of hsoStoreName:
+        ctx.names[op.varName] = stack.top()
+
+        inc idx
+
+      of hsoLoadName:
+        stack.add ctx.names[op.varName]
+
+        inc idx
+
+      of hsoPopTop:
+        discard stack.pop()
+
+        inc idx
+
+      of hsoJump:
+        idx += op.jumpOffset
+
+      of hsoPopJumpIfFalse:
+        let val = stack.pop()
+        if val.boolVal == false:
+          idx += op.jumpOffset
+
+        else:
+          inc idx
+
+      else:
+        raiseImplementError(&"Kind {op.kind}")

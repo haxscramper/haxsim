@@ -42,10 +42,9 @@ suite "Eval AST":
 
 suite "Eval stack":
   test "Eval stack":
-    let tokens = tokenize(str)
+    let tokens = tokenize(str0)
     let tree = parse(tokens)
     let ops = compileStack(tree)
-
     var ctx: HLStackEvalCtx
     ctx.pushScope()
     discard evalStack(ops, ctx)
