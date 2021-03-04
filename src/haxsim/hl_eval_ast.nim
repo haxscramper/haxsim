@@ -1,5 +1,5 @@
 import hl_types
-import std/[tables, strformat]
+import std/[tables, strformat, sequtils]
 import hmisc/base_errors
 
 type
@@ -52,10 +52,13 @@ proc evalAst*(tree: HLNode, ctx): HLValue =
       for arg in tree[1 .. ^1]:
         args.add evalAst(arg, ctx)
 
-      echo name, " ", $args
+      echo name, " ", args.mapIt($it[])
 
     of hnkIdent:
       result = ctx[tree.strVal]
+
+    of hnkVarDecl:
+      ctx[tree[0].strVal] = evalAst(tree[1], ctx)
 
     of hnkIfStmt:
       for branch in tree:

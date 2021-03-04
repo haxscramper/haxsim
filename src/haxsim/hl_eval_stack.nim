@@ -1,6 +1,9 @@
 import hl_types
 import hmisc/[base_errors, hdebug_misc]
-import std/[options, tables, macros, strformat]
+import std/[
+  options, tables, macros, strformat,
+  strutils, algorithm, sequtils
+]
 import hpprint, hpprint/hpprint_repr
 import hmisc/types/colorstring
 import fusion/matching
@@ -8,6 +11,7 @@ import fusion/matching
 type
   HLStackEvalCtx* = object
     names*: Table[string, HLValue]
+    procImpls*: HLProcImplTable
 
   HLStackOpKind = enum
     hsoLoad
@@ -30,10 +34,7 @@ type
         funcName*: string
         argc*: int
 
-      of hsoForIter:
-        afterLoopPos*: int
-
-      of hsoJump, hsoPopJumpIfFalse:
+      of hsoForIter, hsoJump, hsoPopJumpIfFalse:
         jumpOffset*: int
 
       of hsoStoreName, hsoLoadName:
@@ -45,22 +46,40 @@ type
 using ctx: var HLStackEvalCtx
 
 func `$`(op: HLStackOp): string =
-  result &= ($op.kind)[3 ..^ 1]
+  result &= alignLeft(($op.kind)[3 ..^ 1], 15)
   case op.kind:
     of hsoLoad:
       result &= " " & $op.value
 
     of hsoCallFunc:
-      result &= " '" & op.funcName & "' " & $op.argc
+      result &= &" {op.funcName}({op.argc})"
 
     of hsoJump, hsoPopJumpIfFalse:
-      result &= " " & $op.jumpOffset
+      result &= &" {op.jumpOffset} >>"
 
     of hsoStoreName, hsoLoadName:
       result &= " " & $op.varName
 
     else:
       discard
+
+func `$`(ops: seq[HLStackOp]): string =
+  var targets: Table[int, seq[int]]
+
+  for idx, op in pairs(ops):
+    if op.kind in {hsoForIter, hsoJump, hsoPopJumpIfFalse}:
+      targets.mgetOrPut(idx - op.jumpOffset, @[]).add idx
+
+  var buf: seq[string]
+  for idx, op in pairs(ops):
+    if idx in targets:
+      buf.add &">> {idx:<4} {op:<30} from {targets[idx]}"
+
+    else:
+      buf.add &"   {idx:<4} {op}"
+
+
+  result = buf.join("\n")
 
 proc prettyPrintConverter*(
   op: HLStackOp | HLValue, conf: var PPRintConf, path: ObjPath): ObjTree =
@@ -128,11 +147,14 @@ proc compileStack*(tree: HLNode): seq[HLStackOp] =
       result.add initOp(hsoJump, jumpOffset = forPos - result.len)
         .msg("Next iteration jump")
 
-      result[forPos].afterLoopPos = result.len
+      result[forPos].jumpOffset = result.len
 
     of hnkBracket:
       result.add initOp(hsoLoad, value = initHLValue(tree))
 
+    of hnkVarDecl:
+      result.add compileStack(tree[1])
+      result.add initOp(hsoStoreName, varName = tree[0].strVal)
 
     of hnkIfStmt:
       var falseJump = -1
@@ -162,17 +184,22 @@ proc compileStack*(tree: HLNode): seq[HLStackOp] =
       echo treeRepr(tree)
       raiseImplementError($tree.kind)
 
-proc evalFunc(name: string, args: seq[HLValue]): Option[HLValue] =
-  case name:
-    of "+": result = some(args[0] + args[1])
-    of "-": result = some(args[0] - args[1])
-    of "*": result = some(args[0] * args[1])
-    of "==": result = some(initHLValue(args[0] == args[1]))
-    of "print":
-      echo "Called print ", args[0]
+proc evalFunc(ctx; name: string, args: seq[HLValue]): Option[HLValue] =
+  let impl = ctx.procImpls.resolveOverloadedCall(name, args.mapIt(it.hlType))
+  result = impl.impl(args)
+  # case name:
+  #   of "+": result = some(args[0] + args[1])
+  #   of "-": result = some(args[0] - args[1])
+  #   of "*": result = some(args[0] * args[1])
+  #   of "==": result = some(initHLValue(args[0] == args[1]))
+  #   of "[]=":
+  #     args[0][args[1]] = args[2]
 
-    else:
-      raiseImplementError("Unimplemented function " & name)
+  #   of "print":
+  #     echo "Called print ", args[0]
+
+  #   else:
+  #     raiseImplementError("Unimplemented function " & name)
 
 
 template top[T](s: seq[T]): untyped = s[^1]
@@ -188,22 +215,34 @@ proc dotRepr(ops: seq[HLStackOp]): DotGraph =
       result.add makeDotEdge(idx, idx + 1, "next")
 
     case op.kind:
-      of hsoJump, hsoPopJumpIfFalse:
+      of hsoJump, hsoPopJumpIfFalse, hsoForIter:
         result.add makeDotEdge(idx, idx + op.jumpOffset, "jump")
-
-      of hsoForIter:
-        result.add makeDotEdge(idx, idx + op.afterLoopPos, "jump")
 
       else:
         discard
 
 
+proc newStackEvalCtx*(): HLStackEvalCtx =
+  var d: HLProcImplTable
+
+  template i(arg: untyped): untyped = initHLValue(arg)
+
+  d["+"] = @[
+    i(proc(a, b: int): int = a + b)
+  ]
+
+  d["print"] = @[ i(proc(a: HLValue): void = echo a) ]
+  d["=="] = @[ i(proc(a, b: HLValue): bool = a == b) ]
+  d["[]="] = @[ i(proc(a, b, c: HLValue) = a[b] = c) ]
+
+  result.procImpls = d
 
 proc evalStack*(ops: seq[HLStackOp], ctx): HLValue =
   var idx = 0
   # pprint(ops, ignore = @["**/annotation*"]) # FIXME `ignore` does not work,
   # # but this is most certainly a compound bug - I don't set path correctly
   # # **and** it is not fully checked somewhere like `prettyPrintConverter`
+  echo ops
   var stack: seq[HLValue]
   ops.dotRepr().toPng("/tmp/graph.png")
   while idx < ops.len:
@@ -219,7 +258,7 @@ proc evalStack*(ops: seq[HLStackOp], ctx): HLValue =
         for _ in 0 ..< op.argc:
           args.add stack.pop()
 
-        let res = evalFunc(op.funcName, args)
+        let res = ctx.evalFunc(op.funcName, args.reversed())
         if res.isSome():
           stack.add res.get()
 
@@ -233,7 +272,7 @@ proc evalStack*(ops: seq[HLStackOp], ctx): HLValue =
           inc idx
 
         else:
-          idx += op.afterLoopPos
+          idx += op.jumpOffset
 
       of hsoStoreName:
         ctx.names[op.varName] = stack.top()

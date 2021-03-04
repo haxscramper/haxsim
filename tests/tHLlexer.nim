@@ -11,6 +11,10 @@ for i in [1, 2, 3] {
   }
 }
 
+var arr = [1, 2, 3];
+arr[1] = 90;
+print(arr[0]);
+
 """
 
 const str1 = "print(2 + 3 * 4);"
@@ -24,17 +28,19 @@ suite "Base tokenizer":
 
 suite "Parser":
   test "Parse infix":
-    echo tokenize("print(2 + 3 * 4);").parse().treeRepr()
-    echo tokenize("print(3 * 4 + 2);").parse().treeRepr()
+    discard tokenize("print(2 + 3 * 4);").parse()
+    discard tokenize("print(3 * 4 + 2);").parse()
 
   test "Parse":
-    let tokens = tokenize(str)
+    let tokens = tokenize(str0)
+    for tok in tokens:
+      stdout.write tok.lispRepr() & " "
     let tree = parse(tokens)
     echo treeRepr(tree)
 
 suite "Eval AST":
   test "Eval AST":
-    let tokens = tokenize(str)
+    let tokens = tokenize(str0)
     let tree = parse(tokens)
     var ctx: HLAstEvalCtx
     ctx.pushScope()
@@ -45,6 +51,6 @@ suite "Eval stack":
     let tokens = tokenize(str0)
     let tree = parse(tokens)
     let ops = compileStack(tree)
-    var ctx: HLStackEvalCtx
+    var ctx = newStackEvalCtx()
     ctx.pushScope()
     discard evalStack(ops, ctx)

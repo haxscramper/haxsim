@@ -37,13 +37,15 @@ proc pop(par): HLToken =
   result = par.at()
   par.next()
 
-proc skip(par; expected: HLTokenKind) =
+proc skip(par; expected: HLTokenKind | set[HLTokenKind]) =
   if par.at(expected):
     par.next()
 
   else:
     raiseImplementError(
       &"Expected {expected}, but parser is at {par.at()}")
+
+
 
 proc parseIdent(par): HLNode = newTree(hnkIdent, par.pop())
 proc parseStmtList(par): HLNode
@@ -58,10 +60,10 @@ proc parseExpr(par): HLNode
 
 proc getInfix(par): seq[HLNode] =
   var cnt = 1
-  par.skip(htkLPar)
+  par.skip({htkLPar, htkLBrack})
   while cnt > 0:
     case par.at().kind:
-      of htkRPar:
+      of htkRPar, htkRBrack:
         dec cnt
         par.next()
 
@@ -129,16 +131,20 @@ proc parseExpr(par): HLNode =
 
 proc parseVarDecl(par): HLNode =
   result = newTree(hnkVarDecl)
-  var buf: seq[HLToken]
-  while not par.at({htkSemicolon, htkEq, htkComma}):
-    buf.add par.pop()
+  par.skip(htkVarKwd)
+  result.add parseIdent(par)
+  par.skip(htkEq)
+  result.add parseExpr(par)
+  par.skip(htkSemicolon)
+  # while not par.at({htkSemicolon, htkEq, htkComma}):
+  #   buf.add parseExpr(par)
 
-  var initExpr = newEmptyCNode()
-  if par.at(htkEq):
-    par.skip(htkEq)
-    initExpr.add par.parseExpr()
+  # var initExpr = newEmptyCNode()
+  # if par.at(htkEq):
+  #   par.skip(htkEq)
+  #   initExpr.add par.parseExpr()
 
-  let id = newTree(hnkIdent, buf.pop)
+  # let id = newTree(hnkIdent, buf.pop)
 
 proc parseCallStmt(par): HLNode =
   result = newTree(hnkCall, newTree(hnkIdent, par.pop()))
@@ -164,6 +170,14 @@ proc parseIfStmt(par): HLNode =
     par.skip(htkElseKwd)
     result.add newTree(hnkElseBranch, parseStmtList(par))
 
+proc parseArrayAsgn(par): HLNode =
+  result = newTree(hnkCall)
+  result.add newIdentHLNode("[]=")
+  result.add par.parseIdent()
+  result.add foldExprAux(par.getInfix(), (var tmp: int; tmp))
+  par.skip(htkEq)
+  result.add par.parseExpr()
+
 proc parseStmtList(par): HLNode =
 
   if par.at(htkLCurly):
@@ -177,21 +191,22 @@ proc parseStmtList(par): HLNode =
       case par.at().kind:
         of htkForKwd: result.add parseForStmt(par)
         of htkIfKwd: result.add parseIfStmt(par)
+        of htkVarKwd: result.add parseVarDecl(par)
         of htkIdent:
           if par.at(+1, htkLPar):
             result.add parseCallStmt(par)
             # par.skip(htkSemicolon)
 
-          elif par.at(+1, htkIdent):
-            result.add parseVarDecl(par)
-            par.skip(htkSemicolon)
-
           elif par.at(+1, htkDot):
             result.add parseFieldExpr(par)
             par.skip(htkSemicolon)
 
+          elif par.at(+1, htkLBrack):
+            result.add parseArrayAsgn(par)
+            par.skip(htkSemicolon)
+
           else:
-            raiseImplementError("")
+            raiseImplementError(par.at(+1).lispRepr())
 
         else:
           raiseImplementError(&"Kind {par.at().kind} {instantiationInfo()} ]#")

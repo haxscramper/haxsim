@@ -61,6 +61,7 @@ proc tokenize*(str: string): seq[HLToken] =
     elif ok(re"(enum)"):            push(htkEnumKwd,   0)
     elif ok(re"(struct)"):          push(htkEnumKwd,   0)
     elif ok(re"(in)"):              push(htkInKwd,     0)
+    elif ok(re"(var)"):             push(htkVarKwd,    0)
     elif ok(re"(\()"):              push(htkLPar,      0)
     elif ok(re"(\))"):              push(htkRPar,      0)
     elif ok(re"(\[)"):              push(htkLBrack,    0)
