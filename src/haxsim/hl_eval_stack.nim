@@ -88,7 +88,7 @@ proc prettyPrintConverter*(
 proc pushScope*(ctx) = discard
 
 func initOpCallFunc*(call: HLNode): HLStackOp =
-  HLStackOp(kind: hsoCallFunc, funcName: call[0].strVal, argc: call.len - 1)
+  HLStackOp(kind: hsoCallFunc, funcName: call[0].getStrVal(), argc: call.len - 1)
 
 func initOpLoadConst*(call: HLNode): HLStackOp =
   HLStackOp(kind: hsoLoad, value: initHLValue(call))
@@ -137,7 +137,7 @@ proc compileStack*(tree: HLNode): seq[HLStackOp] =
       result.add compileStack(tree[1])
       let forPos = result.len
       result.add initOp(hsoForIter).msg("For loop target")
-      result.add initOp(hsoStoreName, varName = tree[0].strVal)
+      result.add initOp(hsoStoreName, varName = tree[0].getStrVal())
         .msg("Store iteration variable value")
 
       result.add compileStack(tree[2])
@@ -154,7 +154,7 @@ proc compileStack*(tree: HLNode): seq[HLStackOp] =
 
     of hnkVarDecl:
       result.add compileStack(tree[1])
-      result.add initOp(hsoStoreName, varName = tree[0].strVal)
+      result.add initOp(hsoStoreName, varName = tree[0].getStrVal())
 
     of hnkIfStmt:
       var falseJump = -1
@@ -223,19 +223,7 @@ proc dotRepr(ops: seq[HLStackOp]): DotGraph =
 
 
 proc newStackEvalCtx*(): HLStackEvalCtx =
-  var d: HLProcImplTable
-
-  template i(arg: untyped): untyped = initHLValue(arg)
-
-  d["+"] = @[
-    i(proc(a, b: int): int = a + b)
-  ]
-
-  d["print"] = @[ i(proc(a: HLValue): void = echo a) ]
-  d["=="] = @[ i(proc(a, b: HLValue): bool = a == b) ]
-  d["[]="] = @[ i(proc(a, b, c: HLValue) = a[b] = c) ]
-
-  result.procImpls = d
+  result.procImpls = newProcTable()
 
 proc evalStack*(ops: seq[HLStackOp], ctx): HLValue =
   var idx = 0

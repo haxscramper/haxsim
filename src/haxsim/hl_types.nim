@@ -1,6 +1,6 @@
 import std/[
   strutils, parseutils, sequtils, strformat,
-  options, tables, hashes, macros
+  options, tables, hashes, macros, lists
 ]
 import hmisc/[base_errors]
 import hmisc/types/[colorstring]
@@ -103,6 +103,7 @@ type
     hnkBracket
     hnkInfix
 
+    hnkSym
     hnkIdent
     hnkStructDecl
     hnkIdentDefs
@@ -118,125 +119,6 @@ const
   hnkStrKinds* = {hnkStrLit, hnkIdent}
 
 type
-  HLNode* = ref object
-    case kind*: HLNodeKind
-      of hnkIntKinds:
-        intVal*: int
-
-      of hnkStrKinds:
-        strVal*: string
-
-      else:
-        subnodes*: seq[HLNode]
-
-const
-  hnkTokenKinds* = {hnkIntLit, hnkStrLit, hnkIdent}
-
-func add*(node: var HLNode, node2: HLNode) = node.subnodes.add node2
-func len*(node: HLNode): int = node.subnodes.len
-iterator items*(node: HLNode): HLNode =
-  for subnode in node.subnodes:
-    yield subnode
-
-proc `[]`*(node: HLNode, idx: int | HSLice[int, BackwardsIndex]): auto =
-  node.subnodes[idx]
-
-proc newTree*(kind: HLNodeKind, subnodes: varargs[HLNode]): HLNode =
-  result = HLNode(kind: kind)
-  for node in subnodes:
-    result.subnodes.add node
-
-proc newTree*(kind: HLNodeKind, token: HLToken): HLNode =
-  result = HLNode(kind: kind)
-  case kind:
-    of hnkIntLit:
-      result.intVal = parseInt(token.str)
-
-    of hnkStrLit, hnkIdent:
-      result.strVal = token.str
-
-    else:
-      raiseImplementError("")
-
-proc newEmptyCNode*(): HLNode = newTree(hnkEmptyNode)
-proc newIdentHLNode*(id: string): HLNode =
-  HLNode(kind: hnkIdent, strVal: id)
-
-
-proc treeRepr*(
-    pnode: HLNode, colored: bool = true,
-    indexed: bool = false, maxdepth: int = 120
-  ): string =
-
-  proc aux(n: HLNode, level: int, idx: seq[int]): string =
-    let pref =
-      if indexed:
-        idx.join("", ("[", "]")) & "    "
-      else:
-        "  ".repeat(level)
-
-    if level > maxdepth:
-      return pref & " ..."
-
-
-    if isNil(n):
-      return pref & toCyan(" <nil>")
-
-
-    result &= pref & ($n.kind)[3 ..^ 1]
-    case n.kind:
-      of hnkStrLit:
-        result &= " \"" & toYellow(n.strVal, colored) & "\""
-
-      of hnkIntLit:
-        result &= " " & toBlue($n.intVal, colored)
-
-      of hnkIdent:
-        result &= " " & toGreen(n.strVal, colored)
-
-      else:
-        if n.len > 0:
-          result &= "\n"
-
-        for newIdx, subn in enumerate(n):
-          result &= aux(subn, level + 1, idx & newIdx)
-          if newIdx < n.len - 1:
-            result &= "\n"
-
-  return aux(pnode, 0, @[])
-
-import hpprint, hpprint/hpprint_repr
-import hmisc/types/colorstring
-
-proc prettyPrintConverter*(
-    val: HLNode,
-    conf: var PPrintConf,
-    path: ObjPath,
-  ): ObjTree =
-
-  if conf.idCounter.isVisited(val):
-    return pptConst("<visisted>@" & $(cast[int](unsafeAddr val)))
-
-  else:
-    conf.idCounter.visit(val)
-    case val.kind:
-      of hnkIntKinds:
-        pptObj($val.kind & " ", pptConst($val.intVal, initStyle(fgBlue)))
-
-      of hnkStrKinds:
-        pptObj($val.kind & " ", pptConst($val.strVal, initStyle(fgYellow)))
-
-      else:
-        var subn: seq[ObjTree]
-        for node in items(val):
-          subn.add prettyPrintConverter(node, conf, path)
-
-        pptObj($val.kind, {
-          "subnodes" : pptSeq(subn)
-        })
-
-
-type
   HLValueKind* = enum
     hvkInt
     hvkString
@@ -246,6 +128,7 @@ type
     hvkArray
     hvkTable
     hvkProc
+    hvkList
     hvkNil
     hvkAny
 
@@ -258,7 +141,7 @@ type
         argTypes*: seq[HLType]
         returnType*: HLType
 
-      of hvkArray:
+      of hvkArray, hvkList:
         elemType*: HLType
 
       of hvkTable:
@@ -300,9 +183,110 @@ type
       of hvkProc:
         impl*: HLProcImpl
 
+      of hvkList:
+        list*: DoublyLinkedList[HLValue]
+
       of hvkArray:
         idx: int
         elements*: seq[HLValue]
+
+
+  HLNode* = ref object
+    case kind*: HLNodeKind
+      of hnkIntKinds:
+        intVal*: int
+
+      of hnkStrKinds:
+        strVal*: string
+
+      of hnkSym:
+        symStr*: string
+        symType*: HLType
+        symImpl*: Option[HLValue]
+
+      else:
+        subnodes*: seq[HLNode]
+
+const
+  hnkTokenKinds* = {hnkIntLit, hnkStrLit, hnkIdent}
+
+func add*(node: var HLNode, node2: HLNode) = node.subnodes.add node2
+func len*(node: HLNode): int = node.subnodes.len
+iterator items*(node: HLNode): HLNode =
+  for subnode in node.subnodes:
+    yield subnode
+
+
+iterator mitems*(node: var HLNode): var HLNode =
+  for subnode in mitems(node.subnodes):
+    yield subnode
+
+proc `[]`*(node: HLNode, idx: int | HSLice[int, BackwardsIndex]): auto =
+  node.subnodes[idx]
+
+proc getStrVal*(node: HLNode): string =
+  case node.kind:
+    of hnkIdent: node.strVal
+    of hnkSym: node.symStr
+    else: raiseImplementError("") 
+
+proc `[]`*(node: var HLNode, idx: int): var HLNode =
+  node.subnodes[idx]
+
+proc `[]=`*(node: var HLNode, idx: int, val: HLNode) =
+  node.subnodes[idx] = val
+
+proc newTree*(kind: HLNodeKind, subnodes: varargs[HLNode]): HLNode =
+  result = HLNode(kind: kind)
+  for node in subnodes:
+    result.subnodes.add node
+
+proc newTree*(kind: HLNodeKind, token: HLToken): HLNode =
+  result = HLNode(kind: kind)
+  case kind:
+    of hnkIntLit:
+      result.intVal = parseInt(token.str)
+
+    of hnkStrLit, hnkIdent:
+      result.strVal = token.str
+
+    else:
+      raiseImplementError("")
+
+proc newEmptyCNode*(): HLNode = newTree(hnkEmptyNode)
+proc newIdentHLNode*(id: string): HLNode =
+  HLNode(kind: hnkIdent, strVal: id)
+
+
+import hpprint, hpprint/hpprint_repr
+import hmisc/types/colorstring
+
+proc prettyPrintConverter*(
+    val: HLNode,
+    conf: var PPrintConf,
+    path: ObjPath,
+  ): ObjTree =
+
+  if conf.idCounter.isVisited(val):
+    return pptConst("<visisted>@" & $(cast[int](unsafeAddr val)))
+
+  else:
+    conf.idCounter.visit(val)
+    case val.kind:
+      of hnkIntKinds:
+        pptObj($val.kind & " ", pptConst($val.intVal, initStyle(fgBlue)))
+
+      of hnkStrKinds:
+        pptObj($val.kind & " ", pptConst($val.strVal, initStyle(fgYellow)))
+
+      else:
+        var subn: seq[ObjTree]
+        for node in items(val):
+          subn.add prettyPrintConverter(node, conf, path)
+
+        pptObj($val.kind, {
+          "subnodes" : pptSeq(subn)
+        })
 
 
 func hash*(a: HLValue): Hash =
@@ -316,6 +300,10 @@ func hash*(a: HLValue): Hash =
     of hvkBool: h = h !& hash(a.boolVal)
     of hvkProc: h = h !& hash(a.impl)
     of hvkRecord: discard
+    of hvkList:
+      for element in items(a.list):
+        h = h !& hash(element)
+
     of hvkArray:
       for element in pairs(a.elements):
         h = h !& hash(element)
@@ -339,6 +327,23 @@ func `==`*(a, b: HLValue): bool =
       of hvkProc: a.impl == b.impl
       of hvkRecord: true
       of hvkArray: subnodesEq(a, b, elements)
+      of hvkList:
+        var res = true
+        var aVal = a.list.head
+        var bVal = b.list.head
+
+        while (not isNil(aVal)) and (not isNil(bVal)):
+          if aVal.value != bVal.value:
+            res = false
+            break
+
+          aVal = aVal.next
+          bVal = bVal.next
+
+        if not (isNil(aVal) and isNil(bVal)):
+          res = false
+
+        res
       of hvkTable: a.table == b.table
   )
 
@@ -374,6 +379,20 @@ func initHLType*(T: typedesc[int|float|string|bool|HLValue|void]): HLType =
   elif T is bool: result = HLType(kind: hvkBool)
   elif T is HLValue: result = HLType(kind: hvkAny)
   elif T is void: result = HLType(kind: hvkNil)
+
+
+func initHLType*(typeKind: HLValueKind, subtypes: seq[HLType]): HLType =
+  result = HLType(kind: typeKind)
+  case result.kind:
+    of hvkList, hvkArray:
+      result.elemType = subtypes[0]
+
+    of hvkTable:
+      result.keyType = subtypes[0]
+      result.valType = subtypes[1]
+
+    else:
+      discard
 
 func nextValue*(value: var HLValue): Option[HLValue] =
   if value.idx < value.elements.len:
@@ -500,6 +519,7 @@ func `$`*(hlType: HLType): string =
       of hvkString: result = "string"
       of hvkBool: result = "bool"
       of hvkArray: result = &"array[{hlType.elemType}]"
+      of hvkList: result = &"list[{hlType.elemType}]"
       of hvkRecord: result = "object"
       of hvkTable: result = &"table[{hlType.keyType}, {hlType.valType}]"
       of hvkProc:
@@ -530,6 +550,17 @@ func `$`*(val: HLValue): string =
         result &= $elem
 
       result &= "]"
+
+
+    of hvkList:
+      result = "<"
+      for idx, elem in pairs(val.elements):
+        if idx > 0:
+          result &= ", "
+
+        result &= $elem
+
+      result &= ">"
 
     of hvkTable:
       result = "{"
@@ -602,6 +633,70 @@ func resolveOverloadedCall*(
   raiseImplementError(
     &"Could not find matching overload for {name}({argTypes})")
 
+
+proc newProcTable*(): HLProcImplTable =
+  var d: HLProcImplTable
+
+  template i(arg: untyped): untyped = initHLValue(arg)
+
+  d["+"] = @[
+    i(proc(a, b: int): int = a + b)
+  ]
+
+  d["print"] = @[ i(proc(a: HLValue): void = echo a) ]
+  d["=="] = @[ i(proc(a, b: HLValue): bool = a == b) ]
+  d["[]="] = @[ i(proc(a, b, c: HLValue) = a[b] = c) ]
+
+  return d
+
+
+
 iterator items*(value: HLValue): HLValue =
   for item in value.elements:
     yield item
+
+proc treeRepr*(
+    pnode: HLNode, colored: bool = true,
+    indexed: bool = false, maxdepth: int = 120
+  ): string =
+
+  proc aux(n: HLNode, level: int, idx: seq[int]): string =
+    let pref =
+      if indexed:
+        idx.join("", ("[", "]")) & "    "
+      else:
+        "  ".repeat(level)
+
+    if level > maxdepth:
+      return pref & " ..."
+
+
+    if isNil(n):
+      return pref & toCyan(" <nil>")
+
+
+    result &= pref & ($n.kind)[3 ..^ 1]
+    case n.kind:
+      of hnkStrLit:
+        result &= " \"" & toYellow(n.strVal, colored) & "\""
+
+      of hnkIntLit:
+        result &= " " & toBlue($n.intVal, colored)
+
+      of hnkIdent:
+        result &= " " & toGreen(n.strVal, colored)
+
+      of hnkSym:
+        result &= " " & n.symStr & " " & toCyan($n.symType)
+
+      else:
+        if n.len > 0:
+          result &= "\n"
+
+        for newIdx, subn in enumerate(n):
+          result &= aux(subn, level + 1, idx & newIdx)
+          if newIdx < n.len - 1:
+            result &= "\n"
+
+  return aux(pnode, 0, @[])
+

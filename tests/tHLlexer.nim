@@ -1,4 +1,7 @@
-import haxsim/[hl_lexer, hl_parser, hl_eval_ast, hl_eval_stack]
+import haxsim/[
+  hl_lexer, hl_parser, hl_eval_ast, hl_eval_stack, hl_semcheck
+]
+
 import std/[unittest]
 
 const str0 = """
@@ -49,7 +52,16 @@ suite "Eval AST":
 suite "Eval stack":
   test "Eval stack":
     let tokens = tokenize(str0)
-    let tree = parse(tokens)
+    var tree = parse(tokens)
+
+    block:
+      var ctx = HLSemContext()
+      ctx.pushScope()
+      ctx.procTable = newProcTable()
+      updateTypes(tree, ctx)
+
+    echo treeRepr(tree)
+
     let ops = compileStack(tree)
     var ctx = newStackEvalCtx()
     ctx.pushScope()
