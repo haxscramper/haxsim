@@ -70,6 +70,12 @@ proc updateTypes*(node: var HLNode, ctx) =
 
       ctx.popScope()
 
+    of hnkSym, hnkStrLit, hnkIntLit:
+      discard
+
+    of hnkIdent:
+      node = newSymNode(node, typeOfAst(ctx, node))
+
     of hnkCall, hnkInfix:
       let impl = resolveOverload(ctx, node)
       node[0] = HLNode(
@@ -78,6 +84,9 @@ proc updateTypes*(node: var HLNode, ctx) =
         symType: impl.hlType,
         symImpl: some impl
       )
+
+      for arg in mitems(node):
+        updateTypes(arg, ctx)
 
     of hnkForStmt:
       ctx.pushScope()

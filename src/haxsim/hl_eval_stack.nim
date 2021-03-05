@@ -18,7 +18,7 @@ type
     hsoCallFunc
     hsoForIter
     hsoJump
-    hsoPopJumpIfFalse
+    hsoIfNotJump
     hsoPopTop
     hsoGetIter
     hsoStoreName
@@ -31,10 +31,9 @@ type
         value*: HLValue
 
       of hsoCallFunc:
-        funcName*: string
         argc*: int
 
-      of hsoForIter, hsoJump, hsoPopJumpIfFalse:
+      of hsoForIter, hsoJump, hsoIfNotJump:
         jumpOffset*: int
 
       of hsoStoreName, hsoLoadName:
@@ -46,16 +45,16 @@ type
 using ctx: var HLStackEvalCtx
 
 func `$`(op: HLStackOp): string =
-  result &= alignLeft(($op.kind)[3 ..^ 1], 15)
+  result &= alignLeft(($op.kind)[3 ..^ 1], 10)
   case op.kind:
     of hsoLoad:
       result &= " " & $op.value
 
     of hsoCallFunc:
-      result &= &" {op.funcName}({op.argc})"
+      result &= " " & toBlue($op.argc)
 
-    of hsoJump, hsoPopJumpIfFalse:
-      result &= &" {op.jumpOffset} >>"
+    of hsoJump, hsoIfNotJump:
+      result &= " " & toGreen($op.jumpOffset) & " >>"
 
     of hsoStoreName, hsoLoadName:
       result &= " " & $op.varName
@@ -66,14 +65,16 @@ func `$`(op: HLStackOp): string =
 func `$`(ops: seq[HLStackOp]): string =
   var targets: Table[int, seq[int]]
 
+  var opw: int
   for idx, op in pairs(ops):
-    if op.kind in {hsoForIter, hsoJump, hsoPopJumpIfFalse}:
+    if op.kind in {hsoForIter, hsoJump, hsoIfNotJump}:
       targets.mgetOrPut(idx - op.jumpOffset, @[]).add idx
+    opw = max(opw, termLen($op))
 
   var buf: seq[string]
   for idx, op in pairs(ops):
     if idx in targets:
-      buf.add &">> {idx:<4} {op:<30} from {targets[idx]}"
+      buf.add toRed(">>") & &" {idx:<4} {termAlignLeft($op, opw)} from {toRed($targets[idx])}"
 
     else:
       buf.add &"   {idx:<4} {op}"
@@ -88,7 +89,7 @@ proc prettyPrintConverter*(
 proc pushScope*(ctx) = discard
 
 func initOpCallFunc*(call: HLNode): HLStackOp =
-  HLStackOp(kind: hsoCallFunc, funcName: call[0].getStrVal(), argc: call.len - 1)
+  HLStackOp(kind: hsoCallFunc, argc: call.len - 1)
 
 func initOpLoadConst*(call: HLNode): HLStackOp =
   HLStackOp(kind: hsoLoad, value: initHLValue(call))
@@ -116,16 +117,16 @@ proc compileStack*(tree: HLNode): seq[HLStackOp] =
       for node in tree:
         result.add compileStack(node)
 
-    of hnkCall:
-      for arg in tree[1 ..^ 1]:
+    of hnkCall, hnkInfix:
+      for arg in tree:
         result.add compileStack(arg)
 
       result.add initOpCallFunc(tree)
 
-    of hnkInfix:
-      result.add compileStack(tree[1])
-      result.add compileStack(tree[2])
-      result.add initOpCallFunc(tree)
+    # of hnkInfix:
+    #   result.add compileStack(tree[1])
+    #   result.add compileStack(tree[2])
+    #   result.add initOpCallFunc(tree)
 
     of hnkIntLit, hnkStrLit:
       result.add initOpLoadConst(tree)
@@ -156,6 +157,13 @@ proc compileStack*(tree: HLNode): seq[HLStackOp] =
       result.add compileStack(tree[1])
       result.add initOp(hsoStoreName, varName = tree[0].getStrVal())
 
+    of hnkSym:
+      if tree.symImpl.isSome():
+        result.add initOp(hsoLoad, value = tree.symImpl.get())
+
+      else:
+        result.add initOp(hsoLoadName, varName = tree.getStrVal())
+
     of hnkIfStmt:
       var falseJump = -1
       var endJumps: seq[int]
@@ -166,7 +174,7 @@ proc compileStack*(tree: HLNode): seq[HLStackOp] =
         if branch.kind == hnkElifBranch:
           result.add compileStack(branch[0])
           falseJump = result.len
-          result.add initOp(hsoPopJumpIfFalse)
+          result.add initOp(hsoIfNotJump)
             .msg("Elif branch condition jump")
 
           result.add compileStack(branch[1])
@@ -210,12 +218,13 @@ proc dotRepr(ops: seq[HLStackOp]): DotGraph =
   result = makeDotGraph()
   # result.splines = spsOrtho
   for idx, op in pairs(ops):
-    result.add makeDotNode(idx, &"#{idx} {op}\n[{op.annotation}]")
+    result.add makeColoredDotNode(
+      idx, &"#{idx} {op}\n[{op.annotation}]", cellAttrs = {"border": "0"})
     if op.kind != hsoJump:
       result.add makeDotEdge(idx, idx + 1, "next")
 
     case op.kind:
-      of hsoJump, hsoPopJumpIfFalse, hsoForIter:
+      of hsoJump, hsoIfNotJump, hsoForIter:
         result.add makeDotEdge(idx, idx + op.jumpOffset, "jump")
 
       else:
@@ -246,7 +255,9 @@ proc evalStack*(ops: seq[HLStackOp], ctx): HLValue =
         for _ in 0 ..< op.argc:
           args.add stack.pop()
 
-        let res = ctx.evalFunc(op.funcName, args.reversed())
+        let impl = stack.pop()
+
+        let res = impl.impl(args.reversed())
         if res.isSome():
           stack.add res.get()
 
@@ -280,7 +291,7 @@ proc evalStack*(ops: seq[HLStackOp], ctx): HLValue =
       of hsoJump:
         idx += op.jumpOffset
 
-      of hsoPopJumpIfFalse:
+      of hsoIfNotJump:
         let val = stack.pop()
         if val.boolVal == false:
           idx += op.jumpOffset

@@ -512,18 +512,18 @@ func `$`*(hlType: HLType): string =
 
   else:
     case hlType.kind:
-      of hvkAny: result = "any"
-      of hvkNil: result = "nil"
-      of hvkInt: result = "int"
-      of hvkFloat: result = "float"
-      of hvkString: result = "string"
-      of hvkBool: result = "bool"
+      of hvkAny: result = "any".toMagenta
+      of hvkNil: result = "nil".toCyan
+      of hvkInt: result = "int".toBlue
+      of hvkFloat: result = "float".toMagenta
+      of hvkString: result = "string".toYellow
+      of hvkBool: result = "bool".toBlue
       of hvkArray: result = &"array[{hlType.elemType}]"
       of hvkList: result = &"list[{hlType.elemType}]"
       of hvkRecord: result = "object"
       of hvkTable: result = &"table[{hlType.keyType}, {hlType.valType}]"
       of hvkProc:
-        result &= "proc("
+        result &= toRed("proc") & "("
         for idx, arg in pairs(hlType.argTypes):
           if idx > 0:
             result &= ", "
@@ -534,12 +534,12 @@ func `$`*(hlType: HLType): string =
 
 func `$`*(val: HLValue): string =
   case val.kind:
-    of hvkNil: result = "nil"
+    of hvkNil: result = toCyan("nil")
     of hvkProc: result = $val.hlType
-    of hvkInt: result = $val.intVal
-    of hvkString: result = $val.strVal
-    of hvkFloat: result = $val.floatVal
-    of hvkBool: result = $val.boolVal
+    of hvkInt: result = toBlue($val.intVal)
+    of hvkString: result = toYellow($val.strVal)
+    of hvkFloat: result = toMagenta($val.floatVal)
+    of hvkBool: result = toBlue($val.boolVal)
     of hvkAny: result = "~" & $val.anyVal
     of hvkArray:
       result = "["
@@ -687,7 +687,7 @@ proc treeRepr*(
         result &= " " & toGreen(n.strVal, colored)
 
       of hnkSym:
-        result &= " " & n.symStr & " " & toCyan($n.symType)
+        result &= " " & toGreen(n.symStr) & " <" & toCyan($n.symType) & ">"
 
       else:
         if n.len > 0:
