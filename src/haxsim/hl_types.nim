@@ -99,6 +99,9 @@ type
     hnkElifBranch
     hnkElseBranch
 
+    hnkProc
+    hnkParams
+
     hnkIntLit
     hnkStrLit
 
@@ -238,7 +241,7 @@ proc getStrVal*(node: HLNode): string =
     of hnkSym: node.symStr
     else: raiseImplementError("")
 
-proc `[]`*(node: var HLNode, idx: int): var HLNode =
+proc `[]`*(node: var HLNode, idx: int | BackwardsIndex): var HLNode =
   node.subnodes[idx]
 
 proc `[]=`*(node: var HLNode, idx: int, val: HLNode) =

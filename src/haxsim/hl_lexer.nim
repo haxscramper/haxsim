@@ -55,15 +55,6 @@ proc tokenize*(str: string): seq[HLToken] =
 
   var tokens: seq[(Regex, HlTokenKind)]
   for (patt, kind) in {
-    r"for":             htkForKwd,
-    r"while":           htkWhileKwd,
-    r"if":              htkIfKwd,
-    r"else":            htkElseKwd,
-    r"enum":            htkEnumKwd,
-    r"struct":          htkEnumKwd,
-    r"in":              htkInKwd,
-    r"var":             htkVarKwd,
-    r"proc":            htkProcKwd,
     r"\(":              htkLPar,
     r"\)":              htkRPar,
     r"\[":              htkLBrack,
@@ -88,11 +79,29 @@ proc tokenize*(str: string): seq[HLToken] =
   }:
     tokens.add (re("(" & patt & ")"), kind)
 
+  const kwdList = {
+    r"for":             htkForKwd,
+    r"while":           htkWhileKwd,
+    r"if":              htkIfKwd,
+    r"else":            htkElseKwd,
+    r"enum":            htkEnumKwd,
+    r"struct":          htkEnumKwd,
+    r"in":              htkInKwd,
+    r"var":             htkVarKwd,
+    r"proc":            htkProcKwd,
+  }
+
 
   while not lex.finished:
     var foundOk = false
     for (patt, kind) in tokens:
       if ok(patt):
+        var kind = kind
+        if kind == htkIdent:
+          for kwd in kwdList:
+            if kwd[0] == matches[0]:
+              kind = kwd[1]
+
         foundOk = true
         if kind != htkSpace:
           push(kind, 0)

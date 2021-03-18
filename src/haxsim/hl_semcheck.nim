@@ -104,6 +104,9 @@ proc updateTypes*(node: var HLNode, ctx) =
       node[0] = newSymNode(node[0], typeOfAst(ctx, node[1]), hskVar)
       ctx[node[0].symStr] = typeOfAst(ctx, node[0])
 
+    of hnkProc:
+      discard
+
     else:
       echo treeRepr(node)
       raiseImplementKindError(node)

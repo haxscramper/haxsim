@@ -179,6 +179,19 @@ proc parseIfStmt(par): HLNode =
     par.skip(htkElseKwd)
     result.add newTree(hnkElseBranch, parseStmtList(par))
 
+proc parseType(par): HLNode =
+  result = par.parseIdent()
+  if par.at(htkLBrack):
+    result = newTree(hnkBracket, result)
+    par.skip(htkLBRack)
+    while not par.at(htkRBrack):
+      result.add par.parseType()
+      if par.at(htkComma):
+        par.skip(htkComma)
+
+    par.skip(htkRBrack)
+
+
 proc parseArrayAsgn(par): HLNode =
   result = newTree(hnkCall)
   result.add newIdentHLNode("[]=")
@@ -186,6 +199,26 @@ proc parseArrayAsgn(par): HLNode =
   result.add foldExprAux(par.getInfix(), (var tmp: int; tmp))
   par.skip(htkEq)
   result.add par.parseExpr()
+
+proc parseProcDecl(par): HLNode =
+  par.skip(htkProcKwd)
+  result = newTree(hnkProc)
+  result.add par.parseIdent()
+  par.skip(htkLPar)
+  result.add newTree(hnkParams)
+  result[^1].add newEmptyCNode()
+  while not par.at(htkRPar):
+    var id = newTree(hnkIdentDefs)
+    id.add par.parseIdent()
+    par.skip(htkColon)
+    id.add par.parseType()
+    result[^1].add id
+    if par.at(htkComma):
+      par.skip(htkComma)
+
+  par.skip(htkRPar)
+
+  result.add par.parseStmtList()
 
 proc parseStmtList(par): HLNode =
 
@@ -201,6 +234,7 @@ proc parseStmtList(par): HLNode =
         of htkForKwd: result.add parseForStmt(par)
         of htkIfKwd: result.add parseIfStmt(par)
         of htkVarKwd: result.add parseVarDecl(par)
+        of htkProcKwd: result.add parseProcDecl(par)
         of htkIdent:
           if par.at(+1, htkLPar):
             result.add parseCallStmt(par)

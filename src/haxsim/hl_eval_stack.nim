@@ -188,6 +188,9 @@ proc compileStack*(tree: HLNode): seq[HLStackOp] =
       for jump in endJumps:
         result[jump].jumpOffset = result.len - jump
 
+    of hnkProc:
+      discard
+
     else:
       echo treeRepr(tree)
       raiseImplementError($tree.kind)

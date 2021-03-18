@@ -8,7 +8,7 @@ const str0 = """
 
 
 
-  proc test(arg: int) {
+  proc test(arg: int, arg2: float) {
 
 }
 
