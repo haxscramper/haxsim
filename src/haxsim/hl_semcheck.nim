@@ -52,8 +52,9 @@ proc typeOfAst(ctx; node: HLNode): HLType =
 
       raiseImplementKindError(node)
 
-proc newSymNode*(node: HLNode, semType: HLType): HLNode =
-  HLNode(symStr: node.strVal, symType: semType, kind: hnkSym)
+proc newSymNode*(node: HLNode, semType: HLType, symKind: HlSymKind): HLNode =
+  HLNode(symStr: node.strVal, symType: semType,
+         kind: hnkSym, symKind: symKind)
 
 proc updateTypes*(node: var HLNode, ctx) =
 
@@ -74,16 +75,18 @@ proc updateTypes*(node: var HLNode, ctx) =
       discard
 
     of hnkIdent:
-      node = newSymNode(node, typeOfAst(ctx, node))
+      node = newSymNode(node, typeOfAst(ctx, node), hskVar)
 
     of hnkCall, hnkInfix:
       let impl = resolveOverload(ctx, node)
-      node[0] = HLNode(
-        kind: hnkSym,
-        symStr: node[0].strVal,
-        symType: impl.hlType,
-        symImpl: some impl
-      )
+      node[0] = newSymNode(node[0], impl.hlType, hskProc)
+      node[0].symImpl = some impl
+      #   # kind: hnkSym,
+      #   # symStr: node[0].strVal,
+      #   symType: impl.hlType,
+      #   symImpl: some impl
+      # )
+
 
       for arg in mitems(node):
         updateTypes(arg, ctx)
@@ -91,14 +94,14 @@ proc updateTypes*(node: var HLNode, ctx) =
     of hnkForStmt:
       ctx.pushScope()
 
-      node[0] = newSymNode(node[0], typeOfAst(ctx, node[1]).elemType)
+      node[0] = newSymNode(node[0], typeOfAst(ctx, node[1]).elemType, hskVar)
       ctx[node[0].symStr] = typeOfAst(ctx, node[0])
       updateTypes(node[2], ctx)
 
       ctx.popScope()
 
     of hnkVarDecl:
-      node[0] = newSymNode(node[0], typeOfAst(ctx, node[1]))
+      node[0] = newSymNode(node[0], typeOfAst(ctx, node[1]), hskVar)
       ctx[node[0].symStr] = typeOfAst(ctx, node[0])
 
     else:

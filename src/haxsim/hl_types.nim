@@ -66,8 +66,8 @@ type
   HLToken* = object
     kind*: HLTokenKind
     str*: string
-    line* {.requiresinit.}: int
-    column* {.requiresinit.}: int
+    line*: int
+    column*: int
     extent*: Slice[int]
 
 proc initTok*(
@@ -190,8 +190,12 @@ type
         idx: int
         elements*: seq[HLValue]
 
+  HlSymKind* = enum
+    hskVar
+    hskProc
 
   HLNode* = ref object
+    token*: HLToken
     case kind*: HLNodeKind
       of hnkIntKinds:
         intVal*: int
@@ -202,6 +206,7 @@ type
       of hnkSym:
         symStr*: string
         symType*: HLType
+        symKind*: HLSymKind
         symImpl*: Option[HLValue]
 
       else:
@@ -228,7 +233,7 @@ proc getStrVal*(node: HLNode): string =
   case node.kind:
     of hnkIdent: node.strVal
     of hnkSym: node.symStr
-    else: raiseImplementError("") 
+    else: raiseImplementError("")
 
 proc `[]`*(node: var HLNode, idx: int): var HLNode =
   node.subnodes[idx]
@@ -687,7 +692,13 @@ proc treeRepr*(
         result &= " " & toGreen(n.strVal, colored)
 
       of hnkSym:
-        result &= " " & toGreen(n.symStr) & " <" & toCyan($n.symType) & ">"
+        result &= " " & toGreen(n.symStr) & " ("
+
+        case n.symKind:
+          of hskProc: result &= toBlue("proc")
+          of hskVar: result &= toBlue("var")
+
+        result &= ") <" & toCyan($n.symType) & ">"
 
       else:
         if n.len > 0:
@@ -699,4 +710,3 @@ proc treeRepr*(
             result &= "\n"
 
   return aux(pnode, 0, @[])
-

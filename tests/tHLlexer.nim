@@ -5,6 +5,13 @@ import haxsim/[
 import std/[unittest]
 
 const str0 = """
+
+
+
+  proc test(arg: int) {
+
+}
+
 for i in [1, 2, 3] {
   print(i + 2);
   if ((i + 2) == 4) {

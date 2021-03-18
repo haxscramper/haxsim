@@ -1,4 +1,4 @@
-import hl_types
+import ./hl_types, ./hl_error
 export hl_types
 
 import std/[re]
@@ -83,5 +83,5 @@ proc tokenize*(str: string): seq[HLToken] =
     elif ok(re"(\.)"):              push(htkDot,       0)
     elif ok(re"""(".*?")"""):       push(htkStrLit,    0)
     else:
-      echov "ignore: ", lex[0 .. ^1]
+      str.errorAt(lex.pos .. lex.pos + 5, "Undefined token")
       raiseImplementError("")

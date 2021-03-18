@@ -166,6 +166,11 @@ proc parseIfStmt(par): HLNode =
   result = newTree(hnkIfStmt)
   par.skip(htkIfKwd)
   result.add newTree(hnkElifBranch, parseExpr(par), parseStmtList(par))
+
+  # while par.at(htkElseKwd):
+  #   par.skip(htkElifKwd)
+  #   result.add newTree(hnkElifBranch, parseStmtList(par))
+
   if par.at(htkElseKwd):
     par.skip(htkElseKwd)
     result.add newTree(hnkElseBranch, parseStmtList(par))
