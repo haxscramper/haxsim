@@ -84,4 +84,5 @@ proc evalAst*(tree: HLNode, ctx): HLValue =
           raiseImplementError(&"Unhandled infix operator: {tree[0].strVal}")
 
     else:
-      raiseImplementError(&"Kind {tree.kind} " & treeRepr(tree))
+      discard
+      # raiseImplementError(&"Kind {tree.kind} " & treeRepr(tree))

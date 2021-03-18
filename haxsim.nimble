@@ -6,3 +6,4 @@ srcDir        = "src"
 
 requires "nim >= 1.4.0"
 requires "hmisc >= 0.9.15"
+requires "hpprint >= 0.2.15"
