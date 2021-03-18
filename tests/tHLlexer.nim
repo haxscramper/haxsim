@@ -37,21 +37,17 @@ suite "Base tokenizer":
       echo tok.lispRepr()
 
 suite "Parser":
-  test "Parse infix":
-    discard tokenize("print(2 + 3 * 4);").parse()
-    discard tokenize("print(3 * 4 + 2);").parse()
-
   test "Parse":
     let tokens = tokenize(str0)
     for tok in tokens:
       stdout.write tok.lispRepr() & " "
-    let tree = parse(tokens)
+    let tree = parse(tokens, str0)
     echo treeRepr(tree)
 
 suite "Eval AST":
   test "Eval AST":
     let tokens = tokenize(str0)
-    let tree = parse(tokens)
+    let tree = parse(tokens, str0)
     var ctx: HLAstEvalCtx
     ctx.pushScope()
     discard evalAST(tree, ctx)
@@ -59,7 +55,7 @@ suite "Eval AST":
 suite "Eval stack":
   test "Eval stack":
     let tokens = tokenize(str0)
-    var tree = parse(tokens)
+    var tree = parse(tokens, str0)
 
     block:
       var ctx = HLSemContext()

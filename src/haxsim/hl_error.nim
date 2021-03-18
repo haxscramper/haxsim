@@ -54,7 +54,7 @@ proc errorAt*(
   var grid = slice.toColoredRuneGrid()
 
   grid.renderLine((a, 1), (a + 5, 1), toColored('~', initStyle(fgRed)))
-  grid[0, a] = toColored(grid[0, a], initStyle(fgRed))
+  # grid[0, a] = toColored(grid[0, a], initStyle(fgRed))
   grid[1, a] = toColored('^', initStyle(fgRed))
   grid[2, a] = toColored('|', initStyle(fgRed))
   grid[3, a] = toColored('+', initStyle(fgRed))

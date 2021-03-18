@@ -53,35 +53,53 @@ proc tokenize*(str: string): seq[HLToken] =
   template skip(group: int): untyped =
     lex.advance matches[group].len
 
+  var tokens: seq[(Regex, HlTokenKind)]
+  for (patt, kind) in {
+    r"for":             htkForKwd,
+    r"while":           htkWhileKwd,
+    r"if":              htkIfKwd,
+    r"else":            htkElseKwd,
+    r"enum":            htkEnumKwd,
+    r"struct":          htkEnumKwd,
+    r"in":              htkInKwd,
+    r"var":             htkVarKwd,
+    r"proc":            htkProcKwd,
+    r"\(":              htkLPar,
+    r"\)":              htkRPar,
+    r"\[":              htkLBrack,
+    r"]":               htkRBrack,
+    r"<":               htkLess,
+    r"\+\+":            htkIncr,
+    r"\+":              htkPlus,
+    r"\*":              htkStar,
+    r"\-":              htkMinus,
+    r"{":               htkLCurly,
+    r"}":               htkRCurly,
+    r"0|([1-9][0-9]*)": htkIntLit,
+    r"[_a-zA-Z0-9]+":   htkIdent,
+    r"\s+":             htkSpace,
+    r"==":              htkCmp,
+    r"=":               htkEq,
+    r";":               htkSemicolon,
+    r":":               htkColon,
+    r",":               htkComma,
+    r"\.":             htkDot,
+    r"""".*?"""":       htkStrLit,
+  }:
+    tokens.add (re("(" & patt & ")"), kind)
+
+
   while not lex.finished:
-    if ok(re"(for)"):               push(htkForKwd,    0)
-    elif ok(re"(while)"):           push(htkWhileKwd,  0)
-    elif ok(re"(if)"):              push(htkIfKwd,     0)
-    elif ok(re"(else)"):            push(htkElseKwd,   0)
-    elif ok(re"(enum)"):            push(htkEnumKwd,   0)
-    elif ok(re"(struct)"):          push(htkEnumKwd,   0)
-    elif ok(re"(in)"):              push(htkInKwd,     0)
-    elif ok(re"(var)"):             push(htkVarKwd,    0)
-    elif ok(re"(\()"):              push(htkLPar,      0)
-    elif ok(re"(\))"):              push(htkRPar,      0)
-    elif ok(re"(\[)"):              push(htkLBrack,    0)
-    elif ok(re"(])"):               push(htkRBrack,    0)
-    elif ok(re"(<)"):               push(htkLess,      0)
-    elif ok(re"(\+\+)"):            push(htkIncr,      0)
-    elif ok(re"(\+)"):              push(htkPlus,      0)
-    elif ok(re"(\*)"):              push(htkStar,      0)
-    elif ok(re"(\-)"):              push(htkMinus,     0)
-    elif ok(re"({)"):               push(htkLCurly,    0)
-    elif ok(re"(})"):               push(htkRCurly,    0)
-    elif ok(re"(0|([1-9][0-9]*))"): push(htkIntLit,    0)
-    elif ok(re"([_a-zA-Z0-9]+)"):   push(htkIdent,     0)
-    elif ok(re"(\s+)"):             skip(              0)
-    elif ok(re"(==)"):              push(htkCmp,       0)
-    elif ok(re"(=)"):               push(htkEq,        0)
-    elif ok(re"(;)"):               push(htkSemicolon, 0)
-    elif ok(re"(,)"):               push(htkComma,     0)
-    elif ok(re"(\.)"):              push(htkDot,       0)
-    elif ok(re"""(".*?")"""):       push(htkStrLit,    0)
-    else:
+    var foundOk = false
+    for (patt, kind) in tokens:
+      if ok(patt):
+        foundOk = true
+        if kind != htkSpace:
+          push(kind, 0)
+
+        else:
+          skip(0)
+
+    if not foundOk:
       str.errorAt(lex.pos .. lex.pos + 5, "Undefined token")
       raiseImplementError("")

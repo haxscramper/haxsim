@@ -1,4 +1,4 @@
-import hl_types
+import ./hl_types, ./hl_error
 export hl_types
 
 import std/[strformat]
@@ -7,8 +7,9 @@ import hpprint
 
 type
   HLParser* = object
-    pos: int
-    toks: seq[HLToken]
+    pos*: int
+    toks*: seq[HLToken]
+    baseStr*: string
 
 using
   par: var HLParser
@@ -37,13 +38,16 @@ proc pop(par): HLToken =
   result = par.at()
   par.next()
 
+proc message(par; message: string) =
+  par.baseStr.errorAt(par.at().extent, message)
+
 proc skip(par; expected: HLTokenKind | set[HLTokenKind]) =
   if par.at(expected):
     par.next()
 
   else:
-    raiseImplementError(
-      &"Expected {expected}, but parser is at {par.at()}")
+    par.message(&"Expected {expected}, but parser is at {par.at()}")
+    raiseImplementError("")
 
 
 
@@ -211,15 +215,23 @@ proc parseStmtList(par): HLNode =
             par.skip(htkSemicolon)
 
           else:
+            errorAt(
+              par.baseStr, par.at(+1).extent,
+              &"""Unexpected token for variable declaration
+Found after {par.at().lispRepr(false)}
+"""
+            )
+
             raiseImplementError(par.at(+1).lispRepr())
 
         else:
-          raiseImplementError(&"Kind {par.at().kind} {instantiationInfo()} ]#")
+          par.message(&"Kind {par.at().kind}")
+          raiseImplementError(&"Kind {par.at().kind}")
 
 
 proc parseFile(par): HLNode =
   newTree(hnkFile, parseStmtList(par))
 
-proc parse*(toks: seq[HLToken]): HLNode =
-  var pars = HLParser(toks: toks)
+proc parse*(toks: seq[HLToken], baseStr: string): HLNode =
+  var pars = HLParser(toks: toks, baseStr: baseStr)
   return parseFile(pars)

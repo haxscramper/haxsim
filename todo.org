@@ -1,0 +1,2 @@
+- [ ] Allow colored text in error reporting. Only make first line red
+  (brief message).

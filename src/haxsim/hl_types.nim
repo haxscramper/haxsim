@@ -42,8 +42,10 @@ type
     htkDot
     htkStar
 
+    htkSpace
     htkIdent
     htkSemicolon
+    htkColon
     htkComma
     htkLPar
     htkRPar
@@ -58,6 +60,7 @@ type
     htkWhileKwd
     htkInKwd
     htkVarKwd
+    htkProcKwd
 
     htkStructKwd
     htkEnumKwd
