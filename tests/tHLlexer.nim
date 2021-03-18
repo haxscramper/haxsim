@@ -1,5 +1,6 @@
 import haxsim/[
-  hl_lexer, hl_parser, hl_eval_ast, hl_eval_stack, hl_semcheck
+  hl_lexer, hl_parser, hl_eval_ast, hl_eval_stack, hl_semcheck,
+  hl_eval_register
 ]
 
 import std/[unittest]
@@ -69,3 +70,20 @@ suite "Eval stack":
     var ctx = newStackEvalCtx()
     ctx.pushScope()
     discard evalStack(ops, ctx)
+
+
+suite "Eval register":
+  test "Eval register":
+    let tokens = tokenize(str0)
+    var tree = parse(tokens, str0)
+
+    block:
+      var ctx = HLSemContext()
+      ctx.pushScope()
+      ctx.procTable = newProcTable()
+      updateTypes(tree, ctx)
+
+    echo treeRepr(tree)
+
+    let (ops, ctx) = compileRegister(tree)
+    evalRegister(ops, ctx)

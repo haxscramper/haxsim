@@ -244,34 +244,44 @@ proc evalStack*(ops: seq[HLStackOp], ctx): HLValue =
   # # **and** it is not fully checked somewhere like `prettyPrintConverter`
   echo ops
   var stack: seq[HLValue]
+
+  template sAdd(expr: typed): untyped =
+    stack.add expr
+
+  template sPop(): untyped =
+    stack.pop
+
+  template sJump(offset: int): untyped =
+    idx += offset
+
   ops.dotRepr().toPng("/tmp/graph.png")
   while idx < ops.len:
     let op = ops[idx]
     case op.kind:
       of hsoLoad:
-        stack.add op.value
+        sAdd op.value
 
-        inc idx
+        sJump +1
 
       of hsoCallFunc:
         var args: seq[HLValue]
         for _ in 0 ..< op.argc:
-          args.add stack.pop()
+          args.add sPop()
 
-        let impl = stack.pop()
+        let impl = sPop()
 
         let res = impl.impl(args.reversed())
         if res.isSome():
-          stack.add res.get()
+          sAdd res.get()
 
-        inc idx
+        sJump +1
 
       of hsoForIter:
         let val = stack.top().nextValue()
         if val.isSome():
-          stack.add val.get()
+          sAdd val.get()
 
-          inc idx
+          sJump +1
 
         else:
           idx += op.jumpOffset
@@ -279,25 +289,25 @@ proc evalStack*(ops: seq[HLStackOp], ctx): HLValue =
       of hsoStoreName:
         ctx.names[op.varName] = stack.top()
 
-        inc idx
+        sJump +1
 
       of hsoLoadName:
-        stack.add ctx.names[op.varName]
+        sAdd ctx.names[op.varName]
 
-        inc idx
+        sJump +1
 
       of hsoPopTop:
-        discard stack.pop()
+        discard sPop()
 
-        inc idx
+        sJump +1
 
       of hsoJump:
-        idx += op.jumpOffset
+        sJump op.jumpOffset
 
       of hsoIfNotJump:
-        let val = stack.pop()
+        let val = sPop()
         if val.boolVal == false:
-          idx += op.jumpOffset
+          sJump op.jumpOffset
 
         else:
           inc idx
