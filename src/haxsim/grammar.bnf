@@ -1,0 +1,42 @@
+program     ::= <stmt>*
+stmt        ::= <if-stmt> | <while-stmt> | <expr> | <ident-decl> | <proc-decl>
+
+ident       ::= /[a-zA-Z]+/
+num         ::= /[0-9]|([1-9][0-9]*)/
+
+type        ::= <ident> ("[" <type> ("," <type>)* "]")?
+expr        ::= <num> | <ident> | <expr> <op> <expr> | "(" <expr> ")" | <op> <expr>
+op          ::=
+  "+" | "-" | "*" | "/" | "<" | ">" | "<=" | ">=" | "!=" |
+  "mod" | "div" | "in" | "is" | "of" | "as"
+
+
+
+ident-decl  ::= "let" <ident> [":" <type>] "=" <expr> "\;"
+proc-decl   ::=
+  "proc" <ident> "(" <param>? ("," <param>)* ")" [":" <type>] "{"
+    stmt*
+  "}"
+
+struct-decl ::=
+  "struct" <ident> "{"
+    <param>? ("\;" <param>)*
+  "}"
+
+param       ::= <ident> ":" <type> ["=" <expr>]
+
+if-stmt     ::=
+  "if" "(" <expr> ")" "{" <stmt>* "}"
+  ("elif" "(" <expr> ")" "{" <stmt>* "}")*
+  ["else" "{" stmt* "}"]
+
+case-stmt   ::=
+  "case" <expr> "{"
+    ("of" <expr> "{" <stmt>* "}")*
+    ["else" "{" <stmt*> "}"]
+  "}"
+
+
+
+while-stmt  ::= "while" "(" <expr> ")" "{" <stmt>* "}"
+for-stmt    ::= "for" <ident> "in" <expr> "{" <stmt>* "}"

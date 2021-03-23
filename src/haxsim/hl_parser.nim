@@ -269,3 +269,12 @@ proc parseFile(par): HLNode =
 proc parse*(toks: seq[HLToken], baseStr: string): HLNode =
   var pars = HLParser(toks: toks, baseStr: baseStr)
   return parseFile(pars)
+
+when isMainModule:
+  import hmisc/other/oswrap
+  import ./hl_lexer
+  let str = paramStr(0)
+  let tokens: seq[HLToken] = tokenize(str)
+  let tree: HLNode = parse(tokens, str)
+
+  echo tree.treeRepr()

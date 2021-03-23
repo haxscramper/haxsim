@@ -33,7 +33,7 @@ const str = str1
 
 suite "Base tokenizer":
   test "Tokenize":
-    let tokens = tokenize(str)
+    let tokens = tokenize(str0)
     for tok in tokens:
       echo tok.lispRepr()
 

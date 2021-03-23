@@ -1,2 +1,8 @@
-- [ ] Allow colored text in error reporting. Only make first line red
-  (brief message).
+- [ ] Allow colored text in error reporting. Only make first line red (brief
+  message).
+- [ ] Pretty-printed exceptions for main entry point for compiler.
+- [ ] Hash table implementation
+- [ ] Linked list implementation
+- [ ] Better pratt parser implementation that does not require to explicitly get
+  infix expression inside parenthesis/braces.
+- [ ] Output infix expression compilation into postfix notation

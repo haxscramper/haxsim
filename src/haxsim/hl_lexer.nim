@@ -112,3 +112,10 @@ proc tokenize*(str: string): seq[HLToken] =
     if not foundOk:
       str.errorAt(lex.pos .. lex.pos + 5, "Undefined token")
       raiseImplementError("")
+
+
+when isMainModule:
+  import hmisc/other/oswrap
+  let tokens: seq[HLToken] = tokenize(paramStr(0))
+  for tok in tokens:
+    echo tok.lispRepr()
