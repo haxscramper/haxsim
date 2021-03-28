@@ -5,9 +5,15 @@ ident       ::= /[a-zA-Z]+/
 num         ::= /[0-9]|([1-9][0-9]*)/
 
 type        ::= <ident> ("[" <type> ("," <type>)* "]")?
-expr        ::= <num> | <ident> | <expr> <op> <expr> | "(" <expr> ")" | <op> <expr>
+expr        ::= <num> | <ident> |
+                <expr> <op> <expr> |
+                "(" <expr> ")" |
+                <op> <expr> |
+                <expr> "[" <expr> "]" |
+                <expr> "[" <expr> "]" "=" <expr>
+
 op          ::=
-  "+" | "-" | "*" | "/" | "<" | ">" | "<=" | ">=" | "!=" |
+  "+" | "-" | "*" | "/" | "<" | ">" | "<=" | ">=" | "!=" | "^" | "&" | "|" |
   "mod" | "div" | "in" | "is" | "of" | "as"
 
 

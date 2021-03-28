@@ -6,3 +6,5 @@
 - [ ] Better pratt parser implementation that does not require to explicitly get
   infix expression inside parenthesis/braces.
 - [ ] Output infix expression compilation into postfix notation
+  - [ ] expression calculation
+  - [ ] opcodes for ~if~/~for~ checks
