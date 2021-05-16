@@ -30,6 +30,7 @@ proc resolveOverload(ctx; node: HLNode): HLValue =
   for arg in node[1..^1]:
     args.add ctx.typeOfAst(arg)
 
+  # TODO add `no matching type` error message, list all alternatives
   ctx.procTable.resolveOverloadedCall(node[0].strVal, args)
 
 proc typeOfAst(ctx; node: HLNode): HLType =
@@ -48,8 +49,18 @@ proc typeOfAst(ctx; node: HLNode): HLType =
     of hnkCall, hnkInfix:
       result = ctx.resolveOverload(node).hlType
 
-    else:
+    of hnkNewExpr:
+      case node[0].strVal:
+        of "Table":
+          result = initHlTYpe(HLTable)
 
+        of "List":
+          result = initHLType(HLList)
+
+        else:
+          raiseImplementError(node[0].strVal)
+
+    else:
       raiseImplementKindError(node)
 
 proc newSymNode*(node: HLNode, semType: HLType, symKind: HlSymKind): HLNode =

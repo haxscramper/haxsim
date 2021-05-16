@@ -25,6 +25,115 @@ proc toMapString*[T, N](arr: array[N, T]): string =
 
   result &= "]"
 
+macro genInitHL*(count: static[int], typeGen: static[bool]): untyped =
+  result = newStmtList()
+
+  for argc in 0 .. count:
+    for hasRet in [true, false]:
+      var
+        gen = nnkIdentDefs.newTree()
+        cbFormal = nnkFormalParams.newTree()
+        cbCall = newCall("pr")
+        impl = newStmtList()
+
+      block:
+        if hasRet:
+          cbFormal.add ident("R")
+
+        else:
+          cbFormal.add newEmptyNode()
+
+
+        for arg in 0 ..< argc:
+          let t = ident("T" & $arg)
+          cbCall.add newCall(
+            "get", nnkBracketExpr.newTree(ident("args"), newLit(arg)), t)
+          gen.add ident("T" & $arg)
+          cbFormal.add nnkIdentDefs.newTree(
+            ident("a" & $arg), t, newEmptyNode())
+
+        if hasRet:
+          gen.add ident("R")
+          impl.add quote do:
+            let res = `cbCall`
+            return some initHLValue(res)
+
+        else:
+          impl.add cbCall
+
+        gen.add newEmptyNode()
+        gen.add newEmptyNode()
+
+      let prGen =
+        if gen.len > 0:
+          nnkGenericParams.newTree(gen)
+
+        else:
+          newEmptyNode()
+
+      if typeGen:
+        let cbSig = nnkIdentDefs.newTree(
+          ident("pr"),
+          nnkBracketExpr.newTree(
+            ident("typedesc"),
+            nnkProcTy.newTree(cbFormal, newEmptyNode())),
+          newEmptyNode())
+
+        let argInit =
+          if hasRet:
+            newCall("initHLType", ident("R"))
+          else:
+            newCall("initHLType", ident("void"))
+
+        var argTypes = nnkBracket.newTree()
+        for idx in 0 ..< argc:
+          argTypes.add newCall("initHLType", ident("T" & $idx))
+
+        result.add nnkProcDef.newTree(
+          nnkPostfix.newTree(ident("*"), ident("initHLType")),
+          newEmptyNode(),
+          prGen,
+          nnkFormalParams.newTree(ident("HLType"), cbSig),
+          newEmptyNode(),
+          newEmptyNode(),
+          (
+            quote do:
+              HLType(
+                kind: hvkProc,
+                argTypes: @`argTypes`,
+                returnType: `argInit`
+              )
+          )
+        )
+
+      else:
+        let cbSig = nnkIdentDefs.newTree(
+          ident("pr"),
+          nnkProcTy.newTree(cbFormal, newEmptyNode()),
+          newEmptyNode())
+
+
+
+        result.add nnkProcDef.newTree(
+          nnkPostfix.newTree(ident("*"), ident("initHLValue")),
+          newEmptyNode(),
+          prGen,
+          nnkFormalParams.newTree(ident("HLValue"), cbSig),
+          newEmptyNode(),
+          newEmptyNode(),
+          (
+            quote do:
+              HLValue(
+                kind: hvkProc,
+                hlType: initHLType(typeof pr),
+                impl: (
+                  proc(args {.inject.}: seq[HLValue]): Option[HLValue] =
+                    `impl`
+                )
+              )
+          )
+        )
+
 #==========================  Token definitions  ==========================#
 
 type
@@ -390,7 +499,7 @@ func `==`*(a, b: HLValue): bool =
 func newHLTable*(): HLTable = new(result)
 func newHLList*(): HLList = new(result)
 
-func add*(l: var HLList, val: HLValue) =
+func add*(l: HLList, val: HLValue) =
   var node = l
   while not isNil(node.next):
     node = node.next
@@ -406,9 +515,10 @@ func `[]`*(table: HLTable, key: HLValue): HLValue =
       return val
 
 
-func `[]=`*(table: var HLTable, key, val: HLValue; inResize: bool = false)
 
-func resize(table: var HLTable) =
+func `[]=`*(table: HLTable, key, val: HLValue; inResize: bool = false)
+
+func resize(table: HLTable) =
   let old = move(table.buckets)
   table.buckets = newSeqWith(
     max(old.len, 1) * 2,
@@ -419,7 +529,7 @@ func resize(table: var HLTable) =
     for (key, val) in buck:
       `[]=`(table, key, val, true)
 
-func `[]=`*(table: var HLTable, key, val: HLValue; inResize: bool = false) =
+func `[]=`*(table: HLTable, key, val: HLValue; inResize: bool = false) =
   if not(inResize) and
      (table.buckets.len() == 0 or table.count * 2 > table.buckets.len):
     resize(table)
@@ -434,38 +544,29 @@ func `[]=`*(table: var HLTable, key, val: HLValue; inResize: bool = false) =
   if not inResize:
     inc table.count
 
-func initHLType*(T: typedesc[int|float|string|bool|HLValue|void]): HLType
+type HlConv = int|float|string|bool|HLValue|void|HLTable|HLList
 
-func initHLType*[R, T0, T1](pr: type proc(a: T0, b: T1): R): HLType =
-  HLType(
-    kind: hvkProc,
-    argTypes: @[initHLType(T0), initHLType(T1)],
-    returnType: initHLType(R)
-  )
+func initHLType*(T: typedesc[HlConv]): HLType
 
 
-func initHLType*[T0, T1, T2](pr: type proc(a: T0, b: T1, c: T2)): HLType =
-  HLType(
-    kind: hvkProc,
-    argTypes: @[initHLType(T0), initHLType(T1), initHLType(T2)],
-    returnType: initHLType(void)
-  )
+genInitHL(3, true)
 
-
-func initHLType*[T0](pr: type proc(a: T0)): HLType =
-  HLType(
-    kind: hvkProc,
-    argTypes: @[initHLType(T0)],
-    returnType: initHLType(void)
-  )
-
-func initHLType*(T: typedesc[int|float|string|bool|HLValue|void]): HLType =
-  when T is int: result = HLType(kind: hvkInt)
-  elif T is float: result = HLType(kind: hvkFloat)
-  elif T is string: result = HLType(kind: hvkString)
-  elif T is bool: result = HLType(kind: hvkBool)
+func initHLType*(T: typedesc[HLConv]): HLType =
+  when T is int:     result = HLType(kind: hvkInt)
+  elif T is float:   result = HLType(kind: hvkFloat)
+  elif T is string:  result = HLType(kind: hvkString)
+  elif T is bool:    result = HLType(kind: hvkBool)
   elif T is HLValue: result = HLType(kind: hvkAny)
-  elif T is void: result = HLType(kind: hvkNil)
+  elif T is void:    result = HLType(kind: hvkNil)
+  elif T is HLList:  result = HLType(kind: hvkList)
+  elif T is HLTable: result =
+    HLTYpe(kind: hvkTable,
+           keyType: HLType(kind: hvkAny),
+           valType: HLType(kind: hvkAny))
+
+func initHLType*[T](val: typedesc[seq[T]]): HLType =
+  HLType(kind: hvkArray, elemType: initHLType(T))
+
 
 
 func initHLType*(typeKind: HLValueKind, subtypes: seq[HLType]): HLType =
@@ -499,10 +600,25 @@ func initHLValue*(val: float): HLValue =
 func initHLValue*(val: string): HLValue =
   HLValue(strVal: val, kind: hvkString, hlType: initHLType(string))
 
+func initHLValue*(val: HLTable): HLValue =
+  HLValue(table: val, kind: hvkTable, hlType: initHLType(HLTable))
+
+func initHLValue*(val: HLValue): HLValue = val
+
+func initHLValue*(val: HLList): HLValue =
+  HLValue(list: val, kind: hvkList, hlType: initHLType(HLList))
+
 func initHLValue*(tree: HLNode): HLValue =
   case tree.kind:
     of hnkIntLit: result = initHLValue(tree.intVal)
     of hnkStrLit: result = initHLValue(tree.strVal)
+    of hnkIdent:
+      case tree.strVal:
+        of "Table": result = newHLTable().initHLValue()
+        of "List": result = newHLList().initHLValue()
+        else:
+          raiseImplementError(tree.strVal)
+
     of hnkBracket:
       result = HLValue(kind: hvkArray)
       for node in tree:
@@ -537,6 +653,8 @@ func get(val: HLValue, T: typedesc): auto =
   elif T is string: return val.stringVal
   elif T is bool: return val.boolVal
   elif T is HLValue: return val
+  elif T is HLTable: return val.table
+  elif T is HLList: return val.list
   elif T is seq:
     var res: T
     for entry in val.elements:
@@ -549,38 +667,8 @@ func get(val: HLValue, T: typedesc): auto =
     static:
       {.error: "Unhanled type for `get()`, ", $typeof(T).}
 
-func initHLValue*[R, T0, T1](pr: proc(a: T0, b: T1): R): HLValue =
-  HLValue(
-    kind: hvkProc,
-    hlType: initHLType(typeof pr),
-    impl: (
-      proc(args: seq[HLValue]): Option[HLValue] =
-        let res = pr(args[0].get(T0), args[1].get(T1))
-        return some initHLValue(res)
-    )
-  )
 
-
-func initHLValue*[T0, T1, T2](pr: proc(a: T0, b: T1, c: T2)): HLValue =
-  HLValue(
-    kind: hvkProc,
-    hlType: initHLType(typeof pr),
-    impl: (
-      proc(args: seq[HLValue]): Option[HLValue] =
-        pr(args[0].get(T0), args[1].get(T1), args[2].get(T2))
-    )
-  )
-
-func initHLValue*[T0](pr: proc(a: T0)): HLValue =
-  HLValue(
-    kind: hvkProc, hlType: initHLType(typeof pr),
-    impl: (
-      proc(args: seq[HLValue]): Option[HLValue] =
-        pr(args[0].get(T0))
-    )
-  )
-
-
+genInitHL(5, false)
 
 template opAux(a, b: HLValue, op: untyped): untyped =
   case a.kind:
@@ -743,9 +831,10 @@ func matchesForArgs*(impl: HLValue, argTypes: seq[HLType]): bool =
 func resolveOverloadedCall*(
   table: HLProcImplTable, name: string, argTypes: seq[HLType]): HLValue =
 
-  for candidate in table[name]:
-    if candidate.matchesForArgs(argTypes):
-      return candidate
+  if name in table:
+    for candidate in table[name]:
+      if candidate.matchesForArgs(argTypes):
+        return candidate
 
   raiseImplementError(
     &"Could not find matching overload for {name}({argTypes})")
@@ -760,9 +849,27 @@ proc newProcTable*(): HLProcImplTable =
     i(proc(a, b: int): int = a + b)
   ]
 
-  d["print"] = @[ i(proc(a: HLValue): void = echo a) ]
-  d["=="] = @[ i(proc(a, b: HLValue): bool = a == b) ]
-  d["[]="] = @[ i(proc(a, b, c: HLValue) = a[b] = c) ]
+  d["print"] = @[
+    i(proc(a: HLValue): void = echo a)
+  ]
+
+  d["=="] = @[
+    i(proc(a, b: HLValue): bool = a == b)
+  ]
+
+  d["[]="] = @[
+    i(proc(a, b, c: HLValue) = a[b] = c),
+    i(proc(t: HLTable, key, val: HLValue) = t[key] = val),
+  ]
+
+  d["[]"] = @[
+    i(proc(s: seq[HLValue], idx: int): HLValue = s[idx]),
+    i(proc(t: HLTable, key: HLValue): HLValue = t[key])
+  ]
+
+  d["add"] = @[
+    i(proc(list: HLList, value: HLValue) = list.add value)
+  ]
 
   return d
 

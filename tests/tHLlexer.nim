@@ -8,13 +8,6 @@ import hmisc/hdebug_misc
 import std/[unittest]
 
 const str0 = """
-
-
-
-  proc test(arg: int, arg2: float) {
-
-}
-
 for i in [1, 2, 3] {
   print(i + 2);
   if ((i + 2) == 4) {
@@ -28,10 +21,18 @@ var arr = [1, 2, 3];
 arr[1] = 90;
 print(arr[0]);
 
+var table = new Table;
+table[12] = 2;
+print(table[12]);
+
 """
 
 const str1 = "print(2 + 3 * 4);"
 const str = str1
+
+suite "Empty test":
+  test "z":
+    discard
 
 suite "Data structures":
   test "Table":
@@ -81,6 +82,9 @@ suite "Small parser tests":
     p("var z = a() + b();")
     p("var z = a(a) + b(c);")
     p("var z = test() + test2(1 + 3, 4) * 3 - 19;")
+
+  test "Print array element":
+    p("print(a[0]);")
 
 
 

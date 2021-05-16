@@ -123,13 +123,11 @@ proc compileStack*(tree: HLNode): seq[HLStackOp] =
 
       result.add initOpCallFunc(tree)
 
-    # of hnkInfix:
-    #   result.add compileStack(tree[1])
-    #   result.add compileStack(tree[2])
-    #   result.add initOpCallFunc(tree)
-
     of hnkIntLit, hnkStrLit:
       result.add initOpLoadConst(tree)
+
+    of hnkNewExpr:
+      result.add initOpLoadConst(tree[0])
 
     of hnkIdent:
       result.add initOp(hsoLoadName, varName = tree.strVal)

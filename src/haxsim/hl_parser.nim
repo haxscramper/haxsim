@@ -96,6 +96,9 @@ proc getInfix(par): seq[HLNode] =
         if par.at(+1).kind == htkLPar:
           result.add parseCall(par)
 
+        elif par.at(+1).kind == htkLBRack:
+          result.add parseBrack(par)
+
         else:
           result.add newTree(hnkIdent, par.pop())
 
@@ -179,7 +182,14 @@ proc parseCall(par): HLNode =
 
 
 proc parseBrack(par): HLNode =
-  result = newTree(hnkBracket)
+  if par.at(htkLBrack):
+    result = newTree(hnkBracket)
+
+  else:
+    result = newTree(hnkCall)
+    result.add newIdentHLNode("[]")
+    result.add parseIdent(par)
+
   par.skip(htkLBrack)
   while not par.at(htkRBrack):
     result.add parseExpr(par)
