@@ -41,8 +41,17 @@ proc pop(par): HLToken =
 proc message(par; message: string) =
   par.baseStr.errorAt(par.at().extent, message)
 
+proc endpoint(s: Slice[int]): SLice[int] =
+  result.a += s.b
+  result.b = s.a + 1
+
 proc skip(par; expected: HLTokenKind | set[HLTokenKind]) =
-  if par.at(expected):
+  if par.finished():
+    errorAt(par.baseStr, par.at(-1).extent.endpoint(),
+            &"Expected {expected}, but reached end of file")
+    raiseImplementError("")
+
+  elif par.at(expected):
     par.next()
 
   else:
@@ -60,22 +69,43 @@ proc parseFieldExpr(par): HLNode =
   result = newTree(hnkFieldExpr, obj, fld)
 
 
+proc expectHas(par; expectWhat: string) =
+  if par.finished():
+    errorAt(par.baseStr, par.at(-1).extent,
+            "Unexpected end of file. " & expectWhat)
+    raiseImplementError("")
+
 proc parseExpr(par): HLNode
 
 proc getInfix(par): seq[HLNode] =
-  var cnt = 1
-  par.skip({htkLPar, htkLBrack})
-  while cnt > 0:
-    case par.at().kind:
-      of htkRPar, htkRBrack:
-        dec cnt
-        par.next()
+  if par.at({htkLPar, htkLBRack}):
+    var cnt = 1
+    par.skip({htkLPar, htkLBrack})
+    while cnt > 0:
+      case par.at().kind:
+        of htkRPar, htkRBrack:
+          dec cnt
+          par.next()
 
-      of htkCmp, htkStar, htkMinus, htkPlus:
-        result.add newTree(hnkIdent, par.pop())
+        of htkCmp, htkStar, htkMinus, htkPlus:
+          result.add newTree(hnkIdent, par.pop())
 
-      else:
-        result.add parseExpr(par)
+        else:
+          result.add parseExpr(par)
+
+  else:
+    while not par.at({htkSemicolon, htkComma, htkRPar}):
+      par.expectHas("Expected semicolon or comma to delimit expression end")
+
+      case par.at().kind:
+        of htkIntLit: result.add newTree(hnkIntLit, par.pop())
+        of htkIdent: result.add newTree(hnkIdent, par.pop())
+        of htkStrLit: result.add newTree(hnkStrLit, par.pop())
+        of htkCmp, htkStar, htkMinus, htkPlus:
+          result.add newTree(hnkIdent, par.pop())
+
+        else:
+          result.add parseExpr(par)
 
 proc precLevel(node: HLNode): int =
   if node.kind == hnkIdent:
@@ -113,9 +143,6 @@ proc foldExprAux(tokens: seq[HLNode], pos: var int, prec: int = 0): HLNode =
 
 proc parseExpr(par): HLNode =
   case par.at().kind:
-    of htkIntLit: result = newTree(hnkIntLit, par.pop())
-    of htkIdent: result = newTree(hnkIdent, par.pop())
-    of htkStrLit: result = newTree(hnkStrLit, par.pop())
     of htkLBrack:
       result = newTree(hnkBracket)
       par.skip(htkLBrack)
@@ -126,9 +153,14 @@ proc parseExpr(par): HLNode =
 
       par.skip(htkRBrack)
 
-    of htkLPar:
+    of htkLPar, htkIntLit, htkIdent, htkStrLit:
       var pos: int = 0
       result = foldExprAux(getInfix(par), pos)
+
+    of htkNewKwd:
+      par.next()
+      result = newTree(hnkNewExpr, par.parseIdent())
+
 
     else:
       raiseImplementError($par.at().kind)
@@ -140,20 +172,18 @@ proc parseVarDecl(par): HLNode =
   par.skip(htkEq)
   result.add parseExpr(par)
   par.skip(htkSemicolon)
-  # while not par.at({htkSemicolon, htkEq, htkComma}):
-  #   buf.add parseExpr(par)
 
-  # var initExpr = newEmptyCNode()
-  # if par.at(htkEq):
-  #   par.skip(htkEq)
-  #   initExpr.add par.parseExpr()
-
-  # let id = newTree(hnkIdent, buf.pop)
+const exprFirst = {htkIntLit, htkStrLit, htkNewKwd, htkIdent}
 
 proc parseCallStmt(par): HLNode =
   result = newTree(hnkCall, newTree(hnkIdent, par.pop()))
-  var pos: int = 0
-  result.add foldExprAux(getInfix(par), pos)
+  par.skip(htkLPar)
+  while par.at(exprFirst):
+    var pos: int = 0
+    result.add foldExprAux(getInfix(par), pos)
+    if par.at(htkComma):
+      par.next()
+  par.skip(htkRPar)
   par.skip(htkSemicolon)
 
 proc parseForStmt(par): HLNode =
@@ -170,10 +200,6 @@ proc parseIfStmt(par): HLNode =
   result = newTree(hnkIfStmt)
   par.skip(htkIfKwd)
   result.add newTree(hnkElifBranch, parseExpr(par), parseStmtList(par))
-
-  # while par.at(htkElseKwd):
-  #   par.skip(htkElifKwd)
-  #   result.add newTree(hnkElifBranch, parseStmtList(par))
 
   if par.at(htkElseKwd):
     par.skip(htkElseKwd)

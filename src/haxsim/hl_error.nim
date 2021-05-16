@@ -17,7 +17,7 @@ func linesAround*(baseStr: string, charRange: Slice[int]):
   while slice.b < baseStr.len and baseStr[slice.b] != '\n':
     inc slice.b
 
-  if baseStr[slice.b] == '\n':
+  if slice.b >= baseStr.len or baseStr[slice.b] == '\n':
     dec slice.b
 
   result.text = baseStr[slice]

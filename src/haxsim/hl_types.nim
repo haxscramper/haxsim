@@ -55,6 +55,7 @@ type
     htkRBrack
 
     htkForKwd
+    htkNewKwd
     htkIfKwd
     htkElseKwd
     htkWhileKwd
@@ -115,6 +116,7 @@ type
     hnkIdentDefs
     hnkVarDecl
     hnkFieldExpr
+    hnkNewExpr
 
     hnkFile
     hnkStmtList

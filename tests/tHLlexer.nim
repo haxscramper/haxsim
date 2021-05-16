@@ -53,6 +53,21 @@ suite "Base tokenizer":
     for tok in tokens:
       echo tok.lispRepr()
 
+suite "Small parser tests":
+  proc p(str: string) = echo tokenize(str).parse(str).treeRepr()
+
+  test "Binary addition":
+    p("var v = 1 + 2;")
+
+  test "New expression":
+    p("var l = new List;")
+
+  test "Function call":
+    p("test(a, b);")
+
+
+
+
 suite "Parser":
   test "Parse":
     let tokens = tokenize(str0)

@@ -80,15 +80,16 @@ proc tokenize*(str: string): seq[HLToken] =
     tokens.add (re("(" & patt & ")"), kind)
 
   const kwdList = {
-    r"for":             htkForKwd,
-    r"while":           htkWhileKwd,
-    r"if":              htkIfKwd,
-    r"else":            htkElseKwd,
-    r"enum":            htkEnumKwd,
-    r"struct":          htkEnumKwd,
-    r"in":              htkInKwd,
-    r"var":             htkVarKwd,
-    r"proc":            htkProcKwd,
+    r"for":    htkForKwd,
+    r"while":  htkWhileKwd,
+    r"if":     htkIfKwd,
+    r"else":   htkElseKwd,
+    r"enum":   htkEnumKwd,
+    r"struct": htkEnumKwd,
+    r"in":     htkInKwd,
+    r"var":    htkVarKwd,
+    r"proc":   htkProcKwd,
+    r"new":    htkNewKwd
   }
 
 
