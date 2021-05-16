@@ -65,6 +65,9 @@ suite "Small parser tests":
   test "Function call":
     p("test(a, b);")
 
+  test "Comments":
+    p("// comment")
+
 
 
 

@@ -76,6 +76,7 @@ proc tokenize*(str: string): seq[HLToken] =
     r",":               htkComma,
     r"\.":             htkDot,
     r"""".*?"""":       htkStrLit,
+    r"//.*": htkComment
   }:
     tokens.add (re("(" & patt & ")"), kind)
 
@@ -104,7 +105,7 @@ proc tokenize*(str: string): seq[HLToken] =
               kind = kwd[1]
 
         foundOk = true
-        if kind != htkSpace:
+        if kind notin {htkSpace, htkComment}:
           push(kind, 0)
 
         else:

@@ -29,6 +29,8 @@ proc toMapString*[T, N](arr: array[N, T]): string =
 
 type
   HLTokenKind* = enum
+    htkComment
+
     htkIntLit
     htkCharLit
     htkStrLit
