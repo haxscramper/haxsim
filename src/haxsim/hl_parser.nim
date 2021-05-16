@@ -79,6 +79,7 @@ proc parseExpr(par): HLNode
 
 
 proc parseCall(par): HLNode
+proc parseBrack(par): HLNode
 
 proc getInfix(par): seq[HLNode] =
   let inPar = par.at({htkLPar, htkLBRack})
@@ -101,8 +102,15 @@ proc getInfix(par): seq[HLNode] =
       of htkStrLit: result.add newTree(hnkStrLit, par.pop())
 
       of htkRPar, htkRBrack:
-        dec cnt
-        par.next()
+        if cnt == 0:
+          break
+
+        else:
+          dec cnt
+          par.next()
+
+      of htkComma:
+        break
 
       of htkCmp, htkStar, htkMinus, htkPlus:
         result.add newTree(hnkIdent, par.pop())
@@ -115,12 +123,8 @@ proc getInfix(par): seq[HLNode] =
         else:
           result.add parseExpr(par)
 
-      # of htkComma:
-      #   if cnt == 0:
-      #     break
-
-      #   else:
-      #     par.next()
+      of htkLBrack:
+        result.add parseBrack(par)
 
       else:
         result.add parseExpr(par)
@@ -174,26 +178,25 @@ proc parseCall(par): HLNode =
   par.skip(htkRPar)
 
 
+proc parseBrack(par): HLNode =
+  result = newTree(hnkBracket)
+  par.skip(htkLBrack)
+  while not par.at(htkRBrack):
+    result.add parseExpr(par)
+    if not par.at(htkRBrack):
+      par.skip(htkComma)
+
+  par.skip(htkRBrack)
+
+
 proc parseExpr(par): HLNode =
   case par.at().kind:
     of htkLBrack:
-      result = newTree(hnkBracket)
-      par.skip(htkLBrack)
-      while not par.at(htkRBrack):
-        result.add parseExpr(par)
-        if not par.at(htkRBrack):
-          par.skip(htkComma)
-
-      par.skip(htkRBrack)
+      result = parseBrack(par)
 
     of htkLPar, htkIntLit, htkIdent, htkStrLit:
-      if par.at(htkIdent) and par.at(+1).kind == htkLPar:
-        result = parseCall(par)
-
-      else:
-        echov par.at()
-        var pos: int = 0
-        result = foldExprAux(getInfix(par), pos)
+      var pos: int = 0
+      result = foldExprAux(getInfix(par), pos)
 
     of htkNewKwd:
       par.next()
@@ -207,9 +210,7 @@ proc parseVarDecl(par): HLNode =
   par.skip(htkVarKwd)
   result.add parseIdent(par)
   par.skip(htkEq)
-  var pos: int = 0
-  let expr = foldExprAux(getInfix(par), pos)
-  result.add expr
+  result.add parseExpr(par)
   par.skip(htkSemicolon)
 
 
