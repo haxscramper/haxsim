@@ -68,6 +68,20 @@ suite "Small parser tests":
   test "Comments":
     p("// comment")
 
+  test "String literals":
+    p("var v = \"some string literal\";")
+
+  test "Unlimited parens":
+    p("var v = ((((((((((((((a))))))))))))));")
+
+  test "Complex expression":
+    p("var q = 2 + 3 + 4 + 5 + 6;")
+
+  test "Expression with function call":
+    p("var z = a() + b();")
+    p("var z = a(a) + b(c);")
+    p("var z = test() + test2(1 + 3, 4) * 3 - 19;")
+
 
 
 

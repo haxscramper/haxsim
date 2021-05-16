@@ -77,35 +77,55 @@ proc expectHas(par; expectWhat: string) =
 
 proc parseExpr(par): HLNode
 
+
+proc parseCall(par): HLNode
+
 proc getInfix(par): seq[HLNode] =
-  if par.at({htkLPar, htkLBRack}):
-    var cnt = 1
+  let inPar = par.at({htkLPar, htkLBRack})
+  var cnt = 0
+
+  if inPar:
+    inc cnt
     par.skip({htkLPar, htkLBrack})
-    while cnt > 0:
-      case par.at().kind:
-        of htkRPar, htkRBrack:
-          dec cnt
+
+  while (if inPar: cnt > 0 else: not par.at({htkSemicolon, htkComma, htkRPar})):
+    case par.at().kind:
+      of htkIntLit: result.add newTree(hnkIntLit, par.pop())
+      of htkIdent:
+        if par.at(+1).kind == htkLPar:
+          result.add parseCall(par)
+
+        else:
+          result.add newTree(hnkIdent, par.pop())
+
+      of htkStrLit: result.add newTree(hnkStrLit, par.pop())
+
+      of htkRPar, htkRBrack:
+        dec cnt
+        par.next()
+
+      of htkCmp, htkStar, htkMinus, htkPlus:
+        result.add newTree(hnkIdent, par.pop())
+
+      of htkLPar:
+        if par.at(+1).kind == htkRPar:
+          par.next()
           par.next()
 
-        of htkCmp, htkStar, htkMinus, htkPlus:
-          result.add newTree(hnkIdent, par.pop())
-
         else:
           result.add parseExpr(par)
 
-  else:
-    while not par.at({htkSemicolon, htkComma, htkRPar}):
-      par.expectHas("Expected semicolon or comma to delimit expression end")
+      # of htkComma:
+      #   if cnt == 0:
+      #     break
 
-      case par.at().kind:
-        of htkIntLit: result.add newTree(hnkIntLit, par.pop())
-        of htkIdent: result.add newTree(hnkIdent, par.pop())
-        of htkStrLit: result.add newTree(hnkStrLit, par.pop())
-        of htkCmp, htkStar, htkMinus, htkPlus:
-          result.add newTree(hnkIdent, par.pop())
+      #   else:
+      #     par.next()
 
-        else:
-          result.add parseExpr(par)
+      else:
+        result.add parseExpr(par)
+
+
 
 proc precLevel(node: HLNode): int =
   if node.kind == hnkIdent:
@@ -141,6 +161,19 @@ proc foldExprAux(tokens: seq[HLNode], pos: var int, prec: int = 0): HLNode =
     result = foldInfix(result, token, tokens, pos, prec)
 
 
+const exprFirst = {htkIntLit, htkStrLit, htkNewKwd, htkIdent}
+
+proc parseCall(par): HLNode =
+  result = newTree(hnkCall, newTree(hnkIdent, par.pop()))
+  par.skip(htkLPar)
+  while par.at(exprFirst):
+    var pos: int = 0
+    result.add foldExprAux(getInfix(par), pos)
+    if par.at(htkComma):
+      par.next()
+  par.skip(htkRPar)
+
+
 proc parseExpr(par): HLNode =
   case par.at().kind:
     of htkLBrack:
@@ -154,13 +187,17 @@ proc parseExpr(par): HLNode =
       par.skip(htkRBrack)
 
     of htkLPar, htkIntLit, htkIdent, htkStrLit:
-      var pos: int = 0
-      result = foldExprAux(getInfix(par), pos)
+      if par.at(htkIdent) and par.at(+1).kind == htkLPar:
+        result = parseCall(par)
+
+      else:
+        echov par.at()
+        var pos: int = 0
+        result = foldExprAux(getInfix(par), pos)
 
     of htkNewKwd:
       par.next()
       result = newTree(hnkNewExpr, par.parseIdent())
-
 
     else:
       raiseImplementError($par.at().kind)
@@ -170,20 +207,14 @@ proc parseVarDecl(par): HLNode =
   par.skip(htkVarKwd)
   result.add parseIdent(par)
   par.skip(htkEq)
-  result.add parseExpr(par)
+  var pos: int = 0
+  let expr = foldExprAux(getInfix(par), pos)
+  result.add expr
   par.skip(htkSemicolon)
 
-const exprFirst = {htkIntLit, htkStrLit, htkNewKwd, htkIdent}
 
 proc parseCallStmt(par): HLNode =
-  result = newTree(hnkCall, newTree(hnkIdent, par.pop()))
-  par.skip(htkLPar)
-  while par.at(exprFirst):
-    var pos: int = 0
-    result.add foldExprAux(getInfix(par), pos)
-    if par.at(htkComma):
-      par.next()
-  par.skip(htkRPar)
+  result = parseCall(par)
   par.skip(htkSemicolon)
 
 proc parseForStmt(par): HLNode =
