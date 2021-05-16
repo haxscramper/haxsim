@@ -52,7 +52,7 @@ proc evalAst*(tree: HLNode, ctx): HLValue =
       for arg in tree[1 .. ^1]:
         args.add evalAst(arg, ctx)
 
-      echo name, " ", args.mapIt($it[])
+      echo name, " ", args.mapIt($it)
 
     of hnkIdent:
       result = ctx[tree.strVal]

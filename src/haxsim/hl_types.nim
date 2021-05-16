@@ -711,6 +711,7 @@ func `$`*(hlType: HLType): string =
         result &= "): " & $hlType.returnType
 
 func `$`*(val: HLValue): string =
+  if isNil(val): return toBlue("<nil>")
   case val.kind:
     of hvkNil: result = toCyan("nil")
     of hvkProc: result = $val.hlType
