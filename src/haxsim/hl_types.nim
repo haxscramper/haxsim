@@ -158,6 +158,14 @@ type
         discard
 
 
+  HLTable* = ref object
+    buckets: seq[seq[tuple[key, value: HLValue]]]
+    count: int
+
+  HLList* = ref object
+    next*: HLList
+    value*: HLValue
+
   HLValue* = ref HLValueObj
   HLValueObj* = object
     hlType*: HLType
@@ -184,13 +192,13 @@ type
         anyVal*: HLValue
 
       of hvkTable:
-        table*: Table[HLValue, HLValue]
+        table*: HLTable
 
       of hvkProc:
         impl*: HLProcImpl
 
       of hvkList:
-        list*: DoublyLinkedList[HLValue]
+        list*: HLList
 
       of hvkArray:
         idx: int
@@ -220,6 +228,9 @@ type
 
 const
   hnkTokenKinds* = {hnkIntLit, hnkStrLit, hnkIdent}
+
+
+
 
 func add*(node: var HLNode, node2: HLNode) = node.subnodes.add node2
 func len*(node: HLNode): int = node.subnodes.len
@@ -300,6 +311,19 @@ proc prettyPrintConverter*(
         })
 
 
+
+iterator items*(table: HLList): HLValue =
+  var next = table
+  while not isNIl(next):
+    yield next.value
+    next = next.next
+
+iterator pairs*(table: HLTable): (HLValue, HLValue) =
+  for buck in table.buckets:
+    for pair in buck:
+      yield pair
+
+
 func hash*(a: HLValue): Hash =
   var h = hash(a.kind)
   case a.kind:
@@ -323,7 +347,7 @@ func hash*(a: HLValue): Hash =
       for (key, value) in pairs(a.table):
         h = h !& hash(key) !& hash(value)
 
-  result = !$(h)
+  result = abs(!$(h))
 
 func `==`*(a, b: HLValue): bool =
   a.kind == b.kind and
@@ -340,8 +364,8 @@ func `==`*(a, b: HLValue): bool =
       of hvkArray: subnodesEq(a, b, elements)
       of hvkList:
         var res = true
-        var aVal = a.list.head
-        var bVal = b.list.head
+        var aVal = a.list.next
+        var bVal = b.list.next
 
         while (not isNil(aVal)) and (not isNil(bVal)):
           if aVal.value != bVal.value:
@@ -357,6 +381,54 @@ func `==`*(a, b: HLValue): bool =
         res
       of hvkTable: a.table == b.table
   )
+
+
+func newHLTable*(): HLTable = new(result)
+func newHLList*(): HLList = new(result)
+
+func add*(l: var HLList, val: HLValue) =
+  var node = l
+  while not isNil(node.next):
+    node = node.next
+
+  node.next = newHLList()
+  node.next.value = val
+
+
+func `[]`*(table: HLTable, key: HLValue): HLValue =
+  let idx = key.hash() mod table.buckets.len()
+  for (key, val) in table.buckets[idx]:
+    if key == key:
+      return val
+
+
+func `[]=`*(table: var HLTable, key, val: HLValue; inResize: bool = false)
+
+func resize(table: var HLTable) =
+  let old = move(table.buckets)
+  table.buckets = newSeqWith(
+    max(old.len, 1) * 2,
+    newSeq[typeof(old[0][0])]()
+  )
+
+  for buck in old:
+    for (key, val) in buck:
+      `[]=`(table, key, val, true)
+
+func `[]=`*(table: var HLTable, key, val: HLValue; inResize: bool = false) =
+  if not(inResize) and
+     (table.buckets.len() == 0 or table.count * 2 > table.buckets.len):
+    resize(table)
+
+  let idx = key.hash() mod table.buckets.len()
+  for buck in mitems(table.buckets[idx]):
+    if buck.key == key:
+      buck.value = val
+      return
+
+  table.buckets[idx].add (key, val)
+  if not inResize:
+    inc table.count
 
 func initHLType*(T: typedesc[int|float|string|bool|HLValue|void]): HLType
 
@@ -416,6 +488,9 @@ func initHLValue*(val: bool): HLValue =
 
 func initHLValue*(val: int): HLValue =
   HLValue(intVal: val, kind: hvkInt, hlType: initHLType(int))
+
+func initHLValue*(val: float): HLValue =
+  HLValue(floatVal: val, kind: hvkFloat, hlType: initHLType(float))
 
 func initHLValue*(val: string): HLValue =
   HLValue(strVal: val, kind: hvkString, hlType: initHLType(string))
@@ -586,9 +661,36 @@ func `$`*(val: HLValue): string =
     of hvkRecord:
       raiseImplementKindError(val)
 
+func `$`*(list: HLList): string =
+  var
+    node = list
+    idx = 0
+
+  result = "["
+  while not isNil(node):
+    if idx > 0:
+      result &= " -> "
+
+
+    if isNil(node.value):
+      result &= "no-data"
+
+    else:
+      result &= $node.value
+
+    result &= "@" & $idx
+    node = node.next
+    inc idx
+
+  result &= "]"
+
+
+
 func `+`*(a, b: HLValue): HLValue = opAux(a, b, `+`)
 func `-`*(a, b: HLValue): HLValue = opAux(a, b, `-`)
 func `*`*(a, b: HLValue): HLValue = opAux(a, b, `*`)
+func `/`*(a, b: HLValue): HLValue = opAux(a, b, `/`)
+
 
 func `[]=`*(arr, key, val: HLValue): void =
   case arr.kind:

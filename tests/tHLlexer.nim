@@ -3,6 +3,8 @@ import haxsim/[
   hl_eval_register
 ]
 
+
+import hmisc/hdebug_misc
 import std/[unittest]
 
 const str0 = """
@@ -31,6 +33,20 @@ print(arr[0]);
 const str1 = "print(2 + 3 * 4);"
 const str = str1
 
+suite "Data structures":
+  test "Table":
+    var t = newHLTable()
+    for k in 0 .. 4:
+      t[initHLValue(k)] = initHLValue(k)
+
+
+  test "List":
+    var l = newHLList()
+    for k in 0 .. 4:
+      l.add initHLValue(k)
+
+    echo l
+
 suite "Base tokenizer":
   test "Tokenize":
     let tokens = tokenize(str0)
@@ -55,6 +71,26 @@ suite "Eval AST":
 
 suite "Eval stack":
   test "Eval stack":
+    let tokens = tokenize(str0)
+    var tree = parse(tokens, str0)
+
+    block:
+      var ctx = HLSemContext()
+      ctx.pushScope()
+      ctx.procTable = newProcTable()
+      updateTypes(tree, ctx)
+
+    echo treeRepr(tree)
+
+    let ops = compileStack(tree)
+    var ctx = newStackEvalCtx()
+    ctx.pushScope()
+    discard evalStack(ops, ctx)
+
+
+suite "Eval stack simple":
+  test "Eval stack":
+    let str0 = "var a = 10;\nprint(a + 2);"
     let tokens = tokenize(str0)
     var tree = parse(tokens, str0)
 
