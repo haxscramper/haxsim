@@ -147,26 +147,30 @@ proc precLevel(node: HLNode): int =
   else:
     0
 
-proc foldExprAux(tokens: seq[HLNode], pos: var int, prec: int = 0): HLNode
 
-proc foldInfix(
-    left: HLNode, token: HLNode, tokens: seq[HLNode], pos: var int, prec: int
-  ): HLNode =
+proc foldInfix(par): HLNode =
+  proc foldExprAux(tokens: seq[HLNode], pos: var int, prec: int = 0): HLNode
 
-  if token.kind in {hnkIdent} and token.strVal in ["+", "-", "*", "/", "=="]:
-    result = newTree(hnkInfix, token, left, foldExprAux(tokens, pos, precLevel(token)))
+  proc foldInfix(
+      left: HLNode, token: HLNode, tokens: seq[HLNode], pos: var int, prec: int
+    ): HLNode =
 
-proc foldExprAux(tokens: seq[HLNode], pos: var int, prec: int = 0): HLNode =
-  result = tokens[pos]
-  inc(pos)
-  while pos < tokens.len and prec < tokens[pos].precLevel():
-    let token = tokens[pos]
-    if pos >= tokens.len:
-      break
+    if token.kind in {hnkIdent} and token.strVal in ["+", "-", "*", "/", "=="]:
+      result = newTree(hnkInfix, token, left, foldExprAux(tokens, pos, precLevel(token)))
 
+  proc foldExprAux(tokens: seq[HLNode], pos: var int, prec: int = 0): HLNode =
+    result = tokens[pos]
     inc(pos)
-    result = foldInfix(result, token, tokens, pos, prec)
+    while pos < tokens.len and prec < tokens[pos].precLevel():
+      let token = tokens[pos]
+      if pos >= tokens.len:
+        break
 
+      inc(pos)
+      result = foldInfix(result, token, tokens, pos, prec)
+
+  var pos: int = 0
+  return getInfix(par).foldExprAux(pos)
 
 const exprFirst = {htkIntLit, htkStrLit, htkNewKwd, htkIdent}
 
@@ -174,8 +178,7 @@ proc parseCall(par): HLNode =
   result = newTree(hnkCall, newTree(hnkIdent, par.pop()))
   par.skip(htkLPar)
   while par.at(exprFirst):
-    var pos: int = 0
-    result.add foldExprAux(getInfix(par), pos)
+    result.add foldInfix(par)
     if par.at(htkComma):
       par.next()
   par.skip(htkRPar)
@@ -205,8 +208,7 @@ proc parseExpr(par): HLNode =
       result = parseBrack(par)
 
     of htkLPar, htkIntLit, htkIdent, htkStrLit:
-      var pos: int = 0
-      result = foldExprAux(getInfix(par), pos)
+      result = foldInfix(par)
 
     of htkNewKwd:
       par.next()
@@ -216,12 +218,9 @@ proc parseExpr(par): HLNode =
       raiseImplementError($par.at().kind)
 
 proc parseVarDecl(par): HLNode =
-  result = newTree(hnkVarDecl)
-  par.skip(htkVarKwd)
-  result.add parseIdent(par)
-  par.skip(htkEq)
-  result.add parseExpr(par)
-  par.skip(htkSemicolon)
+  result = newTree(hnkVarDecl); par.skip(htkVarKwd)
+  result.add parseIdent(par); par.skip(htkEq)
+  result.add parseExpr(par); par.skip(htkSemicolon)
 
 
 proc parseCallStmt(par): HLNode =
@@ -231,12 +230,9 @@ proc parseCallStmt(par): HLNode =
 proc parseForStmt(par): HLNode =
   result = newTree(hnkForStmt)
   par.skip(htkForKwd)
-  result.add par.parseIdent()
-  par.skip(htkInKwd)
-  result.add par.parseExpr()
-  par.skip(htkLCurly)
-  result.add parseStmtList(par)
-  par.skip(htkRCurly)
+  result.add par.parseIdent(); par.skip(htkInKwd)
+  result.add par.parseExpr(); par.skip(htkLCurly)
+  result.add parseStmtList(par); par.skip(htkRCurly)
 
 proc parseIfStmt(par): HLNode =
   result = newTree(hnkIfStmt)
@@ -261,18 +257,18 @@ proc parseType(par): HLNode =
 
 
 proc parseArrayAsgn(par): HLNode =
-  result = newTree(hnkCall)
-  result.add newIdentHLNode("[]=")
-  result.add par.parseIdent()
-  result.add foldExprAux(par.getInfix(), (var tmp: int; tmp))
-  par.skip(htkEq)
-  result.add par.parseExpr()
+  result = newTree(
+    hnkCall,
+    newIdentHLNode("[]="),
+    par.parseIdent(),
+    par.foldInfix(),
+    (par.skip(htkEq); par.parseExpr())
+  )
 
 proc parseProcDecl(par): HLNode =
   par.skip(htkProcKwd)
   result = newTree(hnkProc)
-  result.add par.parseIdent()
-  par.skip(htkLPar)
+  result.add par.parseIdent(); par.skip(htkLPar)
   result.add newTree(hnkParams)
   result[^1].add newEmptyCNode()
   while not par.at(htkRPar):
