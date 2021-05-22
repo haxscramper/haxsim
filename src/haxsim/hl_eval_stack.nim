@@ -1,5 +1,5 @@
 import hl_types
-import hmisc/[base_errors, hdebug_misc]
+import hmisc/[base_errors, hdebug_misc, helpers]
 import std/[
   options, tables, macros, strformat,
   strutils, algorithm, sequtils
@@ -44,7 +44,7 @@ type
 
 using ctx: var HLStackEvalCtx
 
-func `$`(op: HLStackOp): string =
+func `$`*(op: HLStackOp): string =
   result &= alignLeft(($op.kind)[3 ..^ 1], 10)
   case op.kind:
     of hsoLoad:
@@ -53,7 +53,7 @@ func `$`(op: HLStackOp): string =
     of hsoCallFunc:
       result &= " " & toBlue($op.argc)
 
-    of hsoJump, hsoIfNotJump:
+    of hsoJump, hsoIfNotJump, hsoForIter:
       result &= " " & toGreen($op.jumpOffset) & " >>"
 
     of hsoStoreName, hsoLoadName:
@@ -62,7 +62,8 @@ func `$`(op: HLStackOp): string =
     else:
       discard
 
-func `$`(ops: seq[HLStackOp]): string =
+
+func `$`*(ops: seq[HLStackOp]): string =
   var targets: Table[int, seq[int]]
 
   var opw: int
@@ -74,10 +75,14 @@ func `$`(ops: seq[HLStackOp]): string =
   var buf: seq[string]
   for idx, op in pairs(ops):
     if idx in targets:
-      buf.add toRed(">>") & &" {idx:<4} {termAlignLeft($op, opw)} from {toRed($targets[idx])}"
+      buf.add toRed(">>") & &" {idx:<4} {termAlignLeft($op, opw)} from {toRed($targets[idx])} "
 
     else:
-      buf.add &"   {idx:<4} {op}"
+      buf.add &"   {idx:<4} {termAlignLeft($op, opw)} "
+
+    if op.annotation.len > 0:
+      buf[^1].add to8Bit("#  " & op.annotation, 13)
+
 
 
   result = buf.join("\n")
@@ -121,7 +126,8 @@ proc compileStack*(tree: HLNode): seq[HLStackOp] =
       for arg in tree:
         result.add compileStack(arg)
 
-      result.add initOpCallFunc(tree)
+      result.add initOpCallFunc(tree).msg(
+        &"Call function with {tree.len} arguments")
 
     of hnkIntLit, hnkStrLit:
       result.add initOpLoadConst(tree)
@@ -146,7 +152,11 @@ proc compileStack*(tree: HLNode): seq[HLStackOp] =
       result.add initOp(hsoJump, jumpOffset = forPos - result.len)
         .msg("Next iteration jump")
 
-      result[forPos].jumpOffset = result.len
+      result[forPos].jumpOffset = result.len - 1
+
+      result.add initOp(hsoPopTop)
+        .msg("Remove iterator value from stack")
+
 
     of hnkBracket:
       result.add initOp(hsoLoad, value = initHLValue(tree))
@@ -235,18 +245,31 @@ proc dotRepr(ops: seq[HLStackOp]): DotGraph =
 proc newStackEvalCtx*(): HLStackEvalCtx =
   result.procImpls = newProcTable()
 
-proc evalStack*(ops: seq[HLStackOp], ctx): HLValue =
+proc evalStack*(
+    ops: seq[HLStackOp], ctx;
+    showOps: bool = false,
+    showStack: bool = false
+    ): HLValue =
   var idx = 0
   # pprint(ops, ignore = @["**/annotation*"]) # FIXME `ignore` does not work,
   # # but this is most certainly a compound bug - I don't set path correctly
   # # **and** it is not fully checked somewhere like `prettyPrintConverter`
-  echo ops
   var stack: seq[HLValue]
+
+  template dumpStack(op: string): untyped =
+    if showStack:
+      echo "stack:", op
+      for idx in countdown(stack.high, 0):
+        echo &"[{idx:<3}]", tern(stack.high == idx, op, "   "),
+              stack[idx]
+
 
   template sAdd(expr: typed): untyped =
     stack.add expr
+    dumpStack(" + ")
 
   template sPop(): untyped =
+    dumpStack(" - ")
     stack.pop
 
   template sJump(offset: int): untyped =
@@ -255,6 +278,9 @@ proc evalStack*(ops: seq[HLStackOp], ctx): HLValue =
   ops.dotRepr().toPng("/tmp/graph.png")
   while idx < ops.len:
     let op = ops[idx]
+    if showOps:
+      echo &"{idx:<3} {op}"
+
     case op.kind:
       of hsoLoad:
         sAdd op.value

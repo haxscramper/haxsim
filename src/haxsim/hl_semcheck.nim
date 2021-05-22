@@ -47,7 +47,7 @@ proc typeOfAst(ctx; node: HLNode): HLType =
       result = initHLType(hvkArray, @[elemTypes[0]])
 
     of hnkCall, hnkInfix:
-      result = ctx.resolveOverload(node).hlType
+      result = ctx.resolveOverload(node).hlType.returnType
 
     of hnkNewExpr:
       case node[0].strVal:
@@ -92,11 +92,6 @@ proc updateTypes*(node: var HLNode, ctx) =
       let impl = resolveOverload(ctx, node)
       node[0] = newSymNode(node[0], impl.hlType, hskProc)
       node[0].symImpl = some impl
-      #   # kind: hnkSym,
-      #   # symStr: node[0].strVal,
-      #   symType: impl.hlType,
-      #   symImpl: some impl
-      # )
 
 
       for arg in mitems(node):

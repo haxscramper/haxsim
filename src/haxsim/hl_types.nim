@@ -558,7 +558,9 @@ func initHLType*(T: typedesc[HLConv]): HLType =
   elif T is bool:    result = HLType(kind: hvkBool)
   elif T is HLValue: result = HLType(kind: hvkAny)
   elif T is void:    result = HLType(kind: hvkNil)
-  elif T is HLList:  result = HLType(kind: hvkList)
+  elif T is HLList:  result =
+    HLType(kind: hvkList, elemType: HLType(kind: hvkAny))
+
   elif T is HLTable: result =
     HLTYpe(kind: hvkTable,
            keyType: HLType(kind: hvkAny),
@@ -710,6 +712,9 @@ func `$`*(hlType: HLType): string =
 
         result &= "): " & $hlType.returnType
 
+
+func `$`*(list: HLList): string
+
 func `$`*(val: HLValue): string =
   if isNil(val): return toBlue("<nil>")
   case val.kind:
@@ -732,14 +737,15 @@ func `$`*(val: HLValue): string =
 
 
     of hvkList:
-      result = "<"
-      for idx, elem in pairs(val.elements):
-        if idx > 0:
-          result &= ", "
+      result = "<" & $val.list & ">"
 
-        result &= $elem
+      # for idx, elem in pairs(val.elements):
+      #   if idx > 0:
+      #     result &= ", "
 
-      result &= ">"
+      #   result &= $elem
+
+      # result &= ">"
 
     of hvkTable:
       result = "{"
@@ -761,17 +767,9 @@ func `$`*(list: HLList): string =
 
   result = "["
   while not isNil(node):
-    if idx > 0:
-      result &= " -> "
+    if idx > 0 and not isNil(node.value):
+      result &= " -> " & $node.value
 
-
-    if isNil(node.value):
-      result &= "no-data"
-
-    else:
-      result &= $node.value
-
-    result &= "@" & $idx
     node = node.next
     inc idx
 
@@ -805,7 +803,7 @@ func unif*(a, b: HLType): bool =
   (
     a.kind == b.kind and (
       case a.kind:
-        of hvkArray: unif(a.elemType, b.elemType)
+        of hvkArray, hvkList: unif(a.elemType, b.elemType)
         of hvkTable: unif(a.keyType, b.keyType) and
                      unif(a.valType, b.valType)
 
@@ -846,9 +844,9 @@ proc newProcTable*(): HLProcImplTable =
 
   template i(arg: untyped): untyped = initHLValue(arg)
 
-  d["+"] = @[
-    i(proc(a, b: int): int = a + b)
-  ]
+  d["+"] = @[i(proc(a, b: int): int = a + b)]
+  d["*"] = @[i(proc(a, b: int): int = a * b)]
+  d["-"] = @[i(proc(a, b: int): int = a - b)]
 
   d["print"] = @[
     i(proc(a: HLValue): void = echo a)
@@ -871,6 +869,13 @@ proc newProcTable*(): HLProcImplTable =
   d["add"] = @[
     i(proc(list: HLList, value: HLValue) = list.add value)
   ]
+
+  d["_bucket_count"] = @[
+    i(proc(table: HLTable): int = table.buckets.len)
+  ]
+
+  d["as_int"] = @[i(proc(val: HLValue): int = val.intVal)]
+  d["as_string"] = @[i(proc(val: HLValue): string = val.strVal)]
 
   return d
 
