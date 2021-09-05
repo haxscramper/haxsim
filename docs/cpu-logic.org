@@ -1,0 +1,144 @@
+* 6502
+
+** Links
+
+- http://wilsonminesco.com/links.html
+- https://wilsonminesco.com/6502primer/ClkGen.html
+- https://lateblt.tripod.com/6prj1pic.htm
+
+** Pins
+
+- 40 bits of IO pins
+  - Pin types
+    - Read-write IO
+    - Status control
+  - Pin ranges
+    - ~0xFFFF~ (bits 0-15) :: is a get/set addr mask. Real CPU manual says
+      bit range is 10-25
+    - ~0xFF0000~ (bits 16-23) :: is a data pins. Real ranges - 26-33, with
+      33 being D0 (low bit?) and 26 being D7 (high bit?)
+    - 24 :: Memory control - read or write
+      - >"The Read/Write (RWB) output signal is used to control data
+        transfer. When in the high state, the microprocessor is reading
+        data from memory or I/O. When in the low state, the Data Bus
+        contains valid data to be written from the microprocessor and
+        stored at the addressed memory or I/O location. The RWB signal is
+        set to the high impedance state when Bus Enable (BE) is low"<
+    - <<<=SYNC=>>> 25 :: Start of the new instruction?
+      - Manual says >"The OpCode fetch cycle of the microprocessor
+        instruction is indicated with SYNC high. The SYNC output is
+        provided to identify those cycles during which the microprocessor
+        is fetching an OpCode. The SYNC line goes high during the clock
+        cycle of an OpCode fetch and stays high for the entire cycle."<
+      - >" The "synchronize" output identifies those cycles in which the
+        processor is fetching an op code."< from
+        https://wilsonminesco.com/6502primer/MysteryPins.html
+    - 26 :: IRQ
+    - 27 :: NMI
+    - 28 :: RDY
+    - 29 :: AEC
+    - 30 :: RES
+    - 32-37 :: IO pins (six in total)
+
+** Tick-stepping cycle
+
+#+begin_src c
+  void main() {
+    // 64 KB zero-initialized memory
+    uint8_t mem[(1<<16)] = { };
+
+    // put an LDA #$33 instruction at address 0
+    mem[0] = 0xA9;
+    mem[1] = 0x33;
+
+    // initialize a 6502 instance:
+    m6502_t cpu;
+    uint64_t pins = m6502_init(&cpu, &(m6502_desc_t){ });
+
+    // run for 9 ticks (7 ticks reset sequence, plus 2 ticks for LDA #$33)
+    for (int i = 0; i < 9; i++) {
+        // Execute new tick with current CPU state and return new pin state
+        pins = m6502_tick(&cpu, pins);
+
+        // Extract 16-bit address bus from the pins
+        const uint16_t addr = M6502_GET_ADDR(pins);
+
+        // If current pin state has RW pin enabled (high) then write data
+        // to memory.
+        if (pins & M6502_RW) {
+            // >"merge 8-bit data bus value into 64-bit pins"<
+            M6502_SET_DATA(pins, mem[addr]);
+        } else {
+            // >"extract 8-bit data bus from 64-bit pins"<
+            mem[addr] = M6502_GET_DATA(pins);
+        }
+    }
+    // the A register should now be 0x33:
+    printf("A: %02X\n", m6502_a(&cpu));
+  }
+
+  uint64_t m6502_tick(m6502_t* cpu, uint64_t pins) {
+    // If current cycle is an 'instruction fetch'
+    if (pins & M6502_SYNC) {
+      // load IR register with opcode from data bus, and make room for the 3
+      // bit cycle counter
+      cpu->IR = GET_DATA_BUS(pins) << 3 /*Shift by 3 to allow subticks*/;
+
+
+      pins &= ~M6502_SYNC; // switch off the SYNC pin
+    }
+    // The instruction decoder branches to the right 'cycle handler'
+    // for the current instruction and cycle, and increments the
+    // cycle counter in the lower 3 bits. This 3 bit cycle counter
+    // can't 'overflow' into the 4-th bit because before this can happen
+    // the next instruction will be fetched, reseting the IR register's
+    // opcode and cycle counter
+    switch (cpu->IR++) {
+      // LDA #$xx, >"LoaD Accumulator with memory"<
+      case (0xA9 << 3) | 0:
+        _SA(c->PC++);
+        break;
+
+      case (0xA9 << 3) | 1:
+        c->A=_GD(); // >"extract 8-bit data from 64-bit pin mask"<
+        _NZ(c->A); // >"set N and Z flags depending on value"<
+        _FETCH(); // >"fetch next opcode byte"<
+
+        // Fetch does `_SA(c->PC);_ON(M6502_SYNC);`, setting address bus of
+        // the IO pin and enabling SYNC
+        break;
+    }
+
+    return pins;
+  }
+
+#+end_src
+
+Cycle summary
+
+- Tick is repeatedly executed with parameters ~cpu~ (input CPU state) and
+  ~pins~ (current state of the CPU pins).
+- On each tick, =SYNC= pin is checked. This pin is used to show that
+  current cycle should fetch a new opcode. IF =SYNC= is enabled THEN:
+  - Read data from input pin bus
+  - Shift input data by 3, in order to make room for subtick counter
+  - Disable =SYNC= pin.
+- After opcode is fetched we get current state of the cpu ir, switch based
+  on it. Due to this wonderful ~->IR++~ syntax it is not entierly clear,
+  but we first get value and then increment it. For the sake of verbosity
+  this can be rewritten as
+
+  #+begin_src c
+    switch (cpu->IR) {
+      case (0xA9 << 3) | 0:
+        cpu->IR++;
+        _SA(c->PC++);
+        break;
+  #+end_src
+- When last tick of the opcode is reached, ~_FETCH()~ is executed, setting
+  address on the pins, and enabling =SYNC= again.
+
+* i386
+
+- https://www2.math.uni-wuppertal.de/~fpf/Uebungen/GdR-SS02/opcode_i.html
+- https://www.scs.stanford.edu/05au-cs240c/lab/i386/s17_02.htm

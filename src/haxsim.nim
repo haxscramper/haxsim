@@ -19,6 +19,7 @@ var p = newParser:
     flag("--stack")
 
 proc typedTree(str: string): HLNode =
+
   result = str.tokenize().parse(str)
 
   var ctx = HLSemContext()
