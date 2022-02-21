@@ -5,6 +5,7 @@
 - http://wilsonminesco.com/links.html
 - https://wilsonminesco.com/6502primer/ClkGen.html
 - https://lateblt.tripod.com/6prj1pic.htm
+- https://floooh.github.io/2019/12/13/cycle-stepped-6502.html
 
 ** Pins
 
@@ -137,6 +138,14 @@ Cycle summary
   #+end_src
 - When last tick of the opcode is reached, ~_FETCH()~ is executed, setting
   address on the pins, and enabling =SYNC= again.
+
+
+
+
+* i8080
+
+- https://www.pastraiser.com/cpu/i8080/i8080_opcodes.html
+- https://github.com/mohanson/i8080
 
 * i386
 

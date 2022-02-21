@@ -1,10 +1,21 @@
-- [ ] Allow colored text in error reporting. Only make first line red (brief
-  message).
+* Lang
+
+- [ ] Allow colored text in error reporting. Only make first line red
+  (brief message).
 - [ ] Pretty-printed exceptions for main entry point for compiler.
 - [ ] Hash table implementation
 - [ ] Linked list implementation
-- [ ] Better pratt parser implementation that does not require to explicitly get
-  infix expression inside parenthesis/braces.
+- [ ] Better pratt parser implementation that does not require to
+  explicitly get infix expression inside parenthesis/braces.
 - [ ] Output infix expression compilation into postfix notation
   - [ ] expression calculation
   - [ ] opcodes for ~if~/~for~ checks
+
+- [ ] Use hlex base for lexer, provide more detailed messages about syntax
+  errors.
+
+* CPU emulation
+
+- [ ] Conditionally enable logging after execution hits certain cell
+  (opcode is fetched from ~0xFFFD~ for example). This can be used to debug
+  execution of the certain code blocks instead of a whole thing at once.

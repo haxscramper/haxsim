@@ -1,10 +1,10 @@
-import std/[strformat, strutils]
+import std/[strformat, strutils, macros, tables]
+
 import hmisc/core/all
 import hmisc/algo/clformat
+import hmisc/other/hpprint
 
-startHax()
-
-var oPCODES_CYCLES = [
+var opcodesCycles = [
   4.uint8, 10, 7,  5,  5,  5,  7,  4,  4,  10, 7,  5,  5,  5,
   7,       4,  4,  10, 7,  5,  5,  5,  7,  4,  4,  10, 7,  5,
   5,       5,  7,  4,  4,  10, 16, 5,  5,  5,  7,  4,  4,  10,
@@ -29,7 +29,7 @@ var oPCODES_CYCLES = [
 
 
 type
-  Opc = enum
+  Opc* = enum
     opNop     = (0x00, "nop")
     opLxib    = (0x01, "lxi b,#")
     opStaxb   = (0x02, "stax b")
@@ -287,22 +287,6 @@ type
     opCpiImm  = (0xFE, "cpi #")
     opRst7    = (0xFF, "rst 7")
 
-
-var map: seq[(string, string)]
-for val in uint8(0) .. 255:
-  let name = dISASSEMBLE_TABLE[val]
-  let ident = toDescriptiveIdent(
-    name,
-    toMapArray {
-      ' ': some "",
-      ',': some "_",
-      '$': some "Abs",
-      '#': some "Imm"
-  }).capitalizeAscii()
-  map.add((&"0x{val.toHex()}", &"op{ident}"))
-  # echo &"    op{ident:<15} = (0x{val.toHex()}, \"{name}\")"
-
-# writeFile("/tmp/res.nim", currentSourcePath().readFile().multiReplace(map))
 
 type
   i8080 = object
@@ -840,23 +824,6 @@ proc i8080_interrupt*(c: var i8080; opcode: uint8): void =
   c.interrupt_pending = true
   c.interrupt_vector = opcode
 
-proc i8080_debug_output*(c: var i8080; print_disassembly: bool): void =
-  var f: uint8 = 0
-  f = c.sf.uint8 shl 7 or f
-  f = c.zf.uint8 shl 6 or f
-  f = c.hf.uint8 shl 4 or f
-  f = c.pf.uint8 shl 2 or f
-  f =          1 shl 1 or f
-  f = c.cf.uint8 shl 0 or f
-
-  echo fmt"PC: {c.pc}, AF: {c.a shl 8 or f}, BC: {i8080_get_bc(c)}, ",
-       fmt"DE: {i8080_get_de(c)}, HL: {i8080_get_hl(c)}, SP: {c.sp}, CYC: {c.cyc}",
-       fmt"({i8080_rb(c, c.pc)} {i8080_rb(c, c.pc + 1)} {i8080_rb(c, c.pc + 2)} {i8080_rb(c, c.pc + 3)})"
-
-import hmisc/other/hpprint
-
-import std/[macros, tables]
-import hmisc/core/code_errors
 
 type
   TickedImpl = object
@@ -877,8 +844,6 @@ macro ticked(impl: untyped): untyped =
 
   result = newStmtList()
 
-macro tick(body: untyped): untyped =
-  discard
 proc cpuDot(field: string): NimNode =
   nnkDotExpr.newTree(ident"c", ident(field))
 
