@@ -1,18 +1,15 @@
-import
-  unordered_map
-import
-  commonhpp
-import
-  memoryhpp
-import
-  device/dev_iohpp
+import commonhpp
+import memoryhpp
+import device/dev_iohpp
+import std/tables
+
 type
-  IO* {.bycopy, importcpp.} = object
+  IO* {.bycopy.} = object
     memory*: ptr Memory
-    port_io*: std_unordered_map[uint16, PortIO]
-    port_io_map*: std_unordered_map[uint16, csize_t]
-    mem_io*: std_unordered_map[uint32, MemoryIO]
-    mem_io_map*: std_unordered_map[uint32, uint32]
+    port_io*: Table[uint16, PortIO]
+    port_io_map*: Table[uint16, csize_t]
+    mem_io*: Table[uint32, MemoryIO]
+    mem_io_map*: Table[uint32, uint32]
   
 proc initIO*(mem: ptr Memory): IO = 
   memory = mem
