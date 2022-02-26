@@ -59,7 +59,7 @@ type
     field11* {.bitsize: 21.}: uint32
 
   
-  CR* {.bycopy, importcpp.} = object
+  CR* {.bycopy, inheritable.} = object
     cr0*: CR_cr0
     cr1*: CR_cr1
     cr2*: CR_cr2
