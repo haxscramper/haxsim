@@ -1,5 +1,5 @@
-import "include/commonhpp"
-import "include/emulator/emulatorhpp"
+import "commonhpp"
+import "emulator/emulatorhpp"
 
 template MEMORY_SIZE*(): untyped {.dirty.} =
   (4 * MB)

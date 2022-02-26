@@ -1,19 +1,18 @@
 import
   commonhpp
 type
-  EFLAGS* {.bycopy, union, importcpp.} = object
+  EflagsImpl* {.bycopy, union, importcpp.} = object
     reg32*: uint32
     reg16*: uint16
-    field2*: EFLAGS_field2_Type
+    field2*: EflagsImpl_field2_Type
   
-type
-  EFLAGS_field2_Type* {.bycopy.} = object
+  EflagsImpl_field2_Type* {.bycopy.} = object
     CF* {.bitsize: 1.}: uint32
-    * {.bitsize: 1.}: uint32
+    field1* {.bitsize: 1.}: uint32
     PF* {.bitsize: 1.}: uint32
-    * {.bitsize: 1.}: uint32
+    field3* {.bitsize: 1.}: uint32
     AF* {.bitsize: 1.}: uint32
-    * {.bitsize: 1.}: uint32
+    field5* {.bitsize: 1.}: uint32
     ZF* {.bitsize: 1.}: uint32
     SF* {.bitsize: 1.}: uint32
     TF* {.bitsize: 1.}: uint32
@@ -22,194 +21,170 @@ type
     OF* {.bitsize: 1.}: uint32
     IOPL* {.bitsize: 2.}: uint32
     NT* {.bitsize: 1.}: uint32
-    * {.bitsize: 1.}: uint32
+    field14* {.bitsize: 1.}: uint32
     RF* {.bitsize: 1.}: uint32
     VM* {.bitsize: 1.}: uint32
     AC* {.bitsize: 1.}: uint32
     VIF* {.bitsize: 1.}: uint32
     VIP* {.bitsize: 1.}: uint32
     ID* {.bitsize: 1.}: uint32
-  
-proc CF*(this: EFLAGS): uint32 = 
+
+proc CF*(this: EflagsImpl): uint32 =
   this.field2.CF
 
-proc `CF =`*(this: var EFLAGS): uint32 = 
-  this.field2.CF
+proc `CF =`*(this: var EflagsImpl, value: uint32) =
+  this.field2.CF = value
 
-proc *(this: EFLAGS): uint32 = 
-  this.field2.
-
-proc ` =`*(this: var EFLAGS): uint32 = 
-  this.field2.
-
-proc PF*(this: EFLAGS): uint32 = 
+proc PF*(this: EflagsImpl): uint32 =
   this.field2.PF
 
-proc `PF =`*(this: var EFLAGS): uint32 = 
-  this.field2.PF
+proc `PF =`*(this: var EflagsImpl, value: uint32) =
+  this.field2.PF = value
 
-proc *(this: EFLAGS): uint32 = 
-  this.field2.
-
-proc ` =`*(this: var EFLAGS): uint32 = 
-  this.field2.
-
-proc AF*(this: EFLAGS): uint32 = 
+proc AF*(this: EflagsImpl): uint32 =
   this.field2.AF
 
-proc `AF =`*(this: var EFLAGS): uint32 = 
-  this.field2.AF
+proc `AF =`*(this: var EflagsImpl, value: uint32) =
+  this.field2.AF = value
 
-proc *(this: EFLAGS): uint32 = 
-  this.field2.
-
-proc ` =`*(this: var EFLAGS): uint32 = 
-  this.field2.
-
-proc ZF*(this: EFLAGS): uint32 = 
+proc ZF*(this: EflagsImpl): uint32 =
   this.field2.ZF
 
-proc `ZF =`*(this: var EFLAGS): uint32 = 
-  this.field2.ZF
+proc `ZF =`*(this: var EflagsImpl, value: uint32) =
+  this.field2.ZF = value
 
-proc SF*(this: EFLAGS): uint32 = 
+proc SF*(this: EflagsImpl): uint32 =
   this.field2.SF
 
-proc `SF =`*(this: var EFLAGS): uint32 = 
-  this.field2.SF
+proc `SF =`*(this: var EflagsImpl, value: uint32) =
+  this.field2.SF = value
 
-proc TF*(this: EFLAGS): uint32 = 
+proc TF*(this: EflagsImpl): uint32 =
   this.field2.TF
 
-proc `TF =`*(this: var EFLAGS): uint32 = 
-  this.field2.TF
+proc `TF =`*(this: var EflagsImpl, value: uint32) =
+  this.field2.TF = value
 
-proc IF*(this: EFLAGS): uint32 = 
+proc IF*(this: EflagsImpl): uint32 =
   this.field2.IF
 
-proc `IF =`*(this: var EFLAGS): uint32 = 
-  this.field2.IF
+proc `IF =`*(this: var EflagsImpl, value: uint32) =
+  this.field2.IF = value
 
-proc DF*(this: EFLAGS): uint32 = 
+proc DF*(this: EflagsImpl): uint32 =
   this.field2.DF
 
-proc `DF =`*(this: var EFLAGS): uint32 = 
-  this.field2.DF
+proc `DF =`*(this: var EflagsImpl, value: uint32) =
+  this.field2.DF = value
 
-proc OF*(this: EFLAGS): uint32 = 
+proc OF*(this: EflagsImpl): uint32 =
   this.field2.OF
 
-proc `OF =`*(this: var EFLAGS): uint32 = 
-  this.field2.OF
+proc `OF =`*(this: var EflagsImpl, value: uint32) =
+  this.field2.OF = value
 
-proc IOPL*(this: EFLAGS): uint32 = 
+proc IOPL*(this: EflagsImpl): uint32 =
   this.field2.IOPL
 
-proc `IOPL =`*(this: var EFLAGS): uint32 = 
-  this.field2.IOPL
+proc `IOPL =`*(this: var EflagsImpl, value: uint32) =
+  this.field2.IOPL = value
 
-proc NT*(this: EFLAGS): uint32 = 
+proc NT*(this: EflagsImpl): uint32 =
   this.field2.NT
 
-proc `NT =`*(this: var EFLAGS): uint32 = 
-  this.field2.NT
+proc `NT =`*(this: var EflagsImpl, value: uint32) =
+  this.field2.NT = value
 
-proc *(this: EFLAGS): uint32 = 
-  this.field2.
-
-proc ` =`*(this: var EFLAGS): uint32 = 
-  this.field2.
-
-proc RF*(this: EFLAGS): uint32 = 
+proc RF*(this: EflagsImpl): uint32 =
   this.field2.RF
 
-proc `RF =`*(this: var EFLAGS): uint32 = 
-  this.field2.RF
+proc `RF =`*(this: var EflagsImpl, value: uint32) =
+  this.field2.RF = value
 
-proc VM*(this: EFLAGS): uint32 = 
+proc VM*(this: EflagsImpl): uint32 =
   this.field2.VM
 
-proc `VM =`*(this: var EFLAGS): uint32 = 
-  this.field2.VM
+proc `VM =`*(this: var EflagsImpl, value: uint32) =
+  this.field2.VM = value
 
-proc AC*(this: EFLAGS): uint32 = 
+proc AC*(this: EflagsImpl): uint32 =
   this.field2.AC
 
-proc `AC =`*(this: var EFLAGS): uint32 = 
-  this.field2.AC
+proc `AC =`*(this: var EflagsImpl, value: uint32) =
+  this.field2.AC = value
 
-proc VIF*(this: EFLAGS): uint32 = 
+proc VIF*(this: EflagsImpl): uint32 =
   this.field2.VIF
 
-proc `VIF =`*(this: var EFLAGS): uint32 = 
-  this.field2.VIF
+proc `VIF =`*(this: var EflagsImpl, value: uint32) =
+  this.field2.VIF = value
 
-proc VIP*(this: EFLAGS): uint32 = 
+proc VIP*(this: EflagsImpl): uint32 =
   this.field2.VIP
 
-proc `VIP =`*(this: var EFLAGS): uint32 = 
-  this.field2.VIP
+proc `VIP =`*(this: var EflagsImpl, value: uint32) =
+  this.field2.VIP = value
 
-proc ID*(this: EFLAGS): uint32 = 
+proc ID*(this: EflagsImpl): uint32 =
   this.field2.ID
 
-proc `ID =`*(this: var EFLAGS): uint32 = 
-  this.field2.ID
+proc `ID =`*(this: var EflagsImpl, value: uint32) =
+  this.field2.ID = value
 
 type
   Eflags* {.bycopy, importcpp.} = object
-    eflags*: EFLAGS
-  
-proc get_eflags*(this: var Eflags): uint32 = 
-  return eflags.reg32
+    eflags*: EflagsImpl
 
-proc set_eflags*(this: var Eflags, v: uint32): void = 
-  eflags.reg32 = v
+proc get_eflags*(this: var Eflags): uint32 =
+  return this.eflags.reg32
 
-proc get_flags*(this: var Eflags): uint16 = 
-  return eflags.reg16
+proc set_eflags*(this: var Eflags, v: uint32): void =
+  this.eflags.reg32 = v
 
-proc set_flags*(this: var Eflags, v: uint16): void = 
-  eflags.reg16 = v
+proc get_flags*(this: var Eflags): uint16 =
+  return this.eflags.reg16
 
-proc is_carry*(this: var Eflags): bool = 
-  return eflags.CF
+proc set_flags*(this: var Eflags, v: uint16): void =
+  this.eflags.reg16 = v
 
-proc is_parity*(this: var Eflags): bool = 
-  return eflags.PF
+proc is_carry*(this: var Eflags): bool =
+  return this.eflags.CF.bool
 
-proc is_zero*(this: var Eflags): bool = 
-  return eflags.ZF
+proc is_parity*(this: var Eflags): bool =
+  return this.eflags.PF.bool
 
-proc is_sign*(this: var Eflags): bool = 
-  return eflags.SF
+proc is_zero*(this: var Eflags): bool =
+  return this.eflags.ZF.bool
 
-proc is_overflow*(this: var Eflags): bool = 
-  return eflags.OF
+proc is_sign*(this: var Eflags): bool =
+  return this.eflags.SF.bool
 
-proc is_interrupt*(this: var Eflags): bool = 
-  return eflags.IF
+proc is_overflow*(this: var Eflags): bool =
+  return this.eflags.OF.bool
 
-proc is_direction*(this: var Eflags): bool = 
-  return eflags.DF
+proc is_interrupt*(this: var Eflags): bool =
+  return this.eflags.IF.bool
 
-proc set_carry*(this: var Eflags, carry: bool): void = 
-  eflags.CF = carry
+proc is_direction*(this: var Eflags): bool =
+  return this.eflags.DF.bool
 
-proc set_parity*(this: var Eflags, parity: bool): void = 
-  eflags.PF = parity
+proc set_carry*(this: var Eflags, carry: bool): void =
+  this.eflags.CF = carry.uint32
 
-proc set_zero*(this: var Eflags, zero: bool): void = 
-  eflags.ZF = zero
+proc set_parity*(this: var Eflags, parity: bool): void =
+  this.eflags.PF = parity.uint32
 
-proc set_sign*(this: var Eflags, sign: bool): void = 
-  eflags.SF = sign
+proc set_zero*(this: var Eflags, zero: bool): void =
+  this.eflags.ZF = zero.uint32
 
-proc set_overflow*(this: var Eflags, over: bool): void = 
-  eflags.OF = over
+proc set_sign*(this: var Eflags, sign: bool): void =
+  this.eflags.SF = sign.uint32
 
-proc set_interrupt*(this: var Eflags, interrupt: bool): void = 
-  eflags.IF = interrupt
+proc set_overflow*(this: var Eflags, over: bool): void =
+  this.eflags.OF = over.uint32
 
-proc set_direction*(this: var Eflags, dir: bool): void = 
-  eflags.DF = dir
+proc set_interrupt*(this: var Eflags, interrupt: bool): void =
+  this.eflags.IF = interrupt.uint32
+
+proc set_direction*(this: var Eflags, dir: bool): void =
+  this.eflags.DF = dir.uint32

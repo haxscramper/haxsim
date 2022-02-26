@@ -9,7 +9,7 @@ proc update_eflags_add*[T](this: var Eflags, v1: T, v2: uint32): uint32 =
   var size: uint8
   v2 = cast[T](v2)
   result = cast[uint64](v1) + v2
-  size = sizeof((T) * 8)
+  size = sizeof(T) * 8
   s1 = v1 shr (size - 1)
   s2 = v2 shr (size - 1)
   sr = (result shr (size - 1)) and 1

@@ -1,8 +1,6 @@
 import
   commonhpp
 import
-  vector
-import
   hardware/hardwarehpp
 type
   PDE* {.bycopy, importcpp.} = object
