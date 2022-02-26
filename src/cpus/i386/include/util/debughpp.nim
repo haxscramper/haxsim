@@ -15,19 +15,23 @@ template ASSERT*(cond: untyped): untyped {.dirty.} =
     DEBUG_PRINT(F_ASSERT, 0, astToStr(cond))
   
 
-template ERROR*(fmt: untyped): untyped {.dirty.} = 
-  DEBUG_PRINT(F_ERROR, 0, fmt)
+template ERROR*(
+    fmt: untyped, args: varargs[untyped]): untyped {.dirty.} =
+  discard
 
-template WARN*(fmt: untyped): untyped {.dirty.} = 
-  ON_DEBUG(F_WARN, 0, fmt)
+template WARN*(
+    fmt: untyped, args: varargs[untyped]): untyped {.dirty.} =
+  discard
 
-template INFO*(lv: untyped, fmt: untyped): untyped {.dirty.} = 
-  ON_DEBUG(F_INFO, lv, fmt)
+template INFO*(
+    lv: untyped, fmt: untyped, args: varargs[untyped]): untyped {.dirty.} =
+  discard
 
-template DEBUG_MSG*(lv: untyped, fmt: untyped): untyped {.dirty.} = 
-  ON_DEBUG(F_MSG, lv, fmt)
+template DEBUG_MSG*(
+    lv: untyped, fmt: untyped, args: varargs[untyped]): untyped {.dirty.} =
+  discard
 
-template MSG*(fmt: untyped): untyped {.dirty.} = 
+template MSG*(fmt: untyped, args: varargs[untyped]): untyped {.dirty.} =
   fprintf(stdout, fmt)
 
 proc debug_print*(
