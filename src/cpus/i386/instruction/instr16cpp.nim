@@ -907,7 +907,7 @@ proc neg_rm16*(this: var Instr16): void =
   var rm16_s: int16
   rm16_s = get_rm16()
   set_rm16(-(rm16_s))
-  EFLAGS_UPDATE_SUB(cast[uint16](0(, rm16_s)
+  EFLAGS_UPDATE_SUB(cast[uint16](0), rm16_s)
 
 proc mul_dx_ax_rm16*(this: var Instr16): void = 
   var ax: uint16

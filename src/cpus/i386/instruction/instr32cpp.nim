@@ -908,7 +908,7 @@ proc neg_rm32*(this: var Instr32): void =
   var rm32_s: int32
   rm32_s = get_rm32()
   set_rm32(-(rm32_s))
-  EFLAGS_UPDATE_SUB(cast[uint32](0(, rm32_s)
+  EFLAGS_UPDATE_SUB(cast[uint32](0), rm32_s)
 
 proc mul_edx_eax_rm32*(this: var Instr32): void = 
   var eax: uint32

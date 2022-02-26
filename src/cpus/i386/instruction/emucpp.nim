@@ -13,7 +13,7 @@ proc type_descriptor*(this: var EmuInstr, sel: uint16): uint8 =
   EXCEPTION(EXP_GP, sel > gdt_limit)
   EMU.read_data(addr desc, gdt_base + sel, sizeof((Descriptor)))
   if desc.S:
-    if (cast[ptr SegDesc](addr desc().`type`.segc:
+    if (cast[ptr SegDesc](addr desc)).`type`.segc:
       return TYPE_CODE
     
     else:

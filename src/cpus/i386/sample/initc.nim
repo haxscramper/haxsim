@@ -65,9 +65,9 @@ proc irq_mouse*(): void =
   discard 
 
 proc init_paging*(): uint32 = 
-  var pde: ptr PDE = cast[ptr PDE](0x20000(
-  var pte: ptr PTE = cast[ptr PTE](0x21000(
-  pde[0].ptbl_base = (cast[uint32](pte() shr 12
+  var pde: ptr PDE = cast[ptr PDE](0x20000)
+  var pte: ptr PTE = cast[ptr PTE](0x21000)
+  pde[0].ptbl_base = (cast[uint32](pte)) shr 12
   pde[0].P = 1
   pde[0].RW = 1
   pde[0].US = 1
@@ -81,24 +81,24 @@ proc init_paging*(): uint32 =
     pte[i].P = 1
     pte[i].RW = 1
     pte[i].US = 1
-  return cast[uint32](pde(
+  return cast[uint32](pde)
 
 proc init_idt*(): uint32 = 
-  var idtr: ptr DTReg = cast[ptr DTReg](0x28000(
-  var idt: ptr IDT = cast[ptr IDT](0x28030(
-  idtr.limit = sizeof(cast[IDT](255[]( - 1)
-  idtr.base_l = cast[uint32](idt( and 0xffff
-  idtr.base_h = cast[uint32](idt( shr 16
+  var idtr: ptr DTReg = cast[ptr DTReg](0x28000)
+  var idt: ptr IDT = cast[ptr IDT](0x28030)
+  idtr.limit = sizeof(cast[IDT](255[]) - 1)
+  idtr.base_l = cast[uint32](idt) and 0xffff
+  idtr.base_h = cast[uint32](idt) shr 16
   set_idt(addr idt[0x00], sys_puts, 7, 3, 0x8)
   set_idt(addr idt[0x01], sys_gets, 7, 3, 0x8)
   set_idt(addr idt[0x20], irq_timer, 6, 0, 0x8)
   set_idt(addr idt[0x21], irq_keyboard, 6, 0, 0x8)
   set_idt(addr idt[0x2c], irq_mouse, 6, 0, 0x8)
-  return cast[uint32](idtr(
+  return cast[uint32](idtr)
 
 proc set_idt*(idt: ptr IDT, off: proc(): void {.cdecl.}, `type`: uint8, DPL: uint8, sel: uint16): void = 
-  idt.offset_l = cast[uint32](off( and 0xffff
-  idt.offset_h = cast[uint32](off( shr 16
+  idt.offset_l = cast[uint32](off) and 0xffff
+  idt.offset_h = cast[uint32](off) shr 16
   idt.selector = sel
   idt.`type` = `type`
   idt.D = 1

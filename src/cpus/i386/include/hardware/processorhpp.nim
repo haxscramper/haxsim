@@ -285,11 +285,11 @@ proc get_gpreg*(this: var Processor, n: reg32_t): uint32 =
   return gpregs[n].reg32
 
 proc get_gpreg*(this: var Processor, n: reg16_t): uint16 = 
-  ASSERT(cast[reg32_t](n( < GPREGS_COUNT)
+  ASSERT(cast[reg32_t](n) < GPREGS_COUNT)
   return gpregs[n].reg16
 
 proc get_gpreg*(this: var Processor, n: reg8_t): uint8 = 
-  ASSERT(cast[reg32_t](n( < GPREGS_COUNT)
+  ASSERT(cast[reg32_t](n) < GPREGS_COUNT)
   return (if n < AH:
             gpregs[n].reg8_l
           
@@ -324,11 +324,11 @@ proc set_gpreg*(this: var Processor, n: reg32_t, v: uint32): void =
   gpregs[n].reg32 = v
 
 proc set_gpreg*(this: var Processor, n: reg16_t, v: uint16): void = 
-  ASSERT(cast[reg32_t](n( < GPREGS_COUNT)
+  ASSERT(cast[reg32_t](n) < GPREGS_COUNT)
   gpregs[n].reg16 = v
 
 proc set_gpreg*(this: var Processor, n: reg8_t, v: uint8): void = 
-  ASSERT(cast[reg32_t](n( < GPREGS_COUNT)
+  ASSERT(cast[reg32_t](n) < GPREGS_COUNT)
   ((if n < AH:
       gpregs[n].reg8_l
     
@@ -357,11 +357,11 @@ proc update_gpreg*(this: var Processor, n: reg32_t, v: int32): uint32 =
   return gpregs[n].reg32 = (gpregs[n].reg32 + v)
 
 proc update_gpreg*(this: var Processor, n: reg16_t, v: int16): uint16 = 
-  ASSERT(cast[reg32_t](n( < GPREGS_COUNT)
+  ASSERT(cast[reg32_t](n) < GPREGS_COUNT)
   return gpregs[n].reg16 = (gpregs[n].reg16 + v)
 
 proc update_gpreg*(this: var Processor, n: reg8_t, v: int8): uint8 = 
-  ASSERT(cast[reg32_t](n( < GPREGS_COUNT)
+  ASSERT(cast[reg32_t](n) < GPREGS_COUNT)
   return ((if n < AH:
              gpregs[n].reg8_l
            

@@ -72,7 +72,7 @@ proc load_binary*(this: var Emulator, fname: cstring, `addr`: uint32, offset: ui
   if not(fp):
     return 
   
-  if cast[int32](size( < 0:
+  if cast[int32](size) < 0:
     fseek(fp, 0, SEEK_END)
     size = ftell(fp)
   

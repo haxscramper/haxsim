@@ -297,7 +297,7 @@ proc init_vga*(): void =
 
 proc scroll_page*(n: uint8): void = 
   var i: uint16
-  var vram: ptr uint16 = cast[ptr uint16](0xb8000(
+  var vram: ptr uint16 = cast[ptr uint16](0xb8000)
   block:
     i = 0
     while i < (0x19 - n) * 0x28:
@@ -311,7 +311,7 @@ proc scroll_page*(n: uint8): void =
 
 proc put_text*(s: ptr uint8): uint32 = 
   var i: uint16
-  var vram: ptr uint16 = cast[ptr uint16](0xb8000(
+  var vram: ptr uint16 = cast[ptr uint16](0xb8000)
   if graphic:
     return 0
   

@@ -68,7 +68,7 @@ proc parse*(this: var ParseInstr): void =
     
     else:
       if chk[opcode].imm8:
-        IMM8 = cast[int8](get_emu().get_code8(0)(
+        IMM8 = cast[int8](get_emu().get_code8(0))
         DEBUG_MSG(5, "imm8:0x%02x ", IMM8)
         UPDATE_EIP(1)
       
@@ -123,7 +123,7 @@ proc parse_modrm32*(this: var ParseInstr): void =
   
   else:
     if MOD == 1:
-      DISP8 = cast[int8](get_emu().get_code8(0)(
+      DISP8 = cast[int8](get_emu().get_code8(0))
       UPDATE_EIP(1)
       DEBUG_MSG(5, "disp8:0x%02x ", DISP8)
     
@@ -137,7 +137,7 @@ proc parse_modrm16*(this: var ParseInstr): void =
   
   else:
     if MOD == 1:
-      DISP8 = cast[int8](get_emu().get_code8(0)(
+      DISP8 = cast[int8](get_emu().get_code8(0))
       UPDATE_EIP(1)
       DEBUG_MSG(5, "disp8:0x%02x ", DISP8)
     

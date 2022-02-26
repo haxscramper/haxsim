@@ -56,7 +56,7 @@ proc ui_main*(this: var UI): void =
   glEnable(GL_TEXTURE_2D)
   glEnableClientState(GL_VERTEX_ARRAY)
   glEnableClientState(GL_TEXTURE_COORD_ARRAY)
-  var vtx: ptr UncheckedArray[GLfloat] = @([0, 0, cast[cfloat](size_x(, 0, cast[cfloat](size_x(, cast[cfloat](size_y(, 0, cast[cfloat](size_y(])
+  var vtx: ptr UncheckedArray[GLfloat] = @([0, 0, cast[cfloat](size_x), 0, cast[cfloat](size_x), cast[cfloat](size_y), 0, cast[cfloat](size_y)])
   var texuv: ptr UncheckedArray[GLfloat] = @([0, 1, 1, 1, 1, 0, 0, 0])
   while (not(glfwWindowShouldClose(window))):
     std.this_thread.sleep_for(std.chrono.milliseconds(40))
@@ -154,7 +154,7 @@ proc cursorpos_callback*(this: var UI, window: ptr GLFWwindow, xpos: cdouble, yp
   mouse.send_code(_xpos - ui.X)
   std.this_thread.sleep_for(std.chrono.microseconds(100))
   mouse.send_code(ui.Y - _ypos)
-  DEBUG_MSG(1, "[%02x %02x %02x] _xpos : %d, _ypos : %d\\n", (sy shl 5) + (sx shl 4) + (1 shl 3) + (ui.click[1] shl 1) + ui.click[0], cast[uint8]((_xpos - ui.X)(, cast[uint8]((ui.Y - _ypos)(, _xpos, _ypos)
+  DEBUG_MSG(1, "[%02x %02x %02x] _xpos : %d, _ypos : %d\\n", (sy shl 5) + (sx shl 4) + (1 shl 3) + (ui.click[1] shl 1) + ui.click[0], cast[uint8]((_xpos - ui.X)), cast[uint8]((ui.Y - _ypos)), _xpos, _ypos)
   ui.X = _xpos
   ui.Y = _ypos
 

@@ -32,7 +32,7 @@ proc set_segment*(this: var DataAccess, reg: sgreg_t, sel: uint16): void =
     read_data(addr gdt, dt_base + dt_index, sizeof((SegDesc)))
     cache.base = (gdt.base_h shl 24) + (gdt.base_m shl 16) + gdt.base_l
     cache.limit = (gdt.limit_h shl 16) + gdt.limit_l
-    cast[ptr uint8](addr cache.flags.`type`([] = cast[ptr uint8](addr gdt.`type`([]
+    cast[ptr uint8](addr cache.flags.`type`)[] = cast[ptr uint8](addr gdt.`type`)[]
     cache.flags.AVL = gdt.AVL
     cache.flags.DB = gdt.DB
     cache.flags.G = gdt.G
@@ -44,7 +44,7 @@ proc set_segment*(this: var DataAccess, reg: sgreg_t, sel: uint16): void =
                            )), cache.flags.raw)
   
   else:
-    cache.base = cast[uint32](sel( shl 4
+    cache.base = cast[uint32](sel) shl 4
   
   set_sgreg(reg, addr sg)
 

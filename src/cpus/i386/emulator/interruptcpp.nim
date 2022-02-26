@@ -29,7 +29,7 @@ proc hundle_interrupt*(this: var Interrupt): void =
     idt_offset = n shl 3
     EXCEPTION(EXP_GP, idt_offset > idt_limit)
     read_data(addr idt, idt_base + idt_offset, sizeof((IntGateDesc)))
-    RPL = (cast[ptr SGRegister](addr (idt.seg_sel)().RPL
+    RPL = (cast[ptr SGRegister](addr (idt.seg_sel))).RPL
     INFO(4, "int 0x%02x [CPL : %d, DPL : %d RPL : %d] (EIP : 0x%04x, CS : 0x%04x)", n, CPL, idt.DPL, RPL, (idt.offset_h shl 16) + idt.offset_l, idt.seg_sel)
     EXCEPTION(EXP_NP, not(idt.P))
     EXCEPTION(EXP_GP, CPL < RPL)

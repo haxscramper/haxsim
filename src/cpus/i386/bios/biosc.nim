@@ -9,12 +9,12 @@ proc bios_init*(): void =
   init_ivt()
 
 proc init_ivt*(): void = 
-  set_ivt(0x10, cast[uint32](bsv_video(, 0xf000)
-  set_ivt(0x13, cast[uint32](bsv_disk(, 0xf000)
-  set_ivt(0x16, cast[uint32](bsv_keyboard(, 0xf000)
-  set_ivt(0x26, cast[uint32](bsv_irq_disk(, 0xf000)
+  set_ivt(0x10, cast[uint32](bsv_video), 0xf000)
+  set_ivt(0x13, cast[uint32](bsv_disk), 0xf000)
+  set_ivt(0x16, cast[uint32](bsv_keyboard), 0xf000)
+  set_ivt(0x26, cast[uint32](bsv_irq_disk), 0xf000)
 
 proc set_ivt*(n: cint, offset: uint32, cs: uint16): void = 
-  var ivt: ptr IVT = cast[ptr IVT](0(
+  var ivt: ptr IVT = cast[ptr IVT](0)
   write_esw(addr (ivt[n].offset), offset)
   write_esw(addr (ivt[n].segment), cs)

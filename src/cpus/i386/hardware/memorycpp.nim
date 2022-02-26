@@ -18,7 +18,7 @@ proc dump_mem*(this: var Memory, `addr`: uint32, size: csize_t): void =
   for idx in 0 ..< size:
     MSG("0x%08x : ", `addr` + idx * 0x10)
     for i in 0 ..< 4:
-      MSG("%08x ", (cast[ptr uint32](memory()[(`addr` + idx * 0x10) / 4 + i])
+      MSG("%08x ", (cast[ptr uint32](memory))[(`addr` + idx * 0x10) / 4 + i])
     MSG("\\n")
 
 proc read_data*(this: var Memory, dst: pointer, src_addr: uint32, size: csize_t): csize_t = 

@@ -306,12 +306,12 @@ proc iret*(this: var InstrBase): void =
   EmuInstr.iret()
 
 proc in_al_imm8*(this: var InstrBase): void = 
-  SET_GPREG(AL, EMU.in_io8(cast[uint8](IMM8())
+  SET_GPREG(AL, EMU.in_io8(cast[uint8](IMM8)))
 
 proc out_imm8_al*(this: var InstrBase): void = 
   var al: uint8
   al = GET_GPREG(AL)
-  EMU.out_io8(cast[uint8](IMM8(, al)
+  EMU.out_io8(cast[uint8](IMM8), al)
 
 proc jmp*(this: var InstrBase): void = 
   UPDATE_IP(IMM8)
@@ -533,7 +533,7 @@ proc neg_rm8*(this: var InstrBase): void =
   var rm8_s: int8
   rm8_s = get_rm8()
   set_rm8(-(rm8_s))
-  EFLAGS_UPDATE_SUB(cast[uint8](0(, rm8_s)
+  EFLAGS_UPDATE_SUB(cast[uint8](0), rm8_s)
 
 proc mul_ax_al_rm8*(this: var InstrBase): void = 
   var al: uint8

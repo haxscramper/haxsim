@@ -1,22 +1,4 @@
-import
-  thread
-import
-  stdlibh
-import
-  stringh
-import
-  getopth
-import
-  GLFW/glfw3h
-import
-  commonhpp
-import
-  instruction/basehpp
-import
-  emulator/emulatorhpp
-import
-  emulator/exceptionhpp
-template MEMORY_SIZE*() {.dirty.} = 
+template MEMORY_SIZE*() {.dirty.} =
   (4 * MB)
 
 type
@@ -40,7 +22,7 @@ proc init*(): void =
   setbuf(stderr, `nil`)
 
 proc main*(argc: cint, argv: ptr UncheckedArray[cstring]): cint = 
-  var set: Setting = (mem_size: MEMORY_SIZE, image_name: "sample/kernel.img", load_addr: 0x0, load_size: cast[csize_t](-1(, ui_enable: true, ui_full: false, ui_vm: false)
+  var set: Setting = (mem_size: MEMORY_SIZE, image_name: "sample/kernel.img", load_addr: 0x0, load_size: cast[csize_t](-1), ui_enable: true, ui_full: false, ui_vm: false)
   var opt: char
   var long_options: ptr UncheckedArray[option] = @([
                     ("memory", required_argument, `nil`, 1), 

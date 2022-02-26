@@ -67,8 +67,8 @@ proc load_font*(): void =
   `__asm__`("")
   for i in 0 ..< 0x80:
     var p: ptr uint8 = font8x8_basic[i]
-    write_esd(cast[ptr uint32]((i * 0x10)(, cast[ptr uint32](addr p[0]([])
-    write_esd(cast[ptr uint32]((i * 0x10 + 4)(, cast[ptr uint32](addr p[4]([])
+    write_esd(cast[ptr uint32]((i * 0x10)), cast[ptr uint32](addr p[0])[])
+    write_esd(cast[ptr uint32]((i * 0x10 + 4)), cast[ptr uint32](addr p[4])[])
   `__asm__`("pop es")
 
 var cursor_y: uint16
@@ -78,7 +78,7 @@ proc print*(s: ptr uint8): uint32 =
   block:
     i = 0
     while s[i]:
-      write_esw(cast[ptr uint16](((cursor_y * 0x28 + cursor_x) * 2)(, 0x0700 + s[i])
+      write_esw(cast[ptr uint16](((cursor_y * 0x28 + cursor_x) * 2)), 0x0700 + s[i])
       postInc(cursor_x)
       if cursor_x >= 0x28 or not((s[i] xor 0x0a)):
         cursor_x = 0
@@ -89,10 +89,10 @@ proc print*(s: ptr uint8): uint32 =
         block:
           j = 0
           while j < 0x18 * 0x28:
-            copy_esw(cast[ptr uint16]((j * 2)(, cast[ptr uint16](((0x28 + j) * 2)()
+            copy_esw(cast[ptr uint16]((j * 2)), cast[ptr uint16](((0x28 + j) * 2)))
             postInc(j)
         while j < 0x19 * 0x28:
-          write_esw(cast[ptr uint16]((j * 2)(, 0x0700)
+          write_esw(cast[ptr uint16]((j * 2)), 0x0700)
           postInc(j)
         cursor_x = 0
         postDec(cursor_y)

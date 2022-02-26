@@ -28,17 +28,17 @@ proc write_mem8*(this: var Memory, `addr`: uint32, v: uint8): void =
 
 proc write_mem16*(this: var Memory, `addr`: uint32, v: uint16): void = 
   if IN_RANGE(`addr`, 2):
-    (cast[ptr uint16](addr memory[`addr`]()[] = v
+    (cast[ptr uint16](addr memory[`addr`]))[] = v
   
 
 proc write_mem32*(this: var Memory, `addr`: uint32, v: uint32): void = 
   if IN_RANGE(`addr`, 4):
-    (cast[ptr uint32](addr memory[`addr`]()[] = v
+    (cast[ptr uint32](addr memory[`addr`]))[] = v
   
 
 proc read_mem32*(this: var Memory, `addr`: uint32): uint32 = 
   return (if IN_RANGE(`addr`, 4):
-            (cast[ptr uint32](addr memory[`addr`]()[]
+            (cast[ptr uint32](addr memory[`addr`]))[]
           
           else:
             0
@@ -46,7 +46,7 @@ proc read_mem32*(this: var Memory, `addr`: uint32): uint32 =
 
 proc read_mem16*(this: var Memory, `addr`: uint32): uint16 = 
   return (if IN_RANGE(`addr`, 2):
-            (cast[ptr uint16](addr memory[`addr`]()[]
+            (cast[ptr uint16](addr memory[`addr`]))[]
           
           else:
             0

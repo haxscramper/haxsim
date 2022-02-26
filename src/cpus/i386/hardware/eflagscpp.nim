@@ -7,8 +7,8 @@ proc update_eflags_add*[T](this: var Eflags, v1: T, v2: uint32): uint32 =
   var sr: bool
   var result: uint64
   var size: uint8
-  v2 = cast[T](v2(
-  result = cast[uint64](v1( + v2
+  v2 = cast[T](v2)
+  result = cast[uint64](v1) + v2
   size = sizeof((T) * 8)
   s1 = v1 shr (size - 1)
   s2 = v2 shr (size - 1)
@@ -26,7 +26,7 @@ proc update_eflags_add*[T](this: var Eflags, v1: T, v2: uint32): uint32 =
 proc update_eflags_or*[T](this: var Eflags, v1: T, v2: uint32): uint32 = 
   var result: T
   var size: uint8
-  v2 = cast[T](v2(
+  v2 = cast[T](v2)
   result = v1 or v2
   size = sizeof((T) * 8)
   set_carry(0)
@@ -42,7 +42,7 @@ proc update_eflags_or*[T](this: var Eflags, v1: T, v2: uint32): uint32 =
 proc update_eflags_and*[T](this: var Eflags, v1: T, v2: uint32): uint32 = 
   var result: T
   var size: uint8
-  v2 = cast[T](v2(
+  v2 = cast[T](v2)
   result = v1 and v2
   size = sizeof((T) * 8)
   set_carry(0)
@@ -59,8 +59,8 @@ proc update_eflags_sub*[T](this: var Eflags, v1: T, v2: uint32): uint32 =
   var sr: bool
   var result: uint64
   var size: uint8
-  v2 = cast[T](v2(
-  result = cast[uint64](v1( - v2
+  v2 = cast[T](v2)
+  result = cast[uint64](v1) - v2
   size = sizeof((T) * 8)
   s1 = v1 shr (size - 1)
   s2 = v2 shr (size - 1)
@@ -78,8 +78,8 @@ proc update_eflags_sub*[T](this: var Eflags, v1: T, v2: uint32): uint32 =
 proc update_eflags_mul*[T](this: var Eflags, v1: T, v2: uint32): uint32 = 
   var result: uint64
   var size: uint8
-  v2 = cast[T](v2(
-  result = cast[uint64](v1( * v2
+  v2 = cast[T](v2)
+  result = cast[uint64](v1) * v2
   size = sizeof((T) * 8)
   set_carry(result shr size)
   set_overflow(result shr size)
@@ -91,8 +91,8 @@ proc update_eflags_mul*[T](this: var Eflags, v1: T, v2: uint32): uint32 =
 proc update_eflags_imul*[T](this: var Eflags, v1: T, v2: int32): uint32 = 
   var result: int64
   var size: uint8
-  v2 = cast[T](v2(
-  result = cast[int64](v1( * v2
+  v2 = cast[T](v2)
+  result = cast[int64](v1) * v2
   size = sizeof((T) * 8)
   set_carry((result shr size) != -1)
   set_overflow((result shr size) != -1)
