@@ -1,10 +1,6 @@
-import
-  stdinth
-import
-  util/debughpp
-const KB = 1024
-template MB*() {.dirty.} = 
+const KB* = 1024
+template MB*(): untyped {.dirty.} = 
   (KB * 1024)
 
-template GB*() {.dirty.} = 
+template GB*(): untyped {.dirty.} = 
   (MB * 1024)

@@ -12,19 +12,19 @@ import
   dev_iohpp
 import
   dev_irqhpp
-const MAX_FDD = 4
-const SIZE_SECTOR = 0x200
-const N_SpH = 18
-const N_HpC = 2
-const FDD_READ_TRACK = 0x02
-const FDD_SENSE_DRIVE_STATUS = 0x04
-const FDD_WRITE_DATA = 0x05
-const FDD_READ_DATA = 0x06
-const FDD_RECALIBRATE = 0x07
-const FDD_READ_ID = 0x0a
-const FDD_FORMAT_TRACK = 0x0d
-const FDD_SEEK = 0x0f
-const FDD_CONFIGURE = 0x13
+const MAX_FDD* = 4
+const SIZE_SECTOR* = 0x200
+const N_SpH* = 18
+const N_HpC* = 2
+const FDD_READ_TRACK* = 0x02
+const FDD_SENSE_DRIVE_STATUS* = 0x04
+const FDD_WRITE_DATA* = 0x05
+const FDD_READ_DATA* = 0x06
+const FDD_RECALIBRATE* = 0x07
+const FDD_READ_ID* = 0x0a
+const FDD_FORMAT_TRACK* = 0x0d
+const FDD_SEEK* = 0x0f
+const FDD_CONFIGURE* = 0x13
 type
   DRIVE* {.bycopy, importcpp.} = object
     disk*:        ptr FILE

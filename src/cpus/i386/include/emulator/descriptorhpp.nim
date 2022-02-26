@@ -1,11 +1,11 @@
-const TYPE_TSS = 0x01
-const TYPE_LDT = 0x02
-const TYPE_CALL = 0x04
-const TYPE_TASK = 0x05
-const TYPE_INTERRUPT = 0x06
-const TYPE_TRAP = 0x07
-const TYPE_DATA = 0x10
-const TYPE_CODE = 0x18
+const TYPE_TSS* = 0x01
+const TYPE_LDT* = 0x02
+const TYPE_CALL* = 0x04
+const TYPE_TASK* = 0x05
+const TYPE_INTERRUPT* = 0x06
+const TYPE_TRAP* = 0x07
+const TYPE_DATA* = 0x10
+const TYPE_CODE* = 0x18
 type
   Descriptor* {.bycopy, importcpp.} = object
     limit_l*:        uint16

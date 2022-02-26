@@ -1,12 +1,12 @@
 import
   commonhpp
-template DEFAULT_MEMORY_SIZE*() {.dirty.} = 
+template DEFAULT_MEMORY_SIZE*(): untyped {.dirty.} = 
   (1 * KB)
 
-template ASSERT_RANGE*(`addr`: untyped, len: untyped) {.dirty.} = 
+template ASSERT_RANGE*(`addr`: untyped, len: untyped): untyped {.dirty.} = 
   ASSERT(`addr` + len - 1 < mem_size)
 
-template IN_RANGE*(`addr`: untyped, len: untyped) {.dirty.} = 
+template IN_RANGE*(`addr`: untyped, len: untyped): untyped {.dirty.} = 
   (`addr` + len - 1 < mem_size)
 
 type

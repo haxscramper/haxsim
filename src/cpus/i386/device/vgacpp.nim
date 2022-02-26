@@ -1,6 +1,6 @@
 import
   device/vgahpp
-template chk_regidx*(n: untyped) {.dirty.} = 
+template chk_regidx*(n: untyped): untyped {.dirty.} = 
   block:
     var doTmp: bool = true
     while doTmp or (0):
@@ -94,7 +94,7 @@ proc VGA_Sequencer_read*(offset: uint32): uint8 =
   
   return vga.gc.read(offset)
 
-template SEQ_WRITE_PLANE*(n: untyped, o: untyped, v: untyped) {.dirty.} = 
+template SEQ_WRITE_PLANE*(n: untyped, o: untyped, v: untyped): untyped {.dirty.} = 
   if (map_mr.raw shr (n)) and 1:
     vga.gc.write(n, o, v)
   

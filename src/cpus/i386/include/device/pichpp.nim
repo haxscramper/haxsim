@@ -4,7 +4,7 @@ import
   dev_irqhpp
 import
   dev_iohpp
-const MAX_IRQ = 8
+const MAX_IRQ* = 8
 type
   OCW2* {.bycopy, union, importcpp.} = object
     raw*: uint8

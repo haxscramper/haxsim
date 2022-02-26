@@ -20,13 +20,13 @@ type
     EXP_VE
     EXP_SX
   
-template EXCEPTION*(n: untyped, c: untyped) {.dirty.} = 
+template EXCEPTION*(n: untyped, c: untyped): untyped {.dirty.} = 
   if c:
     WARN("exception interrupt %d (%s)", n, astToStr(c))
     raise n
   
 
-template EXCEPTION_WITH*(n: untyped, c: untyped, e: untyped) {.dirty.} = 
+template EXCEPTION_WITH*(n: untyped, c: untyped, e: untyped): untyped {.dirty.} = 
   if c:
     WARN("exception interrupt %d (%s)", n, astToStr(c))
     e

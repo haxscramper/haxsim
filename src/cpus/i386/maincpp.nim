@@ -1,3 +1,6 @@
+import
+  "include/commonhpp"
+
 template MEMORY_SIZE*() {.dirty.} =
   (4 * MB)
 
@@ -17,12 +20,21 @@ proc run_emulator*(set: Setting): void =
 proc help*(name: cstring): void = 
   discard 
 
-proc init*(): void = 
-  setbuf(stdout, `nil`)
-  setbuf(stderr, `nil`)
+proc init*(): void =
+  when false:
+    setbuf(stdout, `nil`)
+    setbuf(stderr, `nil`)
 
 proc main*(argc: cint, argv: ptr UncheckedArray[cstring]): cint = 
-  var set: Setting = (mem_size: MEMORY_SIZE, image_name: "sample/kernel.img", load_addr: 0x0, load_size: cast[csize_t](-1), ui_enable: true, ui_full: false, ui_vm: false)
+  var set: Setting = (
+    mem_size: MEMORY_SIZE,
+    image_name: "sample/kernel.img",
+    load_addr: 0x0,
+    load_size: cast[csize_t](-1),
+    ui_enable: true,
+    ui_full: false,
+    ui_vm: false)
+
   var opt: char
   var long_options: ptr UncheckedArray[option] = @([
                     ("memory", required_argument, `nil`, 1), 

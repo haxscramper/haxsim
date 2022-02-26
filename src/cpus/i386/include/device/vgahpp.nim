@@ -2,7 +2,7 @@ import
   commonhpp
 import
   dev_iohpp
-template r*(reg: untyped) {.dirty.} = 
+template r*(reg: untyped): untyped {.dirty.} = 
   (addr reg.raw)
 
 type

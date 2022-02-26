@@ -4,7 +4,7 @@ import
   instruction/basehpp
 import
   emulator/exceptionhpp
-template instr16*(f: untyped) {.dirty.} = 
+template instr16*(f: untyped): untyped {.dirty.} = 
   ((instrfunc_t) and Instr16.f)
 
 proc initInstr16*(e: ptr Emulator, id: ptr InstrData): Instr16_Instr16 = 
@@ -557,7 +557,7 @@ proc out_dx_ax*(this: var Instr16): void =
   ax = GET_GPREG(AX)
   EMU.out_io16(dx, ax)
 
-template JCC_REL16*(cc: untyped, is_flag: untyped) {.dirty.} = 
+template JCC_REL16*(cc: untyped, is_flag: untyped): untyped {.dirty.} = 
   proc `j cc`*(this: var Instr16): void = 
     if is_flag:
       UPDATE_EIP(IMM16)

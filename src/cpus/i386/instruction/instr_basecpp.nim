@@ -4,7 +4,7 @@ import
   instruction/basehpp
 import
   emulator/exceptionhpp
-template instrbase*(f: untyped) {.dirty.} = 
+template instrbase*(f: untyped): untyped {.dirty.} = 
   ((instrfunc_t) and InstrBase.f)
 
 proc initInstrBase*(): InstrBase_InstrBase = 
@@ -218,7 +218,7 @@ proc cmp_al_imm8*(this: var InstrBase): void =
   al = GET_GPREG(AL)
   EFLAGS_UPDATE_SUB(al, IMM8)
 
-template JCC_REL8*(cc: untyped, is_flag: untyped) {.dirty.} = 
+template JCC_REL8*(cc: untyped, is_flag: untyped): untyped {.dirty.} = 
   proc `j cc`*(this: var InstrBase): void = 
     if is_flag:
       UPDATE_IP(IMM8)
@@ -364,7 +364,7 @@ proc mov_crn_r32*(this: var InstrBase): void =
   
   set_crn(r32)
 
-template SETCC_RM8*(cc: untyped, is_flag: untyped) {.dirty.} = 
+template SETCC_RM8*(cc: untyped, is_flag: untyped): untyped {.dirty.} = 
   proc `set cc`*(this: var InstrBase): void = 
     SET_GPREG(static_cast[reg32_t](RM), is_flag)
   

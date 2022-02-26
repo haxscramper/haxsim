@@ -4,7 +4,7 @@ import
   instruction/basehpp
 import
   emulator/exceptionhpp
-template instr32*(f: untyped) {.dirty.} = 
+template instr32*(f: untyped): untyped {.dirty.} = 
   ((instrfunc_t) and Instr32.f)
 
 proc initInstr32*(e: ptr Emulator, id: ptr InstrData): Instr32_Instr32 = 
@@ -558,7 +558,7 @@ proc out_dx_eax*(this: var Instr32): void =
   eax = GET_GPREG(EAX)
   EMU.out_io32(dx, eax)
 
-template JCC_REL32*(cc: untyped, is_flag: untyped) {.dirty.} = 
+template JCC_REL32*(cc: untyped, is_flag: untyped): untyped {.dirty.} = 
   proc `j cc`*(this: var Instr32): void = 
     if is_flag:
       UPDATE_EIP(IMM32)

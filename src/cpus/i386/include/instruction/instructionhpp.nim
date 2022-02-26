@@ -4,172 +4,172 @@ import
   commonhpp
 import
   emulator/emulatorhpp
-template EMU*() {.dirty.} = 
+template EMU*(): untyped {.dirty.} = 
   get_emu()
 
-template GET_EIP*() {.dirty.} = 
+template GET_EIP*(): untyped {.dirty.} = 
   EMU.get_eip()
 
-template GET_IP*() {.dirty.} = 
+template GET_IP*(): untyped {.dirty.} = 
   EMU.get_ip()
 
-template SET_EIP*(v: untyped) {.dirty.} = 
+template SET_EIP*(v: untyped): untyped {.dirty.} = 
   EMU.set_eip(v)
 
-template SET_IP*(v: untyped) {.dirty.} = 
+template SET_IP*(v: untyped): untyped {.dirty.} = 
   EMU.set_ip(v)
 
-template UPDATE_EIP*(v: untyped) {.dirty.} = 
+template UPDATE_EIP*(v: untyped): untyped {.dirty.} = 
   EMU.update_eip(v)
 
-template UPDATE_IP*(v: untyped) {.dirty.} = 
+template UPDATE_IP*(v: untyped): untyped {.dirty.} = 
   EMU.update_ip(v)
 
-template GET_GPREG*(reg: untyped) {.dirty.} = 
+template GET_GPREG*(reg: untyped): untyped {.dirty.} = 
   EMU.get_gpreg(reg)
 
-template SET_GPREG*(reg: untyped, v: untyped) {.dirty.} = 
+template SET_GPREG*(reg: untyped, v: untyped): untyped {.dirty.} = 
   EMU.set_gpreg(reg, v)
 
-template UPDATE_GPREG*(reg: untyped, v: untyped) {.dirty.} = 
+template UPDATE_GPREG*(reg: untyped, v: untyped): untyped {.dirty.} = 
   EMU.update_gpreg(reg, v)
 
-template EFLAGS_UPDATE_ADD*(v1: untyped, v2: untyped) {.dirty.} = 
+template EFLAGS_UPDATE_ADD*(v1: untyped, v2: untyped): untyped {.dirty.} = 
   EMU.update_eflags_add(v1, v2)
 
-template EFLAGS_UPDATE_OR*(v1: untyped, v2: untyped) {.dirty.} = 
+template EFLAGS_UPDATE_OR*(v1: untyped, v2: untyped): untyped {.dirty.} = 
   EMU.update_eflags_or(v1, v2)
 
-template EFLAGS_UPDATE_AND*(v1: untyped, v2: untyped) {.dirty.} = 
+template EFLAGS_UPDATE_AND*(v1: untyped, v2: untyped): untyped {.dirty.} = 
   EMU.update_eflags_and(v1, v2)
 
-template EFLAGS_UPDATE_SUB*(v1: untyped, v2: untyped) {.dirty.} = 
+template EFLAGS_UPDATE_SUB*(v1: untyped, v2: untyped): untyped {.dirty.} = 
   EMU.update_eflags_sub(v1, v2)
 
-template EFLAGS_UPDATE_MUL*(v1: untyped, v2: untyped) {.dirty.} = 
+template EFLAGS_UPDATE_MUL*(v1: untyped, v2: untyped): untyped {.dirty.} = 
   EMU.update_eflags_mul(v1, v2)
 
-template EFLAGS_UPDATE_IMUL*(v1: untyped, v2: untyped) {.dirty.} = 
+template EFLAGS_UPDATE_IMUL*(v1: untyped, v2: untyped): untyped {.dirty.} = 
   EMU.update_eflags_imul(v1, v2)
 
-template EFLAGS_UPDATE_SHL*(v1: untyped, v2: untyped) {.dirty.} = 
+template EFLAGS_UPDATE_SHL*(v1: untyped, v2: untyped): untyped {.dirty.} = 
   EMU.update_eflags_shl(v1, v2)
 
-template EFLAGS_UPDATE_SHR*(v1: untyped, v2: untyped) {.dirty.} = 
+template EFLAGS_UPDATE_SHR*(v1: untyped, v2: untyped): untyped {.dirty.} = 
   EMU.update_eflags_shr(v1, v2)
 
-template EFLAGS_CF*() {.dirty.} = 
+template EFLAGS_CF*(): untyped {.dirty.} = 
   EMU.is_carry()
 
-template EFLAGS_PF*() {.dirty.} = 
+template EFLAGS_PF*(): untyped {.dirty.} = 
   EMU.is_parity()
 
-template EFLAGS_ZF*() {.dirty.} = 
+template EFLAGS_ZF*(): untyped {.dirty.} = 
   EMU.is_zero()
 
-template EFLAGS_SF*() {.dirty.} = 
+template EFLAGS_SF*(): untyped {.dirty.} = 
   EMU.is_sign()
 
-template EFLAGS_OF*() {.dirty.} = 
+template EFLAGS_OF*(): untyped {.dirty.} = 
   EMU.is_overflow()
 
-template EFLAGS_DF*() {.dirty.} = 
+template EFLAGS_DF*(): untyped {.dirty.} = 
   EMU.is_direction()
 
-template READ_MEM32*(`addr`: untyped) {.dirty.} = 
+template READ_MEM32*(`addr`: untyped): untyped {.dirty.} = 
   EMU.get_data32(select_segment(), `addr`)
 
-template READ_MEM16*(`addr`: untyped) {.dirty.} = 
+template READ_MEM16*(`addr`: untyped): untyped {.dirty.} = 
   EMU.get_data16(select_segment(), `addr`)
 
-template READ_MEM8*(`addr`: untyped) {.dirty.} = 
+template READ_MEM8*(`addr`: untyped): untyped {.dirty.} = 
   EMU.get_data8(select_segment(), `addr`)
 
-template WRITE_MEM32*(`addr`: untyped, v: untyped) {.dirty.} = 
+template WRITE_MEM32*(`addr`: untyped, v: untyped): untyped {.dirty.} = 
   EMU.put_data32(select_segment(), `addr`, v)
 
-template WRITE_MEM16*(`addr`: untyped, v: untyped) {.dirty.} = 
+template WRITE_MEM16*(`addr`: untyped, v: untyped): untyped {.dirty.} = 
   EMU.put_data16(select_segment(), `addr`, v)
 
-template WRITE_MEM8*(`addr`: untyped, v: untyped) {.dirty.} = 
+template WRITE_MEM8*(`addr`: untyped, v: untyped): untyped {.dirty.} = 
   EMU.put_data8(select_segment(), `addr`, v)
 
-template PUSH32*(v: untyped) {.dirty.} = 
+template PUSH32*(v: untyped): untyped {.dirty.} = 
   EMU.push32(v)
 
-template PUSH16*(v: untyped) {.dirty.} = 
+template PUSH16*(v: untyped): untyped {.dirty.} = 
   EMU.push16(v)
 
-template POP32*() {.dirty.} = 
+template POP32*(): untyped {.dirty.} = 
   EMU.pop32()
 
-template POP16*() {.dirty.} = 
+template POP16*(): untyped {.dirty.} = 
   EMU.pop16()
 
-template PREFIX*() {.dirty.} = 
+template PREFIX*(): untyped {.dirty.} = 
   (instr.prefix)
 
-template OPCODE*() {.dirty.} = 
+template OPCODE*(): untyped {.dirty.} = 
   (instr.opcode)
 
-template _MODRM*() {.dirty.} = 
+template _MODRM*(): untyped {.dirty.} = 
   (instr._modrm)
 
-template MOD*() {.dirty.} = 
+template MOD*(): untyped {.dirty.} = 
   (instr.modrm.`mod`)
 
-template REG*() {.dirty.} = 
+template REG*(): untyped {.dirty.} = 
   (instr.modrm.reg)
 
-template RM*() {.dirty.} = 
+template RM*(): untyped {.dirty.} = 
   (instr.modrm.rm)
 
-template _SIB*() {.dirty.} = 
+template _SIB*(): untyped {.dirty.} = 
   (instr._sib)
 
-template SCALE*() {.dirty.} = 
+template SCALE*(): untyped {.dirty.} = 
   (instr.sib.scale)
 
-template INDEX*() {.dirty.} = 
+template INDEX*(): untyped {.dirty.} = 
   (instr.sib.index)
 
-template BASE*() {.dirty.} = 
+template BASE*(): untyped {.dirty.} = 
   (instr.sib.base)
 
-template DISP32*() {.dirty.} = 
+template DISP32*(): untyped {.dirty.} = 
   (instr.disp32)
 
-template DISP16*() {.dirty.} = 
+template DISP16*(): untyped {.dirty.} = 
   (instr.disp16)
 
-template DISP8*() {.dirty.} = 
+template DISP8*(): untyped {.dirty.} = 
   (instr.disp8)
 
-template IMM32*() {.dirty.} = 
+template IMM32*(): untyped {.dirty.} = 
   (instr.imm32)
 
-template IMM16*() {.dirty.} = 
+template IMM16*(): untyped {.dirty.} = 
   (instr.imm16)
 
-template IMM8*() {.dirty.} = 
+template IMM8*(): untyped {.dirty.} = 
   (instr.imm8)
 
-template PTR16*() {.dirty.} = 
+template PTR16*(): untyped {.dirty.} = 
   (instr.ptr16)
 
-template MOFFS*() {.dirty.} = 
+template MOFFS*(): untyped {.dirty.} = 
   (instr.moffs)
 
-template PRE_SEGMENT*() {.dirty.} = 
+template PRE_SEGMENT*(): untyped {.dirty.} = 
   (instr.pre_segment)
 
-template PRE_REPEAT*() {.dirty.} = 
+template PRE_REPEAT*(): untyped {.dirty.} = 
   (instr.pre_repeat)
 
-template SEGMENT*() {.dirty.} = 
+template SEGMENT*(): untyped {.dirty.} = 
   (instr.segment)
 
-const MAX_OPCODE = 0x200
+const MAX_OPCODE* = 0x200
 type
   ModRM* {.bycopy, importcpp.} = object
     rm* {.bitsize: 3.}: uint8
@@ -325,15 +325,15 @@ type
   instrfunc_t* = 
     proc(arg0: void): void {.cdecl.}
   
-const CHK_MODRM = (1 shl 0)
-const CHK_IMM32 = (1 shl 1)
-const CHK_IMM16 = (1 shl 2)
-const CHK_IMM8 = (1 shl 3)
-const CHK_PTR16 = (1 shl 4)
-const CHK_MOFFS = (1 shl 5)
-const CHSZ_NONE = 0
-const CHSZ_OP = 1
-const CHSZ_AD = 2
+const CHK_MODRM* = (1 shl 0)
+const CHK_IMM32* = (1 shl 1)
+const CHK_IMM16* = (1 shl 2)
+const CHK_IMM8* = (1 shl 3)
+const CHK_PTR16* = (1 shl 4)
+const CHK_MOFFS* = (1 shl 5)
+const CHSZ_NONE* = 0
+const CHSZ_OP* = 1
+const CHSZ_AD* = 2
 type
   InstrFlags* {.bycopy, union, importcpp.} = object
     flags*: uint8
