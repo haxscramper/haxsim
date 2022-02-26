@@ -1,14 +1,16 @@
-import
-  commonhpp
-import
-  processorhpp
-import
-  memoryhpp
-import
-  iohpp
+import commonhpp
+import processorhpp
+import memoryhpp
+import iohpp
+
+export commonhpp, processorhpp, memoryhpp, iohpp
+
 type
-  Hardware* {.bycopy, importcpp.} = object
-    
+  Hardware* {.bycopy.} = object
+    cpu*: Processor
+    mem*: Memory
+    io*: IO
   
-proc initHardware*(size: csize_t): Hardware = 
-  discard 
+proc initHardware*(size: csize_t): Hardware =
+  discard
+  # result.mem = initMemory(size)

@@ -1,5 +1,5 @@
 type
-  EXP_SX* = enum
+  exception_t* = enum
     EXP_DE
     EXP_DB
     EXP_BP
@@ -19,16 +19,15 @@ type
     EXP_XF
     EXP_VE
     EXP_SX
-  
-template EXCEPTION*(n: untyped, c: untyped): untyped {.dirty.} = 
+
+template EXCEPTION*(n: untyped, c: untyped): untyped {.dirty.} =
   if c:
     WARN("exception interrupt %d (%s)", n, astToStr(c))
     raise n
-  
 
-template EXCEPTION_WITH*(n: untyped, c: untyped, e: untyped): untyped {.dirty.} = 
+
+template EXCEPTION_WITH*(n: untyped, c: untyped, e: untyped): untyped {.dirty.} =
   if c:
     WARN("exception interrupt %d (%s)", n, astToStr(c))
     e
     raise n
-  
