@@ -141,7 +141,7 @@ proc search_tlb*(this: var DataAccess, vpn: uint32, pte: ptr PTE): bool =
 
 proc cache_tlb*(this: var DataAccess, vpn: uint32, pte: PTE): void = 
   if vpn + 1 > tlb.size():
-    tlb.resize(vpn + 1, `nil`)
+    tlb.resize(vpn + 1, nil)
   
   tlb[vpn] = newPTE()
   tlb[vpn][] = pte

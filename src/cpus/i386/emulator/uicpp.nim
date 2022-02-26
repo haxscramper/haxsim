@@ -36,8 +36,8 @@ proc ui_main*(this: var UI): void =
               glfwGetPrimaryMonitor()
             
             else:
-              `nil`
-            ), `nil`)
+              nil
+            ), nil)
   glfwSetWindowUserPointer(window, this)
   glfwMakeContextCurrent(window)
   glfwSetKeyCallback(window, keyboard_callback)

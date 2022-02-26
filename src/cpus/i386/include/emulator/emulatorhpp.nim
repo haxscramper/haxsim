@@ -36,7 +36,7 @@ proc is_running*(this: var Emulator): bool =
 
 proc stop*(this: var Emulator): void = 
   cxx_delete ui
-  ui = `nil`
+  ui = nil
 
 proc insert_floppy*(this: var Emulator, slot: uint8, disk: cstring, write: bool): bool = 
   return (if fdd:

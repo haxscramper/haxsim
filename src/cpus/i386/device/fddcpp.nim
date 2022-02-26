@@ -10,7 +10,7 @@ proc initFDD*(): FDD_FDD =
   fddfuncs[FDD_READ_DATA] = addr FDD.fdd_read_data
   fddfuncs[FDD_CONFIGURE] = addr FDD.fdd_configure
   for i in 0 ..< MAX_FDD:
-    drive[i] = `nil`
+    drive[i] = nil
   conf.EIS = 0
   conf.EFIFO = 1
   conf.POLL = 0
@@ -53,7 +53,7 @@ proc eject_disk*(this: var FDD, slot: uint8): bool =
   
   fclose(drive[slot].disk)
   cxx_delete drive[slot]
-  drive[slot] = `nil`
+  drive[slot] = nil
   return true
 
 proc seek*(this: var FDD, slot: uint8, c: uint8, h: uint8, s: uint8): int32 = 

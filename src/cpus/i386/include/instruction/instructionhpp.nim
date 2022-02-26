@@ -319,7 +319,7 @@ type
   
 proc initExecInstr*(): ExecInstr = 
   for i in 0 ..< MAX_OPCODE:
-    instrfuncs[i] = `nil`
+    instrfuncs[i] = nil
 
 type
   instrfunc_t* = 

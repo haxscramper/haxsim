@@ -1,7 +1,7 @@
-import
-  "include/commonhpp"
+import "include/commonhpp"
+import "include/emulator/emulatorhpp"
 
-template MEMORY_SIZE*() {.dirty.} =
+template MEMORY_SIZE*(): untyped {.dirty.} =
   (4 * MB)
 
 type
@@ -14,66 +14,19 @@ type
     ui_full*: bool
     ui_vm*: bool
   
-proc run_emulator*(set: Setting): void = 
-  discard 
+proc run_emulator*(set: Setting): void
 
 proc help*(name: cstring): void = 
   discard 
 
 proc init*(): void =
   when false:
-    setbuf(stdout, `nil`)
-    setbuf(stderr, `nil`)
+    setbuf(stdout, nil)
+    setbuf(stderr, nil)
 
 proc main*(argc: cint, argv: ptr UncheckedArray[cstring]): cint = 
-  var set: Setting = (
-    mem_size: MEMORY_SIZE,
-    image_name: "sample/kernel.img",
-    load_addr: 0x0,
-    load_size: cast[csize_t](-1),
-    ui_enable: true,
-    ui_full: false,
-    ui_vm: false)
-
+  var set = Setting(mem_size: MEMORY_SIZE, image_name: "sample/kernel.img", load_addr: 0x0, load_size: cast[csize_t](-1), ui_enable: true, ui_full: false, ui_vm: false)
   var opt: char
-  var long_options: ptr UncheckedArray[option] = @([
-                    ("memory", required_argument, `nil`, 1), 
-                    ("load_addr", required_argument, `nil`, 3), 
-                    ("load_size", required_argument, `nil`, 4), 
-                    ("full", no_argument, `nil`, 5), 
-                    ("VM", no_argument, `nil`, 6), 
-                    ("no_graphic", no_argument, `nil`, 7), 
-                    ("help", no_argument, `nil`, 104), 
-                    (0, 0, 0, 0)
-                  ])
-  while ((opt = getopt_long(argc, argv, DEBUG_OPT, "m:z:a:s:h", long_options, `nil`)) != -1):
-    var v: uint32
-    
-    case opt:
-      of 109, 1:
-        v = atoi(optarg)
-        if v:
-          set.mem_size = v * MB
-        
-        else:
-          WARN("memory size is zero")
-        
-      of 97, 3:
-        set.load_addr = strtol(optarg, `nil`, 0)
-      of 115, 4:
-        set.load_size = strtol(optarg, `nil`, 0)
-      of 5:
-        set.ui_full = true
-      of 6:
-        set.ui_vm = true
-      of 7:
-        set.ui_enable = false
-      of 104, 63:
-        help(argv[0])
-  if argc > optind:
-    set.image_name = argv[optind]
-  
-  
   run_emulator(set)
 
 proc run_emulator*(set: Setting): void = 
@@ -126,11 +79,12 @@ proc run_emulator*(set: Setting): void =
         instr16.parse()
         instr16.exec()
       
-    exceptexception_t as n
+    except exception_t as n:
       emu.queue_interrupt(n, true)
       
       ERROR("Exception %d", n)
-    except
+
+    except:
       emu.dump_regs()
       emu.stop()
 

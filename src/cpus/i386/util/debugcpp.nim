@@ -14,7 +14,7 @@ type
     fp*: ptr FILE
     fatal*: bool    
   
-var typeset: ptr UncheckedArray[TypeSet] = @([("ASSERT", stderr, true), ("ERROR", stderr, true), ("WARN", stderr, false), ("INFO", stdout, false), (`nil`, stdout, false)])
+var typeset: ptr UncheckedArray[TypeSet] = @([("ASSERT", stderr, true), ("ERROR", stderr, true), ("WARN", stderr, false), ("INFO", stdout, false), (nil, stdout, false)])
 var debug_level: cuint = 0
 proc debug_print*(`type`: cint, file: cstring, function: cstring, line: cint, level: cuint, fmt: cstring): void {.varargs.} = 
   var ap: va_list

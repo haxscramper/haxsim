@@ -5,7 +5,7 @@ import
 proc initPIC*(master: ptr PIC): PIC_PIC = 
   pic_m = master
   for i in 0 ..< MAX_IRQ:
-    irq[i] = `nil`
+    irq[i] = nil
   irr = 0
   isr = 0
   init_icn = -1
