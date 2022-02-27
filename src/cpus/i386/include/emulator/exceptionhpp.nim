@@ -23,11 +23,15 @@ type
 template EXCEPTION*(n: untyped, c: untyped): untyped {.dirty.} =
   if c:
     WARN("exception interrupt %d (%s)", n, astToStr(c))
-    raise n
+    when false:
+      # FIXME wrap expression
+      raise n
 
 
 template EXCEPTION_WITH*(n: untyped, c: untyped, e: untyped): untyped {.dirty.} =
   if c:
     WARN("exception interrupt %d (%s)", n, astToStr(c))
     e
-    raise n
+    when false:
+      # FIXME wrap expression
+      raise n

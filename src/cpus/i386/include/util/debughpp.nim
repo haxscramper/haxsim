@@ -32,7 +32,8 @@ template DEBUG_MSG*(
   discard
 
 template MSG*(fmt: untyped, args: varargs[untyped]): untyped {.dirty.} =
-  fprintf(stdout, fmt)
+  echo fmt
+  # fprintf(stdout, fmt)
 
 proc debug_print*(
     `type`: F_MSG_ENUM,

@@ -138,96 +138,36 @@ type
 
 
 
-proc A*(this: `type`): uint8 =
-  this.field2.A
-
-proc `A =`*(this: var `type`, value: uint8) =
-  this.field2.A = value
-
-proc segc*(this: `type`): uint8 =
-  this.field2.segc
-
-proc `segc =`*(this: var `type`, value: uint8) =
-  this.field2.segc = value
-
-
-proc S*(this: SGRegCache_flags): uint8 =
-  this.field2.S
-
-proc `S =`*(this: var SGRegCache_flags, value: uint8) =
-  this.field2.S = value
-
-proc DPL*(this: SGRegCache_flags): uint8 =
-  this.field2.DPL
-
-proc `DPL =`*(this: var SGRegCache_flags, value: uint8) =
-  this.field2.DPL = value
-
-proc P*(this: SGRegCache_flags): uint8 =
-  this.field2.P
-
-proc `P =`*(this: var SGRegCache_flags, value: uint8) =
-  this.field2.P = value
-
-proc AVL*(this: SGRegCache_flags): uint8 =
-  this.field2.AVL
-
-proc `AVL =`*(this: var SGRegCache_flags, value: uint8) =
-  this.field2.AVL = value
-
-proc DB*(this: SGRegCache_flags): uint8 =
-  this.field2.DB
-
-proc `DB =`*(this: var SGRegCache_flags, value: uint8) =
-  this.field2.DB = value
-
-proc G*(this: SGRegCache_flags): uint8 =
-  this.field2.G
-
-proc `G =`*(this: var SGRegCache_flags, value: uint8) =
-  this.field2.G = value
-
-proc RPL*(this: SGRegister_field0): uint16 =
-  this.field1.RPL
-
-proc `RPL =`*(this: var SGRegister_field0, value: uint16) =
-  this.field1.RPL = value
-
-proc TI*(this: SGRegister_field0): uint16 =
-  this.field1.TI
-
-proc `TI =`*(this: var SGRegister_field0, value: uint16) =
-  this.field1.TI = value
-
-proc index*(this: SGRegister_field0): uint16 =
-  this.field1.index
-
-proc `index =`*(this: var SGRegister_field0, value: uint16) =
-  this.field1.index = value
-
-proc raw*(this: SGRegister): uint16 =
-  this.field0.raw
-
-proc `raw =`*(this: var SGRegister, value: uint16) =
-  this.field0.raw = value
-
-proc RPL*(this: SGRegister): uint16 =
-  this.field0.field1.RPL
-
-proc `RPL =`*(this: var SGRegister, value: uint16) =
-  this.field0.field1.RPL = value
-
-proc TI*(this: SGRegister): uint16 =
-  this.field0.field1.TI
-
-proc `TI =`*(this: var SGRegister, value: uint16) =
-  this.field0.field1.TI = value
-
-proc index*(this: SGRegister): uint16 =
-  this.field0.field1.index
-
-proc `index =`*(this: var SGRegister, value: uint16) =
-  this.field0.field1.index = value
+proc A*(this: `type`): uint8 = this.field2.A
+proc `A=`*(this: var `type`, value: uint8) = this.field2.A = value
+proc segc*(this: `type`): uint8 = this.field2.segc
+proc `segc=`*(this: var `type`, value: uint8) = this.field2.segc = value
+proc S*(this: SGRegCache_flags): uint8 = this.field2.S
+proc `S=`*(this: var SGRegCache_flags, value: uint8) = this.field2.S = value
+proc DPL*(this: SGRegCache_flags): uint8 = this.field2.DPL
+proc `DPL=`*(this: var SGRegCache_flags, value: uint8) = this.field2.DPL = value
+proc P*(this: SGRegCache_flags): uint8 = this.field2.P
+proc `P=`*(this: var SGRegCache_flags, value: uint8) = this.field2.P = value
+proc AVL*(this: SGRegCache_flags): uint8 = this.field2.AVL
+proc `AVL=`*(this: var SGRegCache_flags, value: uint8) = this.field2.AVL = value
+proc DB*(this: SGRegCache_flags): uint8 = this.field2.DB
+proc `DB=`*(this: var SGRegCache_flags, value: uint8) = this.field2.DB = value
+proc G*(this: SGRegCache_flags): uint8 = this.field2.G
+proc `G=`*(this: var SGRegCache_flags, value: uint8) = this.field2.G = value
+proc RPL*(this: SGRegister_field0): uint16 = this.field1.RPL
+proc `RPL=`*(this: var SGRegister_field0, value: uint16) = this.field1.RPL = value
+proc TI*(this: SGRegister_field0): uint16 = this.field1.TI
+proc `TI=`*(this: var SGRegister_field0, value: uint16) = this.field1.TI = value
+proc index*(this: SGRegister_field0): uint16 = this.field1.index
+proc `index=`*(this: var SGRegister_field0, value: uint16) = this.field1.index = value
+proc raw*(this: SGRegister): uint16 = this.field0.raw
+proc `raw=`*(this: var SGRegister, value: uint16) = this.field0.raw = value
+proc RPL*(this: SGRegister): uint16 = this.field0.field1.RPL
+proc `RPL=`*(this: var SGRegister, value: uint16) = this.field0.field1.RPL = value
+proc TI*(this: SGRegister): uint16 = this.field0.field1.TI
+proc `TI=`*(this: var SGRegister, value: uint16) = this.field0.field1.TI = value
+proc index*(this: SGRegister): uint16 = this.field0.field1.index
+proc `index=`*(this: var SGRegister, value: uint16) = this.field0.field1.index = value
 
 type
   DTRegister* {.bycopy.} = object
@@ -247,18 +187,10 @@ type
     dtregs*: array[DTREGS_COUNT, DTRegister]
     halt*: bool
 
-proc eip*(this: Processor): uint32 =
-  this.field0.eip
-
-proc `eip =`*(this: var Processor, value: uint32) =
-  this.field0.eip = value
-
-proc ip*(this: Processor): uint16 =
-  this.field0.ip
-
-proc `ip =`*(this: var Processor, value: uint16) =
-  this.field0.ip = value
-
+proc eip*(this: Processor): uint32 = this.field0.eip
+proc `eip=`*(this: var Processor, value: uint32) = this.field0.eip = value
+proc ip*(this: Processor): uint16 = this.field0.ip
+proc `ip=`*(this: var Processor, value: uint16) = this.field0.ip = value
 
 proc is_mode32*(this: var Processor): bool =
   return this.sgregs[CS].cache.flags.DB.bool

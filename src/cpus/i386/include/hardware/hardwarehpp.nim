@@ -6,7 +6,7 @@ import iohpp
 export commonhpp, processorhpp, memoryhpp, iohpp
 
 type
-  Hardware* {.bycopy.} = object
+  Hardware* {.bycopy, inheritable.} = object
     cpu*: Processor
     mem*: Memory
     io*: IO

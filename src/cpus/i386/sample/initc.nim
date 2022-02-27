@@ -33,7 +33,7 @@ type
     ptbl_base* {.bitsize: 20.}: uint32
   
 type
-  PTE* {.bycopy, importcpp.} = object
+  PTE* {.bycopy.} = object
     P* {.bitsize: 1.}: uint32
     RW* {.bitsize: 1.}: uint32
     US* {.bitsize: 1.}: uint32

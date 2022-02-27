@@ -1,7 +1,5 @@
-import
-  commonhpp
-import
-  hardware/hardwarehpp
+import commonhpp
+import hardware/[hardwarehpp, crhpp]
 type
   PDE* {.bycopy, importcpp.} = object
     P* {.bitsize: 1.}: uint32
@@ -37,7 +35,7 @@ type
     MODE_EXEC
 
 type
-  DataAccess* {.bycopy, importcpp.} = object
+  DataAccess* {.bycopy.} = object of Hardware
     tlb*: seq[PTE]
 
 import emulator/exceptionhpp
@@ -46,32 +44,27 @@ import emulator/descriptorhpp
 proc set_segment*(this: var DataAccess, reg: sgreg_t, sel: uint16): void =
   var sg: SGRegister
   var cache: ptr SGRegCache = addr sg.cache
-  get_sgreg(reg, addr sg)
+  this.cpu.get_sgreg(reg, addr sg)
   sg.raw = sel
-  if is_protected():
+  if this.cpu.is_protected():
     var dt_base: uint32
-    var dt_index: uint16
+    var dt_limit, dt_index: uint16
     var gdt: SegDesc
-    var sgreg_name: ptr UncheckedArray[cstring] = ("ES", "CS", "SS", "DS", "FS", "GS")
+    let sgreg_name = ["ES", "CS", "SS", "DS", "FS", "GS"]
     dt_index = sg.index shl 3
-    dt_base = get_dtreg_base((if sg.TI:
-          LDTR
-
-        else:
-          GDTR
-        ))
-    dt_limit = get_dtreg_limit((if sg.TI:
-          LDTR
-
-        else:
-          GDTR
-        ))
-    EXCEPTION(EXP_GP, (reg == CS or reg == SS) and not(dt_index))
+    dt_base = this.cpu.get_dtreg_base(if sg.TI.bool: LDTR else: GDTR)
+    dt_limit = this.cpu.get_dtreg_limit(if sg.TI.bool: LDTR else: GDTR)
+    EXCEPTION(EXP_GP, (reg == CS or reg == SS) and not(dt_index).bool)
     EXCEPTION(EXP_GP, dt_index > dt_limit)
-    read_data(addr gdt, dt_base + dt_index, sizeof((SegDesc)))
+    discard this.mem.read_data(addr gdt, dt_base + dt_index, sizeof((SegDesc)).csize_t)
     cache.base = (gdt.base_h shl 24) + (gdt.base_m shl 16) + gdt.base_l
     cache.limit = (gdt.limit_h shl 16) + gdt.limit_l
-    cast[ptr uint8](addr cache.flags.`type`)[] = cast[ptr uint8](addr gdt.`type`)[]
+    cast[ptr uint8](
+      addr cache.flags.`type`
+    )[] = cast[ptr uint8](
+      addr gdt.getType()
+    )[]
+
     cache.flags.AVL = gdt.AVL
     cache.flags.DB = gdt.DB
     cache.flags.G = gdt.G
@@ -85,25 +78,76 @@ proc set_segment*(this: var DataAccess, reg: sgreg_t, sel: uint16): void =
   else:
     cache.base = cast[uint32](sel) shl 4
 
-  set_sgreg(reg, addr sg)
+  this.cpu.set_sgreg(reg, addr sg)
 
 proc get_segment*(this: var DataAccess, reg: sgreg_t): uint16 =
   var sg: SGRegister
-  get_sgreg(reg, addr sg)
+  this.cpu.get_sgreg(reg, addr sg)
   return sg.raw
 
+proc trans_v2l*(this: var DataAccess, mode: acsmode_t, seg: sgreg_t, vaddr: uint32): uint32 =
+  var laddr: uint32
+  var CPL: uint8
+  var sg: SGRegister
+  CPL = this.get_segment(CS).uint8 and 3
+  this.cpu.get_sgreg(seg, addr sg)
+  if this.cpu.is_protected():
+    var base, limit: uint32
+    var cache: SGRegCache = sg.cache
+    base = cache.base
+    limit = cache.limit
+    if cache.flags.G.bool:
+      limit = (limit shl 12)
+
+    if cache.flags.`type`.segc.bool:
+      EXCEPTION(EXP_GP, mode == MODE_WRITE)
+      EXCEPTION(EXP_GP, mode == MODE_READ and not(cache.flags.`type`.code.r).bool)
+      EXCEPTION(
+        EXP_GP,
+        CPL > cache.flags.DPL and
+        not((mode == MODE_EXEC and cache.flags.`type`.code.cnf.bool)).bool)
+
+    else:
+      EXCEPTION(EXP_GP, mode == MODE_EXEC)
+      EXCEPTION(EXP_GP, mode == MODE_WRITE and not(cache.flags.`type`.data.w).bool)
+      EXCEPTION(EXP_GP, CPL > cache.flags.DPL)
+      if cache.flags.`type`.data.exd.bool:
+        base = (base - limit)
+
+
+    EXCEPTION(EXP_GP, vaddr > limit)
+    laddr = base + vaddr
+    INFO(6, "base=0x%04x, limit=0x%02x, laddr=0x%02x", base, limit, laddr)
+
+  else:
+    laddr = (sg.raw shl 4) + vaddr
+    INFO(6, "base=0x%04x, laddr=0x%02x", sg.raw shl 4, laddr)
+
+  return laddr
+
+
+proc search_tlb*(this: var DataAccess, vpn: uint32, pte: ptr PTE): bool =
+  if vpn + 1 > uint32(this.tlb.len() or not(this.tlb[vpn])):
+    return false
+
+  ASSERT(pte.isNil())
+  pte[] = tlb[vpn][]
+  return true
+
+
+
 proc trans_v2p*(this: var DataAccess, mode: acsmode_t, seg: sgreg_t, vaddr: uint32): uint32 =
-  var paddr: uint32
-  laddr = trans_v2l(mode, seg, vaddr)
-  if is_ena_paging():
+  var laddr, paddr: uint32
+  laddr = this.trans_v2l(mode, seg, vaddr)
+  if this.cpu.is_ena_paging():
     var vpn: uint32
     var offset: uint16
     var cpl: uint8
     var pte: PTE
-    EXCEPTION(EXP_GP, not(is_protected()))
-    cpl = get_segment(CS) and 3
+    EXCEPTION(EXP_GP, not(this.cpu.is_protected()))
+    cpl = this.get_segment(CS).uint8 and 3
     vpn = laddr shr 12
-    offset = laddr and ((1 shl 12) - 1)
+    offset = laddr.uint16 and ((1 shl 12) - 1)
     if not(search_tlb(vpn, addr pte)):
       var ptbl_base: uint32
       var ptbl_index: uint16
@@ -133,50 +177,6 @@ proc trans_v2p*(this: var DataAccess, mode: acsmode_t, seg: sgreg_t, vaddr: uint
 
   return paddr
 
-proc trans_v2l*(this: var DataAccess, mode: acsmode_t, seg: sgreg_t, vaddr: uint32): uint32 =
-  var laddr: uint32
-  var CPL: uint8
-  var sg: SGRegister
-  CPL = get_segment(CS) and 3
-  get_sgreg(seg, addr sg)
-  if is_protected():
-    var limit: uint32
-    var cache: SGRegCache = sg.cache
-    base = cache.base
-    limit = cache.limit
-    if cache.flags.G:
-      limit = (limit shl 12)
-
-    if cache.flags.`type`.segc:
-      EXCEPTION(EXP_GP, mode == MODE_WRITE)
-      EXCEPTION(EXP_GP, mode == MODE_READ and not(cache.flags.`type`.code.r))
-      EXCEPTION(EXP_GP, CPL > cache.flags.DPL and not((mode == MODE_EXEC and cache.flags.`type`.code.cnf)))
-
-    else:
-      EXCEPTION(EXP_GP, mode == MODE_EXEC)
-      EXCEPTION(EXP_GP, mode == MODE_WRITE and not(cache.flags.`type`.data.w))
-      EXCEPTION(EXP_GP, CPL > cache.flags.DPL)
-      if cache.flags.`type`.data.exd:
-        base = (base - limit)
-
-
-    EXCEPTION(EXP_GP, vaddr > limit)
-    laddr = base + vaddr
-    INFO(6, "base=0x%04x, limit=0x%02x, laddr=0x%02x", base, limit, laddr)
-
-  else:
-    laddr = (sg.raw shl 4) + vaddr
-    INFO(6, "base=0x%04x, laddr=0x%02x", sg.raw shl 4, laddr)
-
-  return laddr
-
-proc search_tlb*(this: var DataAccess, vpn: uint32, pte: ptr PTE): bool =
-  if vpn + 1 > tlb.size() or not(tlb[vpn]):
-    return false
-
-  ASSERT(pte)
-  pte[] = tlb[vpn][]
-  return true
 
 proc cache_tlb*(this: var DataAccess, vpn: uint32, pte: PTE): void =
   if vpn + 1 > tlb.size():
