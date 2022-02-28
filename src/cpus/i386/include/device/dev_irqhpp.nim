@@ -5,11 +5,11 @@ type
     intr*: bool
   
 proc initIRQ*(): IRQ = 
-  intr = false
+  result.intr = false
 
 proc chk_intreq*(this: var IRQ): bool = 
-  if intr:
-    intr = false
+  if this.intr:
+    this.intr = false
     return true
   
   return false
