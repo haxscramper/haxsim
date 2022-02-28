@@ -1,47 +1,39 @@
 import commonhpp
+import std/deques
 import accesshpp
 import device/pichpp
 
 type
-  IVT* {.bycopy, union, importcpp.} = object
+  IVT* {.bycopy, union.} = object
     raw*: uint32
     field1*: IVT_field1
 
-type
   IVT_field1* {.bycopy.} = object
     offset*: uint16
     segment*: uint16
 
-proc offset*(this: IVT): uint16 =
-  this.field1.offset
-
-proc `offset =`*(this: var IVT, value: uint16) =
-  this.field1.offset = value
-
-proc segment*(this: IVT): uint16 =
-  this.field1.segment
-
-proc `segment =`*(this: var IVT, value: uint16) =
-  this.field1.segment = value
+proc offset*(this: IVT): uint16 = this.field1.offset
+proc `offset=`*(this: var IVT, value: uint16) = this.field1.offset = value
+proc segment*(this: IVT): uint16 = this.field1.segment
+proc `segment=`*(this: var IVT, value: uint16) = this.field1.segment = value
 
 type
-  Interrupt* {.bycopy, importcpp.} = object
-    intr_q*: std_queue[std_pair[uint8, bool]]
-    pic_s*: ptr PIC
+  Interrupt* {.bycopy.} = object of DataAccess
+    intr_q*: Deque[(uint8, bool)]
+    pic_s*, pic_m*: ptr PIC
 
 proc set_pic*(this: var Interrupt, pic: ptr PIC, master: bool): void =
-  ((if master:
-      pic_m
+  if master:
+    this.pic_m = pic
 
-    else:
-      pic_s
-    )) = pic
+  else:
+    this.pic_s = pic
 
 proc restore_regs*(this: var Interrupt): void =
   discard
 
 proc queue_interrupt*(this: var Interrupt, n: uint8, hard: bool): void =
-  intr_q.push(std.make_pair(n, hard))
+  this.intr_q.addLast((n, hard))
 
 proc iret*(this: var Interrupt): void =
   discard
