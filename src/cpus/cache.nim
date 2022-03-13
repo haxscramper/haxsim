@@ -62,7 +62,7 @@ func `$`(opc: Opc): string =
 
 type
   Cache[Lines: static[int]; T] = object
-    lines: array[Lines, tuple[data: T, active: bool, address: Slice[uint32]]]
+    rows: array[Lines, tuple[data: T, active: bool, address: Slice[uint32]]]
 
   Cpu = object
     pc: int
@@ -81,39 +81,66 @@ type
 
     ops: seq[Opc]
     instrCache: Cache[4, Opc]
-    dataCache: Cache[4, uint8]
+    dataCache: Cache[4, array[8, uint8]]
 
 
 proc getAt[L, T](c: Cache[L, T], address: uint32): Option[T] =
-  for (data, active, ad) in c.lines:
+  for (data, active, ad) in c.rows:
     if address in ad:
       return some data
 
 proc setAt[L, T](c: var Cache[L, T], address: uint32, value: T) =
-  for idx in 0 ..< c.lines.len:
-    if not c.lines[idx].active:
-      c.lines[idx].active = true
-      c.lines[idx].data = value
-      c.lines[idx].address = address .. address + 7
+  for idx in 0 ..< c.rows.len:
+    if not c.rows[idx].active:
+      c.rows[idx].active = true
+      c.rows[idx].data = value
+      c.rows[idx].address = address .. address + 7
       return
 
-  c.lines[0] = (value, true, address .. address + 7)
+  c.rows[0] = (value, true, address .. address + 7)
 
-proc memset(cpu: var Cpu, mem: uint, value: uint8) =
-  inc cpu.memsetCount
-  cpu.mem[mem] = uint8(value and 0xFF)
+
+proc fillRow(cpu: var Cpu, rowIdx: int, mem: uint32) =
+  cpu.dataCache.rows[rowIdx].active = true
+  cpu.dataCache.rows[rowIdx].address = mem .. mem + 7
+  let old = cpu.dataCache.rows[rowIdx]
+  if old.active:
+    for ad in 0 .. 7.uint32:
+      cpu.mem[old.address.a + ad] = cpu.dataCache.rows[rowIdx].data[ad]
+
+  for ad in 0 .. 7.uint32:
+    cpu.dataCache.rows[rowIdx].data[ad] = cpu.mem[ad + mem]
+
+proc memset(cpu: var Cpu, mem: uint32, value: uint8) =
+  cpu.mem[mem] = value
+  for row in cpu.dataCache.rows.mitems:
+    if mem in row.address:
+      echov "Hit assign cache for", mem, row.address
+      row.data[row.address.b - mem] = value
+      return
+
+  for idx, row in cpu.dataCache.rows.mpairs():
+    if not row.active:
+      fillRow(cpu, idx, mem)
+      row.data[row.address.b - mem] = value
+      return
+
+  fillRow(cpu, 0, mem)
+  cpu.dataCache.rows[0].data[cpu.dataCache.rows[0].address.b - mem] = value
+  return
 
 proc memget(cpu: var Cpu, mem: uint32): uint8 =
-  let val = cpu.dataCache.getAt(mem)
-  if val.isSome():
-    echo "Data cache hit @", mem
-    return val.get()
+  for row in cpu.dataCache.rows:
+    if mem in row.address:
+      return row.data[row.address.b - mem]
 
-  else:
-    inc cpu.memgetCount
-    result = cpu.mem[mem]
-    cpu.dataCache.setAt(mem, result)
-  # echo clfmt"    {result} = [{mem:,fg-red}]"
+  for idx, row in cpu.dataCache.rows.mpairs():
+    if not row.active:
+      fillRow(cpu, idx, mem)
+      return memget(cpu, mem)
+
+  fillRow(cpu, 0, mem)
+  return memget(cpu, mem)
 
 proc opget(cpu: var Cpu): Opc =
   inc cpu.opgetCount
@@ -201,6 +228,10 @@ cpu.ops = @[
   opc(Nop)
 ]
 
+echo "----------------------------"
+echo "----------------------------"
+echo "----------------------------"
+
 const N = 10
 cpu.ops = @[
   opc(MovANum, N), # [0]
@@ -221,8 +252,8 @@ let start = cpuTime()
 loop(cpu)
 echo cpuTime() - start
 
-for i in 0 .. 12:
-  echov cpu.mem[i]
+for i in 0 .. N:
+  echov i, cpu.mem[i]
 
 echo &"""
 direct memget: {cpu.memgetCount}
