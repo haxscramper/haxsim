@@ -69,7 +69,7 @@ type
     sp: int
     regA: uint8
     regB: uint8
-    mem: array[256, uint8]
+    mem: array[512, uint8]
     lastZero: bool
     lastPositive: bool
     lastNegative: bool
@@ -154,17 +154,21 @@ proc loop(cpu: var Cpu) =
     arg
 
   while cpu.pc < cpu.ops.len:
+    inc cnt
+    # if 40 < cnt:
+    #   break
+
     let op = cpu.opget()
     echo $clfmt"{cnt:<3}| {cpu.pc:<3,fg-blue} {op:<15} [A:{cpu.regA:^3,fg-red}][B:{cpu.regB:^3,fg-red}] "
          # $clfmt"0: {cpu.mem[0]:,fg-green} 4: {cpu.mem[4]:,fg-green}"
     inc cnt
-    var math = false
     case op.kind.cmdGet():
       of AddANum: cpu.regA += op.arg.cmdGet()
       of MovMemA: cpu.memset(op.arg.cmdGet(), cpu.regA)
       of MovANum: cpu.regA = op.arg.cmdGet()
       of MovBNum: cpu.regB = op.arg.cmdGet()
       of MovMemBA: cpu.memset(cpu.regB, cpu.regA)
+      of MovMemAB: cpu.memset(cpu.regA, cpu.regB)
       of MovAMem: cpu.regA = cpu.memget(op.arg.cmdGet())
       of AddAMem: cpu.regA += cpu.memget(op.arg.cmdGet())
       of Nop: discard
@@ -173,21 +177,37 @@ proc loop(cpu: var Cpu) =
         cpu.pc = int(op.arg.cmdGet())
         continue
 
+      of Jgreat:
+        echo clfmt"???  if last great ({cpu.lastPositive}) - jump to {op.arg:,fg-red}"
+        if cpu.lastPositive:
+          echo ">>>  do jump"
+          cpu.pc = int(op.arg.cmdGet())
+          continue
+
       of Jzero:
-        echo clfmt"???  if {cpu.lastZero} - jump to {op.arg:,fg-red}"
+        echo clfmt"???  if last zero ({cpu.lastZero}) - jump to {op.arg:,fg-red}"
         if cpu.lastZero:
           echo ">>>  do jump"
           cpu.pc = int(op.arg.cmdGet())
           continue
 
       of DecB:
-        math = true
         dec cpu.regB
         cpu.lastZero = cpu.regA == 0
 
+      of IncB:
+        inc cpu.regB
+
+      of IncA:
+        inc cpu.regA
+
       of DecA:
-        math = true
         dec cpu.regA
+        cpu.lastZero = cpu.regA == 0
+
+      of SubANum:
+        cpu.lastPositive = op.arg < cpu.regA
+        cpu.regA -= op.arg
         cpu.lastZero = cpu.regA == 0
 
       else:
@@ -234,14 +254,17 @@ echo "----------------------------"
 
 const N = 10
 cpu.ops = @[
-  opc(MovANum, N), # [0]
-  opc(MovBNum, N), # [1]
-  opc(MovMemBA), # [2]
-  opc(DecA), # [3]
-  opc(DecB), # [4]
-  opc(JZero, 7), # [5]
-  opc(Jmp, 2), # [6]
-  opc(Nop), # [7]]
+  opc(MovANum, 0), # [0]
+  opc(MovBNum, 0), # [1]
+  opc(IncA), # [2]
+  opc(IncB), # [3]
+  opc(MovMemAB), # [4]
+  opc(MovMemA, N + 2), # [5]
+  opc(SubANum, N), # [6]
+  opc(JGreat, 10), # [7]
+  opc(MovAMem, N + 2), # [8]
+  opc(Jmp, 2), # [9]
+  opc(Nop), # [10]
 ]
 
 for idx, op in mpairs(cpu.ops):
@@ -252,8 +275,6 @@ let start = cpuTime()
 loop(cpu)
 echo cpuTime() - start
 
-for i in 0 .. N:
-  echov i, cpu.mem[i]
 
 echo &"""
 direct memget: {cpu.memgetCount}
@@ -261,4 +282,5 @@ direct memset: {cpu.memsetCount}
 opget count  : {cpu.opgetCount}
 """
 
-echov cpu.memget(4)
+for i in 0 .. N.uint32:
+  echov i, cpu.memget(i)
