@@ -1,18 +1,17 @@
-import
-  stringh
-import
-  commonhpp
-import
-  instructionhpp
+import commonhpp
+import instructionhpp
+
 type
-  InstrBase* {.bycopy, importcpp.} = object
-    
-  
-proc code_0f01*(this: var InstrBase): void = 
+  InstrBase* {.bycopy, inheritable.} = object
+    exec*: ExecInstr
+    parse*: ParseInstr
+    emu*: EmuInstr
+
+proc code_0f01*(this: var InstrBase): void =
   discard 
 
 proc set_chsz_ad*(this: var InstrBase, ad: bool): void = 
-  chsz_ad = ad
+  this.exec.chsz_ad = ad
 
 proc code_0f00*(this: var InstrBase): void = 
   discard 
@@ -126,7 +125,7 @@ proc seto_rm8*(this: var InstrBase): void =
   discard 
 
 type
-  Instr16* {.bycopy, importcpp.} = object
+  Instr16* {.bycopy.} = object of InstrBase
     
   
 proc jnle_rel16*(this: var Instr16): void = 
@@ -178,7 +177,7 @@ proc jo_rel16*(this: var Instr16): void =
   discard 
 
 type
-  Instr32* {.bycopy, importcpp.} = object
+  Instr32* {.bycopy.} = object
     
   
 proc jnle_rel32*(this: var Instr32): void = 

@@ -241,7 +241,7 @@ type
 
   instrfunc_t* = proc(arg0: void)
 
-  ExecInstr* {.bycopy.} = object
+  ExecInstr* {.bycopy.} = object of Instruction
     instrfuncs*: array[MAX_OPCODE, instrfunc_t]
 
 proc dmodrm*(this: InstrData): uint8 =

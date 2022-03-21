@@ -1,111 +1,23 @@
-import
-  stdinth
-import
-  instruction/basehpp
-import
-  emulator/exceptionhpp
+import instruction/[basehpp, instructionhpp]
+import commonhpp, execcpp
+import emulator/exceptionhpp
+
 template instrbase*(f: untyped): untyped {.dirty.} = 
   ((instrfunc_t) and InstrBase.f)
 
-proc initInstrBase*(): InstrBase_InstrBase = 
-  var i: cint
-  set_funcflag(0x00, instrbase(add_rm8_r8), CHK_MODRM)
-  set_funcflag(0x02, instrbase(add_r8_rm8), CHK_MODRM)
-  set_funcflag(0x04, instrbase(add_al_imm8), CHK_IMM8)
-  set_funcflag(0x08, instrbase(or_rm8_r8), CHK_MODRM)
-  set_funcflag(0x0a, instrbase(or_r8_rm8), CHK_MODRM)
-  set_funcflag(0x0c, instrbase(or_al_imm8), CHK_IMM8)
-  set_funcflag(0x20, instrbase(and_rm8_r8), CHK_MODRM)
-  set_funcflag(0x22, instrbase(and_r8_rm8), CHK_MODRM)
-  set_funcflag(0x24, instrbase(and_al_imm8), CHK_IMM8)
-  set_funcflag(0x28, instrbase(sub_rm8_r8), CHK_MODRM)
-  set_funcflag(0x2a, instrbase(sub_r8_rm8), CHK_MODRM)
-  set_funcflag(0x2c, instrbase(sub_al_imm8), CHK_IMM8)
-  set_funcflag(0x30, instrbase(xor_rm8_r8), CHK_MODRM)
-  set_funcflag(0x32, instrbase(xor_r8_rm8), CHK_MODRM)
-  set_funcflag(0x34, instrbase(xor_al_imm8), CHK_IMM8)
-  set_funcflag(0x38, instrbase(cmp_rm8_r8), CHK_MODRM)
-  set_funcflag(0x3a, instrbase(cmp_r8_rm8), CHK_MODRM)
-  set_funcflag(0x3c, instrbase(cmp_al_imm8), CHK_IMM8)
-  set_funcflag(0x70, instrbase(jo_rel8), CHK_IMM8)
-  set_funcflag(0x71, instrbase(jno_rel8), CHK_IMM8)
-  set_funcflag(0x72, instrbase(jb_rel8), CHK_IMM8)
-  set_funcflag(0x73, instrbase(jnb_rel8), CHK_IMM8)
-  set_funcflag(0x74, instrbase(jz_rel8), CHK_IMM8)
-  set_funcflag(0x75, instrbase(jnz_rel8), CHK_IMM8)
-  set_funcflag(0x76, instrbase(jbe_rel8), CHK_IMM8)
-  set_funcflag(0x77, instrbase(ja_rel8), CHK_IMM8)
-  set_funcflag(0x78, instrbase(js_rel8), CHK_IMM8)
-  set_funcflag(0x79, instrbase(jns_rel8), CHK_IMM8)
-  set_funcflag(0x7a, instrbase(jp_rel8), CHK_IMM8)
-  set_funcflag(0x7b, instrbase(jnp_rel8), CHK_IMM8)
-  set_funcflag(0x7c, instrbase(jl_rel8), CHK_IMM8)
-  set_funcflag(0x7d, instrbase(jnl_rel8), CHK_IMM8)
-  set_funcflag(0x7e, instrbase(jle_rel8), CHK_IMM8)
-  set_funcflag(0x7f, instrbase(jnle_rel8), CHK_IMM8)
-  set_funcflag(0x84, instrbase(test_rm8_r8), CHK_MODRM)
-  set_funcflag(0x86, instrbase(xchg_r8_rm8), CHK_MODRM)
-  set_funcflag(0x88, instrbase(mov_rm8_r8), CHK_MODRM)
-  set_funcflag(0x8a, instrbase(mov_r8_rm8), CHK_MODRM)
-  set_funcflag(0x8e, instrbase(mov_sreg_rm16), CHK_MODRM)
-  set_funcflag(0x90, instrbase(nop), 0)
-  set_funcflag(0xa0, instrbase(mov_al_moffs8), CHK_MOFFS)
-  set_funcflag(0xa2, instrbase(mov_moffs8_al), CHK_MOFFS)
-  set_funcflag(0xa8, instrbase(test_al_imm8), CHK_IMM8)
-  block:
-    i = 0
-    while i < 8:
-      set_funcflag(0xb0 + i, instrbase(mov_r8_imm8), CHK_IMM8)
-      postInc(i)
-  set_funcflag(0xc6, instrbase(mov_rm8_imm8), CHK_MODRM or CHK_IMM8)
-  set_funcflag(0xcb, instrbase(retf), 0)
-  set_funcflag(0xcc, instrbase(int3), 0)
-  set_funcflag(0xcd, instrbase(int_imm8), CHK_IMM8)
-  set_funcflag(0xcf, instrbase(iret), 0)
-  set_funcflag(0xe4, instrbase(in_al_imm8), CHK_IMM8)
-  set_funcflag(0xe6, instrbase(out_imm8_al), CHK_IMM8)
-  set_funcflag(0xeb, instrbase(jmp), CHK_IMM8)
-  set_funcflag(0xec, instrbase(in_al_dx), 0)
-  set_funcflag(0xee, instrbase(out_dx_al), 0)
-  set_funcflag(0xfa, instrbase(cli), 0)
-  set_funcflag(0xfb, instrbase(sti), 0)
-  set_funcflag(0xfc, instrbase(cld), 0)
-  set_funcflag(0xfd, instrbase(std), 0)
-  set_funcflag(0xf4, instrbase(hlt), 0)
-  set_funcflag(0x0f20, instrbase(mov_r32_crn), CHK_MODRM)
-  set_funcflag(0x0f22, instrbase(mov_crn_r32), CHK_MODRM)
-  set_funcflag(0x0f90, instrbase(seto_rm8), CHK_MODRM)
-  set_funcflag(0x0f91, instrbase(setno_rm8), CHK_MODRM)
-  set_funcflag(0x0f92, instrbase(setb_rm8), CHK_MODRM)
-  set_funcflag(0x0f93, instrbase(setnb_rm8), CHK_MODRM)
-  set_funcflag(0x0f94, instrbase(setz_rm8), CHK_MODRM)
-  set_funcflag(0x0f95, instrbase(setnz_rm8), CHK_MODRM)
-  set_funcflag(0x0f96, instrbase(setbe_rm8), CHK_MODRM)
-  set_funcflag(0x0f97, instrbase(seta_rm8), CHK_MODRM)
-  set_funcflag(0x0f98, instrbase(sets_rm8), CHK_MODRM)
-  set_funcflag(0x0f99, instrbase(setns_rm8), CHK_MODRM)
-  set_funcflag(0x0f9a, instrbase(setp_rm8), CHK_MODRM)
-  set_funcflag(0x0f9b, instrbase(setnp_rm8), CHK_MODRM)
-  set_funcflag(0x0f9c, instrbase(setl_rm8), CHK_MODRM)
-  set_funcflag(0x0f9d, instrbase(setnl_rm8), CHK_MODRM)
-  set_funcflag(0x0f9e, instrbase(setle_rm8), CHK_MODRM)
-  set_funcflag(0x0f9f, instrbase(setnle_rm8), CHK_MODRM)
-  set_funcflag(0x80, instrbase(code_80), CHK_MODRM or CHK_IMM8)
-  set_funcflag(0x82, instrbase(code_82), CHK_MODRM or CHK_IMM8)
-  set_funcflag(0xc0, instrbase(code_c0), CHK_MODRM or CHK_IMM8)
-  set_funcflag(0xf6, instrbase(code_f6), CHK_MODRM)
-
-proc set_funcflag*(this: var InstrBase, opcode: uint16, `func`: instrfunc_t, flags: uint8): void = 
+proc set_funcflag*(this: var InstrBase, opcode: uint16, `func`: instrfunc_t, flags: uint8): void =
+  var opcode = opcode
   if opcode shr 8 == 0x0f:
     opcode = (opcode and 0xff) or 0x0100
-  
+
   ASSERT(opcode < MAX_OPCODE)
-  instrfuncs[opcode] = `func`
-  chk[opcode].flags = flags
+  this.exec.instrfuncs[opcode] = `func`
+  this.parse.chk[opcode].flags = flags
+  
 
 
 proc add_rm8_r8*(this: var InstrBase): void = 
-  var r8: uint8
+  var r8, rm8: uint8
   rm8 = get_rm8()
   r8 = get_r8()
   set_rm8(rm8 + r8)
@@ -568,3 +480,91 @@ proc idiv_al_ah_rm8*(this: var InstrBase): void =
   ax_s = GET_GPREG(AX)
   SET_GPREG(AL, ax_s / rm8_s)
   SET_GPREG(AH, ax_s mod rm8_s)
+
+ proc initInstrBase*(): InstrBase =
+  var i: cint
+  set_funcflag(0x00, instrbase(add_rm8_r8), CHK_MODRM)
+  set_funcflag(0x02, instrbase(add_r8_rm8), CHK_MODRM)
+  set_funcflag(0x04, instrbase(add_al_imm8), CHK_IMM8)
+  set_funcflag(0x08, instrbase(or_rm8_r8), CHK_MODRM)
+  set_funcflag(0x0a, instrbase(or_r8_rm8), CHK_MODRM)
+  set_funcflag(0x0c, instrbase(or_al_imm8), CHK_IMM8)
+  set_funcflag(0x20, instrbase(and_rm8_r8), CHK_MODRM)
+  set_funcflag(0x22, instrbase(and_r8_rm8), CHK_MODRM)
+  set_funcflag(0x24, instrbase(and_al_imm8), CHK_IMM8)
+  set_funcflag(0x28, instrbase(sub_rm8_r8), CHK_MODRM)
+  set_funcflag(0x2a, instrbase(sub_r8_rm8), CHK_MODRM)
+  set_funcflag(0x2c, instrbase(sub_al_imm8), CHK_IMM8)
+  set_funcflag(0x30, instrbase(xor_rm8_r8), CHK_MODRM)
+  set_funcflag(0x32, instrbase(xor_r8_rm8), CHK_MODRM)
+  set_funcflag(0x34, instrbase(xor_al_imm8), CHK_IMM8)
+  set_funcflag(0x38, instrbase(cmp_rm8_r8), CHK_MODRM)
+  set_funcflag(0x3a, instrbase(cmp_r8_rm8), CHK_MODRM)
+  set_funcflag(0x3c, instrbase(cmp_al_imm8), CHK_IMM8)
+  set_funcflag(0x70, instrbase(jo_rel8), CHK_IMM8)
+  set_funcflag(0x71, instrbase(jno_rel8), CHK_IMM8)
+  set_funcflag(0x72, instrbase(jb_rel8), CHK_IMM8)
+  set_funcflag(0x73, instrbase(jnb_rel8), CHK_IMM8)
+  set_funcflag(0x74, instrbase(jz_rel8), CHK_IMM8)
+  set_funcflag(0x75, instrbase(jnz_rel8), CHK_IMM8)
+  set_funcflag(0x76, instrbase(jbe_rel8), CHK_IMM8)
+  set_funcflag(0x77, instrbase(ja_rel8), CHK_IMM8)
+  set_funcflag(0x78, instrbase(js_rel8), CHK_IMM8)
+  set_funcflag(0x79, instrbase(jns_rel8), CHK_IMM8)
+  set_funcflag(0x7a, instrbase(jp_rel8), CHK_IMM8)
+  set_funcflag(0x7b, instrbase(jnp_rel8), CHK_IMM8)
+  set_funcflag(0x7c, instrbase(jl_rel8), CHK_IMM8)
+  set_funcflag(0x7d, instrbase(jnl_rel8), CHK_IMM8)
+  set_funcflag(0x7e, instrbase(jle_rel8), CHK_IMM8)
+  set_funcflag(0x7f, instrbase(jnle_rel8), CHK_IMM8)
+  set_funcflag(0x84, instrbase(test_rm8_r8), CHK_MODRM)
+  set_funcflag(0x86, instrbase(xchg_r8_rm8), CHK_MODRM)
+  set_funcflag(0x88, instrbase(mov_rm8_r8), CHK_MODRM)
+  set_funcflag(0x8a, instrbase(mov_r8_rm8), CHK_MODRM)
+  set_funcflag(0x8e, instrbase(mov_sreg_rm16), CHK_MODRM)
+  set_funcflag(0x90, instrbase(nop), 0)
+  set_funcflag(0xa0, instrbase(mov_al_moffs8), CHK_MOFFS)
+  set_funcflag(0xa2, instrbase(mov_moffs8_al), CHK_MOFFS)
+  set_funcflag(0xa8, instrbase(test_al_imm8), CHK_IMM8)
+  block:
+    i = 0
+    while i < 8:
+      set_funcflag(0xb0 + i, instrbase(mov_r8_imm8), CHK_IMM8)
+      postInc(i)
+  set_funcflag(0xc6, instrbase(mov_rm8_imm8), CHK_MODRM or CHK_IMM8)
+  set_funcflag(0xcb, instrbase(retf), 0)
+  set_funcflag(0xcc, instrbase(int3), 0)
+  set_funcflag(0xcd, instrbase(int_imm8), CHK_IMM8)
+  set_funcflag(0xcf, instrbase(iret), 0)
+  set_funcflag(0xe4, instrbase(in_al_imm8), CHK_IMM8)
+  set_funcflag(0xe6, instrbase(out_imm8_al), CHK_IMM8)
+  set_funcflag(0xeb, instrbase(jmp), CHK_IMM8)
+  set_funcflag(0xec, instrbase(in_al_dx), 0)
+  set_funcflag(0xee, instrbase(out_dx_al), 0)
+  set_funcflag(0xfa, instrbase(cli), 0)
+  set_funcflag(0xfb, instrbase(sti), 0)
+  set_funcflag(0xfc, instrbase(cld), 0)
+  set_funcflag(0xfd, instrbase(std), 0)
+  set_funcflag(0xf4, instrbase(hlt), 0)
+  set_funcflag(0x0f20, instrbase(mov_r32_crn), CHK_MODRM)
+  set_funcflag(0x0f22, instrbase(mov_crn_r32), CHK_MODRM)
+  set_funcflag(0x0f90, instrbase(seto_rm8), CHK_MODRM)
+  set_funcflag(0x0f91, instrbase(setno_rm8), CHK_MODRM)
+  set_funcflag(0x0f92, instrbase(setb_rm8), CHK_MODRM)
+  set_funcflag(0x0f93, instrbase(setnb_rm8), CHK_MODRM)
+  set_funcflag(0x0f94, instrbase(setz_rm8), CHK_MODRM)
+  set_funcflag(0x0f95, instrbase(setnz_rm8), CHK_MODRM)
+  set_funcflag(0x0f96, instrbase(setbe_rm8), CHK_MODRM)
+  set_funcflag(0x0f97, instrbase(seta_rm8), CHK_MODRM)
+  set_funcflag(0x0f98, instrbase(sets_rm8), CHK_MODRM)
+  set_funcflag(0x0f99, instrbase(setns_rm8), CHK_MODRM)
+  set_funcflag(0x0f9a, instrbase(setp_rm8), CHK_MODRM)
+  set_funcflag(0x0f9b, instrbase(setnp_rm8), CHK_MODRM)
+  set_funcflag(0x0f9c, instrbase(setl_rm8), CHK_MODRM)
+  set_funcflag(0x0f9d, instrbase(setnl_rm8), CHK_MODRM)
+  set_funcflag(0x0f9e, instrbase(setle_rm8), CHK_MODRM)
+  set_funcflag(0x0f9f, instrbase(setnle_rm8), CHK_MODRM)
+  set_funcflag(0x80, instrbase(code_80), CHK_MODRM or CHK_IMM8)
+  set_funcflag(0x82, instrbase(code_82), CHK_MODRM or CHK_IMM8)
+  set_funcflag(0xc0, instrbase(code_c0), CHK_MODRM or CHK_IMM8)
+  set_funcflag(0xf6, instrbase(code_f6), CHK_MODRM)

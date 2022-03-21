@@ -6,11 +6,11 @@ proc exec*(this: var ExecInstr): bool =
     opcode = (opcode and 0xff) or 0x0100
   
   
-  if not(instrfuncs[opcode]):
+  if not(this.instrfuncs[opcode].toBool()):
     ERROR("not implemented OPCODE 0x%02x", OPCODE)
     return false
-  
-  (this.CXX_SYNTAX_ERROR("*")[opcode])()
+
+  this.instrfuncs[opcode]()
   return true
 
 proc set_rm32*(this: var ExecInstr, value: uint32): void = 
