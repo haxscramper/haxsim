@@ -5,7 +5,8 @@ import mousehpp
 import hardware/memoryhpp
 
 type
-  Mouse* {.bycopy, importcpp.} = object
+  Mouse* {.bycopy, importcpp.} = object of IRQ
+    portio*: PortIO
     keyboard*: ref Keyboard
     enable*: bool
 
@@ -18,7 +19,8 @@ type
     ME* {.bitsize: 1.}: uint8
     XLATE* {.bitsize: 1.}: uint8
 
-  Keyboard* {.bycopy, importcpp.} = object
+  Keyboard* {.bycopy, importcpp.} = object of IRQ
+    portio*: PortIO
     mouse*: ref Mouse
     mem*: ref Memory
     mode*: uint8

@@ -38,6 +38,7 @@ type
     max*: uint16
 
   FDD* {.bycopy.} = object of IRQ
+    portio*: PortIO
     fddfuncs*: Table[uint8, fddfunc_t]
     drive*: array[MAX_FDD, ref DRIVE]
     conf*: FDD_conf
@@ -545,6 +546,6 @@ proc worker*(this: var FDD): void =
       continue
 
     this.msr.CMD_BSY = 1
-    this.fddfuncs[mode]()
+    this.fddfuncs[mode](this)
     # this.CXX_SYNTAX_ERROR("*")[mode])()
     this.msr.CMD_BSY = 0

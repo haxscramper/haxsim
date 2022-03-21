@@ -14,6 +14,8 @@ type
 
   VGA* {.bycopy, importcpp.} = object
     mor*: VGA_mor
+    portio*: PortIO
+    memio*: ref MemoryIO
     plane*: array[4, seq[uint8]]
     refresh*: bool
     seq*: Sequencer
@@ -24,6 +26,7 @@ type
 
   Sequencer* {.bycopy, importcpp.} = object
     vga*: ptr VGA
+    portio*: PortIO
     sar*: Sequencer_sar
     cmr*: Sequencer_cmr
     map_mr*: Sequencer_map_mr
@@ -34,6 +37,7 @@ type
 
   CRT* {.bycopy, importcpp.} = object
     vga*: ptr VGA
+    portio*: PortIO
     crtcar*: CRT_crtcar
     htr*: CRT_htr
     hdeer*: CRT_hdeer
@@ -53,6 +57,7 @@ type
 
   GraphicController* {.bycopy, importcpp.} = object
     vga*: ptr VGA
+    portio*: PortIO
     gcar*: GraphicController_gcar
     sr*: GraphicController_sr
     esr*: GraphicController_esr
@@ -69,6 +74,7 @@ type
     field2*: Attribute_field2
     amcr*: Attribute_amcr
     cper*: Attribute_cper
+    portio*: PortIO
     hpelpr*: Attribute_hpelpr
     csr*: Attribute_csr
     regs*: array[21, ptr uint8]
@@ -77,6 +83,7 @@ type
     vga*: ptr VGA
     progress*: uint8
     field2*: DAC_field2
+    portio*: PortIO
     w_par*: DAC_w_par
     r_par*: DAC_r_par
     pdr*: DAC_pdr

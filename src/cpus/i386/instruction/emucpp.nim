@@ -1,9 +1,6 @@
-import
-  instruction/instructionhpp
-import
-  emulator/exceptionhpp
-import
-  emulator/descriptorhpp
+import instruction/instructionhpp
+import emulator/exceptionhpp
+import emulator/descriptorhpp
 proc type_descriptor*(this: var EmuInstr, sel: uint16): uint8 = 
   var gdt_base: uint32
   var gdt_limit: uint16

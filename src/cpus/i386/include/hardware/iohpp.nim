@@ -6,9 +6,9 @@ import std/tables
 type
   IO* {.bycopy.} = object
     memory*: ptr Memory
-    port_io*: Table[uint16, ptr PortIO]
+    port_io*: Table[uint16, PortIO]
     port_io_map*: Table[uint16, csize_t]
-    mem_io*: Table[uint32, ptr MemoryIO]
+    mem_io*: Table[uint32, ref MemoryIO]
     mem_io_map*: Table[uint32, uint32]
   
 proc initIO*(mem: ptr Memory): IO = 
@@ -23,7 +23,7 @@ proc destroyIO*(this: var IO): void =
   this.mem_io_map.clear()
 
 
-proc set_portio*(this: var IO, `addr`: uint16, len: csize_t, dev: ptr PortIO): void =
+proc set_portio*(this: var IO, `addr`: uint16, len: csize_t, dev: PortIO): void =
   let `addr` = (`addr` and not(1.uint16))
   this.port_io[`addr`] = dev
   this.port_io_map[`addr`] = len
@@ -44,7 +44,7 @@ proc in_io8*(this: var IO, `addr`: uint16): uint8 =
   var v: uint8 = 0
   let base: uint16 = this.get_portio_base(`addr`)
   if base != 0:
-    v = this.port_io[base][].in8(`addr`)
+    v = this.port_io[base].in8(`addr`)
 
   else:
     ERROR("no device connected at port : 0x%04x", `addr`)
@@ -70,7 +70,7 @@ proc in_io16*(this: var IO, `addr`: uint16): uint16 =
 proc out_io8*(this: var IO, `addr`: uint16, value: uint8): void =
   var base: uint16 = this.get_portio_base(`addr`)
   if base != 0:
-    this.port_io[base][].out8(`addr`, value)
+    this.port_io[base].out8(`addr`, value)
 
   else:
     ERROR("no device connected at port : 0x%04x", `addr`)
@@ -85,7 +85,7 @@ proc out_io16*(this: var IO, `addr`: uint16, value: uint16): void =
   for i in 0 ..< 2:
     this.out_io8(`addr` + uint16(i), uint8((value shr (8 * i)) and 0xff))
 
-proc set_memio*(this: var IO, base: uint32, len: csize_t, dev: ptr MemoryIO): void =
+proc set_memio*(this: var IO, base: uint32, len: csize_t, dev: ref MemoryIO): void =
   var `addr`: uint32
   ASSERT(not((base != 0 and ((1 shl 12) - 1) != 0)))
   dev[].set_mem(this.memory, base, len)

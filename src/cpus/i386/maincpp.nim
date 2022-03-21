@@ -1,5 +1,6 @@
 import "commonhpp"
 import "emulator/emulatorhpp"
+import instruction/instructionhpp
 
 template MEMORY_SIZE*(): untyped {.dirty.} =
   (4 * MB)
@@ -30,11 +31,17 @@ proc main*(argc: cint, argv: ptr UncheckedArray[cstring]): cint =
   run_emulator(set)
 
 proc run_emulator*(set: Setting): void = 
-  var emuset: EmuSetting = (mem_size: set.mem_size, uiset: (enable: set.ui_enable, full: set.ui_full, vm: set.ui_vm))
-  var emu: Emulator = Emulator(emuset)
+  var emuset: EmuSetting
+  emuset.mem_size = set.mem_size
+  emuset.uiset.enable = set.ui_enable
+  emuset.uiset.full = set.ui_full
+  emuset.uiset.vm = set.ui_vm
+
+  var emu: Emulator = initEmulator(emuset)
   var instr: InstrData
   var instr16: Instr16 = initInstr16(addr emu, addr instr)
   var instr32: Instr32 = initInstr32(addr emu, addr instr)
+
   if not(emu.insert_floppy(0, set.image_name, false)):
     WARN("cannot load image \'%s\'", set.image_name)
     return 

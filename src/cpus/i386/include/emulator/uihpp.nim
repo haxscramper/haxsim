@@ -13,8 +13,8 @@ type
 type
   UI* {.bycopy, importcpp.} = object
     set*: UISetting    
-    vga*: ptr VGA
-    keyboard*: ptr Keyboard
+    vga*: ref VGA
+    keyboard*: ref Keyboard
     working*: bool    
     capture*: bool    
     size_y*: uint16    
@@ -28,10 +28,10 @@ type
 proc get_status*(this: var UI): bool = 
   return this.working
 
-proc get_keyboard*(this: var UI): ptr Keyboard = 
+proc get_keyboard*(this: var UI): ref Keyboard =
   return this.keyboard
 
-proc get_vga*(this: var UI): ptr VGA = 
+proc get_vga*(this: var UI): ref VGA =
   return this.vga
 
 

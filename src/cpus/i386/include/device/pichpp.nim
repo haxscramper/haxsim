@@ -1,9 +1,7 @@
-import
-  commonhpp
-import
-  dev_irqhpp
-import
-  dev_iohpp
+import commonhpp
+import dev_irqhpp
+import dev_iohpp
+
 const MAX_IRQ* = 8
 type
   OCW2* {.bycopy, union.} = object
@@ -27,9 +25,10 @@ proc R*(this: OCW2): uint8 = this.field1.R
 proc `R=`*(this: var OCW2, value: uint8) = this.field1.R = value
 
 type
-  PIC* {.bycopy.} = object
+  PIC* {.bycopy.} = object of IRQ
+    portio*: PortIO
     pic_m*: ptr PIC
-    irq*: array[MAX_IRQ, ptr IRQ]
+    irq*: array[MAX_IRQ, ref IRQ]
     irr*: uint8
     isr*: uint8
     imr*: uint8
@@ -141,7 +140,7 @@ proc chk_m2s_pic*(this: var PIC, n: uint8): bool =
          not(this.pic_m.isNil()) and
          bool(this.ic3.raw and uint8(1 shl n))
 
-proc set_irq*(this: var PIC, n: uint8, dev: ptr IRQ): void =
+proc set_irq*(this: var PIC, n: uint8, dev: ref IRQ): void =
   if n < MAX_IRQ:
     this.irq[n] = dev
 

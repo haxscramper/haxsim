@@ -1,20 +1,15 @@
-import
-  commonhpp
-import
-  hardware/memoryhpp
+import commonhpp
+import hardware/memoryhpp
 import std/lenientops
+
 type
   PortIO* {.bycopy.} = object
-    
-  
+    in8*: proc(`addr`: uint16): uint8
+    out8*: proc(`addr`: uint16, v: uint8): void
+
 proc initPortIO*(): PortIO = 
   discard 
 
-proc in8*(this: var PortIO, `addr`: uint16): uint8 = 
-  discard 
-
-proc out8*(this: var PortIO, `addr`: uint16, v: uint8): void = 
-  discard 
 
 type
   MemoryIO* {.bycopy, importcpp.} = object

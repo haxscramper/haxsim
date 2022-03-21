@@ -12,4 +12,4 @@ func toBool*[T](i: ref T): bool = not isNil(i)
 proc preInc*[I: SomeInteger](v: var I): I {.discardable.} = discard
 proc postInc*[I: SomeInteger](v: var I): I {.discardable.} = discard
 proc preDec*[I: SomeInteger](v: var I): I {.discardable.} = discard
-proc postDec*[I: SomeInteger](v: var I): I {.discadable.} = discard
+proc postDec*[I: SomeInteger](v: var I): I {.discardable.} = discard

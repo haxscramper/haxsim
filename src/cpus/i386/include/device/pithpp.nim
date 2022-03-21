@@ -10,7 +10,8 @@ type
     running*: bool
     # th*: std_thread
 
-  PIT* {.bycopy.} = object
+  PIT* {.bycopy.} = object of IRQ
+    portio*: PortIO
     cwr*: PIT_cwr_Type    
     timer*: array[3, Timer]
   
