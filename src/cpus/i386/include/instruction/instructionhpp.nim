@@ -5,6 +5,9 @@ import emulator/emulatorhpp
 template EMU*(): untyped {.dirty.} =
   this.get_emu()
 
+template CPU*(): untyped = EMU.accs.cpu
+template MEM*(): untyped = EMU.accs.mem
+
 template GET_EIP*(): untyped {.dirty.} =
   EMU.get_eip()
 
@@ -21,55 +24,55 @@ template UPDATE_EIP*(v: untyped): untyped {.dirty.} =
   EMU.update_eip(v)
 
 template UPDATE_IP*(v: untyped): untyped {.dirty.} =
-  EMU.update_ip(v)
+  CPU.update_ip(v)
 
 template GET_GPREG*(reg: untyped): untyped {.dirty.} =
-  EMU.accs.cpu.get_gpreg(reg)
+  CPU.get_gpreg(reg)
 
 template SET_GPREG*(reg: untyped, v: untyped): untyped {.dirty.} =
-  EMU.accs.cpu.set_gpreg(reg, v)
+  CPU.set_gpreg(reg, v)
 
 template UPDATE_GPREG*(reg: untyped, v: untyped): untyped {.dirty.} =
   EMU.update_gpreg(reg, v)
 
 template EFLAGS_UPDATE_ADD*(v1: untyped, v2: untyped): untyped {.dirty.} =
-  EMU.update_eflags_add(v1, v2)
+  CPU.eflags.update_eflags_add(v1, v2)
 
 template EFLAGS_UPDATE_OR*(v1: untyped, v2: untyped): untyped {.dirty.} =
-  EMU.update_eflags_or(v1, v2)
+  CPU.eflags.update_eflags_or(v1, v2)
 
 template EFLAGS_UPDATE_AND*(v1: untyped, v2: untyped): untyped {.dirty.} =
-  EMU.update_eflags_and(v1, v2)
+  CPU.eflags.update_eflags_and(v1, v2)
 
 template EFLAGS_UPDATE_SUB*(v1: untyped, v2: untyped): untyped {.dirty.} =
-  EMU.update_eflags_sub(v1, v2)
+  CPU.eflags.update_eflags_sub(v1, v2)
 
 template EFLAGS_UPDATE_MUL*(v1: untyped, v2: untyped): untyped {.dirty.} =
-  EMU.update_eflags_mul(v1, v2)
+  CPU.eflags.update_eflags_mul(v1, v2)
 
 template EFLAGS_UPDATE_IMUL*(v1: untyped, v2: untyped): untyped {.dirty.} =
-  EMU.update_eflags_imul(v1, v2)
+  CPU.eflags.update_eflags_imul(v1, v2)
 
 template EFLAGS_UPDATE_SHL*(v1: untyped, v2: untyped): untyped {.dirty.} =
-  EMU.update_eflags_shl(v1, v2)
+  CPU.eflags.update_eflags_shl(v1, v2)
 
 template EFLAGS_UPDATE_SHR*(v1: untyped, v2: untyped): untyped {.dirty.} =
-  EMU.update_eflags_shr(v1, v2)
+  CPU.eflags.update_eflags_shr(v1, v2)
 
 template EFLAGS_CF*(): untyped {.dirty.} =
-  EMU.is_carry()
+  CPU.eflags.is_carry()
 
 template EFLAGS_PF*(): untyped {.dirty.} =
-  EMU.is_parity()
+  CPU.eflags.is_parity()
 
 template EFLAGS_ZF*(): untyped {.dirty.} =
-  EMU.is_zero()
+  CPU.eflags.is_zero()
 
 template EFLAGS_SF*(): untyped {.dirty.} =
-  EMU.is_sign()
+  CPU.eflags.is_sign()
 
 template EFLAGS_OF*(): untyped {.dirty.} =
-  EMU.is_overflow()
+  CPU.eflags.is_overflow()
 
 template EFLAGS_DF*(): untyped {.dirty.} =
   EMU.is_direction()
@@ -105,13 +108,13 @@ template POP16*(): untyped {.dirty.} =
   EMU.pop16()
 
 template PREFIX*(): untyped {.dirty.} =
-  (this.instr.prefix)
+  (this.exec.instr[].prefix)
 
 template OPCODE*(): untyped {.dirty.} =
-  (this.instr.opcode)
+  (this.instr[].opcode)
 
 template dMODRM*(): untyped {.dirty.} =
-  (this.instr.dmodrm)
+  (this.exec.instr[].dmodrm)
 
 template MOD*(): untyped {.dirty.} =
   (this.instr[].modrm.`mod`)
@@ -123,7 +126,7 @@ template RM*(): untyped {.dirty.} =
   (this.instr[].modrm.rm)
 
 template dSIB*(): untyped {.dirty.} =
-  (this.instr[].dsib)
+  (this.exec.instr[].dsib)
 
 template SCALE*(): untyped {.dirty.} =
   (this.instr[].sib.scale)
@@ -144,16 +147,16 @@ template DISP8*(): untyped {.dirty.} =
   (this.instr[].disp8)
 
 template IMM32*(): untyped {.dirty.} =
-  (this.instr[].imm32)
+  (this.exec.instr[].imm32)
 
 template IMM16*(): untyped {.dirty.} =
-  (this.instr[].imm16)
+  (this.exec.instr[].imm16)
 
 template IMM8*(): untyped {.dirty.} =
-  (this.instr[].imm8)
+  this.exec.instr[].imm8
 
 template PTR16*(): untyped {.dirty.} =
-  (this.instr[].ptr16)
+  (this.exec.instr[].ptr16)
 
 template MOFFS*(): untyped {.dirty.} =
   (this.instr[].moffs)
@@ -384,13 +387,13 @@ proc `moffs8=`*(this: var InstrFlags, value: uint8) =
 
 
 proc set_gdtr*(this: var EmuInstr, base: uint32, limit: uint16): void =
-  EMU.accs.cpu.set_dtreg(GDTR, 0, base, limit)
+  CPU.set_dtreg(GDTR, 0, base, limit)
 
 proc set_idtr*(this: var EmuInstr, base: uint32, limit: uint16): void =
-  EMU.accs.cpu.set_dtreg(IDTR, 0, base, limit)
+  CPU.set_dtreg(IDTR, 0, base, limit)
 
 proc get_tr*(this: var EmuInstr): uint16 =
-  return EMU.accs.cpu.get_dtreg_selector(TR).uint16()
+  return CPU.get_dtreg_selector(TR).uint16()
 
 proc get_ldtr*(this: var EmuInstr): uint16 =
-  return EMU.accs.cpu.get_dtreg_selector(LDTR).uint16()
+  return CPU.get_dtreg_selector(LDTR).uint16()

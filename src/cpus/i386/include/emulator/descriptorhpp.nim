@@ -134,6 +134,7 @@ proc `P=`*(this: var TSSDesc_field3, value: uint8) = this.field1.P = value
 proc B*(this: TSSDesc): uint8 = this.field3.field0.B
 proc `B=`*(this: var TSSDesc, value: uint8) = this.field3.field0.B = value
 proc `Type=`*(this: var TSSDesc, value: uint8) = this.field3.field1.Type = value
+proc getType*(this: TSSDesc): uint8 = this.field3.field1.Type
 proc D*(this: TSSDesc): uint8 = this.field3.field1.D
 proc `D=`*(this: var TSSDesc, value: uint8) = this.field3.field1.D = value
 proc S*(this: TSSDesc): uint8 = this.field3.field1.S

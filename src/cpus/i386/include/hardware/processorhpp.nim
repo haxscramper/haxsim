@@ -1,9 +1,7 @@
-import
-  commonhpp
-import
-  eflagshpp
-import
-  crhpp
+import commonhpp
+import eflagshpp
+import crhpp
+
 type
   reg32_t* = enum
     EAX
@@ -181,6 +179,7 @@ type
     ip*: uint16
 
   Processor* {.bycopy.} = object of CR
+    eflags*: Eflags
     field0*: Processor_field0
     gpregs*: array[GPREGS_COUNT, GPRegister]
     sgregs*: array[SGREGS_COUNT, SGRegister]

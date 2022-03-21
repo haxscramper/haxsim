@@ -1,16 +1,21 @@
 import instruction/instructionhpp
+import commonhpp
 import emulator/exceptionhpp
 import emulator/descriptorhpp
+import hardware/[processorhpp, memoryhpp]
+
 proc type_descriptor*(this: var EmuInstr, sel: uint16): uint8 = 
   var gdt_base: uint32
   var gdt_limit: uint16
   var desc: Descriptor
-  gdt_base = EMU.get_dtreg_base(GDTR)
-  gdt_limit = EMU.get_dtreg_limit(GDTR)
+  gdt_base = CPU.get_dtreg_base(GDTR)
+  gdt_limit = CPU.get_dtreg_limit(GDTR)
   EXCEPTION(EXP_GP, sel > gdt_limit)
-  EMU.read_data(addr desc, gdt_base + sel, sizeof((Descriptor)))
-  if desc.S:
-    if (cast[ptr SegDesc](addr desc)).`type`.segc:
+  discard EMU.accs.mem.read_data(
+    addr desc, gdt_base + sel, sizeof(Descriptor).csize_t)
+
+  if desc.S.toBool():
+    if getType(cast[ptr SegDesc](addr desc)[]).segc.toBool():
       return TYPE_CODE
     
     else:
@@ -18,46 +23,46 @@ proc type_descriptor*(this: var EmuInstr, sel: uint16): uint8 =
     
   
   else:
-    if desc.`type` == 3:
+    if desc.`Type` == 3:
       return TYPE_TSS
     
   
-  return desc.`type`
+  return desc.Type
 
 proc set_ldtr*(this: var EmuInstr, sel: uint16): void = 
-  var base: uint32
-  var limit: uint16
+  var base, gdt_base: uint32
+  var limit, gdt_limit: uint16
   var ldt: LDTDesc
-  gdt_base = EMU.get_dtreg_base(GDTR)
-  gdt_limit = EMU.get_dtreg_limit(GDTR)
+  gdt_base = CPU.get_dtreg_base(GDTR)
+  gdt_limit = CPU.get_dtreg_limit(GDTR)
   EXCEPTION(EXP_GP, sel > gdt_limit)
-  EMU.read_data(addr ldt, gdt_base + sel, sizeof((LDTDesc)))
+  discard EMU.accs.mem.read_data(addr ldt, gdt_base + sel, sizeof(LDTDesc).csize_t)
   base = (ldt.base_h shl 24) + (ldt.base_m shl 16) + ldt.base_l
   limit = (ldt.limit_h shl 16) + ldt.limit_l
-  EMU.set_dtreg(LDTR, sel, base, limit)
+  CPU.set_dtreg(LDTR, sel, base, limit)
 
 proc set_tr*(this: var EmuInstr, sel: uint16): void = 
-  var base: uint32
-  var limit: uint16
+  var base, gdt_base: uint32
+  var limit, gdt_limit: uint16
   var tssdesc: TSSDesc
-  gdt_base = EMU.get_dtreg_base(GDTR)
-  gdt_limit = EMU.get_dtreg_limit(GDTR)
+  gdt_base = CPU.get_dtreg_base(GDTR)
+  gdt_limit = CPU.get_dtreg_limit(GDTR)
   EXCEPTION(EXP_GP, sel > gdt_limit)
-  EMU.read_data(addr tssdesc, gdt_base + sel, sizeof((TSSDesc)))
-  EXCEPTION(EXP_GP, tssdesc.`type` != TYPE_TSS)
+  discard MEM.read_data(addr tssdesc, gdt_base + sel, sizeof(TSSDesc).csize_t)
+  EXCEPTION(EXP_GP, tssdesc.getType() != TYPE_TSS)
   base = (tssdesc.base_h shl 24) + (tssdesc.base_m shl 16) + tssdesc.base_l
   limit = (tssdesc.limit_h shl 16) + tssdesc.limit_l
-  EMU.set_dtreg(TR, sel, base, limit)
+  CPU.set_dtreg(TR, sel, base, limit)
 
 proc switch_task*(this: var EmuInstr, sel: uint16): void = 
   var base: uint32
-  var limit: uint16
-  var new_tss: TSS
-  prev = EMU.get_dtreg_selector(TR)
-  base = EMU.get_dtreg_base(TR)
-  limit = EMU.get_dtreg_limit(TR)
-  EXCEPTION(EXP_GP, limit < sizeof((TSS) - 1))
-  EMU.read_data(addr old_tss, base, sizeof((TSS)))
+  var limit, prev: uint16
+  var new_tss, old_tss: TSS
+  prev = CPU.get_dtreg_selector(TR).uint16
+  base = CPU.get_dtreg_base(TR)
+  limit = CPU.get_dtreg_limit(TR)
+  EXCEPTION(EXP_GP, limit < (sizeof(TSS) - 1).uint16)
+  EMU.read_data(addr old_tss, base, sizeof(TSS))
   old_tss.cr3 = EMU.get_crn(3)
   old_tss.eip = EMU.get_eip()
   old_tss.eflags = EMU.get_eflags()

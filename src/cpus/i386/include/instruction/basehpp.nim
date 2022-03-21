@@ -7,6 +7,8 @@ type
     parse*: ParseInstr
     emu*: EmuInstr
 
+template instr*(b: InstrBase): untyped = b.exec.instr
+
 proc code_0f01*(this: var InstrBase): void =
   discard 
 

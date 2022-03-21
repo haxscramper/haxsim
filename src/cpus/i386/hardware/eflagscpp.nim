@@ -1,24 +1,31 @@
-import
-  hardware/eflagshpp
+import hardware/eflagshpp
+import commonhpp
+import std/[lenientops, bitops]
 
+proc chk_parity*(this: var Eflags, v: uint8): bool =
+  var p: bool = true
+  for i in 0 ..< 8:
+    p = (p xor toBool((v shr i) and 1))
+  return p
 
 
 proc update_eflags_add*[T](this: var Eflags, v1: T, v2: uint32): uint32 = 
-  var sr: bool
+  var sr, s1, s2: bool
   var result: uint64
   var size: uint8
+  var v2 = v2
   v2 = cast[T](v2)
   result = cast[uint64](v1) + v2
   size = sizeof(T) * 8
-  s1 = v1 shr (size - 1)
-  s2 = v2 shr (size - 1)
-  sr = (result shr (size - 1)) and 1
-  set_carry(result shr size)
-  set_parity(chk_parity(result and 0xff))
-  set_zero(not(result))
-  set_sign(sr)
-  set_overflow(not((s1 xor s2)) and s1 xor sr)
-  return eflags.reg32
+  s1 = toBool(v1 shr (size - 1))
+  s2 = toBool(v2 shr (size - 1))
+  sr = toBool((result shr (size - 1)) and 1)
+  this.set_carry(toBool(result shr size))
+  this.set_parity(this.chk_parity(uint8(result and 0xff)))
+  this.set_zero(not(result.toBool()))
+  this.set_sign(sr)
+  this.set_overflow(not((s1 xor s2)) and s1 xor sr)
+  return this.eflags.reg32
 
 
 
@@ -26,15 +33,16 @@ proc update_eflags_add*[T](this: var Eflags, v1: T, v2: uint32): uint32 =
 proc update_eflags_or*[T](this: var Eflags, v1: T, v2: uint32): uint32 = 
   var result: T
   var size: uint8
+  var v2 = v2
   v2 = cast[T](v2)
-  result = v1 or v2
-  size = sizeof((T) * 8)
-  set_carry(0)
-  set_parity(chk_parity(result and 0xff))
-  set_zero(not(result))
-  set_sign((result shr (size - 1)) and 1)
-  set_overflow(0)
-  return eflags.reg32
+  result = T(v1) or T(v2)
+  size = sizeof(T) * 8
+  this.set_carry(false)
+  this.set_parity(this.chk_parity(result and 0xff))
+  this.set_zero(not(result.toBool()))
+  this.set_sign(toBool((result shr (size - 1)) and 1))
+  this.set_overflow(false)
+  return this.eflags.reg32
 
 
 
@@ -42,35 +50,37 @@ proc update_eflags_or*[T](this: var Eflags, v1: T, v2: uint32): uint32 =
 proc update_eflags_and*[T](this: var Eflags, v1: T, v2: uint32): uint32 = 
   var result: T
   var size: uint8
+  var v2 = v2
   v2 = cast[T](v2)
-  result = v1 and v2
-  size = sizeof((T) * 8)
-  set_carry(0)
-  set_parity(chk_parity(result and 0xff))
-  set_zero(not(result))
-  set_sign((result shr (size - 1)) and 1)
-  set_overflow(0)
-  return eflags.reg32
+  result = T(v1) and T(v2)
+  size = sizeof(T) * 8
+  this.set_carry(false)
+  this.set_parity(this.chk_parity(result and 0xff))
+  this.set_zero(not(result.toBool()))
+  this.set_sign(toBool((result shr (size - 1)) and 1))
+  this.set_overflow(false)
+  return this.eflags.reg32
 
 
 
 
 proc update_eflags_sub*[T](this: var Eflags, v1: T, v2: uint32): uint32 = 
-  var sr: bool
+  var sr, s1, s2: bool
   var result: uint64
   var size: uint8
+  var v2 = v2
   v2 = cast[T](v2)
   result = cast[uint64](v1) - v2
-  size = sizeof((T) * 8)
-  s1 = v1 shr (size - 1)
-  s2 = v2 shr (size - 1)
-  sr = (result shr (size - 1)) and 1
-  set_carry(result shr size)
-  set_parity(chk_parity(result and 0xff))
-  set_zero(not(result))
-  set_sign(sr)
-  set_overflow(s1 xor s2 and s1 xor sr)
-  return eflags.reg32
+  size = sizeof(T) * 8
+  s1 = toBool(v1 shr (size - 1))
+  s2 = toBool(v2 shr (size - 1))
+  sr = toBool((result shr (size - 1)) and 1)
+  this.set_carry(toBool(result shr size))
+  this.set_parity(this.chk_parity(uint8(result and 0xff)))
+  this.set_zero(not(result.toBool()))
+  this.set_sign(sr)
+  this.set_overflow(s1 xor s2 and s1 xor sr)
+  return this.eflags.reg32
 
 
 
@@ -83,7 +93,7 @@ proc update_eflags_mul*[T](this: var Eflags, v1: T, v2: uint32): uint32 =
   size = sizeof((T) * 8)
   set_carry(result shr size)
   set_overflow(result shr size)
-  return eflags.reg32
+  return this.eflags.reg32
 
 
 
@@ -96,7 +106,7 @@ proc update_eflags_imul*[T](this: var Eflags, v1: T, v2: int32): uint32 =
   size = sizeof((T) * 8)
   set_carry((result shr size) != -1)
   set_overflow((result shr size) != -1)
-  return eflags.reg32
+  return this.eflags.reg32
 
 
 
@@ -113,7 +123,7 @@ proc update_eflags_shl*[T](this: var Eflags, v: T, c: uint8): uint32 =
   if c == 1:
     set_overflow(((v shr (size - 1)) and 1) xor ((v shr (size - 2)) and 1))
   
-  return eflags.reg32
+  return this.eflags.reg32
 
 
 
@@ -130,10 +140,4 @@ proc update_eflags_shr*[T](this: var Eflags, v: T, c: uint8): uint32 =
   if c == 1:
     set_overflow((v shr (size - 1)) and 1)
   
-  return eflags.reg32
-
-proc chk_parity*(this: var Eflags, v: uint8): bool = 
-  var p: bool = true
-  for i in 0 ..< 8:
-    p = (p xor (v shr i) and 1)
-  return p
+  return this.eflags.reg32
