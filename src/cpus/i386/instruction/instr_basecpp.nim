@@ -1,10 +1,9 @@
 import instruction/[basehpp, instructionhpp]
 import commonhpp, execcpp
-import ../hardware/[eflagscpp]
-import hardware/eflagshpp
-import hardware/[processorhpp]
+import ../hardware/[eflagscpp, processorcpp]
+import hardware/[processorhpp, memoryhpp, eflagshpp]
 import ../instruction/emucpp
-import emulator/[exceptionhpp, emulatorhpp]
+import emulator/[exceptionhpp, emulatorhpp, accesshpp, interrupthpp]
 
 template instrbase*(f: untyped): untyped {.dirty.} = 
   ((instrfunc_t) and InstrBase.f)
@@ -211,8 +210,8 @@ proc retf*(this: var InstrBase): void =
   this.emu.retf()
 
 proc int3*(this: var InstrBase): void = 
-  EMU.dump_regs()
-  EMU.dump_mem((EMU.get_segment(SS) shl 4) + EMU.get_gpreg(ESP) - 0x40, 0x80)
+  CPU.dump_regs()
+  MEM.dump_mem((ACS.get_segment(SS) shl 4) + CPU.get_gpreg(ESP) - 0x40, 0x80.csize_t)
 
 proc int_imm8*(this: var InstrBase): void = 
   EMU.queue_interrupt(IMM8, false)
