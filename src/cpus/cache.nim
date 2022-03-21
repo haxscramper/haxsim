@@ -1,6 +1,6 @@
 import std/[strutils, strformat, times, options]
-import hmisc/core/all
-import hmisc/algo/[clformat, clformat_interpolate]
+# import hmisc/core/all
+# import hmisc/algo/[clformat, clformat_interpolate]
 
 type
   OpcKind = enum
@@ -115,7 +115,7 @@ proc memset(cpu: var Cpu, mem: uint32, value: uint8) =
   cpu.mem[mem] = value
   for row in cpu.dataCache.rows.mitems:
     if mem in row.address:
-      echov "Hit assign cache for", mem, row.address
+      # echov "Hit assign cache for", mem, row.address
       row.data[row.address.b - mem] = value
       return
 
@@ -159,7 +159,8 @@ proc loop(cpu: var Cpu) =
     #   break
 
     let op = cpu.opget()
-    echo $clfmt"{cnt:<3}| {cpu.pc:<3,fg-blue} {op:<15} [A:{cpu.regA:^3,fg-red}][B:{cpu.regB:^3,fg-red}] "
+    # echo $clfmt"{cnt:<3}| {cpu.pc:<3,fg-blue} {op:<15} [A:{cpu.regA:^3,fg-red}][B:{cpu.regB:^3,fg-red}] "
+    echo &"{cnt:<3}| {cpu.pc:<3} {op:<15} [A:{cpu.regA:^3}][B:{cpu.regB:^3}] "
          # $clfmt"0: {cpu.mem[0]:,fg-green} 4: {cpu.mem[4]:,fg-green}"
     inc cnt
     case op.kind.cmdGet():
@@ -173,19 +174,19 @@ proc loop(cpu: var Cpu) =
       of AddAMem: cpu.regA += cpu.memget(op.arg.cmdGet())
       of Nop: discard
       of Jmp:
-        echo clfmt">>>  jump to {op.arg:,fg-red}"
+        # echo clfmt">>>  jump to {op.arg:,fg-red}"
         cpu.pc = int(op.arg.cmdGet())
         continue
 
       of Jgreat:
-        echo clfmt"???  if last great ({cpu.lastPositive}) - jump to {op.arg:,fg-red}"
+        # echo clfmt"???  if last great ({cpu.lastPositive}) - jump to {op.arg:,fg-red}"
         if cpu.lastPositive:
           echo ">>>  do jump"
           cpu.pc = int(op.arg.cmdGet())
           continue
 
       of Jzero:
-        echo clfmt"???  if last zero ({cpu.lastZero}) - jump to {op.arg:,fg-red}"
+        # echo clfmt"???  if last zero ({cpu.lastZero}) - jump to {op.arg:,fg-red}"
         if cpu.lastZero:
           echo ">>>  do jump"
           cpu.pc = int(op.arg.cmdGet())
@@ -270,10 +271,11 @@ cpu.ops = @[
 for idx, op in mpairs(cpu.ops):
   op.idx = idx
 
-startHax()
+# startHax()
 let start = cpuTime()
 loop(cpu)
 echo cpuTime() - start
+
 
 
 echo &"""
@@ -282,5 +284,8 @@ direct memset: {cpu.memsetCount}
 opget count  : {cpu.opgetCount}
 """
 
+for op in cpu.ops:
+  echo op
+
 for i in 0 .. N.uint32:
-  echov i, cpu.memget(i)
+  echo i, " ", cpu.memget(i)

@@ -1,15 +1,9 @@
-import
-  GLFW/glfw3h
-import
-  commonhpp
-import
-  device/vgahpp
-import
-  device/keyboardhpp
-import
-  device/mousehpp
-import
-  hardware/memoryhpp
+import commonhpp
+import device/vgahpp
+import device/keyboardhpp
+import device/mousehpp
+import hardware/memoryhpp
+
 type
   UISetting* {.bycopy, importcpp.} = object
     enable*: bool
