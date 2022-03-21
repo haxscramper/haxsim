@@ -24,10 +24,10 @@ template UPDATE_IP*(v: untyped): untyped {.dirty.} =
   EMU.update_ip(v)
 
 template GET_GPREG*(reg: untyped): untyped {.dirty.} =
-  EMU.get_gpreg(reg)
+  EMU.accs.cpu.get_gpreg(reg)
 
 template SET_GPREG*(reg: untyped, v: untyped): untyped {.dirty.} =
-  EMU.set_gpreg(reg, v)
+  EMU.accs.cpu.set_gpreg(reg, v)
 
 template UPDATE_GPREG*(reg: untyped, v: untyped): untyped {.dirty.} =
   EMU.update_gpreg(reg, v)
@@ -74,23 +74,23 @@ template EFLAGS_OF*(): untyped {.dirty.} =
 template EFLAGS_DF*(): untyped {.dirty.} =
   EMU.is_direction()
 
-template READ_MEM32*(`addr`: untyped): untyped {.dirty.} =
-  EMU.get_data32(select_segment(), `addr`)
+template READ_MEM32*(addr_d: untyped): untyped {.dirty.} =
+  EMU.accs.get_data32(this.select_segment(), addr_d)
 
-template READ_MEM16*(`addr`: untyped): untyped {.dirty.} =
-  EMU.get_data16(select_segment(), `addr`)
+template READ_MEM16*(addr_d: untyped): untyped {.dirty.} =
+  EMU.accs.get_data16(this.select_segment(), addr_d)
 
-template READ_MEM8*(`addr`: untyped): untyped {.dirty.} =
-  EMU.get_data8(select_segment(), `addr`)
+template READ_MEM8*(addr_d: untyped): untyped {.dirty.} =
+  EMU.accs.get_data8(this.select_segment(), addr_d)
 
-template WRITE_MEM32*(`addr`: untyped, v: untyped): untyped {.dirty.} =
-  EMU.put_data32(select_segment(), `addr`, v)
+template WRITE_MEM32*(addr_d: untyped, v: untyped): untyped {.dirty.} =
+  EMU.accs.put_data32(this.select_segment(), addr_d, v)
 
-template WRITE_MEM16*(`addr`: untyped, v: untyped): untyped {.dirty.} =
-  EMU.put_data16(select_segment(), `addr`, v)
+template WRITE_MEM16*(addr_d: untyped, v: untyped): untyped {.dirty.} =
+  EMU.accs.put_data16(this.select_segment(), addr_d, v)
 
-template WRITE_MEM8*(`addr`: untyped, v: untyped): untyped {.dirty.} =
-  EMU.put_data8(select_segment(), `addr`, v)
+template WRITE_MEM8*(addr_d: untyped, v: untyped): untyped {.dirty.} =
+  EMU.accs.put_data8(this.select_segment(), addr_d, v)
 
 template PUSH32*(v: untyped): untyped {.dirty.} =
   EMU.push32(v)
@@ -114,58 +114,58 @@ template dMODRM*(): untyped {.dirty.} =
   (this.instr.dmodrm)
 
 template MOD*(): untyped {.dirty.} =
-  (this.instr.modrm.`mod`)
+  (this.instr[].modrm.`mod`)
 
 template REG*(): untyped {.dirty.} =
-  (this.instr.modrm.reg)
+  (this.instr[].modrm.reg)
 
 template RM*(): untyped {.dirty.} =
-  (this.instr.modrm.rm)
+  (this.instr[].modrm.rm)
 
 template dSIB*(): untyped {.dirty.} =
-  (this.instr.dsib)
+  (this.instr[].dsib)
 
 template SCALE*(): untyped {.dirty.} =
-  (this.instr.sib.scale)
+  (this.instr[].sib.scale)
 
 template INDEX*(): untyped {.dirty.} =
-  (this.instr.sib.index)
+  (this.instr[].sib.index)
 
 template BASE*(): untyped {.dirty.} =
-  (this.instr.sib.base)
+  (this.instr[].sib.base)
 
 template DISP32*(): untyped {.dirty.} =
-  (this.instr.disp32)
+  (this.instr[].disp32)
 
 template DISP16*(): untyped {.dirty.} =
-  (this.instr.disp16)
+  (this.instr[].disp16)
 
 template DISP8*(): untyped {.dirty.} =
-  (this.instr.disp8)
+  (this.instr[].disp8)
 
 template IMM32*(): untyped {.dirty.} =
-  (this.instr.imm32)
+  (this.instr[].imm32)
 
 template IMM16*(): untyped {.dirty.} =
-  (this.instr.imm16)
+  (this.instr[].imm16)
 
 template IMM8*(): untyped {.dirty.} =
-  (this.instr.imm8)
+  (this.instr[].imm8)
 
 template PTR16*(): untyped {.dirty.} =
-  (this.instr.ptr16)
+  (this.instr[].ptr16)
 
 template MOFFS*(): untyped {.dirty.} =
-  (this.instr.moffs)
+  (this.instr[].moffs)
 
 template PRE_SEGMENT*(): untyped {.dirty.} =
-  (this.instr.pre_segment)
+  (this.instr[].pre_segment)
 
 template PRE_REPEAT*(): untyped {.dirty.} =
-  (this.instr.pre_repeat)
+  (this.instr[].pre_repeat)
 
 template SEGMENT*(): untyped {.dirty.} =
-  (this.instr.segment)
+  (this.instr[].segment)
 
 const MAX_OPCODE* = 0x200
 type
