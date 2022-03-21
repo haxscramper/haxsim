@@ -1,7 +1,7 @@
 import
   commonhpp
 type
-  IRQ* {.bycopy, importcpp.} = object
+  IRQ* {.bycopy, inheritable.} = object
     intr*: bool
   
 proc initIRQ*(): IRQ = 

@@ -1,6 +1,8 @@
 # import thread
 import std/tables
 import std/deques
+import std/math
+# import std/threads
 import std/locks
 import commonhpp
 import dev_iohpp
@@ -23,7 +25,7 @@ const
 
 type
   DRIVE* {.bycopy.} = object
-    disk*:               ptr FILE
+    disk*:               File
     cylinder* {.bitsize: 7.}: uint8
     head* {.bitsize:     1.}: uint8
     sector* {.bitsize:   5.}: uint8
@@ -35,7 +37,7 @@ type
     mtx*: Lock
     max*: uint16
 
-  FDD* {.bycopy.} = object
+  FDD* {.bycopy.} = object of IRQ
     fddfuncs*: Table[uint8, fddfunc_t]
     drive*: array[MAX_FDD, ref DRIVE]
     conf*: FDD_conf
@@ -53,13 +55,13 @@ type
     st1*: FDD_st1
     st2*: FDD_st2
     str3*: FDD_str3
-    # th*: std_thread
+    th*: Thread[int]
 
   FDD_str3* {.bycopy, union.} = object
     raw*: uint8
     field1*: FDD_str3_field1
 
-  fddfunc_t* = proc(arg0: void): void {.cdecl.}
+  fddfunc_t* = proc(fdd: var FDD, arg0: void): void
 
   FDD_conf_field1* {.bycopy.} = object
     FIFOTHR* {.bitsize: 4.}: uint8
@@ -287,3 +289,262 @@ proc T0*(this: FDD_str3): uint8 = this.field1.T0
 proc `T0=`*(this: var FDD_str3, value: uint8) = this.field1.T0 = value
 proc WP*(this: FDD_str3): uint8 = this.field1.WP
 proc `WP=`*(this: var FDD_str3, value: uint8) = this.field1.WP = value
+
+proc dequeue*(this: var FDD, q: ptr QUEUE): uint8 =
+  var v: uint8
+  q.mtx.acquire()
+  while (q.queue.len() == 0):
+    q.mtx.release()
+    # std.this_thread.sleep_for(std.chrono.microseconds(50))
+    q.mtx.acquire()
+  v = q.queue.popFirst()
+  discard q.queue.popFirst()
+  q.mtx.release()
+  return v
+
+proc seek*(this: var FDD, slot: uint8, c: uint8, h: uint8, s: uint8): int32 =
+  var offset, dc, dh, ds: int32
+  if not(this.drive[slot].toBool()) or not(this.drive[slot].disk.toBool()):
+    ERROR("not ready disk%d", slot)
+
+  if s < 1 or s > N_SpH:
+    ERROR("")
+
+  if h < 0 or h >= N_HpC:
+    ERROR("")
+
+  if c < 0:
+    ERROR("")
+
+  this.msr.DRV_BSY = (this.msr.DRV_BSY or uint8(1 shl slot))
+  ds = int32((s - this.drive[slot].sector) * SIZE_SECTOR)
+  dh = int32((h - this.drive[slot].head) * SIZE_SECTOR * N_SpH)
+  dc = int32((c - this.drive[slot].cylinder) * SIZE_SECTOR * N_SpH * N_HpC)
+  offset = dc + dh + ds
+  INFO(3, "seek : %d, ds : %d(%d->%d), dh : %d(%d->%d), dc : %d(%d->%d)",
+       offset, ds, drive[slot].sector, s, dh, drive[slot].head, h, dc, drive[slot].cylinder, c)
+
+  this.drive[slot].cylinder = c
+  this.drive[slot].head = h
+  this.drive[slot].sector = s
+  this.drive[slot].progress = 0
+
+  {.warning: "fseek(this.drive[slot].disk, offset, SEEK_CUR)".}
+  this.msr.DRV_BSY = (this.msr.DRV_BSY xor uint8(1 shl slot))
+  return offset
+
+
+proc write_datareg*(this: var FDD, v: uint8): void =
+  while this.sra.INT.toBool():
+    {.warning: "FIXME: std.this_thread.sleep_for(std.chrono.microseconds(50))".}
+  this.data = v
+  this.sra.INT = 1
+
+proc sync_position*(this: var FDD, slot: uint8): void =
+  if preInc(this.drive[slot].progress) < 0x200:
+    return
+
+  this.drive[slot].progress = 0
+  postInc(this.drive[slot].sector)
+  if this.drive[slot].sector > N_SpH:
+    this.drive[slot].sector = 1
+    if postInc(this.drive[slot].head).toBool():
+      postInc(this.drive[slot].cylinder)
+
+proc read*(this: var FDD, slot: uint8): uint8 =
+  var v: uint8
+  if not(this.drive[slot].toBool()) or not(this.drive[slot].disk.toBool()):
+    ERROR("not ready disk%d", slot)
+
+  {.warning: "FIXME".}
+  # if not(fread(addr v, 1, 1, this.drive[slot].disk)):
+  #   v = 0
+
+  sync_position(this, slot)
+  return v
+
+proc fdd_read_track*(this: var FDD): void =
+  var cmd: array[8, uint8]
+  var slot: uint8
+  this.msr.RQM = 1
+  this.msr.DIO = 0
+  for i in 0 ..< 8:
+    cmd[i] = dequeue(this, addr this.data_q)
+  slot = cmd[0] and 3
+  if this.conf.EIS.toBool():
+    discard seek(this, slot, cmd[1], cmd[2], 1)
+
+  for i in 0 ..< pow(2.float, cmd[4].float).int * 128 * N_SpH:
+    write_datareg(this, read(this, slot))
+    this.intr = true
+  this.write_datareg(this.st0.raw)
+  this.write_datareg(this.st1.raw)
+  this.write_datareg(this.st2.raw)
+  this.write_datareg(this.drive[slot].cylinder)
+  this.write_datareg(this.drive[slot].head)
+  this.write_datareg(this.drive[slot].sector)
+  this.write_datareg(cmd[4])
+  this.msr.RQM = 0
+
+proc fdd_write_data*(this: var FDD): void =
+  var cmd: array[8, uint8]
+  var slot: uint8
+  this.msr.RQM = 1
+  this.msr.DIO = 1
+  for i in 0 ..< 8:
+    cmd[i] = dequeue(this, addr this.data_q)
+  slot = cmd[0] and 3
+  if this.conf.EIS.toBool():
+    discard seek(this, slot, cmd[1], cmd[2], cmd[3])
+
+  for i in 0 ..< pow(2.float, cmd[4].float).int * 128:
+    {.warning: "write(this, slot, dequeue(this, addr this.data_q))".}
+    this.intr = true
+  this.write_datareg(this.st0.raw)
+  this.write_datareg(this.st1.raw)
+  this.write_datareg(this.st2.raw)
+  this.write_datareg(this.drive[slot].cylinder)
+  this.write_datareg(this.drive[slot].head)
+  this.write_datareg(this.drive[slot].sector)
+  this.write_datareg(cmd[4])
+  this.msr.RQM = 0
+
+
+proc fdd_read_data*(this: var FDD): void =
+  var cmd: array[8, uint8]
+  var slot: uint8
+  this.msr.RQM = 1
+  this.msr.DIO = 0
+  for i in 0 ..< 8:
+    cmd[i] = dequeue(this, addr this.data_q)
+  slot = cmd[0] and 3
+  if this.conf.EIS.toBool():
+    discard seek(this, slot, cmd[1], cmd[2], cmd[3])
+
+  for i in 0 ..< pow(2.float, cmd[4].float).int * 128:
+    write_datareg(this, read(this, slot))
+    this.intr = true
+  this.write_datareg(this.st0.raw)
+  this.write_datareg(this.st1.raw)
+  this.write_datareg(this.st2.raw)
+  this.write_datareg(this.drive[slot].cylinder)
+  this.write_datareg(this.drive[slot].head)
+  this.write_datareg(this.drive[slot].sector)
+  this.write_datareg(cmd[4])
+  this.msr.RQM = 0
+
+proc fdd_configure*(this: var FDD): void =
+  var cmd: array[3, uint8]
+  for i in 0 ..< 3:
+    cmd[i] = dequeue(this, addr this.data_q)
+  this.conf.raw = cmd[1]
+
+
+proc initFDD*(): FDD =
+  result.fddfuncs[FDD_READ_TRACK] = fddfunc_t(fdd_read_track)
+  result.fddfuncs[FDD_WRITE_DATA] = fddfunc_t(fdd_write_data)
+  result.fddfuncs[FDD_READ_DATA] = fddfunc_t(fdd_read_data)
+  result.fddfuncs[FDD_CONFIGURE] = fddfunc_t(fdd_configure)
+  for i in 0 ..< MAX_FDD:
+    result.drive[i] = nil
+  result.conf.EIS = 0
+  result.conf.EFIFO = 1
+  result.conf.POLL = 0
+  result.sra.raw = 0
+  result.srb.raw = 0
+  result.data_q.max = 0
+  # th = std.thread(addr FDD.worker, this)
+
+proc insert_disk*(this: var FDD, slot: uint8, fname: cstring, write: bool): bool =
+  var d: ref DRIVE
+  if slot >= MAX_FDD or this.drive[slot].toBool():
+    return false
+
+  new(d)
+  # d[] = initDrive()
+  d.disk = open($fname, (if write: fmWrite else: fmRead))
+  if not(d.disk.toBool()):
+    # cxx_delete d
+    return false
+
+  d.cylinder = 0
+  d.head = 0
+  d.sector = 1
+  d.write = write
+  this.drive[slot] = d
+  return true
+
+proc eject_disk*(this: var FDD, slot: uint8): bool =
+  if slot >= MAX_FDD or not(this.drive[slot].toBool()):
+    return false
+
+  close(this.drive[slot].disk)
+  # cxx_delete drive[slot]
+  this.drive[slot] = nil
+  return true
+
+proc destroyFDD*(this: var FDD): void =
+  for i in 0 ..< MAX_FDD:
+    discard this.eject_disk(i.uint8)
+  # FIXME: this.th.join()
+
+proc write*(this: var FDD, slot: uint8, v: uint8): void =
+  if not(this.drive[slot].toBool()) or not(this.drive[slot].disk.toBool()):
+    ERROR("not ready disk%d", slot)
+
+  # FIXME: write(addr v, 1, 1, this.drive[slot].disk)
+  sync_position(this, slot)
+
+
+proc read_datareg*(this: var FDD): uint8 =
+  var v: uint8
+  while (not(this.sra.INT.toBool())):
+    {.warning: "std.this_thread.sleep_for(std.chrono.microseconds(50))".}
+  v = this.data
+  this.sra.INT = 0
+  return v
+
+
+proc in8*(this: var FDD, `addr`: uint16): uint8 =
+  var v: uint8
+  case `addr`:
+    of 0x3f0: v = this.sra.raw
+    of 0x3f1: v = this.srb.raw
+    of 0x3f3: v = this.tdr.raw
+    of 0x3f4: v = this.msr.raw
+    of 0x3f5: v = this.read_datareg()
+    of 0x3f7: v = this.ccr.raw
+    else: assert false
+  return v
+
+proc enqueue*(this: var FDD, q: ptr QUEUE, v: uint8): void =
+  while (q.max.toBool() and q.queue.len() >= q.max.int):
+    {.warning: "std.this_thread.sleep_for(std.chrono.microseconds(50))".}
+  q.mtx.acquire()
+  q.queue.addLast(v)
+  q.mtx.release()
+
+proc out8*(this: var FDD, `addr`: uint16, v: uint8): void =
+  case `addr`:
+    of 0x3f2: this.dor.raw = v
+    of 0x3f3: this.tdr.raw = v
+    of 0x3f4: this.dsr.raw = v
+    of 0x3f5: this.enqueue(addr this.data_q, v)
+    of 0x3f7: this.dir.raw = v
+    else: assert false
+
+proc worker*(this: var FDD): void =
+  var mode: uint8
+  while (true):
+    while (this.data_q.queue.len() == 0):
+      {.warning: "std.this_thread.sleep_for(std.chrono.milliseconds(10))".}
+
+    mode = this.dequeue(addr this.data_q)
+    if mode notin this.fddfuncs:
+      this.data = 0x80
+      continue
+
+    this.msr.CMD_BSY = 1
+    this.fddfuncs[mode]()
+    # this.CXX_SYNTAX_ERROR("*")[mode])()
+    this.msr.CMD_BSY = 0
