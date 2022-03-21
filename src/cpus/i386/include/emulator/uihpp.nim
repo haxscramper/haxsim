@@ -20,29 +20,22 @@ type
     size_y*: uint16    
     image*: ptr uint8
     field7*: UI_field7_Type    
-  
+
+  UI_field7_Type* {.bycopy.} = object
+    Y*: int16
+    click*: array[2, bool]
+
 proc get_status*(this: var UI): bool = 
-  return working
+  return this.working
 
 proc get_keyboard*(this: var UI): ptr Keyboard = 
-  return keyboard
+  return this.keyboard
 
 proc get_vga*(this: var UI): ptr VGA = 
-  return vga
+  return this.vga
 
-type
-  UI_field7_Type* {.bycopy.} = object
-    Y*: int16    
-    click*: array[2, bool]
-  
-proc Y*(this: UI): int16 = 
-  this.field7.Y
 
-proc `Y =`*(this: var UI): int16 = 
-  this.field7.Y
-
-proc click*(this: UI): array[2, bool] = 
-  this.field7.click
-
-proc `click =`*(this: var UI): array[2, bool] = 
-  this.field7.click
+proc Y*(this: UI): int16 = this.field7.Y
+proc `Y=`*(this: var UI): int16 = this.field7.Y
+proc click*(this: UI): array[2, bool] = this.field7.click
+proc `click=`*(this: var UI): array[2, bool] = this.field7.click
