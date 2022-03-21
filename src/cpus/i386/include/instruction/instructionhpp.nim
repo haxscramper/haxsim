@@ -7,6 +7,7 @@ template EMU*(): untyped {.dirty.} =
 
 template CPU*(): untyped = EMU.accs.cpu
 template MEM*(): untyped = EMU.accs.mem
+template ACS*(): untyped = EMU.accs
 
 template GET_EIP*(): untyped {.dirty.} =
   EMU.get_eip()

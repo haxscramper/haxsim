@@ -132,7 +132,7 @@ proc `ID =`*(this: var EflagsImpl, value: uint32) =
   this.field2.ID = value
 
 type
-  Eflags* {.bycopy, importcpp.} = object
+  Eflags* {.bycopy.} = object
     eflags*: EflagsImpl
 
 proc get_eflags*(this: var Eflags): uint32 =

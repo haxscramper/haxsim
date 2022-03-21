@@ -207,4 +207,4 @@ proc set_crn*(this: var ExecInstr, value: uint32): void =
   EMU.accs.cpu.set_crn(REG, value)
 
 proc get_crn*(this: var ExecInstr): uint32 = 
-  return EMU.accs.cpu.get_crn(REG)
+  return CPU.get_crn(REG)
