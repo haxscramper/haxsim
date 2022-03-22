@@ -1,11 +1,6 @@
 import commonhpp
 import instructionhpp
 
-type
-  InstrBase* {.bycopy, inheritable.} = object
-    exec*: ExecInstr
-    parse*: ParseInstr
-    emu*: EmuInstr
 
 template instr*(b: InstrBase): untyped = b.exec.instr
 

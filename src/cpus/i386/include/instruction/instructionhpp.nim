@@ -8,6 +8,8 @@ template EMU*(): untyped {.dirty.} =
 template CPU*(): untyped = EMU.accs.cpu
 template MEM*(): untyped = EMU.accs.mem
 template ACS*(): untyped = EMU.accs
+template INT*(): untyped = EMU.intr
+template EIO*(): untyped = EMU.accs.io
 
 template GET_EIP*(): untyped {.dirty.} =
   EMU.get_eip()
@@ -22,7 +24,7 @@ template SET_IP*(v: untyped): untyped {.dirty.} =
   EMU.set_ip(v)
 
 template UPDATE_EIP*(v: untyped): untyped {.dirty.} =
-  EMU.update_eip(v)
+  CPU.update_eip(v)
 
 template UPDATE_IP*(v: untyped): untyped {.dirty.} =
   CPU.update_ip(v)
@@ -154,7 +156,7 @@ template IMM16*(): untyped {.dirty.} =
   (this.exec.instr[].imm16)
 
 template IMM8*(): untyped {.dirty.} =
-  this.exec.instr[].imm8
+  (this.exec.instr[].imm8)
 
 template PTR16*(): untyped {.dirty.} =
   (this.exec.instr[].ptr16)
@@ -243,10 +245,17 @@ type
 
   EmuInstr* {.bycopy.} = object of Instruction
 
-  instrfunc_t* = proc(arg0: void)
 
   ExecInstr* {.bycopy.} = object of Instruction
     instrfuncs*: array[MAX_OPCODE, instrfunc_t]
+
+  InstrBase* {.bycopy, inheritable.} = object
+    exec*: ExecInstr
+    parse*: ParseInstr
+    emu*: EmuInstr
+
+  instrfunc_t* = proc(this: var InstrBase)
+
 
 proc dmodrm*(this: InstrData): uint8 =
   this.field5.dmodrm
@@ -331,15 +340,16 @@ proc initExecInstr*(): ExecInstr =
     result.instrfuncs[i] = nil
 
 
-const CHKdMODRM* = (1 shl 0)
-const CHK_IMM32* = (1 shl 1)
-const CHK_IMM16* = (1 shl 2)
-const CHK_IMM8* = (1 shl 3)
-const CHK_PTR16* = (1 shl 4)
-const CHK_MOFFS* = (1 shl 5)
-const CHSZ_NONE* = 0
-const CHSZ_OP* = 1
-const CHSZ_AD* = 2
+const
+  CHK_MODRM* = (1 shl 0)
+  CHK_IMM32* = (1 shl 1)
+  CHK_IMM16* = (1 shl 2)
+  CHK_IMM8* = (1 shl 3)
+  CHK_PTR16* = (1 shl 4)
+  CHK_MOFFS* = (1 shl 5)
+  CHSZ_NONE* = 0
+  CHSZ_OP* = 1
+  CHSZ_AD* = 2
 
 
 

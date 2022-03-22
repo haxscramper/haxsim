@@ -26,7 +26,15 @@ proc init*(): void =
     setbuf(stderr, nil)
 
 proc main*(argc: cint, argv: ptr UncheckedArray[cstring]): cint = 
-  var set = Setting(mem_size: MEMORY_SIZE, image_name: "sample/kernel.img", load_addr: 0x0, load_size: cast[csize_t](-1), ui_enable: true, ui_full: false, ui_vm: false)
+  var set = Setting(
+    mem_size: MEMORY_SIZE,
+    image_name: "sample/kernel.img",
+    load_addr: 0x0,
+    load_size: cast[csize_t](-1),
+    ui_enable: true,
+    ui_full: false,
+    ui_vm: false)
+
   var opt: char
   run_emulator(set)
 

@@ -3,7 +3,7 @@ import hardware/[processorhpp, crhpp]
 import emulator/accesshpp
 import commonhpp
 
-proc exec*(this: var ExecInstr): bool = 
+proc exec*(this: var ExecInstr, base: var InstrBase): bool =
   var opcode: uint16 = OPCODE
   if opcode shr 8 == 0x0f:
     opcode = (opcode and 0xff) or 0x0100
@@ -13,7 +13,7 @@ proc exec*(this: var ExecInstr): bool =
     ERROR("not implemented OPCODE 0x%02x", OPCODE)
     return false
 
-  this.instrfuncs[opcode]()
+  this.instrfuncs[opcode](base)
   return true
 
 proc calc_modrm16*(this: var ExecInstr): uint32 =

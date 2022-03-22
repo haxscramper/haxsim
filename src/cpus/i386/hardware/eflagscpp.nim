@@ -88,11 +88,11 @@ proc update_eflags_sub*[T](this: var Eflags, v1: T, v2: uint32): uint32 =
 proc update_eflags_mul*[T](this: var Eflags, v1: T, v2: uint32): uint32 = 
   var result: uint64
   var size: uint8
-  v2 = cast[T](v2)
+  var v2 = cast[T](v2)
   result = cast[uint64](v1) * v2
-  size = sizeof((T) * 8)
-  set_carry(result shr size)
-  set_overflow(result shr size)
+  size = sizeof(T) * 8
+  this.set_carry(toBool(result shr size))
+  this.set_overflow(toBool(result shr size))
   return this.eflags.reg32
 
 
@@ -101,11 +101,11 @@ proc update_eflags_mul*[T](this: var Eflags, v1: T, v2: uint32): uint32 =
 proc update_eflags_imul*[T](this: var Eflags, v1: T, v2: int32): uint32 = 
   var result: int64
   var size: uint8
-  v2 = cast[T](v2)
+  let v2 = cast[T](v2)
   result = cast[int64](v1) * v2
-  size = sizeof((T) * 8)
-  set_carry((result shr size) != -1)
-  set_overflow((result shr size) != -1)
+  size = sizeof(T) * 8
+  this.set_carry((result shr size) != -1)
+  this.set_overflow((result shr size) != -1)
   return this.eflags.reg32
 
 
@@ -115,13 +115,15 @@ proc update_eflags_shl*[T](this: var Eflags, v: T, c: uint8): uint32 =
   var result: T
   var size: uint8
   result = v shl c
-  size = sizeof((T) * 8)
-  set_carry((v shr (size - c)) and 1)
-  set_parity(chk_parity(result and 0xff))
-  set_zero(not(result))
-  set_sign((result shr (size - 1)) and 1)
+  size = sizeof(T) * 8
+  this.set_carry(toBool((v shr (size - c)) and 1))
+  this.set_parity(this.chk_parity(result and 0xff))
+  this.set_zero(not(result.toBool()))
+  this.set_sign(toBool(result shr (size - 1) and 1))
   if c == 1:
-    set_overflow(((v shr (size - 1)) and 1) xor ((v shr (size - 2)) and 1))
+    this.set_overflow(toBool(
+      ((v shr (size - 1)) and 1) xor
+      ((v shr (size - 2)) and 1)))
   
   return this.eflags.reg32
 
@@ -132,12 +134,12 @@ proc update_eflags_shr*[T](this: var Eflags, v: T, c: uint8): uint32 =
   var result: T
   var size: uint8
   result = v shr c
-  size = sizeof((T) * 8)
-  set_carry((v shr (c - 1)) and 1)
-  set_parity(chk_parity(result and 0xff))
-  set_zero(not(result))
-  set_sign((result shr (size - 1)) and 1)
+  size = sizeof(T) * 8
+  this.set_carry(toBool((v shr (c - 1)) and 1))
+  this.set_parity(this.chk_parity(result and 0xff))
+  this.set_zero(not(result.toBool()))
+  this.set_sign(toBool((result shr (size - 1)) and 1))
   if c == 1:
-    set_overflow((v shr (size - 1)) and 1)
+    this.set_overflow(toBool((v shr (size - 1)) and 1))
   
   return this.eflags.reg32
