@@ -5,7 +5,7 @@ import ./emucpp
 import ./instr_basecpp
 import ./execcpp
 import ../hardware/eflagscpp
-import hardware/processorhpp
+import hardware/[processorhpp, eflagshpp]
 import emulator/[exceptionhpp, emulatorhpp, accesshpp]
 
 template instr16*(f: untyped): untyped {.dirty.} = instrfunc_t(f)
@@ -261,51 +261,41 @@ proc cwd*(this: var Instr16): void =
   SET_GPREG(DX, uint16(if toBool(ax and (1 shl 15)): -1 else: 0))
 
 proc callf_ptr16_16*(this: var Instr16): void =
-  this.emu.callf(PTR16, IMM16.uint32)
+  this.emu.callf(PTR16.uint16, IMM16.uint32)
 
 proc pushf*(this: var Instr16): void =
-  PUSH16(EMU.get_flags())
+  PUSH16(CPU.eflags.get_flags())
 
 proc popf*(this: var Instr16): void =
-  EMU.set_flags(POP16())
+  CPU.eflags.set_flags(POP16())
 
 proc mov_ax_moffs16*(this: var Instr16): void =
-  SET_GPREG(AX, get_moffs16())
+  SET_GPREG(AX, this.exec.get_moffs16())
 
 proc mov_moffs16_ax*(this: var Instr16): void =
-  set_moffs16(GET_GPREG(AX))
+  this.exec.set_moffs16(GET_GPREG(AX))
 
 proc cmps_m8_m8*(this: var Instr16): void =
-  var m8_d: uint8
+  var m8_d, m8_s: uint8
   block repeat:
-    m8_s = EMU.get_data8(select_segment(), GET_GPREG(SI))
-  m8_d = EMU.get_data8(ES, GET_GPREG(DI))
+    m8_s = ACS.get_data8(this.exec.select_segment(), GET_GPREG(SI))
+  m8_d = ACS.get_data8(ES, GET_GPREG(DI))
   discard EFLAGS_UPDATE_SUB(m8_s, m8_d)
-  UPDATE_GPREG(SI, (if EFLAGS_DF:
-        -1
-
-      else:
-        1
-      ))
-  UPDATE_GPREG(DI, (if EFLAGS_DF:
-        -1
-
-      else:
-        1
-      ))
-  if PRE_REPEAT:
-    UPDATE_GPREG(CX, -1)
+  discard UPDATE_GPREG(SI, int16(if EFLAGS_DF: -1 else: 1))
+  discard UPDATE_GPREG(DI, int16(if EFLAGS_DF: -1 else: 1))
+  if PRE_REPEAT.int.toBool():
+    discard UPDATE_GPREG(CX, -1)
     case PRE_REPEAT:
       of REPZ:
         if not(GET_GPREG(CX)) or not(EFLAGS_ZF):
           break
 
-        cxx_goto repeat
+        {.warning: "cxx_goto repeat".}
       of REPNZ:
         if not(GET_GPREG(CX)) or EFLAGS_ZF:
           break
 
-        cxx_goto repeat
+        {.warning: "cxx_goto repeat".}
       else:
         discard
 

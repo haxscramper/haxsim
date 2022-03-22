@@ -36,7 +36,7 @@ template SET_GPREG*(reg: untyped, v: untyped): untyped {.dirty.} =
   CPU.set_gpreg(reg, v)
 
 template UPDATE_GPREG*(reg: untyped, v: untyped): untyped {.dirty.} =
-  EMU.update_gpreg(reg, v)
+  CPU.update_gpreg(reg, v)
 
 template EFLAGS_UPDATE_ADD*(v1: untyped, v2: untyped): untyped {.dirty.} =
   CPU.eflags.update_eflags_add(v1, v2)
@@ -78,7 +78,7 @@ template EFLAGS_OF*(): untyped {.dirty.} =
   CPU.eflags.is_overflow()
 
 template EFLAGS_DF*(): untyped {.dirty.} =
-  EMU.is_direction()
+  CPU.eflags.is_direction()
 
 template READ_MEM32*(addr_d: untyped): untyped {.dirty.} =
   EMU.accs.get_data32(this.select_segment(), addr_d)
