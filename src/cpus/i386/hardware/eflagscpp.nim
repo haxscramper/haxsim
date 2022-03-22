@@ -38,7 +38,7 @@ proc update_eflags_or*[T](this: var Eflags, v1: T, v2: uint32): uint32 =
   result = T(v1) or T(v2)
   size = sizeof(T) * 8
   this.set_carry(false)
-  this.set_parity(this.chk_parity(result and 0xff))
+  this.set_parity(this.chk_parity(uint8(result and 0xff)))
   this.set_zero(not(result.toBool()))
   this.set_sign(toBool((result shr (size - 1)) and 1))
   this.set_overflow(false)
@@ -55,7 +55,7 @@ proc update_eflags_and*[T](this: var Eflags, v1: T, v2: uint32): uint32 =
   result = T(v1) and T(v2)
   size = sizeof(T) * 8
   this.set_carry(false)
-  this.set_parity(this.chk_parity(result and 0xff))
+  this.set_parity(this.chk_parity(uint8(result and 0xff)))
   this.set_zero(not(result.toBool()))
   this.set_sign(toBool((result shr (size - 1)) and 1))
   this.set_overflow(false)

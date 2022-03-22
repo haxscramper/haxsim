@@ -102,13 +102,13 @@ template PUSH32*(v: untyped): untyped {.dirty.} =
   EMU.push32(v)
 
 template PUSH16*(v: untyped): untyped {.dirty.} =
-  EMU.push16(v)
+  ACS.push16(v)
 
 template POP32*(): untyped {.dirty.} =
-  EMU.pop32()
+  ACS.pop32()
 
 template POP16*(): untyped {.dirty.} =
-  EMU.pop16()
+  ACS.pop16()
 
 template PREFIX*(): untyped {.dirty.} =
   (this.exec.instr[].prefix)
