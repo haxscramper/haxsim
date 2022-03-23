@@ -1,6 +1,6 @@
 import "commonhpp"
 import "emulator/emulatorhpp"
-import instruction/[instructionhpp, basehpp, instr16cpp]
+import instruction/[instructionhpp, basehpp, instr16cpp, instr32cpp]
 
 template MEMORY_SIZE*(): untyped {.dirty.} =
   (4 * MB)

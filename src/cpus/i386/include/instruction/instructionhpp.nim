@@ -12,13 +12,13 @@ template INT*(): untyped = EMU.intr
 template EIO*(): untyped = EMU.accs.io
 
 template GET_EIP*(): untyped {.dirty.} =
-  EMU.get_eip()
+  CPU.get_eip()
 
 template GET_IP*(): untyped {.dirty.} =
   CPU.get_ip()
 
 template SET_EIP*(v: untyped): untyped {.dirty.} =
-  EMU.set_eip(v)
+  CPU.set_eip(v)
 
 template SET_IP*(v: untyped): untyped {.dirty.} =
   CPU.set_ip(v)
@@ -99,7 +99,7 @@ template WRITE_MEM8*(addr_d: untyped, v: untyped): untyped {.dirty.} =
   EMU.accs.put_data8(this.select_segment(), addr_d, v)
 
 template PUSH32*(v: untyped): untyped {.dirty.} =
-  EMU.push32(v)
+  ACS.push32(v)
 
 template PUSH16*(v: untyped): untyped {.dirty.} =
   ACS.push16(v)
