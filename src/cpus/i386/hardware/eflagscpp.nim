@@ -117,7 +117,7 @@ proc update_eflags_shl*[T](this: var Eflags, v: T, c: uint8): uint32 =
   result = v shl c
   size = sizeof(T) * 8
   this.set_carry(toBool((v shr (size - c)) and 1))
-  this.set_parity(this.chk_parity(result and 0xff))
+  this.set_parity(this.chk_parity(uint8(result and 0xff)))
   this.set_zero(not(result.toBool()))
   this.set_sign(toBool(result shr (size - 1) and 1))
   if c == 1:
@@ -136,7 +136,7 @@ proc update_eflags_shr*[T](this: var Eflags, v: T, c: uint8): uint32 =
   result = v shr c
   size = sizeof(T) * 8
   this.set_carry(toBool((v shr (c - 1)) and 1))
-  this.set_parity(this.chk_parity(result and 0xff))
+  this.set_parity(this.chk_parity(uint8(result and 0xff)))
   this.set_zero(not(result.toBool()))
   this.set_sign(toBool((result shr (size - 1)) and 1))
   if c == 1:

@@ -5,7 +5,8 @@ import hardware/[processorhpp, memoryhpp, eflagshpp, iohpp]
 import ../instruction/emucpp
 import emulator/[exceptionhpp, emulatorhpp, accesshpp, interrupthpp]
 
-template instrbase*(f: untyped): untyped {.dirty.} = instrfunc_t(f)
+template instrbase*(f: untyped): untyped {.dirty.} =
+ instrfunc_t(f)
 
 proc set_funcflag*(this: var InstrBase, opcode: uint16, `func`: instrfunc_t, flags: uint8): void =
   var opcode = opcode
@@ -463,9 +464,8 @@ proc code_f6*(this: var InstrBase): void =
 
 
 
-proc initInstrBase*(): InstrBase =
+proc initInstrBase*(r: var InstrBase) =
   var i: cint
-  var r: InstrBase
   r.set_funcflag(0x00, instrbase(add_rm8_r8), CHK_MODRM)
   r.set_funcflag(0x02, instrbase(add_r8_rm8), CHK_MODRM)
   r.set_funcflag(0x04, instrbase(add_al_imm8), CHK_IMM8)
@@ -553,4 +553,5 @@ proc initInstrBase*(): InstrBase =
   r.set_funcflag(0xc0, instrbase(code_c0), CHK_MODRM or CHK_IMM8)
   r.set_funcflag(0xf6, instrbase(code_f6), CHK_MODRM)
 
-  return r
+proc initInstrBase*(): InstrBase =
+  initInstrBase(result)

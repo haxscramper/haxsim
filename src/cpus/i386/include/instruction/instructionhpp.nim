@@ -15,13 +15,13 @@ template GET_EIP*(): untyped {.dirty.} =
   EMU.get_eip()
 
 template GET_IP*(): untyped {.dirty.} =
-  EMU.get_ip()
+  CPU.get_ip()
 
 template SET_EIP*(v: untyped): untyped {.dirty.} =
   EMU.set_eip(v)
 
 template SET_IP*(v: untyped): untyped {.dirty.} =
-  EMU.set_ip(v)
+  CPU.set_ip(v)
 
 template UPDATE_EIP*(v: untyped): untyped {.dirty.} =
   CPU.update_eip(v)
