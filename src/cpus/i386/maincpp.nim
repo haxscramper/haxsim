@@ -1,5 +1,5 @@
 import "commonhpp"
-import "emulator/emulatorhpp"
+import emulator/[emulatorhpp, interruptcpp]
 import instruction/[instructionhpp, basehpp, instr16cpp, instr32cpp]
 
 template MEMORY_SIZE*(): untyped {.dirty.} =
@@ -56,7 +56,7 @@ proc run_emulator*(set: Setting): void =
   
   emu.load_binary("bios/bios.bin", 0xf0000, 0, 0x2800)
   emu.load_binary("bios/crt0.bin", 0xffff0, 0, 0x10)
-  if set.load_addr:
+  if set.load_addr.toBool():
     emu.load_binary(set.image_name, set.load_addr, 0x200, set.load_size)
   
   
@@ -65,7 +65,8 @@ proc run_emulator*(set: Setting): void =
     var is_mode32: bool
     var prefix: uint8
     var chsz_ad: bool
-    memset(addr instr, 0, sizeof((InstrData)))
+    instr = InstrData()
+    # memset(addr instr, 0, sizeof((InstrData)))
     try:
       if emu.chk_irq():
         emu.do_halt(false)

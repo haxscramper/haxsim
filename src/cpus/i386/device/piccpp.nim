@@ -1,14 +1,12 @@
-import
-  stdinth
-import
-  device/pichpp
-proc initPIC*(master: ptr PIC): PIC_PIC = 
-  pic_m = master
+import device/pichpp
+
+proc initPIC*(master: ptr PIC): PIC =
+  result.pic_m = master
   for i in 0 ..< MAX_IRQ:
-    irq[i] = nil
-  irr = 0
-  isr = 0
-  init_icn = -1
+    result.irq[i] = nil
+  result.irr = 0
+  result.isr = 0
+  result.init_icn = -1
 
 
 proc get_nintr*(this: var PIC): int8 = 
@@ -16,7 +14,7 @@ proc get_nintr*(this: var PIC): int8 =
   var i: cint
   block:
     i = 0
-    while i < MAX_IRQ and not(((irr shr i) and 1)):
+    while i < MAX_IRQ and not(((result.irr shr i) and 1)):
       postInc(i)
   if i == MAX_IRQ:
     return -1
