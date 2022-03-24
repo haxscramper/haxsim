@@ -14,7 +14,7 @@ template MEMORY_SIZE*(): untyped {.dirty.} =
   (4 * MB)
 
 type
-  Setting* {.bycopy.} = object
+  Setting* = object
     mem_size*: csize_t
     image_name*: cstring
     load_addr*: uint32
@@ -22,10 +22,14 @@ type
     ui_enable*: bool
     ui_full*: bool
     ui_vm*: bool
-  
-proc run_emulator*(set: Setting): void
 
-proc help*(name: cstring): void = 
+  FullImpl = object
+    data: InstrData
+    impl16: Instr16
+    impl32: Instr32
+    emu: Emulator
+  
+proc help*(name: cstring): void =
   discard 
 
 proc init*(): void =
@@ -33,8 +37,73 @@ proc init*(): void =
     setbuf(stdout, nil)
     setbuf(stderr, nil)
 
-proc main*(argc: cint, argv: ptr UncheckedArray[cstring]): cint = 
-  var set = Setting(
+proc loop*(full: var FullImpl) =
+  while (full.emu.is_running()):
+    var is_mode32: bool
+    var prefix: uint8
+    var chsz_ad, chsz_op: bool
+    full.data = InstrData()
+    # memset(addr instr, 0, sizeof((InstrData)))
+    try:
+      if full.emu.intr.chk_irq():
+        full.emu.accs.cpu.do_halt(false)
+
+      if full.emu.accs.cpu.is_halt():
+        {.warning: "[FIXME] 'std.this_thread.sleep_for(std.chrono.milliseconds(10))'".}
+        continue
+
+      full.emu.intr.hundle_interrupt()
+      is_mode32 = full.emu.accs.cpu.is_mode32()
+      if is_mode32:
+        prefix = full.impl32.parse_prefix()
+
+      else:
+        prefix = full.impl16.parse_prefix()
+      chsz_op = toBool(prefix and CHSZ_OP)
+      chsz_ad = toBool(prefix and CHSZ_AD)
+      if is_mode32 xor chsz_op:
+        full.impl32.set_chsz_ad(not((is_mode32 xor chsz_ad)))
+        parse(full.impl32)
+        discard exec(full.impl32)
+
+      else:
+        full.impl16.set_chsz_ad(is_mode32 xor chsz_ad)
+        parse(full.impl16)
+        discard exec(full.impl16)
+
+    except:
+      # emu.queue_interrupt(n, true)
+      assert false
+      # ERROR("Exception %d", n)
+
+    # except:
+    #   emu.dump_regs()
+    #   emu.stop()
+  
+proc run_emulator*(eset: Setting): void =
+  var emuset: EmuSetting
+  emuset.mem_size = eset.mem_size
+  emuset.uiset.enable = eset.ui_enable
+  emuset.uiset.full = eset.ui_full
+  emuset.uiset.vm = eset.ui_vm
+
+  var full = FullImpl(emu: initEmulator(emuset))
+  full.impl16 = initInstr16(addr full.emu, addr full.data)
+  full.impl32 = initInstr32(addr full.emu, addr full.data)
+
+  if not(full.emu.insert_floppy(0, eset.image_name, false)):
+    WARN("cannot load image \'%s\'", eset.image_name)
+    return 
+  
+  full.emu.load_binary("bios/bios.bin", 0xf0000, 0, 0x2800)
+  full.emu.load_binary("bios/crt0.bin", 0xffff0, 0, 0x10)
+  if eset.load_addr.toBool():
+    full.emu.load_binary(eset.image_name, eset.load_addr, 0x200, eset.load_size)
+
+  full.loop()
+
+proc main*(): cint =
+  var eset = Setting(
     mem_size: MEMORY_SIZE,
     image_name: "sample/kernel.img",
     load_addr: 0x0,
@@ -44,69 +113,4 @@ proc main*(argc: cint, argv: ptr UncheckedArray[cstring]): cint =
     ui_vm: false)
 
   var opt: char
-  run_emulator(set)
-
-proc run_emulator*(set: Setting): void = 
-  var emuset: EmuSetting
-  emuset.mem_size = set.mem_size
-  emuset.uiset.enable = set.ui_enable
-  emuset.uiset.full = set.ui_full
-  emuset.uiset.vm = set.ui_vm
-
-  var emu: Emulator = initEmulator(emuset)
-  var instr: InstrData
-  var instr16: Instr16 = initInstr16(addr emu, addr instr)
-  var instr32: Instr32 = initInstr32(addr emu, addr instr)
-
-  if not(emu.insert_floppy(0, set.image_name, false)):
-    WARN("cannot load image \'%s\'", set.image_name)
-    return 
-  
-  emu.load_binary("bios/bios.bin", 0xf0000, 0, 0x2800)
-  emu.load_binary("bios/crt0.bin", 0xffff0, 0, 0x10)
-  if set.load_addr.toBool():
-    emu.load_binary(set.image_name, set.load_addr, 0x200, set.load_size)
-  
-  
-  
-  while (emu.is_running()):
-    var is_mode32: bool
-    var prefix: uint8
-    var chsz_ad, chsz_op: bool
-    instr = InstrData()
-    # memset(addr instr, 0, sizeof((InstrData)))
-    try:
-      if emu.intr.chk_irq():
-        emu.accs.cpu.do_halt(false)
-      
-      if emu.accs.cpu.is_halt():
-        {.warning: "[FIXME] 'std.this_thread.sleep_for(std.chrono.milliseconds(10))'".}
-        continue
-      
-      emu.intr.hundle_interrupt()
-      is_mode32 = emu.accs.cpu.is_mode32()
-      if is_mode32:
-        prefix = instr32.parse_prefix()
-
-      else:
-        prefix = instr16.parse_prefix()
-      chsz_op = toBool(prefix and CHSZ_OP)
-      chsz_ad = toBool(prefix and CHSZ_AD)
-      if is_mode32 xor chsz_op:
-        instr32.set_chsz_ad(not((is_mode32 xor chsz_ad)))
-        parse(instr32)
-        discard exec(instr32)
-      
-      else:
-        instr16.set_chsz_ad(is_mode32 xor chsz_ad)
-        parse(instr16)
-        discard exec(instr16)
-      
-    except:
-      # emu.queue_interrupt(n, true)
-      assert false
-      # ERROR("Exception %d", n)
-
-    # except:
-    #   emu.dump_regs()
-    #   emu.stop()
+  run_emulator(eset)
