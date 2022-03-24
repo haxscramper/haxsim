@@ -2,7 +2,6 @@ import instruction/[basehpp, instructionhpp]
 import instr_basecpp
 import commonhpp
 import ./emucpp
-import ./instr_basecpp
 import ./execcpp
 import ../hardware/eflagscpp
 import hardware/[processorhpp, eflagshpp, iohpp]
@@ -10,782 +9,782 @@ import emulator/[exceptionhpp, emulatorhpp, accesshpp]
 
 template instr16*(f: untyped): untyped {.dirty.} =
   assert false, "Merge 16 and 32-bit instruction constructors together"
-  instrfunc_t(nil)
+  instrfuncT(nil)
 
-proc select_segment*(this: var Instr16): sgreg_t =
-  this.exec.select_segment()
+proc selectSegment*(this: var Instr16): sgregT =
+  this.exec.selectSegment()
 
-proc add_rm16_r16*(this: var Instr16): void =
+proc addRm16R16*(this: var Instr16): void =
   var r16, rm16: uint16
-  rm16 = this.exec.get_rm16()
-  r16 = this.exec.get_r16()
-  this.exec.set_rm16(rm16 + r16)
-  discard EFLAGS_UPDATE_ADD(rm16, r16)
+  rm16 = this.exec.getRm16()
+  r16 = this.exec.getR16()
+  this.exec.setRm16(rm16 + r16)
+  discard EFLAGSUPDATEADD(rm16, r16)
 
-proc add_r16_rm16*(this: var Instr16): void =
+proc addR16Rm16*(this: var Instr16): void =
   var rm16, r16: uint16
-  r16 = this.exec.get_r16()
-  rm16 = this.exec.get_rm16()
-  this.exec.set_r16(r16 + rm16)
-  discard EFLAGS_UPDATE_ADD(r16, rm16)
+  r16 = this.exec.getR16()
+  rm16 = this.exec.getRm16()
+  this.exec.setR16(r16 + rm16)
+  discard EFLAGSUPDATEADD(r16, rm16)
 
-proc add_ax_imm16*(this: var Instr16): void =
+proc addAxImm16*(this: var Instr16): void =
   var ax: uint16
-  ax = GET_GPREG(AX)
-  SET_GPREG(AX, ax + IMM16.uint16)
-  discard EFLAGS_UPDATE_ADD(ax, IMM16.uint16)
+  ax = GETGPREG(AX)
+  SETGPREG(AX, ax + IMM16.uint16)
+  discard EFLAGSUPDATEADD(ax, IMM16.uint16)
 
-proc push_es*(this: var Instr16): void =
-  PUSH16(ACS.get_segment(ES))
+proc pushEs*(this: var Instr16): void =
+  PUSH16(ACS.getSegment(ES))
 
-proc pop_es*(this: var Instr16): void =
-  ACS.set_segment(ES, POP16())
+proc popEs*(this: var Instr16): void =
+  ACS.setSegment(ES, POP16())
 
-proc or_rm16_r16*(this: var Instr16): void =
+proc orRm16R16*(this: var Instr16): void =
   var r16, rm16: uint16
-  rm16 = this.exec.get_rm16()
-  r16 = this.exec.get_r16()
-  this.exec.set_rm16(rm16 or r16)
-  discard EFLAGS_UPDATE_OR(rm16, r16)
+  rm16 = this.exec.getRm16()
+  r16 = this.exec.getR16()
+  this.exec.setRm16(rm16 or r16)
+  discard EFLAGSUPDATEOR(rm16, r16)
 
-proc or_r16_rm16*(this: var Instr16): void =
+proc orR16Rm16*(this: var Instr16): void =
   var rm16, r16: uint16
-  r16 = this.exec.get_r16()
-  rm16 = this.exec.get_rm16()
-  this.exec.set_r16(r16 or rm16)
-  discard EFLAGS_UPDATE_OR(r16, rm16)
+  r16 = this.exec.getR16()
+  rm16 = this.exec.getRm16()
+  this.exec.setR16(r16 or rm16)
+  discard EFLAGSUPDATEOR(r16, rm16)
 
-proc or_ax_imm16*(this: var Instr16): void =
+proc orAxImm16*(this: var Instr16): void =
   var ax: uint16
-  ax = GET_GPREG(AX)
-  SET_GPREG(AX, ax or IMM16.uint16)
-  discard EFLAGS_UPDATE_OR(ax, IMM16.uint16)
+  ax = GETGPREG(AX)
+  SETGPREG(AX, ax or IMM16.uint16)
+  discard EFLAGSUPDATEOR(ax, IMM16.uint16)
 
-proc push_ss*(this: var Instr16): void =
-  PUSH16(ACS.get_segment(SS))
+proc pushSs*(this: var Instr16): void =
+  PUSH16(ACS.getSegment(SS))
 
-proc pop_ss*(this: var Instr16): void =
-  ACS.set_segment(SS, POP16())
+proc popSs*(this: var Instr16): void =
+  ACS.setSegment(SS, POP16())
 
-proc push_ds*(this: var Instr16): void =
-  PUSH16(ACS.get_segment(DS))
+proc pushDs*(this: var Instr16): void =
+  PUSH16(ACS.getSegment(DS))
 
-proc pop_ds*(this: var Instr16): void =
-  ACS.set_segment(DS, POP16())
+proc popDs*(this: var Instr16): void =
+  ACS.setSegment(DS, POP16())
 
-proc and_rm16_r16*(this: var Instr16): void =
+proc andRm16R16*(this: var Instr16): void =
   var r16, rm16: uint16
-  rm16 = this.exec.get_rm16()
-  r16 = this.exec.get_r16()
-  this.exec.set_rm16(rm16 and r16)
-  discard EFLAGS_UPDATE_AND(rm16, r16)
+  rm16 = this.exec.getRm16()
+  r16 = this.exec.getR16()
+  this.exec.setRm16(rm16 and r16)
+  discard EFLAGSUPDATEAND(rm16, r16)
 
-proc and_r16_rm16*(this: var Instr16): void =
+proc andR16Rm16*(this: var Instr16): void =
   var rm16, r16: uint16
-  r16 = this.exec.get_r16()
-  rm16 = this.exec.get_rm16()
-  this.exec.set_r16(r16 and rm16)
-  discard EFLAGS_UPDATE_AND(r16, rm16)
+  r16 = this.exec.getR16()
+  rm16 = this.exec.getRm16()
+  this.exec.setR16(r16 and rm16)
+  discard EFLAGSUPDATEAND(r16, rm16)
 
-proc and_ax_imm16*(this: var Instr16): void =
+proc andAxImm16*(this: var Instr16): void =
   var ax: uint16
-  ax = GET_GPREG(AX)
-  SET_GPREG(AX, ax and IMM16.uint16)
-  discard EFLAGS_UPDATE_AND(ax, IMM16.uint16)
+  ax = GETGPREG(AX)
+  SETGPREG(AX, ax and IMM16.uint16)
+  discard EFLAGSUPDATEAND(ax, IMM16.uint16)
 
-proc sub_rm16_r16*(this: var Instr16): void =
+proc subRm16R16*(this: var Instr16): void =
   var r16, rm16: uint16
-  rm16 = this.exec.get_rm16()
-  r16 = this.exec.get_r16()
-  this.exec.set_rm16(rm16 - r16)
-  discard EFLAGS_UPDATE_SUB(rm16, r16)
+  rm16 = this.exec.getRm16()
+  r16 = this.exec.getR16()
+  this.exec.setRm16(rm16 - r16)
+  discard EFLAGSUPDATESUB(rm16, r16)
 
-proc sub_r16_rm16*(this: var Instr16): void =
+proc subR16Rm16*(this: var Instr16): void =
   var rm16, r16: uint16
-  r16 = this.exec.get_r16()
-  rm16 = this.exec.get_rm16()
-  this.exec.set_r16(r16 - rm16)
-  discard EFLAGS_UPDATE_SUB(r16, rm16)
+  r16 = this.exec.getR16()
+  rm16 = this.exec.getRm16()
+  this.exec.setR16(r16 - rm16)
+  discard EFLAGSUPDATESUB(r16, rm16)
 
-proc sub_ax_imm16*(this: var Instr16): void =
+proc subAxImm16*(this: var Instr16): void =
   var ax: uint16
-  ax = GET_GPREG(AX)
-  SET_GPREG(AX, ax - IMM16.uint16)
-  discard EFLAGS_UPDATE_SUB(ax, IMM16.uint16)
+  ax = GETGPREG(AX)
+  SETGPREG(AX, ax - IMM16.uint16)
+  discard EFLAGSUPDATESUB(ax, IMM16.uint16)
 
-proc xor_rm16_r16*(this: var Instr16): void =
+proc xorRm16R16*(this: var Instr16): void =
   var r16, rm16: uint16
-  rm16 = this.exec.get_rm16()
-  r16 = this.exec.get_r16()
-  this.exec.set_rm16(rm16 xor r16)
+  rm16 = this.exec.getRm16()
+  r16 = this.exec.getR16()
+  this.exec.setRm16(rm16 xor r16)
 
-proc xor_r16_rm16*(this: var Instr16): void =
+proc xorR16Rm16*(this: var Instr16): void =
   var rm16, r16: uint16
-  r16 = this.exec.get_r16()
-  rm16 = this.exec.get_rm16()
-  this.exec.set_r16(r16 xor rm16)
+  r16 = this.exec.getR16()
+  rm16 = this.exec.getRm16()
+  this.exec.setR16(r16 xor rm16)
 
-proc xor_ax_imm16*(this: var Instr16): void =
+proc xorAxImm16*(this: var Instr16): void =
   var ax: uint16
-  ax = GET_GPREG(AX)
-  SET_GPREG(AX, ax xor IMM16.uint16)
+  ax = GETGPREG(AX)
+  SETGPREG(AX, ax xor IMM16.uint16)
 
-proc cmp_rm16_r16*(this: var Instr16): void =
+proc cmpRm16R16*(this: var Instr16): void =
   var r16, rm16: uint16
-  rm16 = this.exec.get_rm16()
-  r16 = this.exec.get_r16()
-  discard EFLAGS_UPDATE_SUB(rm16, r16)
+  rm16 = this.exec.getRm16()
+  r16 = this.exec.getR16()
+  discard EFLAGSUPDATESUB(rm16, r16)
 
-proc cmp_r16_rm16*(this: var Instr16): void =
+proc cmpR16Rm16*(this: var Instr16): void =
   var rm16, r16: uint16
-  r16 = this.exec.get_r16()
-  rm16 = this.exec.get_rm16()
-  discard EFLAGS_UPDATE_SUB(r16, rm16)
+  r16 = this.exec.getR16()
+  rm16 = this.exec.getRm16()
+  discard EFLAGSUPDATESUB(r16, rm16)
 
-proc cmp_ax_imm16*(this: var Instr16): void =
+proc cmpAxImm16*(this: var Instr16): void =
   var ax: uint16
-  ax = GET_GPREG(AX)
-  discard EFLAGS_UPDATE_SUB(ax, IMM16.uint16)
+  ax = GETGPREG(AX)
+  discard EFLAGSUPDATESUB(ax, IMM16.uint16)
 
-proc inc_r16*(this: var Instr16): void =
+proc incR16*(this: var Instr16): void =
   var reg: uint8
   var r16: uint16
   reg = uint8(OPCODE and ((1 shl 3) - 1))
-  r16 = GET_GPREG(cast[reg16_t](reg))
-  SET_GPREG(cast[reg16_t](reg), r16 + 1)
-  discard EFLAGS_UPDATE_ADD(r16, 1)
+  r16 = GETGPREG(cast[reg16T](reg))
+  SETGPREG(cast[reg16T](reg), r16 + 1)
+  discard EFLAGSUPDATEADD(r16, 1)
 
-proc dec_r16*(this: var Instr16): void =
+proc decR16*(this: var Instr16): void =
   var reg: uint8
   var r16: uint16
   reg = uint8(OPCODE and ((1 shl 3) - 1))
-  r16 = GET_GPREG(cast[reg16_t](reg))
-  SET_GPREG(cast[reg16_t](reg), r16 - 1)
-  discard EFLAGS_UPDATE_SUB(r16, 1)
+  r16 = GETGPREG(cast[reg16T](reg))
+  SETGPREG(cast[reg16T](reg), r16 - 1)
+  discard EFLAGSUPDATESUB(r16, 1)
 
-proc push_r16*(this: var Instr16): void =
+proc pushR16*(this: var Instr16): void =
   var reg: uint8
   reg = uint8(OPCODE and ((1 shl 3) - 1))
-  PUSH16(GET_GPREG(cast[reg16_t](reg)))
+  PUSH16(GETGPREG(cast[reg16T](reg)))
 
-proc pop_r16*(this: var Instr16): void =
+proc popR16*(this: var Instr16): void =
   var reg: uint8
   reg = uint8(OPCODE and ((1 shl 3) - 1))
-  SET_GPREG(cast[reg16_t](reg), POP16())
+  SETGPREG(cast[reg16T](reg), POP16())
 
 proc pusha*(this: var Instr16): void =
   var sp: uint16
-  sp = GET_GPREG(SP)
-  PUSH16(GET_GPREG(AX))
-  PUSH16(GET_GPREG(CX))
-  PUSH16(GET_GPREG(DX))
-  PUSH16(GET_GPREG(BX))
+  sp = GETGPREG(SP)
+  PUSH16(GETGPREG(AX))
+  PUSH16(GETGPREG(CX))
+  PUSH16(GETGPREG(DX))
+  PUSH16(GETGPREG(BX))
   PUSH16(sp)
-  PUSH16(GET_GPREG(BP))
-  PUSH16(GET_GPREG(SI))
-  PUSH16(GET_GPREG(DI))
+  PUSH16(GETGPREG(BP))
+  PUSH16(GETGPREG(SI))
+  PUSH16(GETGPREG(DI))
 
 proc popa*(this: var Instr16): void =
   var sp: uint16
-  SET_GPREG(DI, POP16())
-  SET_GPREG(SI, POP16())
-  SET_GPREG(BP, POP16())
+  SETGPREG(DI, POP16())
+  SETGPREG(SI, POP16())
+  SETGPREG(BP, POP16())
   sp = POP16()
-  SET_GPREG(BX, POP16())
-  SET_GPREG(DX, POP16())
-  SET_GPREG(CX, POP16())
-  SET_GPREG(AX, POP16())
-  SET_GPREG(SP, sp)
+  SETGPREG(BX, POP16())
+  SETGPREG(DX, POP16())
+  SETGPREG(CX, POP16())
+  SETGPREG(AX, POP16())
+  SETGPREG(SP, sp)
 
-proc push_imm16*(this: var Instr16): void =
+proc pushImm16*(this: var Instr16): void =
   PUSH16(IMM16.uint16)
 
-proc imul_r16_rm16_imm16*(this: var Instr16): void =
-  var rm16_s: int16
-  rm16_s = this.exec.get_rm16().int16
-  this.exec.set_r16(uint16(rm16_s * IMM16))
-  discard EFLAGS_UPDATE_IMUL(rm16_s, IMM16)
+proc imulR16Rm16Imm16*(this: var Instr16): void =
+  var rm16S: int16
+  rm16S = this.exec.getRm16().int16
+  this.exec.setR16(uint16(rm16S * IMM16))
+  discard EFLAGSUPDATEIMUL(rm16S, IMM16)
 
-proc push_imm8*(this: var Instr16): void =
+proc pushImm8*(this: var Instr16): void =
   PUSH16(IMM8.uint8)
 
-proc imul_r16_rm16_imm8*(this: var Instr16): void =
-  var rm16_s: int16
-  rm16_s = this.exec.get_rm16().int16
-  this.exec.set_r16(uint16(rm16_s * IMM8))
-  discard EFLAGS_UPDATE_IMUL(rm16_s, IMM8)
+proc imulR16Rm16Imm8*(this: var Instr16): void =
+  var rm16S: int16
+  rm16S = this.exec.getRm16().int16
+  this.exec.setR16(uint16(rm16S * IMM8))
+  discard EFLAGSUPDATEIMUL(rm16S, IMM8)
 
-proc test_rm16_r16*(this: var Instr16): void =
+proc testRm16R16*(this: var Instr16): void =
   var r16, rm16: uint16
-  rm16 = this.exec.get_rm16()
-  r16 = this.exec.get_r16()
-  discard EFLAGS_UPDATE_AND(rm16, r16)
+  rm16 = this.exec.getRm16()
+  r16 = this.exec.getR16()
+  discard EFLAGSUPDATEAND(rm16, r16)
 
-proc xchg_r16_rm16*(this: var Instr16): void =
+proc xchgR16Rm16*(this: var Instr16): void =
   var rm16, r16: uint16
-  r16 = this.exec.get_r16()
-  rm16 = this.exec.get_rm16()
-  this.exec.set_r16(rm16)
-  this.exec.set_rm16(r16)
+  r16 = this.exec.getR16()
+  rm16 = this.exec.getRm16()
+  this.exec.setR16(rm16)
+  this.exec.setRm16(r16)
 
-proc mov_rm16_r16*(this: var Instr16): void =
+proc movRm16R16*(this: var Instr16): void =
   var r16: uint16
-  r16 = this.exec.get_r16()
-  this.exec.set_rm16(r16)
+  r16 = this.exec.getR16()
+  this.exec.setRm16(r16)
 
-proc mov_r16_rm16*(this: var Instr16): void =
+proc movR16Rm16*(this: var Instr16): void =
   var rm16: uint16
-  rm16 = this.exec.get_rm16()
-  this.exec.set_r16(rm16)
+  rm16 = this.exec.getRm16()
+  this.exec.setR16(rm16)
 
-proc mov_rm16_sreg*(this: var Instr16): void =
+proc movRm16Sreg*(this: var Instr16): void =
   var sreg: uint16
-  sreg = this.exec.get_sreg()
-  this.exec.set_rm16(sreg)
+  sreg = this.exec.getSreg()
+  this.exec.setRm16(sreg)
 
-proc lea_r16_m16*(this: var Instr16): void =
+proc leaR16M16*(this: var Instr16): void =
   var m16: uint16
-  m16 = this.exec.get_m().uint16
-  this.exec.set_r16(m16)
+  m16 = this.exec.getM().uint16
+  this.exec.setR16(m16)
 
-proc xchg_r16_ax*(this: var Instr16): void =
+proc xchgR16Ax*(this: var Instr16): void =
   var ax, r16: uint16
-  r16 = this.exec.get_r16()
-  ax = GET_GPREG(AX)
-  this.exec.set_r16(ax)
-  SET_GPREG(AX, r16)
+  r16 = this.exec.getR16()
+  ax = GETGPREG(AX)
+  this.exec.setR16(ax)
+  SETGPREG(AX, r16)
 
 proc cbw*(this: var Instr16): void =
-  var al_s: int8
-  al_s = GET_GPREG(AL).int8
-  SET_GPREG(AX, al_s.uint16)
+  var alS: int8
+  alS = GETGPREG(AL).int8
+  SETGPREG(AX, alS.uint16)
 
 proc cwd*(this: var Instr16): void =
   var ax: uint16
-  ax = GET_GPREG(AX)
-  SET_GPREG(DX, uint16(if toBool(ax and (1 shl 15)): -1 else: 0))
+  ax = GETGPREG(AX)
+  SETGPREG(DX, uint16(if toBool(ax and (1 shl 15)): -1 else: 0))
 
-proc callf_ptr16_16*(this: var Instr16): void =
+proc callfPtr1616*(this: var Instr16): void =
   this.emu.callf(PTR16.uint16, IMM16.uint32)
 
 proc pushf*(this: var Instr16): void =
-  PUSH16(CPU.eflags.get_flags())
+  PUSH16(CPU.eflags.getFlags())
 
 proc popf*(this: var Instr16): void =
-  CPU.eflags.set_flags(POP16())
+  CPU.eflags.setFlags(POP16())
 
-proc mov_ax_moffs16*(this: var Instr16): void =
-  SET_GPREG(AX, this.exec.get_moffs16())
+proc movAxMoffs16*(this: var Instr16): void =
+  SETGPREG(AX, this.exec.getMoffs16())
 
-proc mov_moffs16_ax*(this: var Instr16): void =
-  this.exec.set_moffs16(GET_GPREG(AX))
+proc movMoffs16Ax*(this: var Instr16): void =
+  this.exec.setMoffs16(GETGPREG(AX))
 
-proc cmps_m8_m8*(this: var Instr16): void =
-  var m8_d, m8_s: uint8
+proc cmpsM8M8*(this: var Instr16): void =
+  var m8D, m8S: uint8
   block repeat:
-    m8_s = ACS.get_data8(this.exec.select_segment(), GET_GPREG(SI))
-  m8_d = ACS.get_data8(ES, GET_GPREG(DI))
-  discard EFLAGS_UPDATE_SUB(m8_s, m8_d)
-  discard UPDATE_GPREG(SI, int16(if EFLAGS_DF: -1 else: 1))
-  discard UPDATE_GPREG(DI, int16(if EFLAGS_DF: -1 else: 1))
-  if PRE_REPEAT.int.toBool():
-    discard UPDATE_GPREG(CX, -1)
-    case PRE_REPEAT:
+    m8S = ACS.getData8(this.exec.selectSegment(), GETGPREG(SI))
+  m8D = ACS.getData8(ES, GETGPREG(DI))
+  discard EFLAGSUPDATESUB(m8S, m8D)
+  discard UPDATEGPREG(SI, int16(if EFLAGSDF: -1 else: 1))
+  discard UPDATEGPREG(DI, int16(if EFLAGSDF: -1 else: 1))
+  if PREREPEAT.int.toBool():
+    discard UPDATEGPREG(CX, -1)
+    case PREREPEAT:
       of REPZ:
-        if not(GET_GPREG(CX)).toBool() or not(EFLAGS_ZF):
+        if not(GETGPREG(CX)).toBool() or not(EFLAGSZF):
           discard
 
-        {.warning: "cxx_goto repeat".}
+        {.warning: "cxxGoto repeat".}
       of REPNZ:
-        if not(GET_GPREG(CX)).toBool() or EFLAGS_ZF:
+        if not(GETGPREG(CX)).toBool() or EFLAGSZF:
           discard
 
-        {.warning: "cxx_goto repeat".}
+        {.warning: "cxxGoto repeat".}
       else:
         discard
 
 
-proc cmps_m16_m16*(this: var Instr16): void =
-  var m16_d, m16_s: uint16
+proc cmpsM16M16*(this: var Instr16): void =
+  var m16D, m16S: uint16
   block repeat:
-    m16_s = ACS.get_data16(this.exec.select_segment(), GET_GPREG(SI))
-  m16_d = ACS.get_data16(ES, GET_GPREG(DI))
-  discard EFLAGS_UPDATE_SUB(m16_s, m16_d)
-  discard UPDATE_GPREG(SI, (if EFLAGS_DF: -1 else: 1))
-  discard UPDATE_GPREG(DI, (if EFLAGS_DF: -1 else: 1))
-  if PRE_REPEAT.int.toBool():
-    discard UPDATE_GPREG(CX, -1)
-    case PRE_REPEAT:
+    m16S = ACS.getData16(this.exec.selectSegment(), GETGPREG(SI))
+  m16D = ACS.getData16(ES, GETGPREG(DI))
+  discard EFLAGSUPDATESUB(m16S, m16D)
+  discard UPDATEGPREG(SI, (if EFLAGSDF: -1 else: 1))
+  discard UPDATEGPREG(DI, (if EFLAGSDF: -1 else: 1))
+  if PREREPEAT.int.toBool():
+    discard UPDATEGPREG(CX, -1)
+    case PREREPEAT:
       of REPZ:
-        if not(GET_GPREG(CX)).toBool() or not(EFLAGS_ZF):
+        if not(GETGPREG(CX)).toBool() or not(EFLAGSZF):
           {.warning: "[FIXME] break".}
 
-        {.warning: "[FIXME] cxx_goto repeat".}
+        {.warning: "[FIXME] cxxGoto repeat".}
       of REPNZ:
-        if not(GET_GPREG(CX)).toBool() or EFLAGS_ZF:
+        if not(GETGPREG(CX)).toBool() or EFLAGSZF:
           {.warning: "[FIXME] break".}
 
-        {.warning: "[FIXME] cxx_goto repeat".}
+        {.warning: "[FIXME] cxxGoto repeat".}
       else:
         discard
 
 
-proc test_ax_imm16*(this: var Instr16): void =
+proc testAxImm16*(this: var Instr16): void =
   var ax: uint16
-  ax = GET_GPREG(AX)
-  discard EFLAGS_UPDATE_AND(ax, IMM16.uint16)
+  ax = GETGPREG(AX)
+  discard EFLAGSUPDATEAND(ax, IMM16.uint16)
 
-proc mov_r16_imm16*(this: var Instr16): void =
+proc movR16Imm16*(this: var Instr16): void =
   var reg: uint8
   reg = uint8(OPCODE and ((1 shl 3) - 1))
-  SET_GPREG(cast[reg16_t](reg), IMM16.uint16)
+  SETGPREG(cast[reg16T](reg), IMM16.uint16)
 
 proc ret*(this: var Instr16): void =
-  SET_IP(POP16())
+  SETIP(POP16())
 
-proc mov_rm16_imm16*(this: var Instr16): void =
-  this.exec.set_rm16(IMM16.uint16)
+proc movRm16Imm16*(this: var Instr16): void =
+  this.exec.setRm16(IMM16.uint16)
 
 proc leave*(this: var Instr16): void =
   var ebp: uint16
-  ebp = GET_GPREG(EBP).uint16()
-  SET_GPREG(ESP, ebp)
-  SET_GPREG(EBP, POP16())
+  ebp = GETGPREG(EBP).uint16()
+  SETGPREG(ESP, ebp)
+  SETGPREG(EBP, POP16())
 
-proc in_ax_imm8*(this: var Instr16): void =
-  SET_GPREG(AX, EIO.in_io16(IMM8.uint16))
+proc inAxImm8*(this: var Instr16): void =
+  SETGPREG(AX, EIO.inIo16(IMM8.uint16))
 
-proc out_imm8_ax*(this: var Instr16): void =
+proc outImm8Ax*(this: var Instr16): void =
   var ax: uint16
-  ax = GET_GPREG(AX).uint16()
-  EIO.out_io16(IMM8.uint16, ax)
+  ax = GETGPREG(AX).uint16()
+  EIO.outIo16(IMM8.uint16, ax)
 
-proc call_rel16*(this: var Instr16): void =
-  PUSH16(GET_IP().uint16)
-  discard UPDATE_IP(IMM16.int32)
+proc callRel16*(this: var Instr16): void =
+  PUSH16(GETIP().uint16)
+  discard UPDATEIP(IMM16.int32)
 
-proc jmp_rel16*(this: var Instr16): void =
-  discard UPDATE_IP(IMM16.int32)
+proc jmpRel16*(this: var Instr16): void =
+  discard UPDATEIP(IMM16.int32)
 
-proc jmpf_ptr16_16*(this: var Instr16): void =
+proc jmpfPtr1616*(this: var Instr16): void =
   this.emu.jmpf(PTR16.uint16, IMM16.uint32)
 
-proc in_ax_dx*(this: var Instr16): void =
+proc inAxDx*(this: var Instr16): void =
   var dx: uint16
-  dx = GET_GPREG(DX).uint16()
-  SET_GPREG(AX, EIO.in_io16(dx))
+  dx = GETGPREG(DX).uint16()
+  SETGPREG(AX, EIO.inIo16(dx))
 
-proc out_dx_ax*(this: var Instr16): void =
+proc outDxAx*(this: var Instr16): void =
   var ax, dx: uint16
-  dx = GET_GPREG(DX)
-  ax = GET_GPREG(AX)
-  EIO.out_io16(dx, ax)
+  dx = GETGPREG(DX)
+  ax = GETGPREG(AX)
+  EIO.outIo16(dx, ax)
 
-template JCC_REL16*(cc: untyped, is_flag: untyped): untyped {.dirty.} =
+template JCCREL16*(cc: untyped, isFlag: untyped): untyped {.dirty.} =
   proc `j cc rel16`*(this: var Instr16): void =
-    if is_flag:
-      discard UPDATE_EIP(IMM16.int32)
+    if isFlag:
+      discard UPDATEEIP(IMM16.int32)
 
-JCC_REL16(o, EFLAGS_OF)
-JCC_REL16(no, not(EFLAGS_OF))
-JCC_REL16(b, EFLAGS_CF)
-JCC_REL16(nb, not(EFLAGS_CF))
-JCC_REL16(z, EFLAGS_ZF)
-JCC_REL16(nz, not(EFLAGS_ZF))
-JCC_REL16(be, EFLAGS_CF or EFLAGS_ZF)
-JCC_REL16(a, not((EFLAGS_CF or EFLAGS_ZF)))
-JCC_REL16(s, EFLAGS_SF)
-JCC_REL16(ns, not(EFLAGS_SF))
-JCC_REL16(p, EFLAGS_PF)
-JCC_REL16(np, not(EFLAGS_PF))
-JCC_REL16(l, EFLAGS_SF != EFLAGS_OF)
-JCC_REL16(nl, EFLAGS_SF == EFLAGS_OF)
-JCC_REL16(le, EFLAGS_ZF or (EFLAGS_SF != EFLAGS_OF))
-JCC_REL16(nle, not(EFLAGS_ZF) and (EFLAGS_SF == EFLAGS_OF))
+JCCREL16(o, EFLAGSOF)
+JCCREL16(no, not(EFLAGSOF))
+JCCREL16(b, EFLAGSCF)
+JCCREL16(nb, not(EFLAGSCF))
+JCCREL16(z, EFLAGSZF)
+JCCREL16(nz, not(EFLAGSZF))
+JCCREL16(be, EFLAGSCF or EFLAGSZF)
+JCCREL16(a, not((EFLAGSCF or EFLAGSZF)))
+JCCREL16(s, EFLAGSSF)
+JCCREL16(ns, not(EFLAGSSF))
+JCCREL16(p, EFLAGSPF)
+JCCREL16(np, not(EFLAGSPF))
+JCCREL16(l, EFLAGSSF != EFLAGSOF)
+JCCREL16(nl, EFLAGSSF == EFLAGSOF)
+JCCREL16(le, EFLAGSZF or (EFLAGSSF != EFLAGSOF))
+JCCREL16(nle, not(EFLAGSZF) and (EFLAGSSF == EFLAGSOF))
 
-proc imul_r16_rm16*(this: var Instr16): void =
-  var rm16_s, r16_s: int16
-  r16_s = this.exec.get_r16().int16
-  rm16_s = this.exec.get_rm16().int16
-  this.exec.set_r16(uint16(r16_s * rm16_s))
-  discard EFLAGS_UPDATE_IMUL(r16_s, rm16_s)
+proc imulR16Rm16*(this: var Instr16): void =
+  var rm16S, r16S: int16
+  r16S = this.exec.getR16().int16
+  rm16S = this.exec.getRm16().int16
+  this.exec.setR16(uint16(r16S * rm16S))
+  discard EFLAGSUPDATEIMUL(r16S, rm16S)
 
-proc movzx_r16_rm8*(this: var Instr16): void =
+proc movzxR16Rm8*(this: var Instr16): void =
   var rm8: uint8
-  rm8 = this.exec.get_rm8().uint8
-  this.exec.set_r16(rm8)
+  rm8 = this.exec.getRm8().uint8
+  this.exec.setR16(rm8)
 
-proc movzx_r16_rm16*(this: var Instr16): void =
+proc movzxR16Rm16*(this: var Instr16): void =
   var rm16: uint16
-  rm16 = this.exec.get_rm16().uint16
-  this.exec.set_r16(rm16)
+  rm16 = this.exec.getRm16().uint16
+  this.exec.setR16(rm16)
 
-proc movsx_r16_rm8*(this: var Instr16): void =
-  var rm8_s: int8
-  rm8_s = this.exec.get_rm8().int8
-  this.exec.set_r16(rm8_s.uint16)
+proc movsxR16Rm8*(this: var Instr16): void =
+  var rm8S: int8
+  rm8S = this.exec.getRm8().int8
+  this.exec.setR16(rm8S.uint16)
 
-proc movsx_r16_rm16*(this: var Instr16): void =
-  var rm16_s: int16
-  rm16_s = this.exec.get_rm16().int16
-  this.exec.set_r16(rm16_s.uint16)
-
-
+proc movsxR16Rm16*(this: var Instr16): void =
+  var rm16S: int16
+  rm16S = this.exec.getRm16().int16
+  this.exec.setR16(rm16S.uint16)
 
 
-proc add_rm16_imm16*(this: var Instr16): void =
+
+
+proc addRm16Imm16*(this: var Instr16): void =
   var rm16: uint16
-  rm16 = this.exec.get_rm16()
-  this.exec.set_rm16(rm16 + IMM16.uint16)
-  discard EFLAGS_UPDATE_ADD(rm16, IMM16.uint16)
+  rm16 = this.exec.getRm16()
+  this.exec.setRm16(rm16 + IMM16.uint16)
+  discard EFLAGSUPDATEADD(rm16, IMM16.uint16)
 
-proc or_rm16_imm16*(this: var Instr16): void =
+proc orRm16Imm16*(this: var Instr16): void =
   var rm16: uint16
-  rm16 = this.exec.get_rm16()
-  this.exec.set_rm16(rm16 or IMM16.uint16)
-  discard EFLAGS_UPDATE_OR(rm16, IMM16.uint16)
+  rm16 = this.exec.getRm16()
+  this.exec.setRm16(rm16 or IMM16.uint16)
+  discard EFLAGSUPDATEOR(rm16, IMM16.uint16)
 
-proc adc_rm16_imm16*(this: var Instr16): void =
-  var rm16: uint16
-  var cf: uint8
-  rm16 = this.exec.get_rm16()
-  cf = EFLAGS_CF.uint8
-  this.exec.set_rm16(rm16 + IMM16.uint16 + cf)
-  discard EFLAGS_UPDATE_ADD(rm16, IMM16.uint16 + cf)
-
-proc sbb_rm16_imm16*(this: var Instr16): void =
+proc adcRm16Imm16*(this: var Instr16): void =
   var rm16: uint16
   var cf: uint8
-  rm16 = this.exec.get_rm16()
-  cf = EFLAGS_CF.uint8
-  this.exec.set_rm16(rm16 - IMM16.uint16 - cf)
-  discard EFLAGS_UPDATE_SUB(rm16, IMM16.uint16 + cf)
+  rm16 = this.exec.getRm16()
+  cf = EFLAGSCF.uint8
+  this.exec.setRm16(rm16 + IMM16.uint16 + cf)
+  discard EFLAGSUPDATEADD(rm16, IMM16.uint16 + cf)
 
-proc and_rm16_imm16*(this: var Instr16): void =
-  var rm16: uint16
-  rm16 = this.exec.get_rm16()
-  this.exec.set_rm16(rm16 and IMM16.uint16)
-  discard EFLAGS_UPDATE_AND(rm16, IMM16.uint16)
-
-proc sub_rm16_imm16*(this: var Instr16): void =
-  var rm16: uint16
-  rm16 = this.exec.get_rm16()
-  this.exec.set_rm16(rm16 - IMM16.uint16)
-  discard EFLAGS_UPDATE_SUB(rm16, IMM16.uint16)
-
-proc xor_rm16_imm16*(this: var Instr16): void =
-  var rm16: uint16
-  rm16 = this.exec.get_rm16()
-  this.exec.set_rm16(rm16 xor IMM16.uint16)
-
-proc cmp_rm16_imm16*(this: var Instr16): void =
-  var rm16: uint16
-  rm16 = this.exec.get_rm16()
-  discard EFLAGS_UPDATE_SUB(rm16, IMM16.uint16)
-
-
-proc add_rm16_imm8*(this: var Instr16): void =
-  var rm16: uint16
-  rm16 = this.exec.get_rm16()
-  this.exec.set_rm16(rm16 + IMM8.uint16)
-  discard EFLAGS_UPDATE_ADD(rm16, IMM8.uint16)
-
-proc or_rm16_imm8*(this: var Instr16): void =
-  var rm16: uint16
-  rm16 = this.exec.get_rm16()
-  this.exec.set_rm16(rm16 or IMM8.uint16)
-  discard EFLAGS_UPDATE_OR(rm16, IMM8.uint16)
-
-proc adc_rm16_imm8*(this: var Instr16): void =
+proc sbbRm16Imm16*(this: var Instr16): void =
   var rm16: uint16
   var cf: uint8
-  rm16 = this.exec.get_rm16()
-  cf = EFLAGS_CF.uint8
-  this.exec.set_rm16(rm16 + IMM8.uint16 + cf)
-  discard EFLAGS_UPDATE_ADD(rm16, IMM8.uint8 + cf)
+  rm16 = this.exec.getRm16()
+  cf = EFLAGSCF.uint8
+  this.exec.setRm16(rm16 - IMM16.uint16 - cf)
+  discard EFLAGSUPDATESUB(rm16, IMM16.uint16 + cf)
 
-proc sbb_rm16_imm8*(this: var Instr16): void =
+proc andRm16Imm16*(this: var Instr16): void =
+  var rm16: uint16
+  rm16 = this.exec.getRm16()
+  this.exec.setRm16(rm16 and IMM16.uint16)
+  discard EFLAGSUPDATEAND(rm16, IMM16.uint16)
+
+proc subRm16Imm16*(this: var Instr16): void =
+  var rm16: uint16
+  rm16 = this.exec.getRm16()
+  this.exec.setRm16(rm16 - IMM16.uint16)
+  discard EFLAGSUPDATESUB(rm16, IMM16.uint16)
+
+proc xorRm16Imm16*(this: var Instr16): void =
+  var rm16: uint16
+  rm16 = this.exec.getRm16()
+  this.exec.setRm16(rm16 xor IMM16.uint16)
+
+proc cmpRm16Imm16*(this: var Instr16): void =
+  var rm16: uint16
+  rm16 = this.exec.getRm16()
+  discard EFLAGSUPDATESUB(rm16, IMM16.uint16)
+
+
+proc addRm16Imm8*(this: var Instr16): void =
+  var rm16: uint16
+  rm16 = this.exec.getRm16()
+  this.exec.setRm16(rm16 + IMM8.uint16)
+  discard EFLAGSUPDATEADD(rm16, IMM8.uint16)
+
+proc orRm16Imm8*(this: var Instr16): void =
+  var rm16: uint16
+  rm16 = this.exec.getRm16()
+  this.exec.setRm16(rm16 or IMM8.uint16)
+  discard EFLAGSUPDATEOR(rm16, IMM8.uint16)
+
+proc adcRm16Imm8*(this: var Instr16): void =
   var rm16: uint16
   var cf: uint8
-  rm16 = this.exec.get_rm16()
-  cf = EFLAGS_CF.uint8
-  this.exec.set_rm16(rm16 - IMM8.uint8 - cf)
-  discard EFLAGS_UPDATE_SUB(rm16, IMM8.uint8 + cf)
+  rm16 = this.exec.getRm16()
+  cf = EFLAGSCF.uint8
+  this.exec.setRm16(rm16 + IMM8.uint16 + cf)
+  discard EFLAGSUPDATEADD(rm16, IMM8.uint8 + cf)
 
-proc and_rm16_imm8*(this: var Instr16): void =
+proc sbbRm16Imm8*(this: var Instr16): void =
   var rm16: uint16
-  rm16 = this.exec.get_rm16()
-  this.exec.set_rm16(rm16 and IMM8.uint16)
-  discard EFLAGS_UPDATE_AND(rm16, IMM8.uint16)
+  var cf: uint8
+  rm16 = this.exec.getRm16()
+  cf = EFLAGSCF.uint8
+  this.exec.setRm16(rm16 - IMM8.uint8 - cf)
+  discard EFLAGSUPDATESUB(rm16, IMM8.uint8 + cf)
 
-proc sub_rm16_imm8*(this: var Instr16): void =
+proc andRm16Imm8*(this: var Instr16): void =
   var rm16: uint16
-  rm16 = this.exec.get_rm16()
-  this.exec.set_rm16(rm16 - IMM8.uint8)
-  discard EFLAGS_UPDATE_SUB(rm16, IMM8.uint16)
+  rm16 = this.exec.getRm16()
+  this.exec.setRm16(rm16 and IMM8.uint16)
+  discard EFLAGSUPDATEAND(rm16, IMM8.uint16)
 
-proc xor_rm16_imm8*(this: var Instr16): void =
+proc subRm16Imm8*(this: var Instr16): void =
   var rm16: uint16
-  rm16 = this.exec.get_rm16()
-  this.exec.set_rm16(rm16 xor IMM8.uint16)
+  rm16 = this.exec.getRm16()
+  this.exec.setRm16(rm16 - IMM8.uint8)
+  discard EFLAGSUPDATESUB(rm16, IMM8.uint16)
 
-proc cmp_rm16_imm8*(this: var Instr16): void =
+proc xorRm16Imm8*(this: var Instr16): void =
   var rm16: uint16
-  rm16 = this.exec.get_rm16()
-  discard EFLAGS_UPDATE_SUB(rm16, IMM8.uint16)
+  rm16 = this.exec.getRm16()
+  this.exec.setRm16(rm16 xor IMM8.uint16)
 
-
-proc shl_rm16_imm8*(this: var Instr16): void =
+proc cmpRm16Imm8*(this: var Instr16): void =
   var rm16: uint16
-  rm16 = this.exec.get_rm16()
-  this.exec.set_rm16(rm16 shl IMM8)
-  discard EFLAGS_UPDATE_SHL(rm16, IMM8.uint8)
+  rm16 = this.exec.getRm16()
+  discard EFLAGSUPDATESUB(rm16, IMM8.uint16)
 
-proc shr_rm16_imm8*(this: var Instr16): void =
+
+proc shlRm16Imm8*(this: var Instr16): void =
   var rm16: uint16
-  rm16 = this.exec.get_rm16()
-  this.exec.set_rm16(rm16 shr IMM8)
-  discard EFLAGS_UPDATE_SHR(rm16, IMM8.uint8)
+  rm16 = this.exec.getRm16()
+  this.exec.setRm16(rm16 shl IMM8)
+  discard EFLAGSUPDATESHL(rm16, IMM8.uint8)
 
-proc sal_rm16_imm8*(this: var Instr16): void =
-  var rm16_s: int16
-  rm16_s = this.exec.get_rm16().int16
-  this.exec.set_rm16(uint16(rm16_s shl IMM8))
+proc shrRm16Imm8*(this: var Instr16): void =
+  var rm16: uint16
+  rm16 = this.exec.getRm16()
+  this.exec.setRm16(rm16 shr IMM8)
+  discard EFLAGSUPDATESHR(rm16, IMM8.uint8)
+
+proc salRm16Imm8*(this: var Instr16): void =
+  var rm16S: int16
+  rm16S = this.exec.getRm16().int16
+  this.exec.setRm16(uint16(rm16S shl IMM8))
 
 
-proc sar_rm16_imm8*(this: var Instr16): void =
-  var rm16_s: int16
-  rm16_s = this.exec.get_rm16().int16
-  this.exec.set_rm16(uint16(rm16_s shr IMM8))
+proc sarRm16Imm8*(this: var Instr16): void =
+  var rm16S: int16
+  rm16S = this.exec.getRm16().int16
+  this.exec.setRm16(uint16(rm16S shr IMM8))
 
 
 
-proc shl_rm16_cl*(this: var Instr16): void =
+proc shlRm16Cl*(this: var Instr16): void =
   var rm16: uint16
   var cl: uint8
-  rm16 = this.exec.get_rm16()
-  cl = GET_GPREG(CL)
-  this.exec.set_rm16(rm16 shl cl)
-  discard EFLAGS_UPDATE_SHL(rm16, cl.uint8)
+  rm16 = this.exec.getRm16()
+  cl = GETGPREG(CL)
+  this.exec.setRm16(rm16 shl cl)
+  discard EFLAGSUPDATESHL(rm16, cl.uint8)
 
-proc shr_rm16_cl*(this: var Instr16): void =
+proc shrRm16Cl*(this: var Instr16): void =
   var rm16: uint16
   var cl: uint8
-  rm16 = this.exec.get_rm16()
-  cl = GET_GPREG(CL)
-  this.exec.set_rm16(rm16 shr cl)
-  discard EFLAGS_UPDATE_SHR(rm16, cl.uint8)
+  rm16 = this.exec.getRm16()
+  cl = GETGPREG(CL)
+  this.exec.setRm16(rm16 shr cl)
+  discard EFLAGSUPDATESHR(rm16, cl.uint8)
 
-proc sal_rm16_cl*(this: var Instr16): void =
-  var rm16_s: int16
+proc salRm16Cl*(this: var Instr16): void =
+  var rm16S: int16
   var cl: uint8
-  rm16_s = this.exec.get_rm16().int16
-  cl = GET_GPREG(CL)
-  this.exec.set_rm16(uint16(rm16_s shl cl))
+  rm16S = this.exec.getRm16().int16
+  cl = GETGPREG(CL)
+  this.exec.setRm16(uint16(rm16S shl cl))
 
 
-proc sar_rm16_cl*(this: var Instr16): void =
-  var rm16_s: int16
+proc sarRm16Cl*(this: var Instr16): void =
+  var rm16S: int16
   var cl: uint8
-  rm16_s = this.exec.get_rm16().int16
-  cl = GET_GPREG(CL)
-  this.exec.set_rm16(uint16(rm16_s shr cl))
+  rm16S = this.exec.getRm16().int16
+  cl = GETGPREG(CL)
+  this.exec.setRm16(uint16(rm16S shr cl))
 
 
 
-proc test_rm16_imm16*(this: var Instr16): void =
+proc testRm16Imm16*(this: var Instr16): void =
   var imm16, rm16: uint16
-  rm16 = this.exec.get_rm16()
-  imm16 = ACS.get_code16(0)
-  discard UPDATE_EIP(2)
-  discard EFLAGS_UPDATE_AND(rm16, imm16)
+  rm16 = this.exec.getRm16()
+  imm16 = ACS.getCode16(0)
+  discard UPDATEEIP(2)
+  discard EFLAGSUPDATEAND(rm16, imm16)
 
-proc not_rm16*(this: var Instr16): void =
+proc notRm16*(this: var Instr16): void =
   var rm16: uint16
-  rm16 = this.exec.get_rm16()
-  this.exec.set_rm16(not(rm16))
+  rm16 = this.exec.getRm16()
+  this.exec.setRm16(not(rm16))
 
-proc neg_rm16*(this: var Instr16): void =
-  var rm16_s: int16
-  rm16_s = this.exec.get_rm16().int16
-  this.exec.set_rm16(uint16(-(rm16_s)))
-  discard EFLAGS_UPDATE_SUB(cast[uint16](0), rm16_s.uint32)
+proc negRm16*(this: var Instr16): void =
+  var rm16S: int16
+  rm16S = this.exec.getRm16().int16
+  this.exec.setRm16(uint16(-(rm16S)))
+  discard EFLAGSUPDATESUB(cast[uint16](0), rm16S.uint32)
 
-proc mul_dx_ax_rm16*(this: var Instr16): void =
+proc mulDxAxRm16*(this: var Instr16): void =
   var ax, rm16: uint16
   var val: uint32
-  rm16 = this.exec.get_rm16()
-  ax = GET_GPREG(AX)
+  rm16 = this.exec.getRm16()
+  ax = GETGPREG(AX)
   val = ax * rm16
-  SET_GPREG(AX, uint16(val and ((1 shl 16) - 1)))
-  SET_GPREG(DX, uint16((val shr 16) and ((1 shl 16) - 1)))
-  discard EFLAGS_UPDATE_MUL(ax, rm16)
+  SETGPREG(AX, uint16(val and ((1 shl 16) - 1)))
+  SETGPREG(DX, uint16((val shr 16) and ((1 shl 16) - 1)))
+  discard EFLAGSUPDATEMUL(ax, rm16)
 
-proc imul_dx_ax_rm16*(this: var Instr16): void =
-  var ax_s, rm16_s: int16
-  var val_s: int32
-  rm16_s = this.exec.get_rm16().int16
-  ax_s = GET_GPREG(AX).int16
-  val_s = ax_s * rm16_s
-  SET_GPREG(AX, uint16(val_s and ((1 shl 16) - 1)))
-  SET_GPREG(DX, uint16((val_s shr 16) and ((1 shl 16) - 1)))
-  discard EFLAGS_UPDATE_IMUL(ax_s, rm16_s)
+proc imulDxAxRm16*(this: var Instr16): void =
+  var axS, rm16S: int16
+  var valS: int32
+  rm16S = this.exec.getRm16().int16
+  axS = GETGPREG(AX).int16
+  valS = axS * rm16S
+  SETGPREG(AX, uint16(valS and ((1 shl 16) - 1)))
+  SETGPREG(DX, uint16((valS shr 16) and ((1 shl 16) - 1)))
+  discard EFLAGSUPDATEIMUL(axS, rm16S)
 
-proc div_dx_ax_rm16*(this: var Instr16): void =
+proc divDxAxRm16*(this: var Instr16): void =
   var rm16: uint16
   var val: uint32
-  rm16 = this.exec.get_rm16()
-  EXCEPTION(EXP_DE, not(rm16.toBool()))
-  val = (GET_GPREG(DX) shl 16) or GET_GPREG(AX)
-  SET_GPREG(AX, uint16(val div rm16))
-  SET_GPREG(DX, uint16(val mod rm16))
+  rm16 = this.exec.getRm16()
+  EXCEPTION(EXPDE, not(rm16.toBool()))
+  val = (GETGPREG(DX) shl 16) or GETGPREG(AX)
+  SETGPREG(AX, uint16(val div rm16))
+  SETGPREG(DX, uint16(val mod rm16))
 
-proc idiv_dx_ax_rm16*(this: var Instr16): void =
-  var rm16_s: int16
-  var val_s: int32
-  rm16_s = this.exec.get_rm16().int16
-  EXCEPTION(EXP_DE, not(rm16_s.toBool()))
-  val_s = int32((GET_GPREG(DX) shl 16) or GET_GPREG(AX))
-  SET_GPREG(AX, uint16(val_s div rm16_s))
-  SET_GPREG(DX, uint16(val_s mod rm16_s))
+proc idivDxAxRm16*(this: var Instr16): void =
+  var rm16S: int16
+  var valS: int32
+  rm16S = this.exec.getRm16().int16
+  EXCEPTION(EXPDE, not(rm16S.toBool()))
+  valS = int32((GETGPREG(DX) shl 16) or GETGPREG(AX))
+  SETGPREG(AX, uint16(valS div rm16S))
+  SETGPREG(DX, uint16(valS mod rm16S))
 
 
-proc inc_rm16*(this: var Instr16): void =
+proc incRm16*(this: var Instr16): void =
   var rm16: uint16
-  rm16 = this.exec.get_rm16()
-  this.exec.set_rm16(rm16 + 1)
-  discard EFLAGS_UPDATE_ADD(rm16, 1)
+  rm16 = this.exec.getRm16()
+  this.exec.setRm16(rm16 + 1)
+  discard EFLAGSUPDATEADD(rm16, 1)
 
-proc dec_rm16*(this: var Instr16): void =
+proc decRm16*(this: var Instr16): void =
   var rm16: uint16
-  rm16 = this.exec.get_rm16()
-  this.exec.set_rm16(rm16 - 1)
-  discard EFLAGS_UPDATE_SUB(rm16, 1)
+  rm16 = this.exec.getRm16()
+  this.exec.setRm16(rm16 - 1)
+  discard EFLAGSUPDATESUB(rm16, 1)
 
-proc call_rm16*(this: var Instr16): void =
+proc callRm16*(this: var Instr16): void =
   var rm16: uint16
-  rm16 = this.exec.get_rm16()
-  PUSH16(GET_IP().uint16)
-  SET_IP(rm16)
+  rm16 = this.exec.getRm16()
+  PUSH16(GETIP().uint16)
+  SETIP(rm16)
 
-proc callf_m16_16*(this: var Instr16): void =
+proc callfM1616*(this: var Instr16): void =
   var ip, m32, cs: uint16
-  m32 = this.exec.get_m().uint16
-  ip = READ_MEM16(m32)
-  cs = READ_MEM16(m32 + 2)
+  m32 = this.exec.getM().uint16
+  ip = READMEM16(m32)
+  cs = READMEM16(m32 + 2)
   this.emu.callf(cs, ip.uint32)
 
-proc jmp_rm16*(this: var Instr16): void =
+proc jmpRm16*(this: var Instr16): void =
   var rm16: uint16
-  rm16 = this.exec.get_rm16()
-  SET_IP(rm16)
+  rm16 = this.exec.getRm16()
+  SETIP(rm16)
 
-proc jmpf_m16_16*(this: var Instr16): void =
+proc jmpfM1616*(this: var Instr16): void =
   var ip, m32, sel: uint16
-  m32 = this.exec.get_m().uint16
-  ip = READ_MEM16(m32)
-  sel = READ_MEM16(m32 + 2)
+  m32 = this.exec.getM().uint16
+  ip = READMEM16(m32)
+  sel = READMEM16(m32 + 2)
   this.emu.jmpf(sel, ip.uint32)
 
-proc push_rm16*(this: var Instr16): void =
+proc pushRm16*(this: var Instr16): void =
   var rm16: uint16
-  rm16 = this.exec.get_rm16()
+  rm16 = this.exec.getRm16()
   PUSH16(rm16)
 
 
-proc lgdt_m24*(this: var Instr16): void =
+proc lgdtM24*(this: var Instr16): void =
   var limit, m48, base: uint16
-  EXCEPTION(EXP_GP, not(this.emu.chk_ring(0)))
-  m48 = this.exec.get_m().uint16
-  limit = READ_MEM16(m48)
-  base = uint16(READ_MEM32(m48 + 2) and ((1 shl 24) - 1))
-  this.emu.set_gdtr(base.uint32, limit)
+  EXCEPTION(EXPGP, not(this.emu.chkRing(0)))
+  m48 = this.exec.getM().uint16
+  limit = READMEM16(m48)
+  base = uint16(READMEM32(m48 + 2) and ((1 shl 24) - 1))
+  this.emu.setGdtr(base.uint32, limit)
 
-proc lidt_m24*(this: var Instr16): void =
+proc lidtM24*(this: var Instr16): void =
   var limit, base, m48: uint16
-  EXCEPTION(EXP_GP, not(this.emu.chk_ring(0)))
-  m48 = this.exec.get_m().uint16
-  limit = READ_MEM16(m48)
-  base = uint16(READ_MEM32(m48 + 2) and ((1 shl 24) - 1))
-  this.emu.set_idtr(base.uint32, limit)
+  EXCEPTION(EXPGP, not(this.emu.chkRing(0)))
+  m48 = this.exec.getM().uint16
+  limit = READMEM16(m48)
+  base = uint16(READMEM32(m48 + 2) and ((1 shl 24) - 1))
+  this.emu.setIdtr(base.uint32, limit)
 
-proc code_81*(this: var Instr16): void =
+proc code81*(this: var Instr16): void =
   case REG:
-    of 0: this.add_rm16_imm16()
-    of 1: this.or_rm16_imm16()
-    of 2: this.adc_rm16_imm16()
-    of 3: this.sbb_rm16_imm16()
-    of 4: this.and_rm16_imm16()
-    of 5: this.sub_rm16_imm16()
-    of 6: this.xor_rm16_imm16()
-    of 7: this.cmp_rm16_imm16()
+    of 0: this.addRm16Imm16()
+    of 1: this.orRm16Imm16()
+    of 2: this.adcRm16Imm16()
+    of 3: this.sbbRm16Imm16()
+    of 4: this.andRm16Imm16()
+    of 5: this.subRm16Imm16()
+    of 6: this.xorRm16Imm16()
+    of 7: this.cmpRm16Imm16()
     else:
       ERROR("not implemented: 0x81 /%d\\n", REG)
 
-proc code_83*(this: var Instr16): void =
+proc code83*(this: var Instr16): void =
   case REG:
-    of 0: this.add_rm16_imm8()
-    of 1: this.or_rm16_imm8()
-    of 2: this.adc_rm16_imm8()
-    of 3: this.sbb_rm16_imm8()
-    of 4: this.and_rm16_imm8()
-    of 5: this.sub_rm16_imm8()
-    of 6: this.xor_rm16_imm8()
-    of 7: this.cmp_rm16_imm8()
+    of 0: this.addRm16Imm8()
+    of 1: this.orRm16Imm8()
+    of 2: this.adcRm16Imm8()
+    of 3: this.sbbRm16Imm8()
+    of 4: this.andRm16Imm8()
+    of 5: this.subRm16Imm8()
+    of 6: this.xorRm16Imm8()
+    of 7: this.cmpRm16Imm8()
     else:
       ERROR("not implemented: 0x83 /%d\\n", REG)
 
-proc code_c1*(this: var Instr16): void =
+proc codeC1*(this: var Instr16): void =
   case REG:
-    of 4: this.shl_rm16_imm8()
-    of 5: this.shr_rm16_imm8()
-    of 6: this.sal_rm16_imm8()
-    of 7: this.sar_rm16_imm8()
+    of 4: this.shlRm16Imm8()
+    of 5: this.shrRm16Imm8()
+    of 6: this.salRm16Imm8()
+    of 7: this.sarRm16Imm8()
     else:
       ERROR("not implemented: 0xc1 /%d\\n", REG)
 
-proc code_d3*(this: var Instr16): void =
+proc codeD3*(this: var Instr16): void =
   case REG:
-    of 4: this.shl_rm16_cl()
-    of 5: this.shr_rm16_cl()
-    of 6: this.sal_rm16_cl()
-    of 7: this.sar_rm16_cl()
+    of 4: this.shlRm16Cl()
+    of 5: this.shrRm16Cl()
+    of 6: this.salRm16Cl()
+    of 7: this.sarRm16Cl()
     else:
       ERROR("not implemented: 0xd3 /%d\\n", REG)
 
-proc code_f7*(this: var Instr16): void =
+proc codeF7*(this: var Instr16): void =
   case REG:
-    of 0: this.test_rm16_imm16()
-    of 2: this.not_rm16()
-    of 3: this.neg_rm16()
-    of 4: this.mul_dx_ax_rm16()
-    of 5: this.imul_dx_ax_rm16()
-    of 6: this.div_dx_ax_rm16()
-    of 7: this.idiv_dx_ax_rm16()
+    of 0: this.testRm16Imm16()
+    of 2: this.notRm16()
+    of 3: this.negRm16()
+    of 4: this.mulDxAxRm16()
+    of 5: this.imulDxAxRm16()
+    of 6: this.divDxAxRm16()
+    of 7: this.idivDxAxRm16()
     else:
       ERROR("not implemented: 0xf7 /%d\\n", REG)
 
-proc code_ff*(this: var Instr16): void =
+proc codeFf*(this: var Instr16): void =
   case REG:
-    of 0: this.inc_rm16()
-    of 1: this.dec_rm16()
-    of 2: this.call_rm16()
-    of 3: this.callf_m16_16()
-    of 4: this.jmp_rm16()
-    of 5: this.jmpf_m16_16()
-    of 6: this.push_rm16()
+    of 0: this.incRm16()
+    of 1: this.decRm16()
+    of 2: this.callRm16()
+    of 3: this.callfM1616()
+    of 4: this.jmpRm16()
+    of 5: this.jmpfM1616()
+    of 6: this.pushRm16()
     else:
       ERROR("not implemented: 0xff /%d\\n", REG)
 
-proc code_0f00*(this: var Instr16): void =
+proc code0f00*(this: var Instr16): void =
   case REG:
-    of 3: this.ltr_rm16()
+    of 3: this.ltrRm16()
     else: ERROR("not implemented: 0x0f00 /%d\\n", REG)
 
-proc code_0f01*(this: var Instr16): void =
+proc code0f01*(this: var Instr16): void =
   case REG:
-    of 2: this.lgdt_m24()
-    of 3: this.lidt_m24()
+    of 2: this.lgdtM24()
+    of 3: this.lidtM24()
     else:
       ERROR("not implemented: 0x0f01 /%d\\n", REG)
 
@@ -793,161 +792,149 @@ proc code_0f01*(this: var Instr16): void =
 proc initInstr16*(r: var Instr16, e: ptr Emulator, id: ptr InstrData): Instr16 =
   initInstrBase(r)
   var i: cint
-  r.set_funcflag(0x01, instr16(add_rm16_r16), CHK_MODRM)
+  r.setFuncflag(0x01, instr16(addRm16R16), CHKMODRM)
 
-  r.set_funcflag(0x03, instr16(add_r16_rm16), CHK_MODRM)
+  r.setFuncflag(0x03, instr16(addR16Rm16), CHKMODRM)
 
-  r.set_funcflag(0x05, instr16(add_ax_imm16), CHK_IMM16.uint8)
-  r.set_funcflag(0x06, instr16(push_es), 0)
-  r.set_funcflag(0x07, instr16(pop_es), 0)
+  r.setFuncflag(0x05, instr16(addAxImm16), CHKIMM16.uint8)
+  r.setFuncflag(0x06, instr16(pushEs), 0)
+  r.setFuncflag(0x07, instr16(popEs), 0)
 
-  r.set_funcflag(0x09, instr16(or_rm16_r16), CHK_MODRM)
+  r.setFuncflag(0x09, instr16(orRm16R16), CHKMODRM)
 
-  r.set_funcflag(0x0b, instr16(or_r16_rm16), CHK_MODRM)
+  r.setFuncflag(0x0b, instr16(orR16Rm16), CHKMODRM)
 
-  r.set_funcflag(0x0d, instr16(or_ax_imm16), CHK_IMM16.uint8)
-  r.set_funcflag(0x16, instr16(push_ss), 0)
-  r.set_funcflag(0x17, instr16(pop_ss), 0)
-  r.set_funcflag(0x1e, instr16(push_ds), 0)
-  r.set_funcflag(0x1f, instr16(pop_ds), 0)
+  r.setFuncflag(0x0d, instr16(orAxImm16), CHKIMM16.uint8)
+  r.setFuncflag(0x16, instr16(pushSs), 0)
+  r.setFuncflag(0x17, instr16(popSs), 0)
+  r.setFuncflag(0x1e, instr16(pushDs), 0)
+  r.setFuncflag(0x1f, instr16(popDs), 0)
 
-  r.set_funcflag(0x21, instr16(and_rm16_r16), CHK_MODRM)
+  r.setFuncflag(0x21, instr16(andRm16R16), CHKMODRM)
 
-  r.set_funcflag(0x23, instr16(and_r16_rm16), CHK_MODRM)
+  r.setFuncflag(0x23, instr16(andR16Rm16), CHKMODRM)
 
-  r.set_funcflag(0x25, instr16(and_ax_imm16), CHK_IMM16.uint8)
+  r.setFuncflag(0x25, instr16(andAxImm16), CHKIMM16.uint8)
 
-  r.set_funcflag(0x29, instr16(sub_rm16_r16), CHK_MODRM)
+  r.setFuncflag(0x29, instr16(subRm16R16), CHKMODRM)
 
-  r.set_funcflag(0x2b, instr16(sub_r16_rm16), CHK_MODRM)
+  r.setFuncflag(0x2b, instr16(subR16Rm16), CHKMODRM)
 
-  r.set_funcflag(0x2d, instr16(sub_ax_imm16), CHK_IMM16.uint8)
+  r.setFuncflag(0x2d, instr16(subAxImm16), CHKIMM16.uint8)
 
-  r.set_funcflag(0x31, instr16(xor_rm16_r16), CHK_MODRM)
+  r.setFuncflag(0x31, instr16(xorRm16R16), CHKMODRM)
 
-  r.set_funcflag(0x33, instr16(xor_r16_rm16), CHK_MODRM)
+  r.setFuncflag(0x33, instr16(xorR16Rm16), CHKMODRM)
 
-  r.set_funcflag(0x35, instr16(xor_ax_imm16), CHK_IMM16.uint8)
+  r.setFuncflag(0x35, instr16(xorAxImm16), CHKIMM16.uint8)
 
-  r.set_funcflag(0x39, instr16(cmp_rm16_r16), CHK_MODRM)
+  r.setFuncflag(0x39, instr16(cmpRm16R16), CHKMODRM)
 
-  r.set_funcflag(0x3b, instr16(cmp_r16_rm16), CHK_MODRM)
+  r.setFuncflag(0x3b, instr16(cmpR16Rm16), CHKMODRM)
 
-  r.set_funcflag(0x3d, instr16(cmp_ax_imm16), CHK_IMM16.uint8)
-  block:
-    i = 0
-    while i < 8:
-      r.set_funcflag(uint16(0x40 + i), instr16(inc_r16), 0)
-      postInc(i)
-  block:
-    i = 0
-    while i < 8:
-      r.set_funcflag(uint16(0x48 + i), instr16(dec_r16), 0)
-      postInc(i)
-  block:
-    i = 0
-    while i < 8:
-      r.set_funcflag(uint16(0x50 + i), instr16(push_r16), 0)
-      postInc(i)
-  block:
-    i = 0
-    while i < 8:
-      r.set_funcflag(uint16(0x58 + i), instr16(pop_r16), 0)
-      postInc(i)
-  r.set_funcflag(0x60, instr16(pusha), 0)
-  r.set_funcflag(0x61, instr16(popa), 0)
-  r.set_funcflag(0x68, instr16(push_imm16), CHK_IMM16.uint8)
-  r.set_funcflag(0x69, instr16(imul_r16_rm16_imm16), CHK_MODRM or CHK_IMM16.uint8)
-  r.set_funcflag(0x6a, instr16(push_imm8), CHK_IMM8)
-  r.set_funcflag(0x6b, instr16(imul_r16_rm16_imm8), CHK_MODRM or CHK_IMM8)
+  r.setFuncflag(0x3d, instr16(cmpAxImm16), CHKIMM16.uint8)
+
+  for i in 0 ..< 8:
+    r.setFuncflag(uint16(0x40 + i), instr16(incR16), 0)
+
+  for i in 0 ..< 8:
+    r.setFuncflag(uint16(0x48 + i), instr16(decR16), 0)
+
+  for i in 0 ..< 8:
+    r.setFuncflag(uint16(0x50 + i), instr16(pushR16), 0)
+
+  for i in 0 ..< 8:
+    r.setFuncflag(uint16(0x58 + i), instr16(popR16), 0)
+
+  r.setFuncflag(0x60, instr16(pusha), 0)
+  r.setFuncflag(0x61, instr16(popa), 0)
+  r.setFuncflag(0x68, instr16(pushImm16), CHKIMM16.uint8)
+  r.setFuncflag(0x69, instr16(imulR16Rm16Imm16), CHKMODRM or CHKIMM16.uint8)
+  r.setFuncflag(0x6a, instr16(pushImm8), CHKIMM8)
+  r.setFuncflag(0x6b, instr16(imulR16Rm16Imm8), CHKMODRM or CHKIMM8)
 
 
-  r.set_funcflag(0x85, instr16(test_rm16_r16), CHK_MODRM)
+  r.setFuncflag(0x85, instr16(testRm16R16), CHKMODRM)
 
-  r.set_funcflag(0x87, instr16(xchg_r16_rm16), CHK_MODRM)
+  r.setFuncflag(0x87, instr16(xchgR16Rm16), CHKMODRM)
 
-  r.set_funcflag(0x89, instr16(mov_rm16_r16), CHK_MODRM)
+  r.setFuncflag(0x89, instr16(movRm16R16), CHKMODRM)
 
-  r.set_funcflag(0x8b, instr16(mov_r16_rm16), CHK_MODRM)
-  r.set_funcflag(0x8c, instr16(mov_rm16_sreg), CHK_MODRM)
-  r.set_funcflag(0x8d, instr16(lea_r16_m16), CHK_MODRM)
+  r.setFuncflag(0x8b, instr16(movR16Rm16), CHKMODRM)
+  r.setFuncflag(0x8c, instr16(movRm16Sreg), CHKMODRM)
+  r.setFuncflag(0x8d, instr16(leaR16M16), CHKMODRM)
 
+  for i in 1 ..< 8:
+    r.setFuncflag(uint16(0x90 + i), instr16(xchgR16Ax), CHKIMM16.uint8)
 
-  block:
-    i = 1
-    while i < 8:
-      r.set_funcflag(uint16(0x90 + i), instr16(xchg_r16_ax), CHK_IMM16.uint8)
-      postInc(i)
-  r.set_funcflag(0x98, instr16(cbw), 0)
-  r.set_funcflag(0x99, instr16(cwd), 0)
-  r.set_funcflag(0x9a, instr16(callf_ptr16_16), uint8(CHK_PTR16 or CHK_IMM16.uint16))
-  r.set_funcflag(0x9c, instr16(pushf), 0)
-  r.set_funcflag(0x9d, instr16(popf), 0)
+  r.setFuncflag(0x98, instr16(cbw), 0)
+  r.setFuncflag(0x99, instr16(cwd), 0)
+  r.setFuncflag(0x9a, instr16(callfPtr1616), uint8(CHKPTR16 or CHKIMM16.uint16))
+  r.setFuncflag(0x9c, instr16(pushf), 0)
+  r.setFuncflag(0x9d, instr16(popf), 0)
 
-  r.set_funcflag(0xa1, instr16(mov_ax_moffs16), CHK_MOFFS)
+  r.setFuncflag(0xa1, instr16(movAxMoffs16), CHKMOFFS)
 
-  r.set_funcflag(0xa3, instr16(mov_moffs16_ax), CHK_MOFFS)
-  r.set_funcflag(0xa6, instr16(cmps_m8_m8), 0)
-  r.set_funcflag(0xa7, instr16(cmps_m16_m16), 0)
+  r.setFuncflag(0xa3, instr16(movMoffs16Ax), CHKMOFFS)
+  r.setFuncflag(0xa6, instr16(cmpsM8M8), 0)
+  r.setFuncflag(0xa7, instr16(cmpsM16M16), 0)
 
-  r.set_funcflag(0xa9, instr16(test_ax_imm16), CHK_IMM16.uint8)
+  r.setFuncflag(0xa9, instr16(testAxImm16), CHKIMM16.uint8)
 
-  block:
-    i = 0
-    while i < 8:
-      r.set_funcflag(uint16(0xb8 + i), instr16(mov_r16_imm16), CHK_IMM16.uint8)
-      postInc(i)
-  r.set_funcflag(0xc3, instr16(ret), 0)
-  r.set_funcflag(0xc7, instr16(mov_rm16_imm16), CHK_MODRM or CHK_IMM16.uint8)
-  r.set_funcflag(0xc9, instr16(leave), 0)
+  for i in 0 ..< 8:
+    r.setFuncflag(uint16(0xb8 + i), instr16(movR16Imm16), CHKIMM16.uint8)
+
+  r.setFuncflag(0xc3, instr16(ret), 0)
+  r.setFuncflag(0xc7, instr16(movRm16Imm16), CHKMODRM or CHKIMM16.uint8)
+  r.setFuncflag(0xc9, instr16(leave), 0)
 
 
 
 
 
-  r.set_funcflag(0xe5, instr16(in_ax_imm8), CHK_IMM8)
+  r.setFuncflag(0xe5, instr16(inAxImm8), CHKIMM8)
 
-  r.set_funcflag(0xe7, instr16(out_imm8_ax), CHK_IMM8)
-  r.set_funcflag(0xe8, instr16(call_rel16), CHK_IMM16.uint8)
-  r.set_funcflag(0xe9, instr16(jmp_rel16), CHK_IMM16.uint8)
-  r.set_funcflag(0xea, instr16(jmpf_ptr16_16), CHK_PTR16 or CHK_IMM16.uint8)
+  r.setFuncflag(0xe7, instr16(outImm8Ax), CHKIMM8)
+  r.setFuncflag(0xe8, instr16(callRel16), CHKIMM16.uint8)
+  r.setFuncflag(0xe9, instr16(jmpRel16), CHKIMM16.uint8)
+  r.setFuncflag(0xea, instr16(jmpfPtr1616), CHKPTR16 or CHKIMM16.uint8)
 
 
-  r.set_funcflag(0xed, instr16(in_ax_dx), 0)
+  r.setFuncflag(0xed, instr16(inAxDx), 0)
 
-  r.set_funcflag(0xef, instr16(out_dx_ax), 0)
-  r.set_funcflag(0x0f80, instr16(jo_rel16), CHK_IMM16.uint8)
-  r.set_funcflag(0x0f81, instr16(jno_rel16), CHK_IMM16.uint8)
-  r.set_funcflag(0x0f82, instr16(jb_rel16), CHK_IMM16.uint8)
-  r.set_funcflag(0x0f83, instr16(jnb_rel16), CHK_IMM16.uint8)
-  r.set_funcflag(0x0f84, instr16(jz_rel16), CHK_IMM16.uint8)
-  r.set_funcflag(0x0f85, instr16(jnz_rel16), CHK_IMM16.uint8)
-  r.set_funcflag(0x0f86, instr16(jbe_rel16), CHK_IMM16.uint8)
-  r.set_funcflag(0x0f87, instr16(ja_rel16), CHK_IMM16.uint8)
-  r.set_funcflag(0x0f88, instr16(js_rel16), CHK_IMM16.uint8)
-  r.set_funcflag(0x0f89, instr16(jns_rel16), CHK_IMM16.uint8)
-  r.set_funcflag(0x0f8a, instr16(jp_rel16), CHK_IMM16.uint8)
-  r.set_funcflag(0x0f8b, instr16(jnp_rel16), CHK_IMM16.uint8)
-  r.set_funcflag(0x0f8c, instr16(jl_rel16), CHK_IMM16.uint8)
-  r.set_funcflag(0x0f8d, instr16(jnl_rel16), CHK_IMM16.uint8)
-  r.set_funcflag(0x0f8e, instr16(jle_rel16), CHK_IMM16.uint8)
-  r.set_funcflag(0x0f8f, instr16(jnle_rel16), CHK_IMM16.uint8)
-  r.set_funcflag(0x0faf, instr16(imul_r16_rm16), CHK_MODRM)
-  r.set_funcflag(0x0fb6, instr16(movzx_r16_rm8), CHK_MODRM)
-  r.set_funcflag(0x0fb7, instr16(movzx_r16_rm16), CHK_MODRM)
-  r.set_funcflag(0x0fbe, instr16(movsx_r16_rm8), CHK_MODRM)
-  r.set_funcflag(0x0fbf, instr16(movsx_r16_rm16), CHK_MODRM)
+  r.setFuncflag(0xef, instr16(outDxAx), 0)
+  r.setFuncflag(0x0f80, instr16(joRel16), CHKIMM16.uint8)
+  r.setFuncflag(0x0f81, instr16(jnoRel16), CHKIMM16.uint8)
+  r.setFuncflag(0x0f82, instr16(jbRel16), CHKIMM16.uint8)
+  r.setFuncflag(0x0f83, instr16(jnbRel16), CHKIMM16.uint8)
+  r.setFuncflag(0x0f84, instr16(jzRel16), CHKIMM16.uint8)
+  r.setFuncflag(0x0f85, instr16(jnzRel16), CHKIMM16.uint8)
+  r.setFuncflag(0x0f86, instr16(jbeRel16), CHKIMM16.uint8)
+  r.setFuncflag(0x0f87, instr16(jaRel16), CHKIMM16.uint8)
+  r.setFuncflag(0x0f88, instr16(jsRel16), CHKIMM16.uint8)
+  r.setFuncflag(0x0f89, instr16(jnsRel16), CHKIMM16.uint8)
+  r.setFuncflag(0x0f8a, instr16(jpRel16), CHKIMM16.uint8)
+  r.setFuncflag(0x0f8b, instr16(jnpRel16), CHKIMM16.uint8)
+  r.setFuncflag(0x0f8c, instr16(jlRel16), CHKIMM16.uint8)
+  r.setFuncflag(0x0f8d, instr16(jnlRel16), CHKIMM16.uint8)
+  r.setFuncflag(0x0f8e, instr16(jleRel16), CHKIMM16.uint8)
+  r.setFuncflag(0x0f8f, instr16(jnleRel16), CHKIMM16.uint8)
+  r.setFuncflag(0x0faf, instr16(imulR16Rm16), CHKMODRM)
+  r.setFuncflag(0x0fb6, instr16(movzxR16Rm8), CHKMODRM)
+  r.setFuncflag(0x0fb7, instr16(movzxR16Rm16), CHKMODRM)
+  r.setFuncflag(0x0fbe, instr16(movsxR16Rm8), CHKMODRM)
+  r.setFuncflag(0x0fbf, instr16(movsxR16Rm16), CHKMODRM)
 
-  r.set_funcflag(0x81, instr16(code_81), CHK_MODRM or CHK_IMM16.uint8)
+  r.setFuncflag(0x81, instr16(code81), CHKMODRM or CHKIMM16.uint8)
 
-  r.set_funcflag(0x83, instr16(code_83), CHK_MODRM or CHK_IMM8)
+  r.setFuncflag(0x83, instr16(code83), CHKMODRM or CHKIMM8)
 
-  r.set_funcflag(0xc1, instr16(code_c1), CHK_MODRM or CHK_IMM8)
-  r.set_funcflag(0xd3, instr16(code_d3), CHK_MODRM)
-  r.set_funcflag(0xf7, instr16(code_f7), CHK_MODRM)
-  r.set_funcflag(0xff, instr16(code_ff), CHK_MODRM)
-  r.set_funcflag(0x0f00, instr16(code_0f00), CHK_MODRM)
-  r.set_funcflag(0x0f01, instr16(code_0f01), CHK_MODRM)
+  r.setFuncflag(0xc1, instr16(codeC1), CHKMODRM or CHKIMM8)
+  r.setFuncflag(0xd3, instr16(codeD3), CHKMODRM)
+  r.setFuncflag(0xf7, instr16(codeF7), CHKMODRM)
+  r.setFuncflag(0xff, instr16(codeFf), CHKMODRM)
+  r.setFuncflag(0x0f00, instr16(code0f00), CHKMODRM)
+  r.setFuncflag(0x0f01, instr16(code0f01), CHKMODRM)
 
 
 proc initInstr16*(e: ptr Emulator, id: ptr InstrData): Instr16 =

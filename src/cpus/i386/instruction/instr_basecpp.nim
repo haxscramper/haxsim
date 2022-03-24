@@ -6,552 +6,549 @@ import ../instruction/emucpp
 import emulator/[exceptionhpp, emulatorhpp, accesshpp, interrupthpp]
 
 template instrbase*(f: untyped): untyped {.dirty.} =
- instrfunc_t(f)
+ instrfuncT(f)
 
-proc set_funcflag*(this: var InstrBase, opcode: uint16, `func`: instrfunc_t, flags: uint8): void =
+proc setFuncflag*(this: var InstrBase, opcode: uint16, `func`: instrfuncT, flags: uint8): void =
   var opcode = opcode
   if opcode shr 8 == 0x0f:
     opcode = (opcode and 0xff) or 0x0100
 
-  ASSERT(opcode < MAX_OPCODE)
+  ASSERT(opcode < MAXOPCODE)
   this.exec.instrfuncs[opcode] = `func`
   this.parse.chk[opcode].flags = flags
   
-proc get_emu*(this: var InstrBase): ptr Emulator =
-  this.exec.get_emu()
+proc getEmu*(this: var InstrBase): ptr Emulator =
+  this.exec.getEmu()
 
-proc add_rm8_r8*(this: var InstrBase): void = 
+proc addRm8R8*(this: var InstrBase): void =
   var r8, rm8: uint8
-  rm8 = this.exec.get_rm8()
-  r8 = this.exec.get_r8()
-  this.exec.set_rm8(rm8 + r8)
-  discard EFLAGS_UPDATE_ADD(rm8, r8)
+  rm8 = this.exec.getRm8()
+  r8 = this.exec.getR8()
+  this.exec.setRm8(rm8 + r8)
+  discard EFLAGSUPDATEADD(rm8, r8)
 
-proc add_r8_rm8*(this: var InstrBase): void = 
+proc addR8Rm8*(this: var InstrBase): void =
   var rm8, r8: uint8
-  r8 = this.exec.get_r8()
-  rm8 = this.exec.get_rm8()
-  this.exec.set_r8(r8 + rm8)
-  discard EFLAGS_UPDATE_ADD(r8, rm8)
+  r8 = this.exec.getR8()
+  rm8 = this.exec.getRm8()
+  this.exec.setR8(r8 + rm8)
+  discard EFLAGSUPDATEADD(r8, rm8)
 
-proc add_al_imm8*(this: var InstrBase): void = 
+proc addAlImm8*(this: var InstrBase): void =
   var al: uint8
-  al = GET_GPREG(AL)
-  SET_GPREG(AL, al + IMM8.uint8)
-  discard EFLAGS_UPDATE_ADD(al, IMM8.uint32)
+  al = GETGPREG(AL)
+  SETGPREG(AL, al + IMM8.uint8)
+  discard EFLAGSUPDATEADD(al, IMM8.uint32)
 
-proc or_rm8_r8*(this: var InstrBase): void = 
+proc orRm8R8*(this: var InstrBase): void =
   var r8, rm8: uint8
-  rm8 = this.exec.get_rm8()
-  r8 = this.exec.get_r8()
-  this.exec.set_rm8(rm8 or r8)
-  discard EFLAGS_UPDATE_OR(rm8, r8)
+  rm8 = this.exec.getRm8()
+  r8 = this.exec.getR8()
+  this.exec.setRm8(rm8 or r8)
+  discard EFLAGSUPDATEOR(rm8, r8)
 
-proc or_al_imm8*(this: var InstrBase): void = 
+proc orAlImm8*(this: var InstrBase): void =
   var al: uint8
-  al = GET_GPREG(AL)
-  SET_GPREG(AL, al or IMM8.uint8)
-  discard EFLAGS_UPDATE_OR(al, IMM8.uint8)
+  al = GETGPREG(AL)
+  SETGPREG(AL, al or IMM8.uint8)
+  discard EFLAGSUPDATEOR(al, IMM8.uint8)
 
-proc or_r8_rm8*(this: var InstrBase): void = 
+proc orR8Rm8*(this: var InstrBase): void =
   var rm8, r8: uint8
-  r8 = this.exec.get_r8()
-  rm8 = this.exec.get_rm8()
-  this.exec.set_r8(r8 or rm8)
-  discard EFLAGS_UPDATE_OR(r8, rm8)
+  r8 = this.exec.getR8()
+  rm8 = this.exec.getRm8()
+  this.exec.setR8(r8 or rm8)
+  discard EFLAGSUPDATEOR(r8, rm8)
 
-proc and_rm8_r8*(this: var InstrBase): void = 
+proc andRm8R8*(this: var InstrBase): void =
   var r8, rm8: uint8
-  rm8 = this.exec.get_rm8()
-  r8 = this.exec.get_r8()
-  this.exec.set_rm8(rm8 and r8)
-  discard EFLAGS_UPDATE_AND(rm8, r8)
+  rm8 = this.exec.getRm8()
+  r8 = this.exec.getR8()
+  this.exec.setRm8(rm8 and r8)
+  discard EFLAGSUPDATEAND(rm8, r8)
 
-proc and_r8_rm8*(this: var InstrBase): void = 
+proc andR8Rm8*(this: var InstrBase): void =
   var rm8, r8: uint8
-  r8 = this.exec.get_r8()
-  rm8 = this.exec.get_rm8()
-  this.exec.set_r8(r8 and rm8)
-  discard EFLAGS_UPDATE_AND(r8, rm8)
+  r8 = this.exec.getR8()
+  rm8 = this.exec.getRm8()
+  this.exec.setR8(r8 and rm8)
+  discard EFLAGSUPDATEAND(r8, rm8)
 
-proc and_al_imm8*(this: var InstrBase): void = 
+proc andAlImm8*(this: var InstrBase): void =
   var al: uint8
-  al = GET_GPREG(AL)
-  SET_GPREG(AL, al and IMM8.uint8)
-  discard EFLAGS_UPDATE_AND(al, IMM8.uint8)
+  al = GETGPREG(AL)
+  SETGPREG(AL, al and IMM8.uint8)
+  discard EFLAGSUPDATEAND(al, IMM8.uint8)
 
-proc sub_rm8_r8*(this: var InstrBase): void = 
+proc subRm8R8*(this: var InstrBase): void =
   var r8, rm8: uint8
-  rm8 = this.exec.get_rm8()
-  r8 = this.exec.get_r8()
-  this.exec.set_rm8(rm8 - r8)
-  discard EFLAGS_UPDATE_SUB(rm8, r8)
+  rm8 = this.exec.getRm8()
+  r8 = this.exec.getR8()
+  this.exec.setRm8(rm8 - r8)
+  discard EFLAGSUPDATESUB(rm8, r8)
 
-proc sub_r8_rm8*(this: var InstrBase): void = 
+proc subR8Rm8*(this: var InstrBase): void =
   var rm8, r8: uint8
-  r8 = this.exec.get_r8()
-  rm8 = this.exec.get_rm8()
-  this.exec.set_r8(r8 - rm8)
-  discard EFLAGS_UPDATE_SUB(r8, rm8)
+  r8 = this.exec.getR8()
+  rm8 = this.exec.getRm8()
+  this.exec.setR8(r8 - rm8)
+  discard EFLAGSUPDATESUB(r8, rm8)
 
-proc sub_al_imm8*(this: var InstrBase): void = 
+proc subAlImm8*(this: var InstrBase): void =
   var al: uint8
-  al = GET_GPREG(AL)
-  SET_GPREG(AL, al - IMM8.uint8)
-  discard EFLAGS_UPDATE_SUB(al, IMM8.uint8)
+  al = GETGPREG(AL)
+  SETGPREG(AL, al - IMM8.uint8)
+  discard EFLAGSUPDATESUB(al, IMM8.uint8)
 
-proc xor_rm8_r8*(this: var InstrBase): void = 
+proc xorRm8R8*(this: var InstrBase): void =
   var r8, rm8: uint8
-  rm8 = this.exec.get_rm8()
-  r8 = this.exec.get_r8()
-  this.exec.set_rm8(rm8 xor r8)
+  rm8 = this.exec.getRm8()
+  r8 = this.exec.getR8()
+  this.exec.setRm8(rm8 xor r8)
 
-proc xor_r8_rm8*(this: var InstrBase): void = 
+proc xorR8Rm8*(this: var InstrBase): void =
   var rm8, r8: uint8
-  r8 = this.exec.get_r8()
-  rm8 = this.exec.get_rm8()
-  this.exec.set_r8(r8 xor rm8)
+  r8 = this.exec.getR8()
+  rm8 = this.exec.getRm8()
+  this.exec.setR8(r8 xor rm8)
 
-proc xor_al_imm8*(this: var InstrBase): void = 
+proc xorAlImm8*(this: var InstrBase): void =
   var al: uint8
-  al = GET_GPREG(AL)
-  SET_GPREG(AL, al xor IMM8.uint8)
+  al = GETGPREG(AL)
+  SETGPREG(AL, al xor IMM8.uint8)
 
-proc cmp_rm8_r8*(this: var InstrBase): void = 
+proc cmpRm8R8*(this: var InstrBase): void =
   var r8, rm8: uint8
-  rm8 = this.exec.get_rm8()
-  r8 = this.exec.get_r8()
-  discard EFLAGS_UPDATE_SUB(rm8, r8)
+  rm8 = this.exec.getRm8()
+  r8 = this.exec.getR8()
+  discard EFLAGSUPDATESUB(rm8, r8)
 
-proc cmp_r8_rm8*(this: var InstrBase): void = 
+proc cmpR8Rm8*(this: var InstrBase): void =
   var rm8, r8: uint8
-  r8 = this.exec.get_r8()
-  rm8 = this.exec.get_rm8()
-  discard EFLAGS_UPDATE_SUB(r8, rm8)
+  r8 = this.exec.getR8()
+  rm8 = this.exec.getRm8()
+  discard EFLAGSUPDATESUB(r8, rm8)
 
-proc cmp_al_imm8*(this: var InstrBase): void = 
+proc cmpAlImm8*(this: var InstrBase): void =
   var al: uint8
-  al = GET_GPREG(AL)
-  discard EFLAGS_UPDATE_SUB(al, IMM8.uint8)
+  al = GETGPREG(AL)
+  discard EFLAGSUPDATESUB(al, IMM8.uint8)
 
-template JCC_REL8*(cc: untyped, is_flag: untyped): untyped {.dirty.} = 
+template JCCREL8*(cc: untyped, isFlag: untyped): untyped {.dirty.} =
   proc `j cc rel8`*(this: var InstrBase): void =
-    if is_flag:
-      discard UPDATE_IP(IMM8)
+    if isFlag:
+      discard UPDATEIP(IMM8)
 
-JCC_REL8(o, EFLAGS_OF)
-JCC_REL8(no, not(EFLAGS_OF))
-JCC_REL8(b, EFLAGS_CF)
-JCC_REL8(nb, not(EFLAGS_CF))
-JCC_REL8(z, EFLAGS_ZF)
-JCC_REL8(nz, not(EFLAGS_ZF))
-JCC_REL8(be, EFLAGS_CF or EFLAGS_ZF)
-JCC_REL8(a, not((EFLAGS_CF or EFLAGS_ZF)))
-JCC_REL8(s, EFLAGS_SF)
-JCC_REL8(ns, not(EFLAGS_SF))
-JCC_REL8(p, EFLAGS_PF)
-JCC_REL8(np, not(EFLAGS_PF))
-JCC_REL8(l, EFLAGS_SF != EFLAGS_OF)
-JCC_REL8(nl, EFLAGS_SF == EFLAGS_OF)
-JCC_REL8(le, EFLAGS_ZF or (EFLAGS_SF != EFLAGS_OF))
-JCC_REL8(nle, not(EFLAGS_ZF) and (EFLAGS_SF == EFLAGS_OF))
-proc test_rm8_r8*(this: var InstrBase): void = 
+JCCREL8(o, EFLAGSOF)
+JCCREL8(no, not(EFLAGSOF))
+JCCREL8(b, EFLAGSCF)
+JCCREL8(nb, not(EFLAGSCF))
+JCCREL8(z, EFLAGSZF)
+JCCREL8(nz, not(EFLAGSZF))
+JCCREL8(be, EFLAGSCF or EFLAGSZF)
+JCCREL8(a, not((EFLAGSCF or EFLAGSZF)))
+JCCREL8(s, EFLAGSSF)
+JCCREL8(ns, not(EFLAGSSF))
+JCCREL8(p, EFLAGSPF)
+JCCREL8(np, not(EFLAGSPF))
+JCCREL8(l, EFLAGSSF != EFLAGSOF)
+JCCREL8(nl, EFLAGSSF == EFLAGSOF)
+JCCREL8(le, EFLAGSZF or (EFLAGSSF != EFLAGSOF))
+JCCREL8(nle, not(EFLAGSZF) and (EFLAGSSF == EFLAGSOF))
+proc testRm8R8*(this: var InstrBase): void =
   var r8, rm8: uint8
-  rm8 = this.exec.get_rm8()
-  r8 = this.exec.get_r8()
-  discard EFLAGS_UPDATE_AND(rm8, r8)
+  rm8 = this.exec.getRm8()
+  r8 = this.exec.getR8()
+  discard EFLAGSUPDATEAND(rm8, r8)
 
-proc xchg_r8_rm8*(this: var InstrBase): void = 
+proc xchgR8Rm8*(this: var InstrBase): void =
   var rm8, r8: uint8
-  r8 = this.exec.get_r8()
-  rm8 = this.exec.get_rm8()
-  this.exec.set_r8(rm8)
-  this.exec.set_rm8(r8)
+  r8 = this.exec.getR8()
+  rm8 = this.exec.getRm8()
+  this.exec.setR8(rm8)
+  this.exec.setRm8(r8)
 
-proc mov_rm8_r8*(this: var InstrBase): void = 
+proc movRm8R8*(this: var InstrBase): void =
   var r8, rm8: uint8
-  r8 = this.exec.get_r8()
-  this.exec.set_rm8(r8)
+  r8 = this.exec.getR8()
+  this.exec.setRm8(r8)
 
-proc mov_r8_rm8*(this: var InstrBase): void = 
+proc movR8Rm8*(this: var InstrBase): void =
   var rm8, r8: uint8
-  rm8 = this.exec.get_rm8()
-  this.exec.set_r8(rm8)
+  rm8 = this.exec.getRm8()
+  this.exec.setR8(rm8)
 
-proc mov_sreg_rm16*(this: var InstrBase): void = 
+proc movSregRm16*(this: var InstrBase): void =
   var rm16: uint16
-  rm16 = this.exec.get_rm16()
-  set_sreg(this.exec, rm16)
+  rm16 = this.exec.getRm16()
+  setSreg(this.exec, rm16)
 
 proc nop*(this: var InstrBase): void = 
   discard 
 
 
-proc mov_al_moffs8*(this: var InstrBase): void = 
-  SET_GPREG(AL, this.exec.get_moffs8())
+proc movAlMoffs8*(this: var InstrBase): void =
+  SETGPREG(AL, this.exec.getMoffs8())
 
-proc mov_moffs8_al*(this: var InstrBase): void = 
-  this.exec.set_moffs8(GET_GPREG(AL))
+proc movMoffs8Al*(this: var InstrBase): void =
+  this.exec.setMoffs8(GETGPREG(AL))
 
-proc test_al_imm8*(this: var InstrBase): void = 
+proc testAlImm8*(this: var InstrBase): void =
   var al: uint8
-  al = GET_GPREG(AL)
-  discard EFLAGS_UPDATE_AND(al, IMM8.uint8)
+  al = GETGPREG(AL)
+  discard EFLAGSUPDATEAND(al, IMM8.uint8)
 
-proc mov_r8_imm8*(this: var InstrBase): void = 
+proc movR8Imm8*(this: var InstrBase): void =
   var reg: uint8
   reg = uint8(OPCODE and ((1 shl 3) - 1))
-  SET_GPREG(cast[reg8_t](reg), IMM8.uint8)
+  SETGPREG(cast[reg8T](reg), IMM8.uint8)
 
-proc mov_rm8_imm8*(this: var InstrBase): void = 
-  this.exec.set_rm8(IMM8.uint8)
+proc movRm8Imm8*(this: var InstrBase): void =
+  this.exec.setRm8(IMM8.uint8)
 
 proc retf*(this: var InstrBase): void = 
   this.emu.retf()
 
 proc int3*(this: var InstrBase): void = 
-  CPU.dump_regs()
-  MEM.dump_mem((ACS.get_segment(SS) shl 4) + CPU.get_gpreg(ESP) - 0x40, 0x80.csize_t)
+  CPU.dumpRegs()
+  MEM.dumpMem((ACS.getSegment(SS) shl 4) + CPU.getGpreg(ESP) - 0x40, 0x80.csizeT)
 
-proc int_imm8*(this: var InstrBase): void = 
-  INT.queue_interrupt(IMM8.uint8, false)
+proc intImm8*(this: var InstrBase): void =
+  INT.queueInterrupt(IMM8.uint8, false)
 
 proc iret*(this: var InstrBase): void = 
   this.emu.iret()
 
-proc in_al_imm8*(this: var InstrBase): void = 
-  SET_GPREG(AL, EIO.in_io8(cast[uint8](IMM8)))
+proc inAlImm8*(this: var InstrBase): void =
+  SETGPREG(AL, EIO.inIo8(cast[uint8](IMM8)))
 
-proc out_imm8_al*(this: var InstrBase): void = 
+proc outImm8Al*(this: var InstrBase): void =
   var al: uint8
-  al = GET_GPREG(AL)
-  EIO.out_io8(cast[uint8](IMM8), al)
+  al = GETGPREG(AL)
+  EIO.outIo8(cast[uint8](IMM8), al)
 
 proc jmp*(this: var InstrBase): void = 
-  discard UPDATE_IP(IMM8)
+  discard UPDATEIP(IMM8)
 
-proc in_al_dx*(this: var InstrBase): void = 
+proc inAlDx*(this: var InstrBase): void =
   var dx: uint16
-  dx = GET_GPREG(DX)
-  SET_GPREG(AL, EIO.in_io8(dx))
+  dx = GETGPREG(DX)
+  SETGPREG(AL, EIO.inIo8(dx))
 
-proc out_dx_al*(this: var InstrBase): void = 
+proc outDxAl*(this: var InstrBase): void =
   var dx: uint16
   var al: uint8
-  dx = GET_GPREG(DX)
-  al = GET_GPREG(AL)
-  EIO.out_io8(dx, al)
+  dx = GETGPREG(DX)
+  al = GETGPREG(AL)
+  EIO.outIo8(dx, al)
 
 proc cli*(this: var InstrBase): void = 
-  CPU.eflags.set_interrupt(false)
+  CPU.eflags.setInterrupt(false)
 
 proc sti*(this: var InstrBase): void = 
-  CPU.eflags.set_interrupt(true)
+  CPU.eflags.setInterrupt(true)
 
 proc cld*(this: var InstrBase): void = 
-  CPU.eflags.set_direction(false)
+  CPU.eflags.setDirection(false)
 
 proc std*(this: var InstrBase): void = 
-  CPU.eflags.set_direction(true)
+  CPU.eflags.setDirection(true)
 
 proc hlt*(this: var InstrBase): void = 
-  EXCEPTION(EXP_GP, not(this.emu.chk_ring(0)))
-  CPU.do_halt(true)
+  EXCEPTION(EXPGP, not(this.emu.chkRing(0)))
+  CPU.doHalt(true)
 
-proc ltr_rm16*(this: var InstrBase): void = 
+proc ltrRm16*(this: var InstrBase): void =
   var rm16: uint16
-  EXCEPTION(EXP_GP, not(this.emu.chk_ring(0)))
-  rm16 = this.exec.get_rm16()
-  this.emu.set_tr(rm16)
+  EXCEPTION(EXPGP, not(this.emu.chkRing(0)))
+  rm16 = this.exec.getRm16()
+  this.emu.setTr(rm16)
 
-proc mov_r32_crn*(this: var InstrBase): void = 
+proc movR32Crn*(this: var InstrBase): void =
   var crn: uint32
-  crn = this.exec.get_crn()
-  SET_GPREG(cast[reg32_t](RM), crn)
+  crn = this.exec.getCrn()
+  SETGPREG(cast[reg32T](RM), crn)
   
 
-proc mov_crn_r32*(this: var InstrBase): void = 
+proc movCrnR32*(this: var InstrBase): void =
   var r32: uint32
-  EXCEPTION(EXP_GP, not(this.emu.chk_ring(0)))
-  r32 = GET_GPREG(cast[reg32_t](RM))
-  this.exec.set_crn(r32)
+  EXCEPTION(EXPGP, not(this.emu.chkRing(0)))
+  r32 = GETGPREG(cast[reg32T](RM))
+  this.exec.setCrn(r32)
 
-template SETCC_RM8*(cc: untyped, is_flag: untyped): untyped {.dirty.} = 
+template SETCCRM8*(cc: untyped, isFlag: untyped): untyped {.dirty.} =
   proc `set cc rm8`*(this: var InstrBase): void =
-    SET_GPREG(cast[reg32_t](RM), uint32(is_flag))
+    SETGPREG(cast[reg32T](RM), uint32(isFlag))
   
 
-SETCC_RM8(o, EFLAGS_OF)
-SETCC_RM8(no, not(EFLAGS_OF))
-SETCC_RM8(b, EFLAGS_CF)
-SETCC_RM8(nb, not(EFLAGS_CF))
-SETCC_RM8(z, EFLAGS_ZF)
-SETCC_RM8(nz, not(EFLAGS_ZF))
-SETCC_RM8(be, EFLAGS_CF or EFLAGS_ZF)
-SETCC_RM8(a, not((EFLAGS_CF or EFLAGS_ZF)))
-SETCC_RM8(s, EFLAGS_SF)
-SETCC_RM8(ns, not(EFLAGS_SF))
-SETCC_RM8(p, EFLAGS_PF)
-SETCC_RM8(np, not(EFLAGS_PF))
-SETCC_RM8(l, EFLAGS_SF != EFLAGS_OF)
-SETCC_RM8(nl, EFLAGS_SF == EFLAGS_OF)
-SETCC_RM8(le, EFLAGS_ZF or (EFLAGS_SF != EFLAGS_OF))
-SETCC_RM8(nle, not(EFLAGS_ZF) and (EFLAGS_SF == EFLAGS_OF))
+SETCCRM8(o, EFLAGSOF)
+SETCCRM8(no, not(EFLAGSOF))
+SETCCRM8(b, EFLAGSCF)
+SETCCRM8(nb, not(EFLAGSCF))
+SETCCRM8(z, EFLAGSZF)
+SETCCRM8(nz, not(EFLAGSZF))
+SETCCRM8(be, EFLAGSCF or EFLAGSZF)
+SETCCRM8(a, not((EFLAGSCF or EFLAGSZF)))
+SETCCRM8(s, EFLAGSSF)
+SETCCRM8(ns, not(EFLAGSSF))
+SETCCRM8(p, EFLAGSPF)
+SETCCRM8(np, not(EFLAGSPF))
+SETCCRM8(l, EFLAGSSF != EFLAGSOF)
+SETCCRM8(nl, EFLAGSSF == EFLAGSOF)
+SETCCRM8(le, EFLAGSZF or (EFLAGSSF != EFLAGSOF))
+SETCCRM8(nle, not(EFLAGSZF) and (EFLAGSSF == EFLAGSOF))
 
-proc add_rm8_imm8*(this: var InstrBase): void =
+proc addRm8Imm8*(this: var InstrBase): void =
   var rm8: uint8
-  rm8 = this.exec.get_rm8()
-  this.exec.set_rm8(rm8 + IMM8.uint8)
-  discard EFLAGS_UPDATE_ADD(rm8, IMM8.uint8)
+  rm8 = this.exec.getRm8()
+  this.exec.setRm8(rm8 + IMM8.uint8)
+  discard EFLAGSUPDATEADD(rm8, IMM8.uint8)
 
-proc or_rm8_imm8*(this: var InstrBase): void =
+proc orRm8Imm8*(this: var InstrBase): void =
   var rm8: uint8
-  rm8 = this.exec.get_rm8()
-  this.exec.set_rm8(rm8 or IMM8.uint8)
-  discard EFLAGS_UPDATE_OR(rm8, IMM8.uint8)
+  rm8 = this.exec.getRm8()
+  this.exec.setRm8(rm8 or IMM8.uint8)
+  discard EFLAGSUPDATEOR(rm8, IMM8.uint8)
 
-proc adc_rm8_imm8*(this: var InstrBase): void =
+proc adcRm8Imm8*(this: var InstrBase): void =
   var cf, rm8: uint8
-  rm8 = this.exec.get_rm8()
-  cf = EFLAGS_CF.uint8
-  this.exec.set_rm8(rm8 + IMM8.uint8 + cf)
-  discard EFLAGS_UPDATE_ADD(rm8, IMM8.uint8 + cf)
+  rm8 = this.exec.getRm8()
+  cf = EFLAGSCF.uint8
+  this.exec.setRm8(rm8 + IMM8.uint8 + cf)
+  discard EFLAGSUPDATEADD(rm8, IMM8.uint8 + cf)
 
-proc sbb_rm8_imm8*(this: var InstrBase): void =
+proc sbbRm8Imm8*(this: var InstrBase): void =
   var cf, rm8: uint8
-  rm8 = this.exec.get_rm8()
-  cf = EFLAGS_CF.uint8
-  this.exec.set_rm8(rm8 - IMM8.uint8 - cf)
-  discard EFLAGS_UPDATE_SUB(rm8, IMM8.uint8 + cf)
+  rm8 = this.exec.getRm8()
+  cf = EFLAGSCF.uint8
+  this.exec.setRm8(rm8 - IMM8.uint8 - cf)
+  discard EFLAGSUPDATESUB(rm8, IMM8.uint8 + cf)
 
-proc and_rm8_imm8*(this: var InstrBase): void =
+proc andRm8Imm8*(this: var InstrBase): void =
   var rm8: uint8
-  rm8 = this.exec.get_rm8()
-  this.exec.set_rm8(rm8 and IMM8.uint8)
-  discard EFLAGS_UPDATE_AND(rm8, IMM8.uint8)
+  rm8 = this.exec.getRm8()
+  this.exec.setRm8(rm8 and IMM8.uint8)
+  discard EFLAGSUPDATEAND(rm8, IMM8.uint8)
 
-proc sub_rm8_imm8*(this: var InstrBase): void =
+proc subRm8Imm8*(this: var InstrBase): void =
   var rm8: uint8
-  rm8 = this.exec.get_rm8()
-  this.exec.set_rm8(rm8 - IMM8.uint8)
-  discard EFLAGS_UPDATE_SUB(rm8, IMM8.uint8)
+  rm8 = this.exec.getRm8()
+  this.exec.setRm8(rm8 - IMM8.uint8)
+  discard EFLAGSUPDATESUB(rm8, IMM8.uint8)
 
-proc xor_rm8_imm8*(this: var InstrBase): void =
+proc xorRm8Imm8*(this: var InstrBase): void =
   var rm8: uint8
-  rm8 = this.exec.get_rm8()
-  this.exec.set_rm8(rm8 xor IMM8.uint8)
+  rm8 = this.exec.getRm8()
+  this.exec.setRm8(rm8 xor IMM8.uint8)
 
-proc cmp_rm8_imm8*(this: var InstrBase): void =
+proc cmpRm8Imm8*(this: var InstrBase): void =
   var rm8: uint8
-  rm8 = this.exec.get_rm8()
-  discard EFLAGS_UPDATE_SUB(rm8, IMM8.uint8)
+  rm8 = this.exec.getRm8()
+  discard EFLAGSUPDATESUB(rm8, IMM8.uint8)
 
 
-proc shl_rm8_imm8*(this: var InstrBase): void =
+proc shlRm8Imm8*(this: var InstrBase): void =
   var rm8: uint8
-  rm8 = this.exec.get_rm8()
-  this.exec.set_rm8(rm8 shl IMM8.uint8)
-  discard EFLAGS_UPDATE_SHL(rm8, IMM8.uint8)
+  rm8 = this.exec.getRm8()
+  this.exec.setRm8(rm8 shl IMM8.uint8)
+  discard EFLAGSUPDATESHL(rm8, IMM8.uint8)
 
-proc shr_rm8_imm8*(this: var InstrBase): void =
+proc shrRm8Imm8*(this: var InstrBase): void =
   var rm8: uint8
-  rm8 = this.exec.get_rm8()
-  this.exec.set_rm8(rm8 shr IMM8.uint8)
-  discard EFLAGS_UPDATE_SHR(rm8, IMM8.uint8)
+  rm8 = this.exec.getRm8()
+  this.exec.setRm8(rm8 shr IMM8.uint8)
+  discard EFLAGSUPDATESHR(rm8, IMM8.uint8)
 
-proc sal_rm8_imm8*(this: var InstrBase): void =
-  var rm8_s: int8
-  rm8_s = this.exec.get_rm8().int8()
-  this.exec.set_rm8(uint8(rm8_s shl IMM8))
-
-
-proc sar_rm8_imm8*(this: var InstrBase): void =
-  var rm8_s: int8
-  rm8_s = this.exec.get_rm8().int8
-  this.exec.set_rm8(uint8(rm8_s shr IMM8))
+proc salRm8Imm8*(this: var InstrBase): void =
+  var rm8S: int8
+  rm8S = this.exec.getRm8().int8()
+  this.exec.setRm8(uint8(rm8S shl IMM8))
 
 
+proc sarRm8Imm8*(this: var InstrBase): void =
+  var rm8S: int8
+  rm8S = this.exec.getRm8().int8
+  this.exec.setRm8(uint8(rm8S shr IMM8))
 
-proc test_rm8_imm8*(this: var InstrBase): void =
+
+
+proc testRm8Imm8*(this: var InstrBase): void =
   var imm8, rm8: uint8
-  rm8 = this.exec.get_rm8()
-  imm8 = ACS.get_code8(0)
-  discard UPDATE_EIP(1)
-  discard EFLAGS_UPDATE_AND(rm8, imm8)
+  rm8 = this.exec.getRm8()
+  imm8 = ACS.getCode8(0)
+  discard UPDATEEIP(1)
+  discard EFLAGSUPDATEAND(rm8, imm8)
 
-proc not_rm8*(this: var InstrBase): void =
+proc notRm8*(this: var InstrBase): void =
   var rm8: uint8
-  rm8 = this.exec.get_rm8()
-  this.exec.set_rm8(not(rm8))
+  rm8 = this.exec.getRm8()
+  this.exec.setRm8(not(rm8))
 
-proc neg_rm8*(this: var InstrBase): void =
-  var rm8_s: int8
-  rm8_s = this.exec.get_rm8().int8
-  this.exec.set_rm8(uint8(-(rm8_s)))
-  discard EFLAGS_UPDATE_SUB(cast[uint8](0), rm8_s.uint8)
+proc negRm8*(this: var InstrBase): void =
+  var rm8S: int8
+  rm8S = this.exec.getRm8().int8
+  this.exec.setRm8(uint8(-(rm8S)))
+  discard EFLAGSUPDATESUB(cast[uint8](0), rm8S.uint8)
 
-proc mul_ax_al_rm8*(this: var InstrBase): void =
+proc mulAxAlRm8*(this: var InstrBase): void =
   var al, rm8: uint8
   var val: uint16
-  rm8 = this.exec.get_rm8()
-  al = GET_GPREG(AL)
+  rm8 = this.exec.getRm8()
+  al = GETGPREG(AL)
   val = al * rm8
-  SET_GPREG(AX, val)
-  discard EFLAGS_UPDATE_MUL(al, rm8)
+  SETGPREG(AX, val)
+  discard EFLAGSUPDATEMUL(al, rm8)
 
-proc imul_ax_al_rm8*(this: var InstrBase): void =
-  var al_s, rm8_s: int8
-  var val_s: int16
-  rm8_s = this.exec.get_rm8().int8
-  al_s = GET_GPREG(AL).int8
-  val_s = al_s * rm8_s
-  SET_GPREG(AX, val_s.uint8)
-  discard EFLAGS_UPDATE_IMUL(al_s, rm8_s)
+proc imulAxAlRm8*(this: var InstrBase): void =
+  var alS, rm8S: int8
+  var valS: int16
+  rm8S = this.exec.getRm8().int8
+  alS = GETGPREG(AL).int8
+  valS = alS * rm8S
+  SETGPREG(AX, valS.uint8)
+  discard EFLAGSUPDATEIMUL(alS, rm8S)
 
-proc div_al_ah_rm8*(this: var InstrBase): void =
+proc divAlAhRm8*(this: var InstrBase): void =
   var rm8: uint8
   var ax: uint16
-  rm8 = this.exec.get_rm8()
-  ax = GET_GPREG(AX)
-  SET_GPREG(AL, uint8(ax div rm8))
-  SET_GPREG(AH, uint8(ax mod rm8))
+  rm8 = this.exec.getRm8()
+  ax = GETGPREG(AX)
+  SETGPREG(AL, uint8(ax div rm8))
+  SETGPREG(AH, uint8(ax mod rm8))
 
-proc idiv_al_ah_rm8*(this: var InstrBase): void =
-  var rm8_s: int8
-  var ax_s: int16
-  rm8_s = this.exec.get_rm8().int8
-  ax_s = GET_GPREG(AX).int16
-  SET_GPREG(AL, uint8(ax_s div rm8_s))
-  SET_GPREG(AH, uint8(ax_s mod rm8_s))
+proc idivAlAhRm8*(this: var InstrBase): void =
+  var rm8S: int8
+  var axS: int16
+  rm8S = this.exec.getRm8().int8
+  axS = GETGPREG(AX).int16
+  SETGPREG(AL, uint8(axS div rm8S))
+  SETGPREG(AH, uint8(axS mod rm8S))
 
 
 proc code_80*(this: var InstrBase): void = 
   case REG:
-    of 0: this.add_rm8_imm8()
-    of 1: this.or_rm8_imm8()
-    of 2: this.adc_rm8_imm8()
-    of 3: this.sbb_rm8_imm8()
-    of 4: this.and_rm8_imm8()
-    of 5: this.sub_rm8_imm8()
-    of 6: this.xor_rm8_imm8()
-    of 7: this.cmp_rm8_imm8()
+    of 0: this.addRm8Imm8()
+    of 1: this.orRm8Imm8()
+    of 2: this.adcRm8Imm8()
+    of 3: this.sbbRm8Imm8()
+    of 4: this.andRm8Imm8()
+    of 5: this.subRm8Imm8()
+    of 6: this.xorRm8Imm8()
+    of 7: this.cmpRm8Imm8()
     else:
       ERROR("not implemented: 0x80 /%d\\n", REG)
 
 proc code_82*(this: var InstrBase): void = 
   code_80(this)
 
-proc code_c0*(this: var InstrBase): void = 
+proc codeC0*(this: var InstrBase): void =
   case REG:
-    of 4: this.shl_rm8_imm8()
-    of 5: this.shr_rm8_imm8()
-    of 6: this.sal_rm8_imm8()
-    of 7: this.sar_rm8_imm8()
+    of 4: this.shlRm8Imm8()
+    of 5: this.shrRm8Imm8()
+    of 6: this.salRm8Imm8()
+    of 7: this.sarRm8Imm8()
     else:
       ERROR("not implemented: 0xc0 /%d\\n", REG)
 
-proc code_f6*(this: var InstrBase): void = 
+proc codeF6*(this: var InstrBase): void =
   case REG:
-    of 0: this.test_rm8_imm8()
-    of 2: this.not_rm8()
-    of 3: this.neg_rm8()
-    of 4: this.mul_ax_al_rm8()
-    of 5: this.imul_ax_al_rm8()
-    of 6: this.div_al_ah_rm8()
-    of 7: this.idiv_al_ah_rm8()
+    of 0: this.testRm8Imm8()
+    of 2: this.notRm8()
+    of 3: this.negRm8()
+    of 4: this.mulAxAlRm8()
+    of 5: this.imulAxAlRm8()
+    of 6: this.divAlAhRm8()
+    of 7: this.idivAlAhRm8()
     else:
       ERROR("not implemented: 0xf6 /%d\\n", REG)
 
 
 
 proc initInstrBase*(r: var InstrBase) =
-  var i: cint
-  r.set_funcflag(0x00, instrbase(add_rm8_r8), CHK_MODRM)
-  r.set_funcflag(0x02, instrbase(add_r8_rm8), CHK_MODRM)
-  r.set_funcflag(0x04, instrbase(add_al_imm8), CHK_IMM8)
-  r.set_funcflag(0x08, instrbase(or_rm8_r8), CHK_MODRM)
-  r.set_funcflag(0x0a, instrbase(or_r8_rm8), CHK_MODRM)
-  r.set_funcflag(0x0c, instrbase(or_al_imm8), CHK_IMM8)
-  r.set_funcflag(0x20, instrbase(and_rm8_r8), CHK_MODRM)
-  r.set_funcflag(0x22, instrbase(and_r8_rm8), CHK_MODRM)
-  r.set_funcflag(0x24, instrbase(and_al_imm8), CHK_IMM8)
-  r.set_funcflag(0x28, instrbase(sub_rm8_r8), CHK_MODRM)
-  r.set_funcflag(0x2a, instrbase(sub_r8_rm8), CHK_MODRM)
-  r.set_funcflag(0x2c, instrbase(sub_al_imm8), CHK_IMM8)
-  r.set_funcflag(0x30, instrbase(xor_rm8_r8), CHK_MODRM)
-  r.set_funcflag(0x32, instrbase(xor_r8_rm8), CHK_MODRM)
-  r.set_funcflag(0x34, instrbase(xor_al_imm8), CHK_IMM8)
-  r.set_funcflag(0x38, instrbase(cmp_rm8_r8), CHK_MODRM)
-  r.set_funcflag(0x3a, instrbase(cmp_r8_rm8), CHK_MODRM)
-  r.set_funcflag(0x3c, instrbase(cmp_al_imm8), CHK_IMM8)
-  r.set_funcflag(0x70, instrbase(jo_rel8), CHK_IMM8)
-  r.set_funcflag(0x71, instrbase(jno_rel8), CHK_IMM8)
-  r.set_funcflag(0x72, instrbase(jb_rel8), CHK_IMM8)
-  r.set_funcflag(0x73, instrbase(jnb_rel8), CHK_IMM8)
-  r.set_funcflag(0x74, instrbase(jz_rel8), CHK_IMM8)
-  r.set_funcflag(0x75, instrbase(jnz_rel8), CHK_IMM8)
-  r.set_funcflag(0x76, instrbase(jbe_rel8), CHK_IMM8)
-  r.set_funcflag(0x77, instrbase(ja_rel8), CHK_IMM8)
-  r.set_funcflag(0x78, instrbase(js_rel8), CHK_IMM8)
-  r.set_funcflag(0x79, instrbase(jns_rel8), CHK_IMM8)
-  r.set_funcflag(0x7a, instrbase(jp_rel8), CHK_IMM8)
-  r.set_funcflag(0x7b, instrbase(jnp_rel8), CHK_IMM8)
-  r.set_funcflag(0x7c, instrbase(jl_rel8), CHK_IMM8)
-  r.set_funcflag(0x7d, instrbase(jnl_rel8), CHK_IMM8)
-  r.set_funcflag(0x7e, instrbase(jle_rel8), CHK_IMM8)
-  r.set_funcflag(0x7f, instrbase(jnle_rel8), CHK_IMM8)
-  r.set_funcflag(0x84, instrbase(test_rm8_r8), CHK_MODRM)
-  r.set_funcflag(0x86, instrbase(xchg_r8_rm8), CHK_MODRM)
-  r.set_funcflag(0x88, instrbase(mov_rm8_r8), CHK_MODRM)
-  r.set_funcflag(0x8a, instrbase(mov_r8_rm8), CHK_MODRM)
-  r.set_funcflag(0x8e, instrbase(mov_sreg_rm16), CHK_MODRM)
-  r.set_funcflag(0x90, instrbase(nop), 0)
-  r.set_funcflag(0xa0, instrbase(mov_al_moffs8), CHK_MOFFS)
-  r.set_funcflag(0xa2, instrbase(mov_moffs8_al), CHK_MOFFS)
-  r.set_funcflag(0xa8, instrbase(test_al_imm8), CHK_IMM8)
-  block:
-    i = 0
-    while i < 8:
-      r.set_funcflag(uint16(0xb0 + i), instrbase(mov_r8_imm8), CHK_IMM8)
-      postInc(i)
+  r.setFuncflag(0x00, instrbase(addRm8R8), CHKMODRM)
+  r.setFuncflag(0x02, instrbase(addR8Rm8), CHKMODRM)
+  r.setFuncflag(0x04, instrbase(addAlImm8), CHKIMM8)
+  r.setFuncflag(0x08, instrbase(orRm8R8), CHKMODRM)
+  r.setFuncflag(0x0a, instrbase(orR8Rm8), CHKMODRM)
+  r.setFuncflag(0x0c, instrbase(orAlImm8), CHKIMM8)
+  r.setFuncflag(0x20, instrbase(andRm8R8), CHKMODRM)
+  r.setFuncflag(0x22, instrbase(andR8Rm8), CHKMODRM)
+  r.setFuncflag(0x24, instrbase(andAlImm8), CHKIMM8)
+  r.setFuncflag(0x28, instrbase(subRm8R8), CHKMODRM)
+  r.setFuncflag(0x2a, instrbase(subR8Rm8), CHKMODRM)
+  r.setFuncflag(0x2c, instrbase(subAlImm8), CHKIMM8)
+  r.setFuncflag(0x30, instrbase(xorRm8R8), CHKMODRM)
+  r.setFuncflag(0x32, instrbase(xorR8Rm8), CHKMODRM)
+  r.setFuncflag(0x34, instrbase(xorAlImm8), CHKIMM8)
+  r.setFuncflag(0x38, instrbase(cmpRm8R8), CHKMODRM)
+  r.setFuncflag(0x3a, instrbase(cmpR8Rm8), CHKMODRM)
+  r.setFuncflag(0x3c, instrbase(cmpAlImm8), CHKIMM8)
+  r.setFuncflag(0x70, instrbase(joRel8), CHKIMM8)
+  r.setFuncflag(0x71, instrbase(jnoRel8), CHKIMM8)
+  r.setFuncflag(0x72, instrbase(jbRel8), CHKIMM8)
+  r.setFuncflag(0x73, instrbase(jnbRel8), CHKIMM8)
+  r.setFuncflag(0x74, instrbase(jzRel8), CHKIMM8)
+  r.setFuncflag(0x75, instrbase(jnzRel8), CHKIMM8)
+  r.setFuncflag(0x76, instrbase(jbeRel8), CHKIMM8)
+  r.setFuncflag(0x77, instrbase(jaRel8), CHKIMM8)
+  r.setFuncflag(0x78, instrbase(jsRel8), CHKIMM8)
+  r.setFuncflag(0x79, instrbase(jnsRel8), CHKIMM8)
+  r.setFuncflag(0x7a, instrbase(jpRel8), CHKIMM8)
+  r.setFuncflag(0x7b, instrbase(jnpRel8), CHKIMM8)
+  r.setFuncflag(0x7c, instrbase(jlRel8), CHKIMM8)
+  r.setFuncflag(0x7d, instrbase(jnlRel8), CHKIMM8)
+  r.setFuncflag(0x7e, instrbase(jleRel8), CHKIMM8)
+  r.setFuncflag(0x7f, instrbase(jnleRel8), CHKIMM8)
+  r.setFuncflag(0x84, instrbase(testRm8R8), CHKMODRM)
+  r.setFuncflag(0x86, instrbase(xchgR8Rm8), CHKMODRM)
+  r.setFuncflag(0x88, instrbase(movRm8R8), CHKMODRM)
+  r.setFuncflag(0x8a, instrbase(movR8Rm8), CHKMODRM)
+  r.setFuncflag(0x8e, instrbase(movSregRm16), CHKMODRM)
+  r.setFuncflag(0x90, instrbase(nop), 0)
+  r.setFuncflag(0xa0, instrbase(movAlMoffs8), CHKMOFFS)
+  r.setFuncflag(0xa2, instrbase(movMoffs8Al), CHKMOFFS)
+  r.setFuncflag(0xa8, instrbase(testAlImm8), CHKIMM8)
 
-  r.set_funcflag(0xc6, instrbase(mov_rm8_imm8), CHK_MODRM or CHK_IMM8)
-  r.set_funcflag(0xcb, instrbase(retf), 0)
-  r.set_funcflag(0xcc, instrbase(int3), 0)
-  r.set_funcflag(0xcd, instrbase(int_imm8), CHK_IMM8)
-  r.set_funcflag(0xcf, instrbase(iret), 0)
-  r.set_funcflag(0xe4, instrbase(in_al_imm8), CHK_IMM8)
-  r.set_funcflag(0xe6, instrbase(out_imm8_al), CHK_IMM8)
-  r.set_funcflag(0xeb, instrbase(jmp), CHK_IMM8)
-  r.set_funcflag(0xec, instrbase(in_al_dx), 0)
-  r.set_funcflag(0xee, instrbase(out_dx_al), 0)
-  r.set_funcflag(0xfa, instrbase(cli), 0)
-  r.set_funcflag(0xfb, instrbase(sti), 0)
-  r.set_funcflag(0xfc, instrbase(cld), 0)
-  r.set_funcflag(0xfd, instrbase(std), 0)
-  r.set_funcflag(0xf4, instrbase(hlt), 0)
-  r.set_funcflag(0x0f20, instrbase(mov_r32_crn), CHK_MODRM)
-  r.set_funcflag(0x0f22, instrbase(mov_crn_r32), CHK_MODRM)
-  r.set_funcflag(0x0f90, instrbase(seto_rm8), CHK_MODRM)
-  r.set_funcflag(0x0f91, instrbase(setno_rm8), CHK_MODRM)
-  r.set_funcflag(0x0f92, instrbase(setb_rm8), CHK_MODRM)
-  r.set_funcflag(0x0f93, instrbase(setnb_rm8), CHK_MODRM)
-  r.set_funcflag(0x0f94, instrbase(setz_rm8), CHK_MODRM)
-  r.set_funcflag(0x0f95, instrbase(setnz_rm8), CHK_MODRM)
-  r.set_funcflag(0x0f96, instrbase(setbe_rm8), CHK_MODRM)
-  r.set_funcflag(0x0f97, instrbase(seta_rm8), CHK_MODRM)
-  r.set_funcflag(0x0f98, instrbase(sets_rm8), CHK_MODRM)
-  r.set_funcflag(0x0f99, instrbase(setns_rm8), CHK_MODRM)
-  r.set_funcflag(0x0f9a, instrbase(setp_rm8), CHK_MODRM)
-  r.set_funcflag(0x0f9b, instrbase(setnp_rm8), CHK_MODRM)
-  r.set_funcflag(0x0f9c, instrbase(setl_rm8), CHK_MODRM)
-  r.set_funcflag(0x0f9d, instrbase(setnl_rm8), CHK_MODRM)
-  r.set_funcflag(0x0f9e, instrbase(setle_rm8), CHK_MODRM)
-  r.set_funcflag(0x0f9f, instrbase(setnle_rm8), CHK_MODRM)
-  r.set_funcflag(0x80, instrbase(code_80), CHK_MODRM or CHK_IMM8)
-  r.set_funcflag(0x82, instrbase(code_82), CHK_MODRM or CHK_IMM8)
-  r.set_funcflag(0xc0, instrbase(code_c0), CHK_MODRM or CHK_IMM8)
-  r.set_funcflag(0xf6, instrbase(code_f6), CHK_MODRM)
+  for i in 0 ..< 8:
+    r.setFuncflag(uint16(0xb0 + i), instrbase(movR8Imm8), CHKIMM8)
+
+  r.setFuncflag(0xc6, instrbase(movRm8Imm8), CHKMODRM or CHKIMM8)
+  r.setFuncflag(0xcb, instrbase(retf), 0)
+  r.setFuncflag(0xcc, instrbase(int3), 0)
+  r.setFuncflag(0xcd, instrbase(intImm8), CHKIMM8)
+  r.setFuncflag(0xcf, instrbase(iret), 0)
+  r.setFuncflag(0xe4, instrbase(inAlImm8), CHKIMM8)
+  r.setFuncflag(0xe6, instrbase(outImm8Al), CHKIMM8)
+  r.setFuncflag(0xeb, instrbase(jmp), CHKIMM8)
+  r.setFuncflag(0xec, instrbase(inAlDx), 0)
+  r.setFuncflag(0xee, instrbase(outDxAl), 0)
+  r.setFuncflag(0xfa, instrbase(cli), 0)
+  r.setFuncflag(0xfb, instrbase(sti), 0)
+  r.setFuncflag(0xfc, instrbase(cld), 0)
+  r.setFuncflag(0xfd, instrbase(std), 0)
+  r.setFuncflag(0xf4, instrbase(hlt), 0)
+  r.setFuncflag(0x0f20, instrbase(movR32Crn), CHKMODRM)
+  r.setFuncflag(0x0f22, instrbase(movCrnR32), CHKMODRM)
+  r.setFuncflag(0x0f90, instrbase(setoRm8), CHKMODRM)
+  r.setFuncflag(0x0f91, instrbase(setnoRm8), CHKMODRM)
+  r.setFuncflag(0x0f92, instrbase(setbRm8), CHKMODRM)
+  r.setFuncflag(0x0f93, instrbase(setnbRm8), CHKMODRM)
+  r.setFuncflag(0x0f94, instrbase(setzRm8), CHKMODRM)
+  r.setFuncflag(0x0f95, instrbase(setnzRm8), CHKMODRM)
+  r.setFuncflag(0x0f96, instrbase(setbeRm8), CHKMODRM)
+  r.setFuncflag(0x0f97, instrbase(setaRm8), CHKMODRM)
+  r.setFuncflag(0x0f98, instrbase(setsRm8), CHKMODRM)
+  r.setFuncflag(0x0f99, instrbase(setnsRm8), CHKMODRM)
+  r.setFuncflag(0x0f9a, instrbase(setpRm8), CHKMODRM)
+  r.setFuncflag(0x0f9b, instrbase(setnpRm8), CHKMODRM)
+  r.setFuncflag(0x0f9c, instrbase(setlRm8), CHKMODRM)
+  r.setFuncflag(0x0f9d, instrbase(setnlRm8), CHKMODRM)
+  r.setFuncflag(0x0f9e, instrbase(setleRm8), CHKMODRM)
+  r.setFuncflag(0x0f9f, instrbase(setnleRm8), CHKMODRM)
+  r.setFuncflag(0x80, instrbase(code_80), CHKMODRM or CHKIMM8)
+  r.setFuncflag(0x82, instrbase(code_82), CHKMODRM or CHKIMM8)
+  r.setFuncflag(0xc0, instrbase(codeC0), CHKMODRM or CHKIMM8)
+  r.setFuncflag(0xf6, instrbase(codeF6), CHKMODRM)
 
 proc initInstrBase*(): InstrBase =
   initInstrBase(result)

@@ -2,7 +2,6 @@ import instruction/[basehpp, instructionhpp]
 import instr_basecpp
 import commonhpp
 import ./emucpp
-import ./instr_basecpp
 import ./execcpp
 import ../hardware/eflagscpp
 import hardware/[processorhpp, eflagshpp, iohpp]
@@ -10,795 +9,795 @@ import emulator/[exceptionhpp, emulatorhpp, accesshpp]
 
 template instr32*(f: untyped): untyped {.dirty.} = 
   assert false, "Merge 16 and 32-bit instruction constructors together"
-  instrfunc_t(nil)
+  instrfuncT(nil)
 
-proc select_segment*(this: var Instr32): sgreg_t =
-  this.exec.select_segment()
+proc selectSegment*(this: var Instr32): sgregT =
+  this.exec.selectSegment()
 
-proc add_rm32_r32*(this: var Instr32): void = 
+proc addRm32R32*(this: var Instr32): void =
   var r32, rm32: uint32
-  rm32 = this.exec.get_rm32().uint32()
-  r32 = this.exec.get_r32()
-  this.exec.set_rm32(rm32 + r32)
-  discard EFLAGS_UPDATE_ADD(rm32, r32)
+  rm32 = this.exec.getRm32().uint32()
+  r32 = this.exec.getR32()
+  this.exec.setRm32(rm32 + r32)
+  discard EFLAGSUPDATEADD(rm32, r32)
 
-proc add_r32_rm32*(this: var Instr32): void = 
+proc addR32Rm32*(this: var Instr32): void =
   var rm32, r32: uint32
-  r32 = this.exec.get_r32()
-  rm32 = this.exec.get_rm32().uint32()
-  this.exec.set_r32(r32 + rm32)
-  discard EFLAGS_UPDATE_ADD(r32, rm32)
+  r32 = this.exec.getR32()
+  rm32 = this.exec.getRm32().uint32()
+  this.exec.setR32(r32 + rm32)
+  discard EFLAGSUPDATEADD(r32, rm32)
 
-proc add_eax_imm32*(this: var Instr32): void = 
+proc addEaxImm32*(this: var Instr32): void =
   var eax: uint32
-  eax = GET_GPREG(EAX)
-  SET_GPREG(EAX, eax + IMM32.uint32)
-  discard EFLAGS_UPDATE_ADD(eax, IMM32.uint32)
+  eax = GETGPREG(EAX)
+  SETGPREG(EAX, eax + IMM32.uint32)
+  discard EFLAGSUPDATEADD(eax, IMM32.uint32)
 
-proc push_es*(this: var Instr32): void = 
-  PUSH32(ACS.get_segment(ES))
+proc pushEs*(this: var Instr32): void =
+  PUSH32(ACS.getSegment(ES))
 
-proc pop_es*(this: var Instr32): void = 
-  ACS.set_segment(ES, POP32().uint16)
+proc popEs*(this: var Instr32): void =
+  ACS.setSegment(ES, POP32().uint16)
 
-proc or_rm32_r32*(this: var Instr32): void = 
+proc orRm32R32*(this: var Instr32): void =
   var r32, rm32: uint32
-  rm32 = this.exec.get_rm32().uint32()
-  r32 = this.exec.get_r32()
-  this.exec.set_rm32(rm32 or r32)
-  discard EFLAGS_UPDATE_OR(rm32, r32)
+  rm32 = this.exec.getRm32().uint32()
+  r32 = this.exec.getR32()
+  this.exec.setRm32(rm32 or r32)
+  discard EFLAGSUPDATEOR(rm32, r32)
 
-proc or_r32_rm32*(this: var Instr32): void = 
+proc orR32Rm32*(this: var Instr32): void =
   var rm32, r32: uint32
-  r32 = this.exec.get_r32()
-  rm32 = this.exec.get_rm32().uint32()
-  this.exec.set_r32(r32 or rm32)
-  discard EFLAGS_UPDATE_OR(r32, rm32)
+  r32 = this.exec.getR32()
+  rm32 = this.exec.getRm32().uint32()
+  this.exec.setR32(r32 or rm32)
+  discard EFLAGSUPDATEOR(r32, rm32)
 
-proc or_eax_imm32*(this: var Instr32): void = 
+proc orEaxImm32*(this: var Instr32): void =
   var eax: uint32
-  eax = GET_GPREG(EAX)
-  SET_GPREG(EAX, eax or IMM32.uint32)
-  discard EFLAGS_UPDATE_OR(eax, IMM32.uint32)
+  eax = GETGPREG(EAX)
+  SETGPREG(EAX, eax or IMM32.uint32)
+  discard EFLAGSUPDATEOR(eax, IMM32.uint32)
 
-proc push_ss*(this: var Instr32): void = 
-  PUSH32(ACS.get_segment(SS))
+proc pushSs*(this: var Instr32): void =
+  PUSH32(ACS.getSegment(SS))
 
-proc pop_ss*(this: var Instr32): void = 
-  ACS.set_segment(SS, POP32().uint16)
+proc popSs*(this: var Instr32): void =
+  ACS.setSegment(SS, POP32().uint16)
 
-proc push_ds*(this: var Instr32): void = 
-  PUSH32(ACS.get_segment(DS))
+proc pushDs*(this: var Instr32): void =
+  PUSH32(ACS.getSegment(DS))
 
-proc pop_ds*(this: var Instr32): void = 
-  ACS.set_segment(DS, POP32().uint16)
+proc popDs*(this: var Instr32): void =
+  ACS.setSegment(DS, POP32().uint16)
 
-proc and_rm32_r32*(this: var Instr32): void = 
+proc andRm32R32*(this: var Instr32): void =
   var r32, rm32: uint32
-  rm32 = this.exec.get_rm32().uint32()
-  r32 = this.exec.get_r32()
-  this.exec.set_rm32(rm32 and r32)
-  discard EFLAGS_UPDATE_AND(rm32, r32)
+  rm32 = this.exec.getRm32().uint32()
+  r32 = this.exec.getR32()
+  this.exec.setRm32(rm32 and r32)
+  discard EFLAGSUPDATEAND(rm32, r32)
 
-proc and_r32_rm32*(this: var Instr32): void = 
+proc andR32Rm32*(this: var Instr32): void =
   var rm32, r32: uint32
-  r32 = this.exec.get_r32()
-  rm32 = this.exec.get_rm32().uint32()
-  this.exec.set_r32(r32 and rm32)
-  discard EFLAGS_UPDATE_AND(r32, rm32)
+  r32 = this.exec.getR32()
+  rm32 = this.exec.getRm32().uint32()
+  this.exec.setR32(r32 and rm32)
+  discard EFLAGSUPDATEAND(r32, rm32)
 
-proc and_eax_imm32*(this: var Instr32): void = 
+proc andEaxImm32*(this: var Instr32): void =
   var eax: uint32
-  eax = GET_GPREG(EAX)
-  SET_GPREG(EAX, eax and IMM32.uint32)
-  discard EFLAGS_UPDATE_AND(eax, IMM32.uint32)
+  eax = GETGPREG(EAX)
+  SETGPREG(EAX, eax and IMM32.uint32)
+  discard EFLAGSUPDATEAND(eax, IMM32.uint32)
 
-proc sub_rm32_r32*(this: var Instr32): void = 
+proc subRm32R32*(this: var Instr32): void =
   var r32, rm32: uint32
-  rm32 = this.exec.get_rm32().uint32()
-  r32 = this.exec.get_r32()
-  this.exec.set_rm32(rm32 - r32)
-  discard EFLAGS_UPDATE_SUB(rm32, r32)
+  rm32 = this.exec.getRm32().uint32()
+  r32 = this.exec.getR32()
+  this.exec.setRm32(rm32 - r32)
+  discard EFLAGSUPDATESUB(rm32, r32)
 
-proc sub_r32_rm32*(this: var Instr32): void = 
+proc subR32Rm32*(this: var Instr32): void =
   var rm32, r32: uint32
-  r32 = this.exec.get_r32()
-  rm32 = this.exec.get_rm32().uint32()
-  this.exec.set_r32(r32 - rm32)
-  discard EFLAGS_UPDATE_SUB(r32, rm32)
+  r32 = this.exec.getR32()
+  rm32 = this.exec.getRm32().uint32()
+  this.exec.setR32(r32 - rm32)
+  discard EFLAGSUPDATESUB(r32, rm32)
 
-proc sub_eax_imm32*(this: var Instr32): void = 
+proc subEaxImm32*(this: var Instr32): void =
   var eax: uint32
-  eax = GET_GPREG(EAX)
-  SET_GPREG(EAX, eax - IMM32.uint32)
-  discard EFLAGS_UPDATE_SUB(eax, IMM32.uint32)
+  eax = GETGPREG(EAX)
+  SETGPREG(EAX, eax - IMM32.uint32)
+  discard EFLAGSUPDATESUB(eax, IMM32.uint32)
 
-proc xor_rm32_r32*(this: var Instr32): void = 
+proc xorRm32R32*(this: var Instr32): void =
   var r32, rm32: uint32
-  rm32 = this.exec.get_rm32().uint32()
-  r32 = this.exec.get_r32()
-  this.exec.set_rm32(rm32 xor r32)
+  rm32 = this.exec.getRm32().uint32()
+  r32 = this.exec.getR32()
+  this.exec.setRm32(rm32 xor r32)
 
-proc xor_r32_rm32*(this: var Instr32): void = 
+proc xorR32Rm32*(this: var Instr32): void =
   var rm32, r32: uint32
-  r32 = this.exec.get_r32()
-  rm32 = this.exec.get_rm32().uint32()
-  this.exec.set_r32(r32 xor rm32)
+  r32 = this.exec.getR32()
+  rm32 = this.exec.getRm32().uint32()
+  this.exec.setR32(r32 xor rm32)
 
-proc xor_eax_imm32*(this: var Instr32): void = 
+proc xorEaxImm32*(this: var Instr32): void =
   var eax: uint32
-  eax = GET_GPREG(EAX)
-  SET_GPREG(EAX, eax xor IMM32.uint32)
+  eax = GETGPREG(EAX)
+  SETGPREG(EAX, eax xor IMM32.uint32)
 
-proc cmp_rm32_r32*(this: var Instr32): void = 
+proc cmpRm32R32*(this: var Instr32): void =
   var r32, rm32: uint32
-  rm32 = this.exec.get_rm32().uint32()
-  r32 = this.exec.get_r32()
-  discard EFLAGS_UPDATE_SUB(rm32, r32)
+  rm32 = this.exec.getRm32().uint32()
+  r32 = this.exec.getR32()
+  discard EFLAGSUPDATESUB(rm32, r32)
 
-proc cmp_r32_rm32*(this: var Instr32): void = 
+proc cmpR32Rm32*(this: var Instr32): void =
   var rm32, r32: uint32
-  r32 = this.exec.get_r32()
-  rm32 = this.exec.get_rm32().uint32()
-  discard EFLAGS_UPDATE_SUB(r32, rm32)
+  r32 = this.exec.getR32()
+  rm32 = this.exec.getRm32().uint32()
+  discard EFLAGSUPDATESUB(r32, rm32)
 
-proc cmp_eax_imm32*(this: var Instr32): void = 
+proc cmpEaxImm32*(this: var Instr32): void =
   var eax: uint32
-  eax = GET_GPREG(EAX)
-  discard EFLAGS_UPDATE_SUB(eax, IMM32.uint32)
+  eax = GETGPREG(EAX)
+  discard EFLAGSUPDATESUB(eax, IMM32.uint32)
 
-proc inc_r32*(this: var Instr32): void = 
+proc incR32*(this: var Instr32): void =
   var reg: uint8
   var r32: uint32
   reg = uint8(OPCODE and ((1 shl 3) - 1))
-  r32 = GET_GPREG(cast[reg32_t](reg))
-  SET_GPREG(cast[reg32_t](reg), r32 + 1)
-  discard EFLAGS_UPDATE_ADD(r32, 1)
+  r32 = GETGPREG(cast[reg32T](reg))
+  SETGPREG(cast[reg32T](reg), r32 + 1)
+  discard EFLAGSUPDATEADD(r32, 1)
 
-proc dec_r32*(this: var Instr32): void = 
+proc decR32*(this: var Instr32): void =
   var reg: uint8
   var r32: uint32
   reg = uint8(OPCODE and ((1 shl 3) - 1))
-  r32 = GET_GPREG(cast[reg32_t](reg))
-  SET_GPREG(cast[reg32_t](reg), r32 - 1)
-  discard EFLAGS_UPDATE_SUB(r32, 1)
+  r32 = GETGPREG(cast[reg32T](reg))
+  SETGPREG(cast[reg32T](reg), r32 - 1)
+  discard EFLAGSUPDATESUB(r32, 1)
 
-proc push_r32*(this: var Instr32): void = 
+proc pushR32*(this: var Instr32): void =
   var reg: uint8
   reg = uint8(OPCODE and ((1 shl 3) - 1))
-  PUSH32(GET_GPREG(cast[reg32_t](reg)))
+  PUSH32(GETGPREG(cast[reg32T](reg)))
 
-proc pop_r32*(this: var Instr32): void = 
+proc popR32*(this: var Instr32): void =
   var reg: uint8
   reg = uint8(OPCODE and ((1 shl 3) - 1))
-  SET_GPREG(cast[reg32_t](reg), POP32())
+  SETGPREG(cast[reg32T](reg), POP32())
 
 proc pushad*(this: var Instr32): void = 
   var esp: uint32
-  esp = GET_GPREG(ESP)
-  PUSH32(GET_GPREG(EAX))
-  PUSH32(GET_GPREG(ECX))
-  PUSH32(GET_GPREG(EDX))
-  PUSH32(GET_GPREG(EBX))
+  esp = GETGPREG(ESP)
+  PUSH32(GETGPREG(EAX))
+  PUSH32(GETGPREG(ECX))
+  PUSH32(GETGPREG(EDX))
+  PUSH32(GETGPREG(EBX))
   PUSH32(esp)
-  PUSH32(GET_GPREG(EBP))
-  PUSH32(GET_GPREG(ESI))
-  PUSH32(GET_GPREG(EDI))
+  PUSH32(GETGPREG(EBP))
+  PUSH32(GETGPREG(ESI))
+  PUSH32(GETGPREG(EDI))
 
 proc popad*(this: var Instr32): void = 
   var esp: uint32
-  SET_GPREG(EDI, POP32())
-  SET_GPREG(ESI, POP32())
-  SET_GPREG(EBP, POP32())
+  SETGPREG(EDI, POP32())
+  SETGPREG(ESI, POP32())
+  SETGPREG(EBP, POP32())
   esp = POP32()
-  SET_GPREG(EBX, POP32())
-  SET_GPREG(EDX, POP32())
-  SET_GPREG(ECX, POP32())
-  SET_GPREG(EAX, POP32())
-  SET_GPREG(ESP, esp)
+  SETGPREG(EBX, POP32())
+  SETGPREG(EDX, POP32())
+  SETGPREG(ECX, POP32())
+  SETGPREG(EAX, POP32())
+  SETGPREG(ESP, esp)
 
-proc push_imm32*(this: var Instr32): void = 
+proc pushImm32*(this: var Instr32): void =
   PUSH32(IMM32.uint32)
 
-proc imul_r32_rm32_imm32*(this: var Instr32): void = 
-  var rm32_s: int32
-  rm32_s = this.exec.get_rm32().int32
-  this.exec.set_r32(uint32(rm32_s * IMM32))
-  discard EFLAGS_UPDATE_IMUL(rm32_s, IMM32)
+proc imulR32Rm32Imm32*(this: var Instr32): void =
+  var rm32S: int32
+  rm32S = this.exec.getRm32().int32
+  this.exec.setR32(uint32(rm32S * IMM32))
+  discard EFLAGSUPDATEIMUL(rm32S, IMM32)
 
-proc push_imm8*(this: var Instr32): void = 
+proc pushImm8*(this: var Instr32): void =
   PUSH32(IMM8.uint32)
 
-proc imul_r32_rm32_imm8*(this: var Instr32): void = 
-  var rm32_s: int32
-  rm32_s = this.exec.get_rm32().int32
-  this.exec.set_r32(uint32(rm32_s * IMM8))
-  discard EFLAGS_UPDATE_IMUL(rm32_s, IMM8.int32)
+proc imulR32Rm32Imm8*(this: var Instr32): void =
+  var rm32S: int32
+  rm32S = this.exec.getRm32().int32
+  this.exec.setR32(uint32(rm32S * IMM8))
+  discard EFLAGSUPDATEIMUL(rm32S, IMM8.int32)
 
-proc test_rm32_r32*(this: var Instr32): void = 
+proc testRm32R32*(this: var Instr32): void =
   var r32, rm32: uint32
-  rm32 = this.exec.get_rm32().uint32()
-  r32 = this.exec.get_r32()
-  discard EFLAGS_UPDATE_AND(rm32, r32)
+  rm32 = this.exec.getRm32().uint32()
+  r32 = this.exec.getR32()
+  discard EFLAGSUPDATEAND(rm32, r32)
 
-proc xchg_r32_rm32*(this: var Instr32): void = 
+proc xchgR32Rm32*(this: var Instr32): void =
   var rm32, r32: uint32
-  r32 = this.exec.get_r32().uint32()
-  rm32 = this.exec.get_rm32().uint32()
-  this.exec.set_r32(rm32)
-  this.exec.set_rm32(r32)
+  r32 = this.exec.getR32().uint32()
+  rm32 = this.exec.getRm32().uint32()
+  this.exec.setR32(rm32)
+  this.exec.setRm32(r32)
 
-proc mov_rm32_r32*(this: var Instr32): void = 
+proc movRm32R32*(this: var Instr32): void =
   var r32: uint32
-  r32 = this.exec.get_r32()
-  this.exec.set_rm32(r32)
+  r32 = this.exec.getR32()
+  this.exec.setRm32(r32)
 
-proc mov_r32_rm32*(this: var Instr32): void = 
+proc movR32Rm32*(this: var Instr32): void =
   var rm32: uint32
-  rm32 = this.exec.get_rm32().uint32()
-  this.exec.set_r32(rm32)
+  rm32 = this.exec.getRm32().uint32()
+  this.exec.setR32(rm32)
 
-proc mov_rm32_sreg*(this: var Instr32): void = 
+proc movRm32Sreg*(this: var Instr32): void =
   var sreg: uint16
-  sreg = this.exec.get_sreg()
-  this.exec.set_rm32(sreg)
+  sreg = this.exec.getSreg()
+  this.exec.setRm32(sreg)
 
-proc lea_r32_m32*(this: var Instr32): void = 
+proc leaR32M32*(this: var Instr32): void =
   var m32: uint32
-  m32 = this.exec.get_m()
-  this.exec.set_r32(m32)
+  m32 = this.exec.getM()
+  this.exec.setR32(m32)
 
-proc xchg_r32_eax*(this: var Instr32): void = 
+proc xchgR32Eax*(this: var Instr32): void =
   var eax, r32: uint32
-  r32 = this.exec.get_r32()
-  eax = GET_GPREG(EAX)
-  this.exec.set_r32(eax)
-  SET_GPREG(EAX, r32)
+  r32 = this.exec.getR32()
+  eax = GETGPREG(EAX)
+  this.exec.setR32(eax)
+  SETGPREG(EAX, r32)
 
 proc cwde*(this: var Instr32): void = 
-  var ax_s: int16
-  ax_s = GET_GPREG(AX).int16()
-  SET_GPREG(EAX, ax_s.uint32)
+  var axS: int16
+  axS = GETGPREG(AX).int16()
+  SETGPREG(EAX, axS.uint32)
 
 proc cdq*(this: var Instr32): void = 
   var eax: uint32
-  eax = GET_GPREG(EAX)
-  SET_GPREG(EDX, uint32(if toBool(eax and (1 shl 31)): -1 else: 0))
+  eax = GETGPREG(EAX)
+  SETGPREG(EDX, uint32(if toBool(eax and (1 shl 31)): -1 else: 0))
 
-proc callf_ptr16_32*(this: var Instr32): void = 
+proc callfPtr16_32*(this: var Instr32): void =
   this.emu.callf(PTR16.uint16, IMM32.uint32)
 
 proc pushf*(this: var Instr32): void = 
-  PUSH32(CPU.eflags.get_eflags())
+  PUSH32(CPU.eflags.getEflags())
 
 proc popf*(this: var Instr32): void = 
-  CPU.eflags.set_eflags(POP32())
+  CPU.eflags.setEflags(POP32())
 
-proc mov_eax_moffs32*(this: var Instr32): void = 
-  SET_GPREG(EAX, this.exec.get_moffs32())
+proc movEaxMoffs32*(this: var Instr32): void =
+  SETGPREG(EAX, this.exec.getMoffs32())
 
-proc mov_moffs32_eax*(this: var Instr32): void = 
-  this.exec.set_moffs32(GET_GPREG(EAX))
+proc movMoffs32Eax*(this: var Instr32): void =
+  this.exec.setMoffs32(GETGPREG(EAX))
 
-proc cmps_m8_m8*(this: var Instr32): void = 
-  var m8_d, m8_s: uint8
+proc cmpsM8M8*(this: var Instr32): void =
+  var m8D, m8S: uint8
   block repeat:
-    m8_s = ACS.get_data8(this.exec.select_segment(), GET_GPREG(ESI))
-  m8_d = ACS.get_data8(ES, GET_GPREG(EDI))
-  discard EFLAGS_UPDATE_SUB(m8_s, m8_d)
-  discard UPDATE_GPREG(ESI, int32(if EFLAGS_DF: -1 else: 1))
-  discard UPDATE_GPREG(EDI, int32(if EFLAGS_DF: -1 else: 1))
-  if PRE_REPEAT.int.toBool():
-    discard UPDATE_GPREG(ECX, -1)
-    case PRE_REPEAT:
+    m8S = ACS.getData8(this.exec.selectSegment(), GETGPREG(ESI))
+  m8D = ACS.getData8(ES, GETGPREG(EDI))
+  discard EFLAGSUPDATESUB(m8S, m8D)
+  discard UPDATEGPREG(ESI, int32(if EFLAGSDF: -1 else: 1))
+  discard UPDATEGPREG(EDI, int32(if EFLAGSDF: -1 else: 1))
+  if PREREPEAT.int.toBool():
+    discard UPDATEGPREG(ECX, -1)
+    case PREREPEAT:
       of REPZ:
-        if not(GET_GPREG(ECX)).toBool() or not(EFLAGS_ZF):
+        if not(GETGPREG(ECX)).toBool() or not(EFLAGSZF):
           {.warning: "[FIXME] break".}
         
-        {.warning: "[FIXME] cxx_goto repeat".}
+        {.warning: "[FIXME] cxxGoto repeat".}
       of REPNZ:
-        if not(GET_GPREG(ECX)).toBool() or EFLAGS_ZF:
+        if not(GETGPREG(ECX)).toBool() or EFLAGSZF:
           {.warning: "[FIXME] break".}
         
-        {.warning: "[FIXME] cxx_goto repeat".}
+        {.warning: "[FIXME] cxxGoto repeat".}
       else:
         discard 
   
 
-proc cmps_m32_m32*(this: var Instr32): void = 
-  var m32_d, m32_s: uint32
+proc cmpsM32M32*(this: var Instr32): void =
+  var m32D, m32S: uint32
   block repeat:
-    m32_s = ACS.get_data32(this.exec.select_segment(), GET_GPREG(ESI))
-  m32_d = ACS.get_data32(ES, GET_GPREG(EDI))
-  discard EFLAGS_UPDATE_SUB(m32_s, m32_d)
-  discard UPDATE_GPREG(ESI, int32(if EFLAGS_DF: -1 else: 1))
-  discard UPDATE_GPREG(EDI, int32(if EFLAGS_DF: -1 else: 1))
-  if PRE_REPEAT.int.toBool():
-    discard UPDATE_GPREG(ECX, -1)
-    case PRE_REPEAT:
+    m32S = ACS.getData32(this.exec.selectSegment(), GETGPREG(ESI))
+  m32D = ACS.getData32(ES, GETGPREG(EDI))
+  discard EFLAGSUPDATESUB(m32S, m32D)
+  discard UPDATEGPREG(ESI, int32(if EFLAGSDF: -1 else: 1))
+  discard UPDATEGPREG(EDI, int32(if EFLAGSDF: -1 else: 1))
+  if PREREPEAT.int.toBool():
+    discard UPDATEGPREG(ECX, -1)
+    case PREREPEAT:
       of REPZ:
-        if not(GET_GPREG(ECX)).toBool() or not(EFLAGS_ZF):
+        if not(GETGPREG(ECX)).toBool() or not(EFLAGSZF):
           {.warning: "[FIXME] break".}
         
-        {.warning: "[FIXME] cxx_goto repeat".}
+        {.warning: "[FIXME] cxxGoto repeat".}
       of REPNZ:
-        if not(GET_GPREG(ECX)).toBool() or EFLAGS_ZF:
+        if not(GETGPREG(ECX)).toBool() or EFLAGSZF:
           {.warning: "[FIXME] break".}
         
-        {.warning: "[FIXME] cxx_goto repeat".}
+        {.warning: "[FIXME] cxxGoto repeat".}
       else:
         discard 
   
 
-proc test_eax_imm32*(this: var Instr32): void = 
+proc testEaxImm32*(this: var Instr32): void =
   var eax: uint32
-  eax = GET_GPREG(EAX)
-  discard EFLAGS_UPDATE_AND(eax, IMM32.uint32)
+  eax = GETGPREG(EAX)
+  discard EFLAGSUPDATEAND(eax, IMM32.uint32)
 
-proc mov_r32_imm32*(this: var Instr32): void = 
+proc movR32Imm32*(this: var Instr32): void =
   var reg: uint8
   reg = uint8(OPCODE and ((1 shl 3) - 1))
-  SET_GPREG(cast[reg32_t](reg), IMM32.uint32)
+  SETGPREG(cast[reg32T](reg), IMM32.uint32)
 
 proc ret*(this: var Instr32): void = 
-  SET_EIP(POP32())
+  SETEIP(POP32())
 
-proc mov_rm32_imm32*(this: var Instr32): void = 
-  this.exec.set_rm32(IMM32.uint32)
+proc movRm32Imm32*(this: var Instr32): void =
+  this.exec.setRm32(IMM32.uint32)
 
 proc leave*(this: var Instr32): void = 
   var ebp: uint32
-  ebp = GET_GPREG(EBP)
-  SET_GPREG(ESP, ebp)
-  SET_GPREG(EBP, POP32())
+  ebp = GETGPREG(EBP)
+  SETGPREG(ESP, ebp)
+  SETGPREG(EBP, POP32())
 
-proc in_eax_imm8*(this: var Instr32): void = 
-  SET_GPREG(EAX, EIO.in_io32(IMM8.uint16))
+proc inEaxImm8*(this: var Instr32): void =
+  SETGPREG(EAX, EIO.inIo32(IMM8.uint16))
 
-proc out_imm8_eax*(this: var Instr32): void = 
+proc outImm8Eax*(this: var Instr32): void =
   var eax: uint32
-  eax = GET_GPREG(EAX)
-  EIO.out_io32(IMM8.uint16, eax)
+  eax = GETGPREG(EAX)
+  EIO.outIo32(IMM8.uint16, eax)
 
-proc call_rel32*(this: var Instr32): void = 
-  PUSH32(GET_EIP())
-  discard UPDATE_EIP(IMM32)
+proc callRel32*(this: var Instr32): void =
+  PUSH32(GETEIP())
+  discard UPDATEEIP(IMM32)
 
-proc jmp_rel32*(this: var Instr32): void = 
-  discard UPDATE_EIP(IMM32)
+proc jmpRel32*(this: var Instr32): void =
+  discard UPDATEEIP(IMM32)
 
-proc jmpf_ptr16_32*(this: var Instr32): void = 
+proc jmpfPtr16_32*(this: var Instr32): void =
   this.emu.jmpf(PTR16.uint16, IMM32.uint32)
 
-proc in_eax_dx*(this: var Instr32): void = 
+proc inEaxDx*(this: var Instr32): void =
   var dx: uint16
-  dx = GET_GPREG(DX)
-  SET_GPREG(EAX, EIO.in_io32(dx))
+  dx = GETGPREG(DX)
+  SETGPREG(EAX, EIO.inIo32(dx))
 
-proc out_dx_eax*(this: var Instr32): void = 
+proc outDxEax*(this: var Instr32): void =
   var dx: uint16
   var eax: uint32
-  dx = GET_GPREG(DX)
-  eax = GET_GPREG(EAX)
-  EIO.out_io32(dx, eax)
+  dx = GETGPREG(DX)
+  eax = GETGPREG(EAX)
+  EIO.outIo32(dx, eax)
 
-template JCC_REL32*(cc: untyped, is_flag: untyped): untyped {.dirty.} = 
+template JCCREL32*(cc: untyped, isFlag: untyped): untyped {.dirty.} =
   proc `j cc rel32`*(this: var Instr32): void =
-    if is_flag:
-      discard UPDATE_EIP(IMM32)
+    if isFlag:
+      discard UPDATEEIP(IMM32)
     
   
 
-JCC_REL32(o, EFLAGS_OF)
-JCC_REL32(no, not(EFLAGS_OF))
-JCC_REL32(b, EFLAGS_CF)
-JCC_REL32(nb, not(EFLAGS_CF))
-JCC_REL32(z, EFLAGS_ZF)
-JCC_REL32(nz, not(EFLAGS_ZF))
-JCC_REL32(be, EFLAGS_CF or EFLAGS_ZF)
-JCC_REL32(a, not((EFLAGS_CF or EFLAGS_ZF)))
-JCC_REL32(s, EFLAGS_SF)
-JCC_REL32(ns, not(EFLAGS_SF))
-JCC_REL32(p, EFLAGS_PF)
-JCC_REL32(np, not(EFLAGS_PF))
-JCC_REL32(l, EFLAGS_SF != EFLAGS_OF)
-JCC_REL32(nl, EFLAGS_SF == EFLAGS_OF)
-JCC_REL32(le, EFLAGS_ZF or (EFLAGS_SF != EFLAGS_OF))
-JCC_REL32(nle, not(EFLAGS_ZF) and (EFLAGS_SF == EFLAGS_OF))
-proc imul_r32_rm32*(this: var Instr32): void = 
-  var rm32_s, r32_s: int16
-  r32_s = this.exec.get_r32().int16()
-  rm32_s = this.exec.get_rm32().int16()
-  this.exec.set_r32(uint32(r32_s * rm32_s))
-  discard EFLAGS_UPDATE_IMUL(r32_s, rm32_s)
+JCCREL32(o, EFLAGSOF)
+JCCREL32(no, not(EFLAGSOF))
+JCCREL32(b, EFLAGSCF)
+JCCREL32(nb, not(EFLAGSCF))
+JCCREL32(z, EFLAGSZF)
+JCCREL32(nz, not(EFLAGSZF))
+JCCREL32(be, EFLAGSCF or EFLAGSZF)
+JCCREL32(a, not((EFLAGSCF or EFLAGSZF)))
+JCCREL32(s, EFLAGSSF)
+JCCREL32(ns, not(EFLAGSSF))
+JCCREL32(p, EFLAGSPF)
+JCCREL32(np, not(EFLAGSPF))
+JCCREL32(l, EFLAGSSF != EFLAGSOF)
+JCCREL32(nl, EFLAGSSF == EFLAGSOF)
+JCCREL32(le, EFLAGSZF or (EFLAGSSF != EFLAGSOF))
+JCCREL32(nle, not(EFLAGSZF) and (EFLAGSSF == EFLAGSOF))
+proc imulR32Rm32*(this: var Instr32): void =
+  var rm32S, r32S: int16
+  r32S = this.exec.getR32().int16()
+  rm32S = this.exec.getRm32().int16()
+  this.exec.setR32(uint32(r32S * rm32S))
+  discard EFLAGSUPDATEIMUL(r32S, rm32S)
 
-proc movzx_r32_rm8*(this: var Instr32): void = 
+proc movzxR32Rm8*(this: var Instr32): void =
   var rm8: uint8
-  rm8 = this.exec.get_rm8()
-  this.exec.set_r32(rm8)
+  rm8 = this.exec.getRm8()
+  this.exec.setR32(rm8)
 
-proc movzx_r32_rm16*(this: var Instr32): void = 
+proc movzxR32Rm16*(this: var Instr32): void =
   var rm16: uint16
-  rm16 = this.exec.get_rm16()
-  this.exec.set_r32(rm16)
+  rm16 = this.exec.getRm16()
+  this.exec.setR32(rm16)
 
-proc movsx_r32_rm8*(this: var Instr32): void = 
-  var rm8_s: int8
-  rm8_s = this.exec.get_rm8().int8()
-  this.exec.set_r32(uint32(rm8_s))
+proc movsxR32Rm8*(this: var Instr32): void =
+  var rm8S: int8
+  rm8S = this.exec.getRm8().int8()
+  this.exec.setR32(uint32(rm8S))
 
-proc movsx_r32_rm16*(this: var Instr32): void = 
-  var rm16_s: int16
-  rm16_s = this.exec.get_rm16().int16()
-  this.exec.set_r32(uint32(rm16_s))
+proc movsxR32Rm16*(this: var Instr32): void =
+  var rm16S: int16
+  rm16S = this.exec.getRm16().int16()
+  this.exec.setR32(uint32(rm16S))
 
 
-proc add_rm32_imm32*(this: var Instr32): void =
+proc addRm32Imm32*(this: var Instr32): void =
   var rm32: uint32
-  rm32 = this.exec.get_rm32().uint32()
-  this.exec.set_rm32(rm32 + IMM32.uint32)
-  discard EFLAGS_UPDATE_ADD(rm32, IMM32.uint32)
+  rm32 = this.exec.getRm32().uint32()
+  this.exec.setRm32(rm32 + IMM32.uint32)
+  discard EFLAGSUPDATEADD(rm32, IMM32.uint32)
 
-proc or_rm32_imm32*(this: var Instr32): void = 
+proc orRm32Imm32*(this: var Instr32): void =
   var rm32: uint32
-  rm32 = this.exec.get_rm32().uint32()
-  this.exec.set_rm32(rm32 or IMM32.uint32)
-  discard EFLAGS_UPDATE_OR(rm32, IMM32.uint32)
+  rm32 = this.exec.getRm32().uint32()
+  this.exec.setRm32(rm32 or IMM32.uint32)
+  discard EFLAGSUPDATEOR(rm32, IMM32.uint32)
 
-proc adc_rm32_imm32*(this: var Instr32): void = 
-  var rm32: uint32
-  var cf: uint8
-  rm32 = this.exec.get_rm32().uint32()
-  cf = EFLAGS_CF.uint8
-  this.exec.set_rm32(rm32 + IMM32.uint32 + cf)
-  discard EFLAGS_UPDATE_ADD(rm32, IMM32.uint32 + cf)
-
-proc sbb_rm32_imm32*(this: var Instr32): void = 
+proc adcRm32Imm32*(this: var Instr32): void =
   var rm32: uint32
   var cf: uint8
-  rm32 = this.exec.get_rm32().uint32()
-  cf = EFLAGS_CF.uint8
-  this.exec.set_rm32(rm32 - IMM32.uint32 - cf)
-  discard EFLAGS_UPDATE_SUB(rm32, IMM32.uint32 + cf)
+  rm32 = this.exec.getRm32().uint32()
+  cf = EFLAGSCF.uint8
+  this.exec.setRm32(rm32 + IMM32.uint32 + cf)
+  discard EFLAGSUPDATEADD(rm32, IMM32.uint32 + cf)
 
-proc and_rm32_imm32*(this: var Instr32): void = 
-  var rm32: uint32
-  rm32 = this.exec.get_rm32().uint32()
-  this.exec.set_rm32(rm32 and IMM32.uint32)
-  discard EFLAGS_UPDATE_AND(rm32, IMM32.uint32)
-
-proc sub_rm32_imm32*(this: var Instr32): void = 
-  var rm32: uint32
-  rm32 = this.exec.get_rm32().uint32()
-  this.exec.set_rm32(rm32 - IMM32.uint32)
-  discard EFLAGS_UPDATE_SUB(rm32, IMM32.uint32)
-
-proc xor_rm32_imm32*(this: var Instr32): void = 
-  var rm32: uint32
-  rm32 = this.exec.get_rm32().uint32()
-  this.exec.set_rm32(rm32 xor IMM32.uint32)
-
-proc cmp_rm32_imm32*(this: var Instr32): void = 
-  var rm32: uint32
-  rm32 = this.exec.get_rm32().uint32()
-  discard EFLAGS_UPDATE_SUB(rm32, IMM32.uint32)
-
-
-proc add_rm32_imm8*(this: var Instr32): void = 
-  var rm32: uint32
-  rm32 = this.exec.get_rm32().uint32()
-  this.exec.set_rm32(rm32 + IMM8.uint32)
-  discard EFLAGS_UPDATE_ADD(rm32, IMM8.uint32)
-
-proc or_rm32_imm8*(this: var Instr32): void = 
-  var rm32: uint32
-  rm32 = this.exec.get_rm32().uint32()
-  this.exec.set_rm32(rm32 or IMM8.uint32)
-  discard EFLAGS_UPDATE_OR(rm32, IMM8.uint32)
-
-proc adc_rm32_imm8*(this: var Instr32): void = 
+proc sbbRm32Imm32*(this: var Instr32): void =
   var rm32: uint32
   var cf: uint8
-  rm32 = this.exec.get_rm32().uint32()
-  cf = EFLAGS_CF.uint8
-  this.exec.set_rm32(rm32 + IMM8.uint32 + cf)
-  discard EFLAGS_UPDATE_ADD(rm32, IMM8.uint32 + cf)
+  rm32 = this.exec.getRm32().uint32()
+  cf = EFLAGSCF.uint8
+  this.exec.setRm32(rm32 - IMM32.uint32 - cf)
+  discard EFLAGSUPDATESUB(rm32, IMM32.uint32 + cf)
 
-proc sbb_rm32_imm8*(this: var Instr32): void = 
+proc andRm32Imm32*(this: var Instr32): void =
+  var rm32: uint32
+  rm32 = this.exec.getRm32().uint32()
+  this.exec.setRm32(rm32 and IMM32.uint32)
+  discard EFLAGSUPDATEAND(rm32, IMM32.uint32)
+
+proc subRm32Imm32*(this: var Instr32): void =
+  var rm32: uint32
+  rm32 = this.exec.getRm32().uint32()
+  this.exec.setRm32(rm32 - IMM32.uint32)
+  discard EFLAGSUPDATESUB(rm32, IMM32.uint32)
+
+proc xorRm32Imm32*(this: var Instr32): void =
+  var rm32: uint32
+  rm32 = this.exec.getRm32().uint32()
+  this.exec.setRm32(rm32 xor IMM32.uint32)
+
+proc cmpRm32Imm32*(this: var Instr32): void =
+  var rm32: uint32
+  rm32 = this.exec.getRm32().uint32()
+  discard EFLAGSUPDATESUB(rm32, IMM32.uint32)
+
+
+proc addRm32Imm8*(this: var Instr32): void =
+  var rm32: uint32
+  rm32 = this.exec.getRm32().uint32()
+  this.exec.setRm32(rm32 + IMM8.uint32)
+  discard EFLAGSUPDATEADD(rm32, IMM8.uint32)
+
+proc orRm32Imm8*(this: var Instr32): void =
+  var rm32: uint32
+  rm32 = this.exec.getRm32().uint32()
+  this.exec.setRm32(rm32 or IMM8.uint32)
+  discard EFLAGSUPDATEOR(rm32, IMM8.uint32)
+
+proc adcRm32Imm8*(this: var Instr32): void =
   var rm32: uint32
   var cf: uint8
-  rm32 = this.exec.get_rm32().uint32()
-  cf = EFLAGS_CF.uint8
-  this.exec.set_rm32(rm32 - IMM8.uint32 - cf)
-  discard EFLAGS_UPDATE_SUB(rm32, IMM8.uint32 + cf)
+  rm32 = this.exec.getRm32().uint32()
+  cf = EFLAGSCF.uint8
+  this.exec.setRm32(rm32 + IMM8.uint32 + cf)
+  discard EFLAGSUPDATEADD(rm32, IMM8.uint32 + cf)
 
-proc and_rm32_imm8*(this: var Instr32): void = 
+proc sbbRm32Imm8*(this: var Instr32): void =
   var rm32: uint32
-  rm32 = this.exec.get_rm32().uint32()
-  this.exec.set_rm32(rm32 and IMM8.uint32)
-  discard EFLAGS_UPDATE_AND(rm32, IMM8.uint32)
+  var cf: uint8
+  rm32 = this.exec.getRm32().uint32()
+  cf = EFLAGSCF.uint8
+  this.exec.setRm32(rm32 - IMM8.uint32 - cf)
+  discard EFLAGSUPDATESUB(rm32, IMM8.uint32 + cf)
 
-proc sub_rm32_imm8*(this: var Instr32): void = 
+proc andRm32Imm8*(this: var Instr32): void =
   var rm32: uint32
-  rm32 = this.exec.get_rm32().uint32()
-  this.exec.set_rm32(rm32 - IMM8.uint32)
-  discard EFLAGS_UPDATE_SUB(rm32, IMM8.uint32)
+  rm32 = this.exec.getRm32().uint32()
+  this.exec.setRm32(rm32 and IMM8.uint32)
+  discard EFLAGSUPDATEAND(rm32, IMM8.uint32)
 
-proc xor_rm32_imm8*(this: var Instr32): void = 
+proc subRm32Imm8*(this: var Instr32): void =
   var rm32: uint32
-  rm32 = this.exec.get_rm32().uint32()
-  this.exec.set_rm32(rm32 xor IMM8.uint32)
+  rm32 = this.exec.getRm32().uint32()
+  this.exec.setRm32(rm32 - IMM8.uint32)
+  discard EFLAGSUPDATESUB(rm32, IMM8.uint32)
 
-proc cmp_rm32_imm8*(this: var Instr32): void = 
+proc xorRm32Imm8*(this: var Instr32): void =
   var rm32: uint32
-  rm32 = this.exec.get_rm32().uint32()
-  discard EFLAGS_UPDATE_SUB(rm32, IMM8.uint32)
+  rm32 = this.exec.getRm32().uint32()
+  this.exec.setRm32(rm32 xor IMM8.uint32)
 
-
-proc shl_rm32_imm8*(this: var Instr32): void = 
+proc cmpRm32Imm8*(this: var Instr32): void =
   var rm32: uint32
-  rm32 = this.exec.get_rm32().uint32()
-  this.exec.set_rm32(rm32 shl IMM8.uint32)
-  discard EFLAGS_UPDATE_SHL(rm32, IMM8.uint8)
+  rm32 = this.exec.getRm32().uint32()
+  discard EFLAGSUPDATESUB(rm32, IMM8.uint32)
 
-proc shr_rm32_imm8*(this: var Instr32): void = 
+
+proc shlRm32Imm8*(this: var Instr32): void =
   var rm32: uint32
-  rm32 = this.exec.get_rm32().uint32()
-  this.exec.set_rm32(rm32 shr IMM8.uint32)
-  discard EFLAGS_UPDATE_SHR(rm32, IMM8.uint8)
+  rm32 = this.exec.getRm32().uint32()
+  this.exec.setRm32(rm32 shl IMM8.uint32)
+  discard EFLAGSUPDATESHL(rm32, IMM8.uint8)
 
-proc sal_rm32_imm8*(this: var Instr32): void = 
-  var rm32_s: int32
-  rm32_s = this.exec.get_rm32().int32()
-  this.exec.set_rm32(uint32(rm32_s shl IMM8))
+proc shrRm32Imm8*(this: var Instr32): void =
+  var rm32: uint32
+  rm32 = this.exec.getRm32().uint32()
+  this.exec.setRm32(rm32 shr IMM8.uint32)
+  discard EFLAGSUPDATESHR(rm32, IMM8.uint8)
+
+proc salRm32Imm8*(this: var Instr32): void =
+  var rm32S: int32
+  rm32S = this.exec.getRm32().int32()
+  this.exec.setRm32(uint32(rm32S shl IMM8))
   
 
-proc sar_rm32_imm8*(this: var Instr32): void = 
-  var rm32_s: int32
-  rm32_s = this.exec.get_rm32().int32()
-  this.exec.set_rm32(uint32(rm32_s shr IMM8))
-  
-
-
-proc shl_rm32_cl*(this: var Instr32): void = 
-  var rm32: uint32
-  var cl: uint8
-  rm32 = this.exec.get_rm32().uint32()
-  cl = GET_GPREG(CL)
-  this.exec.set_rm32(rm32 shl cl)
-  discard EFLAGS_UPDATE_SHL(rm32, cl)
-
-proc shr_rm32_cl*(this: var Instr32): void = 
-  var rm32: uint32
-  var cl: uint8
-  rm32 = this.exec.get_rm32().uint32()
-  cl = GET_GPREG(CL)
-  this.exec.set_rm32(rm32 shr cl)
-  discard EFLAGS_UPDATE_SHR(rm32, cl)
-
-proc sal_rm32_cl*(this: var Instr32): void = 
-  var rm32_s: int32
-  var cl: uint8
-  rm32_s = this.exec.get_rm32().int32()
-  cl = GET_GPREG(CL)
-  this.exec.set_rm32(uint32(rm32_s shl cl))
-  
-
-proc sar_rm32_cl*(this: var Instr32): void = 
-  var rm32_s: int32
-  var cl: uint8
-  rm32_s = this.exec.get_rm32().int32()
-  cl = GET_GPREG(CL)
-  this.exec.set_rm32(uint32(rm32_s shr cl))
+proc sarRm32Imm8*(this: var Instr32): void =
+  var rm32S: int32
+  rm32S = this.exec.getRm32().int32()
+  this.exec.setRm32(uint32(rm32S shr IMM8))
   
 
 
-proc test_rm32_imm32*(this: var Instr32): void = 
+proc shlRm32Cl*(this: var Instr32): void =
+  var rm32: uint32
+  var cl: uint8
+  rm32 = this.exec.getRm32().uint32()
+  cl = GETGPREG(CL)
+  this.exec.setRm32(rm32 shl cl)
+  discard EFLAGSUPDATESHL(rm32, cl)
+
+proc shrRm32Cl*(this: var Instr32): void =
+  var rm32: uint32
+  var cl: uint8
+  rm32 = this.exec.getRm32().uint32()
+  cl = GETGPREG(CL)
+  this.exec.setRm32(rm32 shr cl)
+  discard EFLAGSUPDATESHR(rm32, cl)
+
+proc salRm32Cl*(this: var Instr32): void =
+  var rm32S: int32
+  var cl: uint8
+  rm32S = this.exec.getRm32().int32()
+  cl = GETGPREG(CL)
+  this.exec.setRm32(uint32(rm32S shl cl))
+  
+
+proc sarRm32Cl*(this: var Instr32): void =
+  var rm32S: int32
+  var cl: uint8
+  rm32S = this.exec.getRm32().int32()
+  cl = GETGPREG(CL)
+  this.exec.setRm32(uint32(rm32S shr cl))
+  
+
+
+proc testRm32Imm32*(this: var Instr32): void =
   var imm32, rm32: uint32
-  rm32 = this.exec.get_rm32().uint32()
-  imm32 = ACS.get_code32(0)
-  discard UPDATE_EIP(4)
-  discard EFLAGS_UPDATE_AND(rm32, imm32)
+  rm32 = this.exec.getRm32().uint32()
+  imm32 = ACS.getCode32(0)
+  discard UPDATEEIP(4)
+  discard EFLAGSUPDATEAND(rm32, imm32)
 
-proc not_rm32*(this: var Instr32): void = 
+proc notRm32*(this: var Instr32): void =
   var rm32: uint32
-  rm32 = this.exec.get_rm32().uint32()
-  this.exec.set_rm32(not(rm32))
+  rm32 = this.exec.getRm32().uint32()
+  this.exec.setRm32(not(rm32))
 
-proc neg_rm32*(this: var Instr32): void = 
-  var rm32_s: int32
-  rm32_s = this.exec.get_rm32().int32()
-  this.exec.set_rm32(uint32(-(rm32_s)))
-  discard EFLAGS_UPDATE_SUB(cast[uint32](0), rm32_s.uint32)
+proc negRm32*(this: var Instr32): void =
+  var rm32S: int32
+  rm32S = this.exec.getRm32().int32()
+  this.exec.setRm32(uint32(-(rm32S)))
+  discard EFLAGSUPDATESUB(cast[uint32](0), rm32S.uint32)
 
-proc mul_edx_eax_rm32*(this: var Instr32): void = 
+proc mulEdxEaxRm32*(this: var Instr32): void =
   var eax, rm32: uint32
   var val: uint64
-  rm32 = this.exec.get_rm32().uint32()
-  eax = GET_GPREG(EAX)
+  rm32 = this.exec.getRm32().uint32()
+  eax = GETGPREG(EAX)
   val = eax * rm32
-  SET_GPREG(EAX, uint32(val))
-  SET_GPREG(EDX, uint32(val shr 32))
-  discard EFLAGS_UPDATE_MUL(eax, rm32)
+  SETGPREG(EAX, uint32(val))
+  SETGPREG(EDX, uint32(val shr 32))
+  discard EFLAGSUPDATEMUL(eax, rm32)
 
-proc imul_edx_eax_rm32*(this: var Instr32): void = 
-  var eax_s, rm32_s: int32
-  var val_s: int64
-  rm32_s = this.exec.get_rm32().int32()
-  eax_s = GET_GPREG(EAX).int32()
-  val_s = eax_s * rm32_s
-  SET_GPREG(EAX, uint32(val_s))
-  SET_GPREG(EDX, uint32(val_s shr 32))
-  discard EFLAGS_UPDATE_IMUL(eax_s, rm32_s)
+proc imulEdxEaxRm32*(this: var Instr32): void =
+  var eaxS, rm32S: int32
+  var valS: int64
+  rm32S = this.exec.getRm32().int32()
+  eaxS = GETGPREG(EAX).int32()
+  valS = eaxS * rm32S
+  SETGPREG(EAX, uint32(valS))
+  SETGPREG(EDX, uint32(valS shr 32))
+  discard EFLAGSUPDATEIMUL(eaxS, rm32S)
 
-proc div_edx_eax_rm32*(this: var Instr32): void = 
+proc divEdxEaxRm32*(this: var Instr32): void =
   var rm32: uint32
   var val: uint64
-  rm32 = this.exec.get_rm32().uint32()
-  EXCEPTION(EXP_DE, not(rm32.toBool()))
-  val = GET_GPREG(EDX)
+  rm32 = this.exec.getRm32().uint32()
+  EXCEPTION(EXPDE, not(rm32.toBool()))
+  val = GETGPREG(EDX)
   val = (val shl 32)
-  val = (val or GET_GPREG(EAX))
-  SET_GPREG(EAX, uint32(val div rm32))
-  SET_GPREG(EDX, uint32(val mod rm32))
+  val = (val or GETGPREG(EAX))
+  SETGPREG(EAX, uint32(val div rm32))
+  SETGPREG(EDX, uint32(val mod rm32))
 
-proc idiv_edx_eax_rm32*(this: var Instr32): void = 
-  var rm32_s: int32
-  var val_s: int64
-  rm32_s = this.exec.get_rm32().int32()
-  EXCEPTION(EXP_DE, not(rm32_s.toBool()))
-  val_s = GET_GPREG(EDX).int64
-  val_s = (val_s shl 32)
-  val_s = (val_s or GET_GPREG(EAX).int64)
-  SET_GPREG(EAX, uint32(val_s div rm32_s))
-  SET_GPREG(EDX, uint32(val_s mod rm32_s))
+proc idivEdxEaxRm32*(this: var Instr32): void =
+  var rm32S: int32
+  var valS: int64
+  rm32S = this.exec.getRm32().int32()
+  EXCEPTION(EXPDE, not(rm32S.toBool()))
+  valS = GETGPREG(EDX).int64
+  valS = (valS shl 32)
+  valS = (valS or GETGPREG(EAX).int64)
+  SETGPREG(EAX, uint32(valS div rm32S))
+  SETGPREG(EDX, uint32(valS mod rm32S))
 
 
-proc inc_rm32*(this: var Instr32): void = 
+proc incRm32*(this: var Instr32): void =
   var rm32: uint32
-  rm32 = this.exec.get_rm32().uint32()
-  this.exec.set_rm32(rm32 + 1)
-  discard EFLAGS_UPDATE_ADD(rm32, 1)
+  rm32 = this.exec.getRm32().uint32()
+  this.exec.setRm32(rm32 + 1)
+  discard EFLAGSUPDATEADD(rm32, 1)
 
-proc dec_rm32*(this: var Instr32): void = 
+proc decRm32*(this: var Instr32): void =
   var rm32: uint32
-  rm32 = this.exec.get_rm32().uint32()
-  this.exec.set_rm32(rm32 - 1)
-  discard EFLAGS_UPDATE_SUB(rm32, 1)
+  rm32 = this.exec.getRm32().uint32()
+  this.exec.setRm32(rm32 - 1)
+  discard EFLAGSUPDATESUB(rm32, 1)
 
-proc call_rm32*(this: var Instr32): void = 
+proc callRm32*(this: var Instr32): void =
   var rm32: uint32
-  rm32 = this.exec.get_rm32().uint32()
-  PUSH32(GET_EIP())
-  SET_EIP(rm32)
+  rm32 = this.exec.getRm32().uint32()
+  PUSH32(GETEIP())
+  SETEIP(rm32)
 
-proc callf_m16_32*(this: var Instr32): void = 
+proc callfM16_32*(this: var Instr32): void =
   var eip, m48: uint32
   var cs: uint16
-  m48 = this.exec.get_m()
-  eip = READ_MEM32(m48)
-  cs = READ_MEM16(m48 + 4)
+  m48 = this.exec.getM()
+  eip = READMEM32(m48)
+  cs = READMEM16(m48 + 4)
   INFO(2, "cs = 0x%04x, eip = 0x%08x", cs, eip)
   this.emu.callf(cs, eip)
 
-proc jmp_rm32*(this: var Instr32): void = 
+proc jmpRm32*(this: var Instr32): void =
   var rm32: uint32
-  rm32 = this.exec.get_rm32().uint32()
-  SET_EIP(rm32)
+  rm32 = this.exec.getRm32().uint32()
+  SETEIP(rm32)
 
-proc jmpf_m16_32*(this: var Instr32): void = 
+proc jmpfM16_32*(this: var Instr32): void =
   var eip, m48: uint32
   var sel: uint16
-  m48 = this.exec.get_m()
-  eip = READ_MEM32(m48)
-  sel = READ_MEM16(m48 + 4)
+  m48 = this.exec.getM()
+  eip = READMEM32(m48)
+  sel = READMEM16(m48 + 4)
   this.emu.jmpf(sel, eip)
 
-proc push_rm32*(this: var Instr32): void = 
+proc pushRm32*(this: var Instr32): void =
   var rm32: uint32
-  rm32 = this.exec.get_rm32().uint32()
+  rm32 = this.exec.getRm32().uint32()
   PUSH32(rm32)
 
 
-proc lgdt_m32*(this: var Instr32): void = 
+proc lgdtM32*(this: var Instr32): void =
   var base, m48: uint32
   var limit: uint16
-  EXCEPTION(EXP_GP, not(this.emu.chk_ring(0)))
-  m48 = this.exec.get_m()
-  limit = READ_MEM16(m48)
-  base = READ_MEM32(m48 + 2)
+  EXCEPTION(EXPGP, not(this.emu.chkRing(0)))
+  m48 = this.exec.getM()
+  limit = READMEM16(m48)
+  base = READMEM32(m48 + 2)
   INFO(2, "base = 0x%08x, limit = 0x%04x", base, limit)
-  this.emu.set_gdtr(base, limit)
+  this.emu.setGdtr(base, limit)
 
-proc lidt_m32*(this: var Instr32): void = 
+proc lidtM32*(this: var Instr32): void =
   var base, m48: uint32
   var limit: uint16
-  EXCEPTION(EXP_GP, not(this.emu.chk_ring(0)))
-  m48 = this.exec.get_m()
-  limit = READ_MEM16(m48)
-  base = READ_MEM32(m48 + 2)
+  EXCEPTION(EXPGP, not(this.emu.chkRing(0)))
+  m48 = this.exec.getM()
+  limit = READMEM16(m48)
+  base = READMEM32(m48 + 2)
   INFO(2, "base = 0x%08x, limit = 0x%04x", base, limit)
-  this.emu.set_idtr(base, limit)
+  this.emu.setIdtr(base, limit)
 
 
 proc code_81*(this: var Instr32): void =
   case REG:
-    of 0: this.add_rm32_imm32()
-    of 1: this.or_rm32_imm32()
-    of 2: this.adc_rm32_imm32()
-    of 3: this.sbb_rm32_imm32()
-    of 4: this.and_rm32_imm32()
-    of 5: this.sub_rm32_imm32()
-    of 6: this.xor_rm32_imm32()
-    of 7: this.cmp_rm32_imm32()
+    of 0: this.addRm32Imm32()
+    of 1: this.orRm32Imm32()
+    of 2: this.adcRm32Imm32()
+    of 3: this.sbbRm32Imm32()
+    of 4: this.andRm32Imm32()
+    of 5: this.subRm32Imm32()
+    of 6: this.xorRm32Imm32()
+    of 7: this.cmpRm32Imm32()
     else:
       ERROR("not implemented: 0x81 /%d\\n", REG)
 
 proc code_83*(this: var Instr32): void =
   case REG:
-    of 0: this.add_rm32_imm8()
-    of 1: this.or_rm32_imm8()
-    of 2: this.adc_rm32_imm8()
-    of 3: this.sbb_rm32_imm8()
-    of 4: this.and_rm32_imm8()
-    of 5: this.sub_rm32_imm8()
-    of 6: this.xor_rm32_imm8()
-    of 7: this.cmp_rm32_imm8()
+    of 0: this.addRm32Imm8()
+    of 1: this.orRm32Imm8()
+    of 2: this.adcRm32Imm8()
+    of 3: this.sbbRm32Imm8()
+    of 4: this.andRm32Imm8()
+    of 5: this.subRm32Imm8()
+    of 6: this.xorRm32Imm8()
+    of 7: this.cmpRm32Imm8()
     else:
       ERROR("not implemented: 0x83 /%d\\n", REG)
 
-proc code_c1*(this: var Instr32): void =
+proc codeC1*(this: var Instr32): void =
   case REG:
-    of 4: this.shl_rm32_imm8()
-    of 5: this.shr_rm32_imm8()
-    of 6: this.sal_rm32_imm8()
-    of 7: this.sar_rm32_imm8()
+    of 4: this.shlRm32Imm8()
+    of 5: this.shrRm32Imm8()
+    of 6: this.salRm32Imm8()
+    of 7: this.sarRm32Imm8()
     else:
       ERROR("not implemented: 0xc1 /%d\\n", REG)
 
-proc code_d3*(this: var Instr32): void =
+proc codeD3*(this: var Instr32): void =
   case REG:
-    of 4: this.shl_rm32_cl()
-    of 5: this.shr_rm32_cl()
-    of 6: this.sal_rm32_cl()
-    of 7: this.sar_rm32_cl()
+    of 4: this.shlRm32Cl()
+    of 5: this.shrRm32Cl()
+    of 6: this.salRm32Cl()
+    of 7: this.sarRm32Cl()
     else:
       ERROR("not implemented: 0xd3 /%d\\n", REG)
 
-proc code_f7*(this: var Instr32): void =
+proc codeF7*(this: var Instr32): void =
   case REG:
-    of 0: this.test_rm32_imm32()
-    of 2: this.not_rm32()
-    of 3: this.neg_rm32()
-    of 4: this.mul_edx_eax_rm32()
-    of 5: this.imul_edx_eax_rm32()
-    of 6: this.div_edx_eax_rm32()
-    of 7: this.idiv_edx_eax_rm32()
+    of 0: this.testRm32Imm32()
+    of 2: this.notRm32()
+    of 3: this.negRm32()
+    of 4: this.mulEdxEaxRm32()
+    of 5: this.imulEdxEaxRm32()
+    of 6: this.divEdxEaxRm32()
+    of 7: this.idivEdxEaxRm32()
     else:
       ERROR("not implemented: 0xf7 /%d\\n", REG)
 
-proc code_ff*(this: var Instr32): void =
+proc codeFf*(this: var Instr32): void =
   case REG:
-    of 0: this.inc_rm32()
-    of 1: this.dec_rm32()
-    of 2: this.call_rm32()
-    of 3: this.callf_m16_32()
-    of 4: this.jmp_rm32()
-    of 5: this.jmpf_m16_32()
-    of 6: this.push_rm32()
+    of 0: this.incRm32()
+    of 1: this.decRm32()
+    of 2: this.callRm32()
+    of 3: this.callfM16_32()
+    of 4: this.jmpRm32()
+    of 5: this.jmpfM16_32()
+    of 6: this.pushRm32()
     else:
       ERROR("not implemented: 0xff /%d\\n", REG)
 
 proc code_0f00*(this: var Instr32): void =
   case REG:
-    of 3: this.ltr_rm16()
+    of 3: this.ltrRm16()
     else:
       ERROR("not implemented: 0x0f00 /%d\\n", REG)
 
 proc code_0f01*(this: var Instr32): void =
   case REG:
-    of 2: this.lgdt_m32()
-    of 3: this.lidt_m32()
+    of 2: this.lgdtM32()
+    of 3: this.lidtM32()
     else:
       ERROR("not implemented: 0x0f01 /%d\\n", REG)
 
@@ -806,162 +805,150 @@ proc code_0f01*(this: var Instr32): void =
 
 
 proc initInstr32*(r: var Instr32, e: ptr Emulator, id: ptr InstrData) =
-  var i: cint
-  r.set_funcflag(0x01, instr32(add_rm32_r32), CHK_MODRM)
+  r.setFuncflag(0x01, instr32(addRm32R32), CHKMODRM)
 
-  r.set_funcflag(0x03, instr32(add_r32_rm32), CHK_MODRM)
+  r.setFuncflag(0x03, instr32(addR32Rm32), CHKMODRM)
 
-  r.set_funcflag(0x05, instr32(add_eax_imm32), CHK_IMM32)
-  r.set_funcflag(0x06, instr32(push_es), 0)
-  r.set_funcflag(0x07, instr32(pop_es), 0)
+  r.setFuncflag(0x05, instr32(addEaxImm32), CHKIMM32)
+  r.setFuncflag(0x06, instr32(pushEs), 0)
+  r.setFuncflag(0x07, instr32(popEs), 0)
 
-  r.set_funcflag(0x09, instr32(or_rm32_r32), CHK_MODRM)
+  r.setFuncflag(0x09, instr32(orRm32R32), CHKMODRM)
 
-  r.set_funcflag(0x0b, instr32(or_r32_rm32), CHK_MODRM)
+  r.setFuncflag(0x0b, instr32(orR32Rm32), CHKMODRM)
 
-  r.set_funcflag(0x0d, instr32(or_eax_imm32), CHK_IMM32)
-  r.set_funcflag(0x16, instr32(push_ss), 0)
-  r.set_funcflag(0x17, instr32(pop_ss), 0)
-  r.set_funcflag(0x1e, instr32(push_ds), 0)
-  r.set_funcflag(0x1f, instr32(pop_ds), 0)
+  r.setFuncflag(0x0d, instr32(orEaxImm32), CHKIMM32)
+  r.setFuncflag(0x16, instr32(pushSs), 0)
+  r.setFuncflag(0x17, instr32(popSs), 0)
+  r.setFuncflag(0x1e, instr32(pushDs), 0)
+  r.setFuncflag(0x1f, instr32(popDs), 0)
 
-  r.set_funcflag(0x21, instr32(and_rm32_r32), CHK_MODRM)
+  r.setFuncflag(0x21, instr32(andRm32R32), CHKMODRM)
 
-  r.set_funcflag(0x23, instr32(and_r32_rm32), CHK_MODRM)
+  r.setFuncflag(0x23, instr32(andR32Rm32), CHKMODRM)
 
-  r.set_funcflag(0x25, instr32(and_eax_imm32), CHK_IMM32)
+  r.setFuncflag(0x25, instr32(andEaxImm32), CHKIMM32)
 
-  r.set_funcflag(0x29, instr32(sub_rm32_r32), CHK_MODRM)
+  r.setFuncflag(0x29, instr32(subRm32R32), CHKMODRM)
 
-  r.set_funcflag(0x2b, instr32(sub_r32_rm32), CHK_MODRM)
+  r.setFuncflag(0x2b, instr32(subR32Rm32), CHKMODRM)
 
-  r.set_funcflag(0x2d, instr32(sub_eax_imm32), CHK_IMM32)
+  r.setFuncflag(0x2d, instr32(subEaxImm32), CHKIMM32)
 
-  r.set_funcflag(0x31, instr32(xor_rm32_r32), CHK_MODRM)
+  r.setFuncflag(0x31, instr32(xorRm32R32), CHKMODRM)
 
-  r.set_funcflag(0x33, instr32(xor_r32_rm32), CHK_MODRM)
+  r.setFuncflag(0x33, instr32(xorR32Rm32), CHKMODRM)
 
-  r.set_funcflag(0x35, instr32(xor_eax_imm32), CHK_IMM32)
+  r.setFuncflag(0x35, instr32(xorEaxImm32), CHKIMM32)
 
-  r.set_funcflag(0x39, instr32(cmp_rm32_r32), CHK_MODRM)
+  r.setFuncflag(0x39, instr32(cmpRm32R32), CHKMODRM)
 
-  r.set_funcflag(0x3b, instr32(cmp_r32_rm32), CHK_MODRM)
+  r.setFuncflag(0x3b, instr32(cmpR32Rm32), CHKMODRM)
 
-  r.set_funcflag(0x3d, instr32(cmp_eax_imm32), CHK_IMM32)
-  block:
-    i = 0
-    while i < 8:
-      r.set_funcflag(uint16(0x40 + i), instr32(inc_r32), 0)
-      postInc(i)
-  block:
-    i = 0
-    while i < 8:
-      r.set_funcflag(uint16(0x48 + i), instr32(dec_r32), 0)
-      postInc(i)
-  block:
-    i = 0
-    while i < 8:
-      r.set_funcflag(uint16(0x50 + i), instr32(push_r32), 0)
-      postInc(i)
-  block:
-    i = 0
-    while i < 8:
-      r.set_funcflag(uint16(0x58 + i), instr32(pop_r32), 0)
-      postInc(i)
-  r.set_funcflag(0x60, instr32(pushad), 0)
-  r.set_funcflag(0x61, instr32(popad), 0)
-  r.set_funcflag(0x68, instr32(push_imm32), CHK_IMM32)
-  r.set_funcflag(0x69, instr32(imul_r32_rm32_imm32), CHK_MODRM or CHK_IMM32)
-  r.set_funcflag(0x6a, instr32(push_imm8), CHK_IMM8)
-  r.set_funcflag(0x6b, instr32(imul_r32_rm32_imm8), CHK_MODRM or CHK_IMM8)
+  r.setFuncflag(0x3d, instr32(cmpEaxImm32), CHKIMM32)
+
+  for i in 0 ..< 8:
+    r.setFuncflag(uint16(0x40 + i), instr32(incR32), 0)
+
+  for i in 0 ..< 8:
+    r.setFuncflag(uint16(0x48 + i), instr32(decR32), 0)
+
+  for i in 0 ..< 8:
+    r.setFuncflag(uint16(0x50 + i), instr32(pushR32), 0)
+
+  for i in 0 ..< 8:
+    r.setFuncflag(uint16(0x58 + i), instr32(popR32), 0)
+
+  r.setFuncflag(0x60, instr32(pushad), 0)
+  r.setFuncflag(0x61, instr32(popad), 0)
+  r.setFuncflag(0x68, instr32(pushImm32), CHKIMM32)
+  r.setFuncflag(0x69, instr32(imulR32Rm32Imm32), CHKMODRM or CHKIMM32)
+  r.setFuncflag(0x6a, instr32(pushImm8), CHKIMM8)
+  r.setFuncflag(0x6b, instr32(imulR32Rm32Imm8), CHKMODRM or CHKIMM8)
 
 
-  r.set_funcflag(0x85, instr32(test_rm32_r32), CHK_MODRM)
+  r.setFuncflag(0x85, instr32(testRm32R32), CHKMODRM)
 
-  r.set_funcflag(0x87, instr32(xchg_r32_rm32), CHK_MODRM)
+  r.setFuncflag(0x87, instr32(xchgR32Rm32), CHKMODRM)
 
-  r.set_funcflag(0x89, instr32(mov_rm32_r32), CHK_MODRM)
+  r.setFuncflag(0x89, instr32(movRm32R32), CHKMODRM)
 
-  r.set_funcflag(0x8b, instr32(mov_r32_rm32), CHK_MODRM)
-  r.set_funcflag(0x8c, instr32(mov_rm32_sreg), CHK_MODRM)
-  r.set_funcflag(0x8d, instr32(lea_r32_m32), CHK_MODRM)
+  r.setFuncflag(0x8b, instr32(movR32Rm32), CHKMODRM)
+  r.setFuncflag(0x8c, instr32(movRm32Sreg), CHKMODRM)
+  r.setFuncflag(0x8d, instr32(leaR32M32), CHKMODRM)
 
 
-  block:
-    i = 1
-    while i < 8:
-      r.set_funcflag(uint16(0x90 + i), instr32(xchg_r32_eax), CHK_IMM32)
-      postInc(i)
-  r.set_funcflag(0x98, instr32(cwde), 0)
-  r.set_funcflag(0x99, instr32(cdq), 0)
-  r.set_funcflag(0x9a, instr32(callf_ptr16_32), CHK_PTR16 or CHK_IMM32)
-  r.set_funcflag(0x9c, instr32(pushf), 0)
-  r.set_funcflag(0x9d, instr32(popf), 0)
+  for i in 1 ..< 8:
+    r.setFuncflag(uint16(0x90 + i), instr32(xchgR32Eax), CHKIMM32)
 
-  r.set_funcflag(0xa1, instr32(mov_eax_moffs32), CHK_MOFFS)
+  r.setFuncflag(0x98, instr32(cwde), 0)
+  r.setFuncflag(0x99, instr32(cdq), 0)
+  r.setFuncflag(0x9a, instr32(callfPtr16_32), CHKPTR16 or CHKIMM32)
+  r.setFuncflag(0x9c, instr32(pushf), 0)
+  r.setFuncflag(0x9d, instr32(popf), 0)
 
-  r.set_funcflag(0xa3, instr32(mov_moffs32_eax), CHK_MOFFS)
-  r.set_funcflag(0xa6, instr32(cmps_m8_m8), 0)
-  r.set_funcflag(0xa7, instr32(cmps_m32_m32), 0)
+  r.setFuncflag(0xa1, instr32(movEaxMoffs32), CHKMOFFS)
 
-  r.set_funcflag(0xa9, instr32(test_eax_imm32), CHK_IMM32)
+  r.setFuncflag(0xa3, instr32(movMoffs32Eax), CHKMOFFS)
+  r.setFuncflag(0xa6, instr32(cmpsM8M8), 0)
+  r.setFuncflag(0xa7, instr32(cmpsM32M32), 0)
 
-  block:
-    i = 0
-    while i < 8:
-      r.set_funcflag(uint16(0xb8 + i), instr32(mov_r32_imm32), CHK_IMM32)
-      postInc(i)
-  r.set_funcflag(0xc3, instr32(ret), 0)
-  r.set_funcflag(0xc7, instr32(mov_rm32_imm32), CHK_MODRM or CHK_IMM32)
-  r.set_funcflag(0xc9, instr32(leave), 0)
+  r.setFuncflag(0xa9, instr32(testEaxImm32), CHKIMM32)
+
+  for i in 0 ..< 8:
+    r.setFuncflag(uint16(0xb8 + i), instr32(movR32Imm32), CHKIMM32)
+
+  r.setFuncflag(0xc3, instr32(ret), 0)
+  r.setFuncflag(0xc7, instr32(movRm32Imm32), CHKMODRM or CHKIMM32)
+  r.setFuncflag(0xc9, instr32(leave), 0)
 
 
 
 
 
-  r.set_funcflag(0xe5, instr32(in_eax_imm8), CHK_IMM8)
+  r.setFuncflag(0xe5, instr32(inEaxImm8), CHKIMM8)
 
-  r.set_funcflag(0xe7, instr32(out_imm8_eax), CHK_IMM8)
-  r.set_funcflag(0xe8, instr32(call_rel32), CHK_IMM32)
-  r.set_funcflag(0xe9, instr32(jmp_rel32), CHK_IMM32)
-  r.set_funcflag(0xea, instr32(jmpf_ptr16_32), CHK_PTR16 or CHK_IMM32)
+  r.setFuncflag(0xe7, instr32(outImm8Eax), CHKIMM8)
+  r.setFuncflag(0xe8, instr32(callRel32), CHKIMM32)
+  r.setFuncflag(0xe9, instr32(jmpRel32), CHKIMM32)
+  r.setFuncflag(0xea, instr32(jmpfPtr16_32), CHKPTR16 or CHKIMM32)
 
 
-  r.set_funcflag(0xed, instr32(in_eax_dx), 0)
+  r.setFuncflag(0xed, instr32(inEaxDx), 0)
 
-  r.set_funcflag(0xef, instr32(out_dx_eax), 0)
-  r.set_funcflag(0x0f80, instr32(jo_rel32), CHK_IMM32)
-  r.set_funcflag(0x0f81, instr32(jno_rel32), CHK_IMM32)
-  r.set_funcflag(0x0f82, instr32(jb_rel32), CHK_IMM32)
-  r.set_funcflag(0x0f83, instr32(jnb_rel32), CHK_IMM32)
-  r.set_funcflag(0x0f84, instr32(jz_rel32), CHK_IMM32)
-  r.set_funcflag(0x0f85, instr32(jnz_rel32), CHK_IMM32)
-  r.set_funcflag(0x0f86, instr32(jbe_rel32), CHK_IMM32)
-  r.set_funcflag(0x0f87, instr32(ja_rel32), CHK_IMM32)
-  r.set_funcflag(0x0f88, instr32(js_rel32), CHK_IMM32)
-  r.set_funcflag(0x0f89, instr32(jns_rel32), CHK_IMM32)
-  r.set_funcflag(0x0f8a, instr32(jp_rel32), CHK_IMM32)
-  r.set_funcflag(0x0f8b, instr32(jnp_rel32), CHK_IMM32)
-  r.set_funcflag(0x0f8c, instr32(jl_rel32), CHK_IMM32)
-  r.set_funcflag(0x0f8d, instr32(jnl_rel32), CHK_IMM32)
-  r.set_funcflag(0x0f8e, instr32(jle_rel32), CHK_IMM32)
-  r.set_funcflag(0x0f8f, instr32(jnle_rel32), CHK_IMM32)
-  r.set_funcflag(0x0faf, instr32(imul_r32_rm32), CHK_MODRM)
-  r.set_funcflag(0x0fb6, instr32(movzx_r32_rm8), CHK_MODRM)
-  r.set_funcflag(0x0fb7, instr32(movzx_r32_rm16), CHK_MODRM)
-  r.set_funcflag(0x0fbe, instr32(movsx_r32_rm8), CHK_MODRM)
-  r.set_funcflag(0x0fbf, instr32(movsx_r32_rm16), CHK_MODRM)
+  r.setFuncflag(0xef, instr32(outDxEax), 0)
+  r.setFuncflag(0x0f80, instr32(joRel32), CHKIMM32)
+  r.setFuncflag(0x0f81, instr32(jnoRel32), CHKIMM32)
+  r.setFuncflag(0x0f82, instr32(jbRel32), CHKIMM32)
+  r.setFuncflag(0x0f83, instr32(jnbRel32), CHKIMM32)
+  r.setFuncflag(0x0f84, instr32(jzRel32), CHKIMM32)
+  r.setFuncflag(0x0f85, instr32(jnzRel32), CHKIMM32)
+  r.setFuncflag(0x0f86, instr32(jbeRel32), CHKIMM32)
+  r.setFuncflag(0x0f87, instr32(jaRel32), CHKIMM32)
+  r.setFuncflag(0x0f88, instr32(jsRel32), CHKIMM32)
+  r.setFuncflag(0x0f89, instr32(jnsRel32), CHKIMM32)
+  r.setFuncflag(0x0f8a, instr32(jpRel32), CHKIMM32)
+  r.setFuncflag(0x0f8b, instr32(jnpRel32), CHKIMM32)
+  r.setFuncflag(0x0f8c, instr32(jlRel32), CHKIMM32)
+  r.setFuncflag(0x0f8d, instr32(jnlRel32), CHKIMM32)
+  r.setFuncflag(0x0f8e, instr32(jleRel32), CHKIMM32)
+  r.setFuncflag(0x0f8f, instr32(jnleRel32), CHKIMM32)
+  r.setFuncflag(0x0faf, instr32(imulR32Rm32), CHKMODRM)
+  r.setFuncflag(0x0fb6, instr32(movzxR32Rm8), CHKMODRM)
+  r.setFuncflag(0x0fb7, instr32(movzxR32Rm16), CHKMODRM)
+  r.setFuncflag(0x0fbe, instr32(movsxR32Rm8), CHKMODRM)
+  r.setFuncflag(0x0fbf, instr32(movsxR32Rm16), CHKMODRM)
 
-  r.set_funcflag(0x81, instr32(code_81), CHK_MODRM or CHK_IMM32)
+  r.setFuncflag(0x81, instr32(code_81), CHKMODRM or CHKIMM32)
 
-  r.set_funcflag(0x83, instr32(code_83), CHK_MODRM or CHK_IMM8)
+  r.setFuncflag(0x83, instr32(code_83), CHKMODRM or CHKIMM8)
 
-  r.set_funcflag(0xc1, instr32(code_c1), CHK_MODRM or CHK_IMM8)
-  r.set_funcflag(0xd3, instr32(code_d3), CHK_MODRM)
-  r.set_funcflag(0xf7, instr32(code_f7), CHK_MODRM)
-  r.set_funcflag(0xff, instr32(code_ff), CHK_MODRM)
-  r.set_funcflag(0x0f00, instr32(code_0f00), CHK_MODRM)
-  r.set_funcflag(0x0f01, instr32(code_0f01), CHK_MODRM)
+  r.setFuncflag(0xc1, instr32(codeC1), CHKMODRM or CHKIMM8)
+  r.setFuncflag(0xd3, instr32(codeD3), CHKMODRM)
+  r.setFuncflag(0xf7, instr32(codeF7), CHKMODRM)
+  r.setFuncflag(0xff, instr32(codeFf), CHKMODRM)
+  r.setFuncflag(0x0f00, instr32(code_0f00), CHKMODRM)
+  r.setFuncflag(0x0f01, instr32(code_0f01), CHKMODRM)
 
 
 proc initInstr32*(e: ptr Emulator, id: ptr InstrData): Instr32 =
