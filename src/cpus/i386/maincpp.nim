@@ -98,7 +98,7 @@ proc runEmulator*(eset: Setting): void =
   full.emu.loadBinary("bios/bios.bin", 0xf0000, 0, 0x2800)
   full.emu.loadBinary("bios/crt0.bin", 0xffff0, 0, 0x10)
   if eset.loadAddr.toBool():
-    full.emu.loadBinary(eset.imageName, eset.loadAddr, 0x200, eset.loadSize)
+    full.emu.loadBinary(eset.imageName, eset.loadAddr, 0x200, eset.loadSize.int64)
 
   full.loop()
 
