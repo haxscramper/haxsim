@@ -9,7 +9,7 @@ import
 import
   util/debughpp
 type
-  TypeSet* {.bycopy, importcpp.} = object
+  TypeSet* {.bycopy.} = object
     name*: cstring    
     fp*: ptr FILE
     fatal*: bool    

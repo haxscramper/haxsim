@@ -63,7 +63,7 @@ proc hundle_interrupt*(this: var Interrupt): void =
     discard this.mem.read_data(
       addr idt, idt_base + idt_offset, sizeof(IntGateDesc).csize_t)
 
-    RPL = idt.seg_sel.RPL
+    {.warning: "[FIXME] 'RPL = idt.seg_sel.RPL'".}
     INFO(
       4, "int 0x%02x [CPL : %d, DPL : %d RPL : %d] (EIP : 0x%04x, CS : 0x%04x)",
       n, CPL, idt.DPL, RPL, (idt.offset_h shl 16) + idt.offset_l, idt.seg_sel)
@@ -73,9 +73,9 @@ proc hundle_interrupt*(this: var Interrupt): void =
     EXCEPTION(EXP_GP, not(hard) and CPL > idt.DPL)
     cs = this.get_segment(CS)
     this.set_segment(CS, idt.seg_sel)
-    this.save_regs(CPL xor RPL, cs)
+    this.save_regs(toBool(CPL xor RPL), cs)
     this.cpu.set_eip((idt.offset_h shl 16) + idt.offset_l)
-    if idt.`type` == TYPE_INTERRUPT:
+    if idt.Type == TYPE_INTERRUPT:
       this.cpu.eflags.set_interrupt(false)
     
   
@@ -101,13 +101,13 @@ proc chk_irq*(this: var Interrupt): bool =
   if not(this.cpu.eflags.is_interrupt()):
     return false
   
-  if not(this.pic_m.toBool()) or not(this.pic_m.chk_intreq()):
+  if not(this.pic_m.toBool()) or not(this.pic_m[].chk_intreq()):
     return false
   
-  n_intr = this.pic_m.get_nintr()
+  n_intr = this.pic_m[].get_nintr()
   if n_intr < 0:
-    n_intr = this.pic_s.get_nintr()
+    n_intr = this.pic_s[].get_nintr()
   
-  queue_interrupt(n_intr, true)
+  queue_interrupt(this, n_intr.uint8, true)
   return true
 

@@ -7,8 +7,8 @@ template instr*(b: InstrBase): untyped = b.exec.instr
 # proc code_0f01*(this: var InstrBase): void =
 #   discard
 
-# proc set_chsz_ad*(this: var InstrBase, ad: bool): void =
-#   this.exec.chsz_ad = ad
+proc set_chsz_ad*(this: var InstrBase, ad: bool): void =
+  this.exec.chsz_ad = ad
 
 # proc code_0f00*(this: var InstrBase): void =
 #   discard

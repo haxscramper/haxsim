@@ -1,12 +1,20 @@
 import "commonhpp"
 import emulator/[emulatorhpp, interruptcpp]
-import instruction/[instructionhpp, basehpp, instr16cpp, instr32cpp]
+import hardware/[processorhpp]
+import instruction/[
+  instructionhpp,
+  basehpp,
+  instr16cpp,
+  instr32cpp,
+  parsecpp,
+  execcpp
+]
 
 template MEMORY_SIZE*(): untyped {.dirty.} =
   (4 * MB)
 
 type
-  Setting* {.bycopy, importcpp.} = object
+  Setting* {.bycopy.} = object
     mem_size*: csize_t
     image_name*: cstring
     load_addr*: uint32
@@ -64,47 +72,41 @@ proc run_emulator*(set: Setting): void =
   while (emu.is_running()):
     var is_mode32: bool
     var prefix: uint8
-    var chsz_ad: bool
+    var chsz_ad, chsz_op: bool
     instr = InstrData()
     # memset(addr instr, 0, sizeof((InstrData)))
     try:
-      if emu.chk_irq():
-        emu.do_halt(false)
+      if emu.intr.chk_irq():
+        emu.accs.cpu.do_halt(false)
       
-      if emu.is_halt():
-        std.this_thread.sleep_for(std.chrono.milliseconds(10))
+      if emu.accs.cpu.is_halt():
+        {.warning: "[FIXME] 'std.this_thread.sleep_for(std.chrono.milliseconds(10))'".}
         continue
       
-      emu.hundle_interrupt()
-      is_mode32 = emu.is_mode32()
-      prefix = ((if is_mode32:
-            instr32.parse_prefix()
-          
-          else:
-            instr16.parse_prefix()
-          ))
-      chsz_op = prefix and CHSZ_OP
-      chsz_ad = prefix and CHSZ_AD
+      emu.intr.hundle_interrupt()
+      is_mode32 = emu.accs.cpu.is_mode32()
+      if is_mode32:
+        prefix = instr32.parse_prefix()
+
+      else:
+        prefix = instr16.parse_prefix()
+      chsz_op = toBool(prefix and CHSZ_OP)
+      chsz_ad = toBool(prefix and CHSZ_AD)
       if is_mode32 xor chsz_op:
         instr32.set_chsz_ad(not((is_mode32 xor chsz_ad)))
-        instr32.parse()
-        instr32.exec()
+        parse(instr32)
+        discard exec(instr32)
       
       else:
         instr16.set_chsz_ad(is_mode32 xor chsz_ad)
-        instr16.parse()
-        instr16.exec()
+        parse(instr16)
+        discard exec(instr16)
       
-    except exception_t as n:
-      emu.queue_interrupt(n, true)
-      
-      ERROR("Exception %d", n)
-
     except:
-      emu.dump_regs()
-      emu.stop()
+      # emu.queue_interrupt(n, true)
+      assert false
+      # ERROR("Exception %d", n)
 
-proc help*(name: cstring): void = 
-  MSG("", name)
-  MSG("")
-  _exit(0)
+    # except:
+    #   emu.dump_regs()
+    #   emu.stop()
