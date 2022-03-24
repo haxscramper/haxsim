@@ -462,8 +462,6 @@ proc codeF6*(this: var InstrBase): void =
     else:
       ERROR("not implemented: 0xf6 /%d\\n", REG)
 
-
-
 proc initInstrBase*(r: var InstrBase) =
   r.setFuncflag(0x00, instrbase(addRm8R8), CHKMODRM)
   r.setFuncflag(0x02, instrbase(addR8Rm8), CHKMODRM)

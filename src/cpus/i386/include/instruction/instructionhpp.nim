@@ -408,3 +408,5 @@ proc get_tr*(this: var EmuInstr): uint16 =
 
 proc get_ldtr*(this: var EmuInstr): uint16 =
   return CPU.get_dtreg_selector(LDTR).uint16()
+
+
