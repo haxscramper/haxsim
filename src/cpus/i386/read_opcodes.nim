@@ -1,13 +1,8 @@
 import std/parsecsv
 import std/streams
 import std/strutils
+import hmisc/other/[hshell, oswrap]
 
-let file = "opcodes.csv"
-var s = newFileStream(file, fmRead)
-var x: CsvParser
-
-open(x, s, file)
-x.readHeaderRow()
 
 type
   OpKind = enum
@@ -84,10 +79,54 @@ type
     opkXCR = "xcr"
     opkStack = "..."
     opkXMM = "xmm"
+    opkExec1 = "1"
+    opkExec3 = "3"
+
+
+echo "converting"
+
+let abs = currentSourceDir() / RelFile("opcodes.ods")
+
+let cmd = shellCmd(
+  "soffice",
+  "--headless",
+  "--convert-to",
+  csv,
+  "--outdir",
+  $currentSourceDir(),
+  $abs)
+
+echo cmd
+execShell cmd
+assertExists(RelFile("opcodes.csv"))
+echo "done"
+
+let file = "opcodes.csv"
+var s = newFileStream(file, fmRead)
+var x: CsvParser
+
+open(x, s, file)
+x.readHeaderRow()
+
+type
+  OpFlagIO = enum
+    opfO = "o"
+    opfS = "s"
+    opfZ = "z"
+    opfA = "a"
+    opfC = "c"
+    opfG = "g"
 
 while readRow(x):
   # echo x.rowEntry("po"), x.rowEntry("so")
   for op in ["op1", "op2", "op3", "op4"]:
     let e = x.rowEntry(op)
-    if e notin ["", "1", "3"]:
+    if e notin [""]:
       echo parseEnum[OpKind](e.normalize())
+
+  for flag in ["tested flags", "modified flags", "def f", "undef f"]:
+    let e = x.rowEntry(flag)
+    if e notin [""]:
+      for ch in e:
+        if ch != '.':
+          echo parseEnum[OpFlagIO](e.normalize())
