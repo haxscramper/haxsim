@@ -1,0 +1,5 @@
+* Instruction decoding
+
+- *FF* instructions are processed based on the runtime value of the ~MODRM~
+  register, that is retrieved from the ~ModRM~ byte in the instruction
+  encoding.

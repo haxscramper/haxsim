@@ -204,6 +204,8 @@ type
     moffs*: uint32
 
   InstrData_field5* {.bycopy, union.} = object
+    ## Parsed ModRM instruction byte. Controls execution of the several
+    ## commands.
     dmodrm*: uint8
     modrm*: ModRM
 

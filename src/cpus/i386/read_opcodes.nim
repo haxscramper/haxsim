@@ -2,6 +2,7 @@ import std/parsecsv
 import std/streams
 import std/strutils
 import hmisc/other/[hshell, oswrap]
+import hmisc/core/all
 
 
 type
@@ -85,15 +86,15 @@ type
 
 echo "converting"
 
-let abs = currentSourceDir() / RelFile("opcodes.ods")
+let abs = oswrap.currentSourceDir() / RelFile("opcodes.ods")
 
 let cmd = shellCmd(
   "soffice",
   "--headless",
   "--convert-to",
-  csv,
+  "csv:Text - txt - csv (StarCalc):44,34,76,,,,true",
   "--outdir",
-  $currentSourceDir(),
+  $oswrap.currentSourceDir(),
   $abs)
 
 echo cmd
@@ -116,17 +117,64 @@ type
     opfA = "a"
     opfC = "c"
     opfG = "g"
+    opfP = "p"
+    opfI = "i"
+    opfD = "d"
+
+var res = """
+type
+  Opcode = enum
+"""
 
 while readRow(x):
-  # echo x.rowEntry("po"), x.rowEntry("so")
+  var args = ""
+  var mne = ""
   for op in ["op1", "op2", "op3", "op4"]:
     let e = x.rowEntry(op)
     if e notin [""]:
-      echo parseEnum[OpKind](e.normalize())
+      let en = parseEnum[OpKind](e.normalize())
+      mne.add " " & $e
+      args.add case en:
+        of opkStack: "_Stack"
+        of opkReg8: "_R8"
+        of opkRegMem8: "_Rm8"
+        of opkRegMem16: "_Rm16"
+        of opkReg16_32: "_R16_32"
+        of opkMem16_32: "_M16_32"
+        of opkImm16_32: "_I16_32"
+        of opkMM: "_M16and16_32and32"
+        of opkPtr32_48: "_Ptr16_32"
+        of opkRel16_32: "_Rel16_32"
 
-  for flag in ["tested flags", "modified flags", "def f", "undef f"]:
+        of opkMoffs16_32: "_Moffs16_32"
+        of opkRegMem16_32: "_Rm16_32"
+        of opkMem32_48: "_M32_48"
+        else: "_" & capitalizeAscii($en)
+
+
+  let num = align(
+    join([
+      x.rowEntry("po").toUpper().align(2, padding = '0'),
+      x.rowEntry("so").toUpper().align(3, padding = '0'),
+      x.rowEntry("o").toUpper().ternIt(it notin ["R", ""], it, "0"),
+    ]), 6, padding = '0'
+  )
+  res.addf(
+    "\n    op$# = (0x$#_$#_$#, \"$#\")",
+    (x.rowEntry("mnemonic") & args).alignLeft(30),
+    num[0..1], num[2..3], num[4..5],
+    x.rowEntry("mnemonic") & mne,
+  )
+
+  assert validIdentifier("a" & args), args & $x.row
+
+
+  for flag in ["test f", "mod f", "def f", "undef f"]:
     let e = x.rowEntry(flag)
     if e notin [""]:
-      for ch in e:
+      for ch in e.normalize():
         if ch != '.':
-          echo parseEnum[OpFlagIO](e.normalize())
+          discard parseEnum[OpFlagIO]($ch)
+
+writeFile("instruction/opcodes.nim", res)
+execShell shellCmd(nim, compile, "instruction/opcodes.nim")

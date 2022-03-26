@@ -281,27 +281,26 @@ proc movMoffs16Ax*(this: var Instr16): void =
 
 proc cmpsM8M8*(this: var Instr16): void =
   var m8D, m8S: uint8
-  block repeat:
+  var repeat = true
+  while repeat:
     m8S = ACS.getData8(this.exec.selectSegment(), GETGPREG(SI))
-  m8D = ACS.getData8(ES, GETGPREG(DI))
-  discard EFLAGSUPDATESUB(m8S, m8D)
-  discard UPDATEGPREG(SI, int16(if EFLAGSDF: -1 else: 1))
-  discard UPDATEGPREG(DI, int16(if EFLAGSDF: -1 else: 1))
-  if PREREPEAT.int.toBool():
-    discard UPDATEGPREG(CX, -1)
-    case PREREPEAT:
-      of REPZ:
-        if not(GETGPREG(CX)).toBool() or not(EFLAGSZF):
-          discard
+    m8D = ACS.getData8(ES, GETGPREG(DI))
+    discard EFLAGSUPDATESUB(m8S, m8D)
+    discard UPDATEGPREG(SI, int16(if EFLAGSDF: -1 else: 1))
+    discard UPDATEGPREG(DI, int16(if EFLAGSDF: -1 else: 1))
+    if PREREPEAT.int.toBool():
+      discard UPDATEGPREG(CX, -1)
+      case PREREPEAT:
+        of REPZ:
+          if not(GETGPREG(CX)).toBool() or not(EFLAGSZF):
+            repeat = false
 
-        {.warning: "cxxGoto repeat".}
-      of REPNZ:
-        if not(GETGPREG(CX)).toBool() or EFLAGSZF:
-          discard
+        of REPNZ:
+          if not(GETGPREG(CX)).toBool() or EFLAGSZF:
+            repeat = false
 
-        {.warning: "cxxGoto repeat".}
-      else:
-        discard
+        else:
+          discard
 
 
 proc cmpsM16M16*(this: var Instr16): void =
