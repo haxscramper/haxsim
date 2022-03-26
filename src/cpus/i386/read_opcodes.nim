@@ -1,90 +1,11 @@
 import std/parsecsv
 import std/streams
+import std/strformat
 import std/strutils
+import std/enumutils
 import hmisc/other/[hshell, oswrap]
 import hmisc/core/all
-
-
-type
-  OpKind = enum
-    opkGRegAH = "ah"
-    opkGRegAL = "al"
-    opkGRegAX = "ax"
-    opkCR0 = "cr0"
-    opkCRn = "crn"
-    opkDI = "di"
-    opkDRn = "drn"
-    opkDS = "ds"
-    opkDX = "dx"
-    opkGRegEAX = "eax"
-    opkeBP = "ebp"
-    opkeCX = "ecx"
-    opkEDI = "edi"
-    opkEDX = "edx"
-    opkESI = "esi"
-    opkBP = "bp"
-    opkEFlags = "eflags"
-    opkMM = "m16/32&16/32"
-
-    opkSRegES = "es"
-    opkSRegCX = "cx"
-    opkSRegFS = "fs"
-    opkSRegCS = "cs"
-    opkSRegCL = "cl"
-    opkSRegGS = "gs"
-
-    opkFlags = "flags"
-
-    opkGDTR = "gdtr"
-    opkIDTR = "idtr"
-    opkImm16 = "imm16"
-    opkImm16_32 = "imm16/32"
-    opkImm8 = "imm8"
-    opkLDTR ="ldtr"
-    opkMem = "m"
-    opkMem16 = "m16"
-    opkMem32_48 = "m16:16/32"
-    opkMem16_32 = "m16/32"
-    opkMem32 = "m32"
-    opkMem32int = "m32int"
-    opkMem32real = "m32real"
-    opkMem512 = "m512"
-    opkMem64 = "m64"
-    opkMem64int = "m64int"
-    opkMem8 = "m8"
-    opkm80dec = "80dec"
-    opkmoffs16_32 = "moffs16/32"
-    opkmoffs8 = "moffs8"
-    opkMSW = "msw"
-    opkptr32_48 = "ptr16:16/32"
-    opkReg = "r"
-    opkReg16_32 = "r16/32"
-    opkReg32 = "r32"
-    opkReg8 = "r8"
-    opkReg16 = "r16"
-    opkReg64 = "r64"
-    opkrel16_32 = "rel16/32"
-    opkrel8 = "rel8"
-    opkRegMem16 = "r/m16"
-    opkRegMem16_32 = "r/m16/32"
-    opkRegMem8 = "r/m8"
-    opkRegMem = "r/m"
-    opkSreg = "sreg"
-    opkSS = "ss"
-    opkST = "st"
-    opkST1 = "st1"
-    opkST2 = "st2"
-    opkSTi = "sti"
-    opkSI = "si"
-    opkTR = "tr"
-    opkXCR = "xcr"
-    opkStack = "..."
-    opkXMM = "xmm"
-    opkExec1 = "1"
-    opkExec3 = "3"
-
-
-echo "converting"
+import instruction/syntaxes
 
 let abs = oswrap.currentSourceDir() / RelFile("opcodes.ods")
 
@@ -97,10 +18,8 @@ let cmd = shellCmd(
   $oswrap.currentSourceDir(),
   $abs)
 
-echo cmd
 execShell cmd
 assertExists(RelFile("opcodes.csv"))
-echo "done"
 
 let file = "opcodes.csv"
 var s = newFileStream(file, fmRead)
@@ -109,72 +28,138 @@ var x: CsvParser
 open(x, s, file)
 x.readHeaderRow()
 
-type
-  OpFlagIO = enum
-    opfO = "o"
-    opfS = "s"
-    opfZ = "z"
-    opfA = "a"
-    opfC = "c"
-    opfG = "g"
-    opfP = "p"
-    opfI = "i"
-    opfD = "d"
-
 var res = """
 type
-  ICode* = enum
-"""
+  ICode* = enum"""
+
+var operands = """
+func getUsedOperands*(code: ICode): array[4, Option[(OpAddrKind, OpDataKind)]] =
+  const nop = none((OpAddrKind, OpDataKind))"""
+
+for data in OpDataKind:
+  operands.addf("\n  const $# = $#", $data, symbolName(data))
+
+for akind in OpAddrKind:
+  operands.addf("\n  const $# = $#", $akind, symbolName(akind))
+
+operands.add "\n  case code:"
+
+var flags = {
+  "test f": "",
+  "mod f": "",
+  "def f": "",
+  "undef f": ""
+}
 
 while readRow(x):
   var args = ""
   var mne = ""
-  for op in ["op1", "op2", "op3", "op4"]:
-    let e = x.rowEntry(op)
-    if e notin [""]:
-      let en = parseEnum[OpKind](e.normalize())
-      mne.add " " & $e
-      args.add case en:
-        of opkStack: "_Stack"
-        of opkReg8: "_R8"
-        of opkRegMem8: "_Rm8"
-        of opkRegMem16: "_Rm16"
-        of opkReg16_32: "_R16_32"
-        of opkMem16_32: "_M16_32"
-        of opkImm16_32: "_I16_32"
-        of opkMM: "_M16and16_32and32"
-        of opkPtr32_48: "_Ptr16_32"
-        of opkRel16_32: "_Rel16_32"
-
-        of opkMoffs16_32: "_Moffs16_32"
-        of opkRegMem16_32: "_Rm16_32"
-        of opkMem32_48: "_M32_48"
-        else: "_" & capitalizeAscii($en)
-
 
   let num = align(
     join([
       x.rowEntry("po").toUpper().align(2, padding = '0'),
       x.rowEntry("so").toUpper().align(3, padding = '0'),
       x.rowEntry("o").toUpper().ternIt(it notin ["R", ""], it, "0"),
-    ]), 6, padding = '0'
-  )
+    ]), 6, padding = '0')
+
+
+  var operandsTmp = ""
+  for op in ["op1", "op2", "op3", "op4"]:
+    let e = x.rowEntry(op)
+    if e in [""]:
+      operandsTmp.addf("$#, ", "nop".alignLeft(20))
+
+    else:
+      let en = parseEnum[OpKind](e.normalize())
+
+      mne.add " " & $e
+
+      let addrMeth = case en:
+        of opkImm16_32, opkImm8, opkImm16: opAddrImm
+        of opkReg16_32, opkReg8, opkReg16, opkReg32: opAddrReg
+        of opkMem16_32, opkMem8, opkMem16, opkMem32: opAddrMem
+        of opkRegMem16_32, opkRegMem8: opAddrRegMem
+        of opkGRegAH: opAddrGRegAH
+        of opkGRegAL: opAddrGRegAL
+        of opkGRegAX: opAddrGRegAX
+        of opkGRegEAX: opAddrGRegEAX
+        else:
+          # assert false, $en
+          opAddrImm
+
+      let dataKind = case en:
+        of opkImm16_32, opkMem16_32, opkReg16_32, opkRegMem16_32: opData16_32
+        of opkImm8, opkReg8, opkMem8, opkRegMem8: opData8
+        of opkImm16, opkReg16, opkMem16, opkRegMem16: opData16
+        of opkReg32, opkMem32: opData32
+        of opkGRegAH, opkGRegAL: opData8
+        of opkGRegAX: opData16
+        of opkGRegEAX: opData32
+        else:
+          # assert false, $en
+          opData16_32
+
+
+      operandsTmp.add ("some(($#, $#))" % [$addrMeth, $dataKind]).alignLeft(20)
+      operandsTmp.add ", "
+
+      args.addf("_$#_$#", addrMeth, dataKind)
+
+      # args.add case en:
+      #   of opkStack: "_Stack"
+      #   of opkReg8: "_R_B"
+      #   of opkRegMem8: "_Rm_B"
+      #   of opkRegMem16: "_Rm_W"
+      #   of opkReg16_32: "_R_Vs"
+      #   of opkMem16_32: "_M_Vs"
+      #   of opkImm16_32: "_I_Vs"
+      #   of opkMM: "_M_2Wor2DW"
+      #   of opkPtr32_48: "_PtrP"
+      #   of opkRel16_32: "_Rel_Vs"
+
+      #   of opkMoffs16_32: "_Moffs_Vs"
+      #   of opkRegMem16_32: "_Rm_Vs"
+      #   of opkMem32_48: "_M_P"
+      #   else: "_" & capitalizeAscii($en)
+
+  let opname = "op" & x.rowEntry("mnemonic") & args
+  operands.addf("\n    of $#: [$#]", opname.alignLeft(30), operandsTmp)
+
+
   res.addf(
-    "\n    op$# = (0x$#_$#_$#, \"$#\")",
-    (x.rowEntry("mnemonic") & args).alignLeft(30),
+    "\n    $# = (0x$#_$#_$#, \"$#\")",
+    opname.alignLeft(30),
     num[0..1], num[2..3], num[4..5],
-    x.rowEntry("mnemonic") & mne,
-  )
+    x.rowEntry("mnemonic") & mne,)
 
   assert validIdentifier("a" & args), args & $x.row
 
 
-  for flag in ["test f", "mod f", "def f", "undef f"]:
-    let e = x.rowEntry(flag)
+  for _, (name, body) in mpairs(flags):
+    body.addf("\n    of $#: set[OpFlagIO]({", opname.alignLeft(30))
+    let e = x.rowEntry(name)
     if e notin [""]:
       for ch in e.normalize():
         if ch != '.':
-          discard parseEnum[OpFlagIO]($ch)
+          body.addf("$#, ", symbolName(parseEnum[OpFlagIO]($ch)))
 
-writeFile("instruction/opcodes.nim", res)
+    body.add "})"
+
+writeFile(
+  "instruction/opcodes.nim",
+  join([
+    "import ./syntaxes, std/options",
+    res,
+    &"""
+func getTestedFlags*(code: ICode): set[OpFlagIO] =
+  case code:{flags[0][1]}
+
+func getModifiedFlags*(code: ICode): set[OpFlagIO] =
+  case code:{flags[1][1]}
+
+{operands}
+"""
+  ], "\n\n")
+)
+
 execShell shellCmd(nim, check, "instruction/opcodes.nim")
