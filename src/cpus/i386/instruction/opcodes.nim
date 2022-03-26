@@ -1,5 +1,5 @@
 type
-  Opcode = enum
+  ICode* = enum
 
     opADD_Rm8_R8                     = (0x00_00_00, "ADD r/m8 r8")
     opADD_Rm16_32_R16_32             = (0x01_00_00, "ADD r/m16/32 r16/32")

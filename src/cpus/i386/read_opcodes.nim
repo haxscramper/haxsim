@@ -123,7 +123,7 @@ type
 
 var res = """
 type
-  Opcode = enum
+  ICode* = enum
 """
 
 while readRow(x):
@@ -177,4 +177,4 @@ while readRow(x):
           discard parseEnum[OpFlagIO]($ch)
 
 writeFile("instruction/opcodes.nim", res)
-execShell shellCmd(nim, compile, "instruction/opcodes.nim")
+execShell shellCmd(nim, check, "instruction/opcodes.nim")
