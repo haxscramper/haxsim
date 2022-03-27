@@ -34,13 +34,14 @@ type
 
 var operands = """
 func getUsedOperands*(code: ICode): array[4, Option[(OpAddrKind, OpDataKind)]] =
-  const nop = none((OpAddrKind, OpDataKind))"""
+  const nop = none((OpAddrKind, OpDataKind))
+  const"""
 
 for data in OpDataKind:
-  operands.addf("\n  const $# = $#", $data, symbolName(data))
+  operands.addf("\n    Da$# = $#", $data, symbolName(data))
 
 for akind in OpAddrKind:
-  operands.addf("\n  const $# = $#", $akind, symbolName(akind))
+  operands.addf("\n    Ad$# = $#", $akind, symbolName(akind))
 
 operands.add "\n  case code:"
 
@@ -54,6 +55,7 @@ var flags = {
 while readRow(x):
   var args = ""
   var mne = ""
+  # echo x.row
 
   let num = align(
     join([
@@ -67,60 +69,19 @@ while readRow(x):
   for op in ["op1", "op2", "op3", "op4"]:
     let e = x.rowEntry(op)
     if e in [""]:
-      operandsTmp.addf("$#, ", "nop".alignLeft(20))
+      operandsTmp.addf("$#, ", "nop".alignLeft(24))
 
     else:
       let en = parseEnum[OpKind](e.normalize())
 
       mne.add " " & $e
 
-      let addrMeth = case en:
-        of opkImm16_32, opkImm8, opkImm16: opAddrImm
-        of opkReg16_32, opkReg8, opkReg16, opkReg32: opAddrReg
-        of opkMem16_32, opkMem8, opkMem16, opkMem32: opAddrMem
-        of opkRegMem16_32, opkRegMem8: opAddrRegMem
-        of opkGRegAH: opAddrGRegAH
-        of opkGRegAL: opAddrGRegAL
-        of opkGRegAX: opAddrGRegAX
-        of opkGRegEAX: opAddrGRegEAX
-        else:
-          # assert false, $en
-          opAddrImm
+      operandsTmp.add ("some((Ad$#, Da$#))" % [
+        $getAddrKind(en), $getDataKind(en)]).alignLeft(24)
 
-      let dataKind = case en:
-        of opkImm16_32, opkMem16_32, opkReg16_32, opkRegMem16_32: opData16_32
-        of opkImm8, opkReg8, opkMem8, opkRegMem8: opData8
-        of opkImm16, opkReg16, opkMem16, opkRegMem16: opData16
-        of opkReg32, opkMem32: opData32
-        of opkGRegAH, opkGRegAL: opData8
-        of opkGRegAX: opData16
-        of opkGRegEAX: opData32
-        else:
-          # assert false, $en
-          opData16_32
-
-
-      operandsTmp.add ("some(($#, $#))" % [$addrMeth, $dataKind]).alignLeft(20)
       operandsTmp.add ", "
 
-      args.addf("_$#_$#", addrMeth, dataKind)
-
-      # args.add case en:
-      #   of opkStack: "_Stack"
-      #   of opkReg8: "_R_B"
-      #   of opkRegMem8: "_Rm_B"
-      #   of opkRegMem16: "_Rm_W"
-      #   of opkReg16_32: "_R_Vs"
-      #   of opkMem16_32: "_M_Vs"
-      #   of opkImm16_32: "_I_Vs"
-      #   of opkMM: "_M_2Wor2DW"
-      #   of opkPtr32_48: "_PtrP"
-      #   of opkRel16_32: "_Rel_Vs"
-
-      #   of opkMoffs16_32: "_Moffs_Vs"
-      #   of opkRegMem16_32: "_Rm_Vs"
-      #   of opkMem32_48: "_M_P"
-      #   else: "_" & capitalizeAscii($en)
+      args.addf("_$#_$#", getAddrKind(en), getDataKind(en))
 
   let opname = "op" & x.rowEntry("mnemonic") & args
   operands.addf("\n    of $#: [$#]", opname.alignLeft(30), operandsTmp)
