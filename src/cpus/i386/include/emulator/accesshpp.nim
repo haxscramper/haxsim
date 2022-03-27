@@ -62,7 +62,7 @@ proc setSegment*(this: var DataAccess, reg: sgregT, sel: uint16): void =
     EXCEPTION(EXPGP, (reg == CS or reg == SS) and not(dtIndex).bool)
     EXCEPTION(EXPGP, dtIndex > dtLimit)
 
-    this.mem.readDataBlob(gdt, dtBase + dtIndex,)
+    this.mem.readDataBlob(gdt, dtBase + dtIndex)
 
     cache.base = (gdt.baseH shl 24) + (gdt.baseM shl 16) + gdt.baseL
     cache.limit = (gdt.limitH shl 16) + gdt.limitL

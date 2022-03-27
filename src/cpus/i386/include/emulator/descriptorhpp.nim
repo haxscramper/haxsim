@@ -24,8 +24,24 @@ type
     G*       {.bitsize: 1.}: uint8
     base_h*:            uint8
 
+type
+  data* = object
+    field0* {.bitsize: 1.}: uint8
+    w*      {.bitsize: 1.}: uint8
+    exd*    {.bitsize: 1.}: uint8
+    field3* {.bitsize: 5.}: uint8
 
-  SegDesc* {.bycopy.} = object
+type
+  code* = object
+    field0* {.bitsize: 1.}: uint8
+    r*      {.bitsize: 1.}: uint8
+    cnf*    {.bitsize: 1.}: uint8
+    field3* {.bitsize: 5.}: uint8
+
+
+
+type
+  SegDesc* = object
     limit_l*:           uint16
     base_l*:            uint16
     base_m*:            uint8
@@ -37,38 +53,27 @@ type
     G*       {.bitsize: 1.}: uint8
     base_h*:            uint8
 
-  Type* {.bycopy, union.} = object
+  Type* {.union.} = object
     data*: data
     code*: code
     field2*: type_field2
 
-  data* {.bycopy.} = object
-    field0* {.bitsize: 1.}: uint8
-    w*      {.bitsize: 1.}: uint8
-    exd*    {.bitsize: 1.}: uint8
-    field3* {.bitsize: 5.}: uint8
-
-  code* {.bycopy.} = object
-    field0* {.bitsize: 1.}: uint8
-    r*      {.bitsize: 1.}: uint8
-    cnf*    {.bitsize: 1.}: uint8
-    field3* {.bitsize: 5.}: uint8
-
-  type_field2* {.bycopy.} = object
+  type_field2* = object
     A*      {.bitsize: 1.}: uint8
     field1* {.bitsize: 2.}: uint8
     segc*   {.bitsize: 1.}: uint8
     field3* {.bitsize: 4.}: uint8
 
-  SegDesc_field3* {.bycopy, union.} = object
+  SegDesc_field3* {.union.} = object
     Type*: Type
     field1*: SegDesc_field3_field1
 
-  SegDesc_field3_field1* {.bycopy.} = object
+  SegDesc_field3_field1* = object
     field0* {.bitsize: 4.}: uint8
     S*      {.bitsize: 1.}: uint8
     DPL*    {.bitsize: 2.}: uint8
     P*      {.bitsize: 1.}: uint8
+
 
 
 proc A*(this: Type): uint8 = this.field2.A

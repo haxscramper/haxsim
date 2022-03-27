@@ -1,6 +1,3 @@
-static: echo 12
-
-
 import instruction/instructionhpp
 import hardware/[processorhpp, crhpp]
 import emulator/accesshpp

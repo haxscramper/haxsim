@@ -85,7 +85,14 @@ proc readData*(
 
 
 proc readDataBlob*[T](this: var Memory, dst: var T, srcAddr: EPointer) =
-  var dstBlob = memBlob[T]()
+  when compiles(memBlob[T]()):
+    # `{.bitisize.}` fields break `sizeof` for compile-time, so it is not
+    # possible to have proper `array[sizeof(T)]`
+    var dstBlob = memBlob[T]()
+
+  else:
+    var dstBlob = memBlob(ESize(sizeof(T)))
+
   copymem(
     dest = dstBlob,
     source = this.memory.asMemPointer(srcAddr),
@@ -95,7 +102,13 @@ proc readDataBlob*[T](this: var Memory, dst: var T, srcAddr: EPointer) =
 
 
 proc writeDataBlob*[T](this: var Memory, dstAddr: EPointer, src: T) =
-  let srcBlob = toMemBlob(src)
+  when compiles(memBlob[T]()):
+    var srcBlob = memBlob[T]()
+
+  else:
+    var srcBlob = memBlob(ESize(sizeof(T)))
+
+  toMemBlob(src, srcBlob)
   copymem(dest = this.memory.asMemPointer(0).asVar(), source = srcBlob)
 
 

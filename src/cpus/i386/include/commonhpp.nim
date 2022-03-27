@@ -1,4 +1,5 @@
 import util/debughpp
+import hmisc/wrappers/wraphelp
 export debughpp
 import hmisc/core/all
 export all
@@ -24,7 +25,7 @@ type
   EDWord* = uint32
 
   MemData* = seq[EByte]
-  MemBlob*[R] = array[R, EByte]
+  MemBlob*[R: static[int]] = array[R, EByte]
 
   MemPointer* = object
     data*: ptr MemData
@@ -33,10 +34,23 @@ type
 func asMemPointer*(s: MemData, pos: EPointer): MemPointer =
   MemPointer(pos: pos, data: unsafeAddr s)
 
+func memBlob*(size: ESize): MemData = discard
+
+func toMemBlob*[T](it: T, result: var MemData) =
+  result = memBlob(ESize(sizeof(it)))
+  var arr = cast[PUarray[EByte]](unsafeAddr it)
+  for byt in 0 ..< sizeof(T):
+    result[byt] = arr[][byt]
+
+func fromMemBlob*[T](it: var T, blob: MemData) =
+  var arr = cast[PUArray[EByte]](addr it)
+  for byt in 0 ..< sizeof(T):
+    arr[][byt] = blob[byt]
+
 func memBlob*[T](): MemBlob[sizeof(T)] = discard
 
-func toMemBlob*[T](it: T): MemBlob[sizeof(T)] =
-  cast[MemBlob[sizeof(T)]](it)
+func toMemBlob*[T](it: T, result: MemBlob[sizeof(T)]) =
+  result = cast[MemBlob[sizeof(T)]](it)
 
 func fromMemBlob*[T](it: var T, blob: MemBlob[sizeof(T)]) =
   it = cast[T](blob)
@@ -44,6 +58,14 @@ func fromMemBlob*[T](it: var T, blob: MemBlob[sizeof(T)]) =
 func copymem*(dest: var MemPointer, source: MemPointer, size: ESize) =
   dest.data[][dest.pos .. dest.pos + size] =
     source.data[][source.pos .. source.pos + size]
+
+func copymem*(
+    dest: var MemData, source: MemPointer, size: ESize = ESize(len(dest))) =
+  dest[0 .. size] = source.data[][source.pos .. source.pos + size]
+
+func copymem*(
+    dest: var MemPointer, source: MemData, size: ESize = ESize(len(source))) =
+  dest.data[][dest.pos .. dest.pos + size] = source[0 .. size]
 
 func copymem*[R](
     dest: var MemPointer, source: MemBlob[R], size: ESize = R) =

@@ -1,3 +1,6 @@
+import instruction/execcpp
+
+
 import "commonhpp"
 import emulator/[emulatorhpp, interruptcpp]
 import hardware/[processorhpp]
@@ -9,9 +12,6 @@ import instruction/[
   parsecpp,
 ]
 
-static: echo 2
-
-import instruction/execcpp
 
 
 template MEMORYSIZE*(): untyped {.dirty.} =
