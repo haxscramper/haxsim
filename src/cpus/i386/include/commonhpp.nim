@@ -56,21 +56,25 @@ func fromMemBlob*[T](it: var T, blob: MemBlob[sizeof(T)]) =
   it = cast[T](blob)
 
 func copymem*(dest: var MemPointer, source: MemPointer, size: ESize) =
-  dest.data[][dest.pos .. dest.pos + size] =
-    source.data[][source.pos .. source.pos + size]
+  assertRef(dest.data)
+  assertRef(source.data)
+  echov dest.data
+  echov source.data
+  dest.data[][dest.pos ..< dest.pos + size] =
+    source.data[][source.pos ..< source.pos + size]
 
 func copymem*(
     dest: var MemData, source: MemPointer, size: ESize = ESize(len(dest))) =
-  dest[0 .. size] = source.data[][source.pos .. source.pos + size]
+  dest[0 ..< size] = source.data[][source.pos ..< source.pos + size]
 
 func copymem*(
     dest: var MemPointer, source: MemData, size: ESize = ESize(len(source))) =
-  dest.data[][dest.pos .. dest.pos + size] = source[0 .. size]
+  dest.data[][dest.pos ..< dest.pos + size] = source[0 ..< size]
 
 func copymem*[R](
     dest: var MemPointer, source: MemBlob[R], size: ESize = R) =
-  dest.data[][dest.pos .. dest.pos + size] = source[0 .. size]
+  dest.data[][dest.pos ..< dest.pos + size] = source[0 ..< size]
 
 func copymem*[R](
     dest: var MemBlob[R], source: MemPointer, size: ESize = R) =
-  dest[0 .. size] = source.data[][source.pos .. source.pos + size]
+  dest[0 ..< size] = source.data[][source.pos ..< source.pos + size]

@@ -134,4 +134,5 @@ proc main1() =
     0xF4
   ])
 
+startHax()
 main1()
