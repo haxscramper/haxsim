@@ -7,8 +7,12 @@ import instruction/[
   instr16cpp,
   instr32cpp,
   parsecpp,
-  execcpp
 ]
+
+static: echo 2
+
+import instruction/execcpp
+
 
 template MEMORYSIZE*(): untyped {.dirty.} =
   (4 * MB)
@@ -23,7 +27,7 @@ type
     uiFull*: bool
     uiVm*: bool
 
-  FullImpl = object
+  FullImpl = ref object
     data: InstrData
     impl16: InstrImpl
     impl32: InstrImpl

@@ -20,11 +20,11 @@ import device/[
 ]
 
 type
-  EmuSetting* {.bycopy.} = object
+  EmuSetting* = object
     memSize*: csizeT
     uiset*: UISetting
   
-  Emulator* {.bycopy.} = object
+  Emulator* = object
     accs*: DataAccess
     intr*: Interrupt
     ui*: UI
@@ -90,7 +90,7 @@ proc initEmulator*(set: EmuSetting): Emulator =
   result.accs.io.setMemio(0xa0000, 0x20000, vga.memio)
 
 proc loadBlob*(this: var Emulator, blob: seq[uint8], pos: uint32 = 0) =
-  discard this.accs.mem.writeData(pos, unsafeAddr blob[0], blob.len().csize_t)
+  this.accs.mem.writeDataBlob(pos, blob)
 
 proc loadBinary*(this: var Emulator, fname: cstring, `addr`: uint32, offset: uint32, size: int64): void =
   var fp: FILE
@@ -108,4 +108,4 @@ proc loadBinary*(this: var Emulator, fname: cstring, `addr`: uint32, offset: uin
   discard readBuffer(fp, buf[0].addr, size)
   close(fp)
 
-  discard writeData(this.accs.mem, `addr`, buf[0].addr, size.csize_t)
+  writeDataBlob(this.accs.mem, `addr`, buf)

@@ -72,12 +72,47 @@ proc dumpMem*(this: var Memory, `addr`: uint32, size: csizeT): void =
 
     MSG("\\n")
 
-proc readData*(this: var Memory, dst: pointer, srcAddr: uint32, size: csizeT): csizeT =
+proc readData*(
+  this: var Memory, dst: EPointer, srcAddr: EPointer, size: ESize): ESize =
+
   ASSERTRANGE(srcAddr, size)
-  copymem(dest = dst, source = addr this.memory[srcAddr], size = size)
+  copymem(
+    dest = this.memory.asMemPointer(dst).asVar(),
+    source = this.memory.asMemPointer(srcAddr),
+    size = size)
+
   return size
 
-proc writeData*(this: var Memory, dstAddr: uint32, src: pointer, size: csizeT): csizeT =
+
+proc readDataBlob*[T](this: var Memory, dst: var T, srcAddr: EPointer) =
+  var dstBlob = memBlob[T]()
+  copymem(
+    dest = dstBlob,
+    source = this.memory.asMemPointer(srcAddr),
+  )
+
+  fromMemBlob(dst, dstBlob)
+
+
+proc writeDataBlob*[T](this: var Memory, dstAddr: EPointer, src: T) =
+  let srcBlob = toMemBlob(src)
+  copymem(dest = this.memory.asMemPointer(0).asVar(), source = srcBlob)
+
+
+proc writeDataBlob*(this: var Memory, srcAddr: EPointer, blob: MemData) =
+  copymem(
+    dest = this.memory.asMemPointer(srcAddr).asVar(),
+    source = blob.asMemPointer(0),
+    size = ESize(len(blob))
+  )
+
+proc writeData*(
+    this: var Memory, dstAddr: EPointer, src: EPointer, size: ESize): ESize =
+
   ASSERTRANGE(dstAddr, size)
-  copymem(dest = addr this.memory[dstAddr], source = src, size = size)
+  copymem(
+    dest = this.memory.asMemPointer(dstAddr).asVar(),
+    source = this.memory.asMemPointer(src),
+    size = size)
+
   return size

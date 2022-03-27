@@ -17,7 +17,7 @@ proc saveRegs*(this: var Interrupt, chpl: bool, cs: uint16): void =
       base = this.cpu.getDtregBase(TR)
       limit = this.cpu.getDtregLimit(TR)
       EXCEPTION(EXPTS, limit < uint32(sizeof(TSS) - 1))
-      discard this.mem.readData(addr tss, base, sizeof(TSS).csizeT)
+      this.mem.readDataBlob(tss, base)
       ss = this.getSegment(SS)
       esp = this.cpu.getGpreg(ESP)
       this.setSegment(SS, tss.ss0)
@@ -61,8 +61,7 @@ proc hundleInterrupt*(this: var Interrupt): void =
     idtLimit = this.cpu.getDtregLimit(IDTR)
     idtOffset = n shl 3
     EXCEPTION(EXPGP, idtOffset > idtLimit)
-    discard this.mem.readData(
-      addr idt, idtBase + idtOffset, sizeof(IntGateDesc).csizeT)
+    this.mem.readDataBlob(idt, idtBase + idtOffset)
 
     {.warning: "[FIXME] 'RPL = idt.segSel.RPL'".}
     INFO(

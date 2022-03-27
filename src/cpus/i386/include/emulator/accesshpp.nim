@@ -12,7 +12,7 @@ type
     PS* {.bitsize: 1.}: uint32
     G* {.bitsize: 1.}: uint32
     field9* {.bitsize: 3.}: uint32
-    ptbl_base* {.bitsize: 20.}: uint32
+    ptblBase* {.bitsize: 20.}: uint32
 
 type
   PTE* {.bycopy.} = object
@@ -26,13 +26,13 @@ type
     PAT* {.bitsize: 1.}: uint32
     G* {.bitsize: 1.}: uint32
     field9* {.bitsize: 3.}: uint32
-    page_base* {.bitsize: 20.}: uint32
+    pageBase* {.bitsize: 20.}: uint32
 
 type
-  acsmode_t* {.size: sizeof(cint).} = enum
-    MODE_READ
-    MODE_WRITE
-    MODE_EXEC
+  acsmodeT* {.size: sizeof(cint).} = enum
+    MODEREAD
+    MODEWRITE
+    MODEEXEC
 
 type
   DataAccess* = object of Hardware
@@ -46,24 +46,26 @@ proc initDataAccess*(size: uint32 = 0): DataAccess =
 import emulator/exceptionhpp
 import emulator/descriptorhpp
 
-proc set_segment*(this: var DataAccess, reg: sgreg_t, sel: uint16): void =
+proc setSegment*(this: var DataAccess, reg: sgregT, sel: uint16): void =
   var sg: SGRegister
   var cache: ptr SGRegCache = addr sg.cache
-  this.cpu.get_sgreg(reg, addr sg)
+  this.cpu.getSgreg(reg, addr sg)
   sg.raw = sel
-  if this.cpu.is_protected():
-    var dt_base: uint32
-    var dt_limit, dt_index: uint16
+  if this.cpu.isProtected():
+    var dtBase: uint32
+    var dtLimit, dtIndex: uint16
     var gdt: SegDesc
-    let sgreg_name = ["ES", "CS", "SS", "DS", "FS", "GS"]
-    dt_index = sg.index shl 3
-    dt_base = this.cpu.get_dtreg_base(if sg.TI.bool: LDTR else: GDTR)
-    dt_limit = this.cpu.get_dtreg_limit(if sg.TI.bool: LDTR else: GDTR)
-    EXCEPTION(EXP_GP, (reg == CS or reg == SS) and not(dt_index).bool)
-    EXCEPTION(EXP_GP, dt_index > dt_limit)
-    discard this.mem.read_data(addr gdt, dt_base + dt_index, sizeof((SegDesc)).csize_t)
-    cache.base = (gdt.base_h shl 24) + (gdt.base_m shl 16) + gdt.base_l
-    cache.limit = (gdt.limit_h shl 16) + gdt.limit_l
+    let sgregName = ["ES", "CS", "SS", "DS", "FS", "GS"]
+    dtIndex = sg.index shl 3
+    dtBase = this.cpu.getDtregBase(if sg.TI.bool: LDTR else: GDTR)
+    dtLimit = this.cpu.getDtregLimit(if sg.TI.bool: LDTR else: GDTR)
+    EXCEPTION(EXPGP, (reg == CS or reg == SS) and not(dtIndex).bool)
+    EXCEPTION(EXPGP, dtIndex > dtLimit)
+
+    this.mem.readDataBlob(gdt, dtBase + dtIndex,)
+
+    cache.base = (gdt.baseH shl 24) + (gdt.baseM shl 16) + gdt.baseL
+    cache.limit = (gdt.limitH shl 16) + gdt.limitL
     cast[ptr uint8](
       addr cache.flags.`type`
     )[] = cast[ptr uint8](
@@ -73,7 +75,7 @@ proc set_segment*(this: var DataAccess, reg: sgreg_t, sel: uint16): void =
     cache.flags.AVL = gdt.AVL
     cache.flags.DB = gdt.DB
     cache.flags.G = gdt.G
-    INFO(3, "%s : dt_base=0x%04x, dt_limit=0x%02x, dt_index=0x%02x {base=0x%08x, limit=0x%08x, flags=0x%04x}", sgreg_name[reg], dt_base, dt_limit, dt_index, cache.base, cache.limit shl ((if cache.flags.G:
+    INFO(3, "%s : dtBase=0x%04x, dtLimit=0x%02x, dtIndex=0x%02x {base=0x%08x, limit=0x%08x, flags=0x%04x}", sgregName[reg], dtBase, dtLimit, dtIndex, cache.base, cache.limit shl ((if cache.flags.G:
                              12
 
                            else:
@@ -83,20 +85,20 @@ proc set_segment*(this: var DataAccess, reg: sgreg_t, sel: uint16): void =
   else:
     cache.base = cast[uint32](sel) shl 4
 
-  this.cpu.set_sgreg(reg, addr sg)
+  this.cpu.setSgreg(reg, addr sg)
 
-proc get_segment*(this: var DataAccess, reg: sgreg_t): uint16 =
+proc getSegment*(this: var DataAccess, reg: sgregT): uint16 =
   var sg: SGRegister
-  this.cpu.get_sgreg(reg, addr sg)
+  this.cpu.getSgreg(reg, addr sg)
   return sg.raw
 
-proc trans_v2l*(this: var DataAccess, mode: acsmode_t, seg: sgreg_t, vaddr: uint32): uint32 =
+proc transV2l*(this: var DataAccess, mode: acsmodeT, seg: sgregT, vaddr: uint32): uint32 =
   var laddr: uint32
   var CPL: uint8
   var sg: SGRegister
-  CPL = this.get_segment(CS).uint8 and 3
-  this.cpu.get_sgreg(seg, addr sg)
-  if this.cpu.is_protected():
+  CPL = this.getSegment(CS).uint8 and 3
+  this.cpu.getSgreg(seg, addr sg)
+  if this.cpu.isProtected():
     var base, limit: uint32
     var cache: SGRegCache = sg.cache
     base = cache.base
@@ -105,22 +107,22 @@ proc trans_v2l*(this: var DataAccess, mode: acsmode_t, seg: sgreg_t, vaddr: uint
       limit = (limit shl 12)
 
     if cache.flags.`type`.segc.bool:
-      EXCEPTION(EXP_GP, mode == MODE_WRITE)
-      EXCEPTION(EXP_GP, mode == MODE_READ and not(cache.flags.`type`.code.r).bool)
+      EXCEPTION(EXPGP, mode == MODEWRITE)
+      EXCEPTION(EXPGP, mode == MODEREAD and not(cache.flags.`type`.code.r).bool)
       EXCEPTION(
-        EXP_GP,
+        EXPGP,
         CPL > cache.flags.DPL and
-        not((mode == MODE_EXEC and cache.flags.`type`.code.cnf.bool)).bool)
+        not((mode == MODEEXEC and cache.flags.`type`.code.cnf.bool)).bool)
 
     else:
-      EXCEPTION(EXP_GP, mode == MODE_EXEC)
-      EXCEPTION(EXP_GP, mode == MODE_WRITE and not(cache.flags.`type`.data.w).bool)
-      EXCEPTION(EXP_GP, CPL > cache.flags.DPL)
+      EXCEPTION(EXPGP, mode == MODEEXEC)
+      EXCEPTION(EXPGP, mode == MODEWRITE and not(cache.flags.`type`.data.w).bool)
+      EXCEPTION(EXPGP, CPL > cache.flags.DPL)
       if cache.flags.`type`.data.exd.bool:
         base = (base - limit)
 
 
-    EXCEPTION(EXP_GP, vaddr > limit)
+    EXCEPTION(EXPGP, vaddr > limit)
     laddr = base + vaddr
     INFO(6, "base=0x%04x, limit=0x%02x, laddr=0x%02x", base, limit, laddr)
 
@@ -131,7 +133,7 @@ proc trans_v2l*(this: var DataAccess, mode: acsmode_t, seg: sgreg_t, vaddr: uint
   return laddr
 
 
-proc search_tlb*(this: var DataAccess, vpn: uint32, pte: ptr PTE): bool =
+proc searchTlb*(this: var DataAccess, vpn: uint32, pte: ptr PTE): bool =
   if vpn + 1 > uint32(this.tlb.len() != 0 or not(this.tlb[vpn].isNil())):
     return false
 
@@ -139,7 +141,7 @@ proc search_tlb*(this: var DataAccess, vpn: uint32, pte: ptr PTE): bool =
   pte[] = this.tlb[vpn][]
   return true
 
-proc cache_tlb*(this: var DataAccess, vpn: uint32, pte: PTE): void =
+proc cacheTlb*(this: var DataAccess, vpn: uint32, pte: PTE): void =
   if vpn + 1 > this.tlb.len().uint32:
     this.tlb.setLen(vpn + 1)
 
@@ -147,182 +149,180 @@ proc cache_tlb*(this: var DataAccess, vpn: uint32, pte: PTE): void =
   this.tlb[vpn][] = pte
 
 
-proc trans_v2p*(this: var DataAccess, mode: acsmode_t, seg: sgreg_t, vaddr: uint32): uint32 =
+proc transV2p*(this: var DataAccess, mode: acsmodeT, seg: sgregT, vaddr: uint32): uint32 =
   var laddr, paddr: uint32
-  laddr = this.trans_v2l(mode, seg, vaddr)
-  if this.cpu.is_ena_paging():
+  laddr = this.transV2l(mode, seg, vaddr)
+  if this.cpu.isEnaPaging():
     var vpn: uint32
     var offset: uint16
     var cpl: uint8
     var pte: PTE
-    EXCEPTION(EXP_GP, not(this.cpu.is_protected()))
-    cpl = this.get_segment(CS).uint8 and 3
+    EXCEPTION(EXPGP, not(this.cpu.isProtected()))
+    cpl = this.getSegment(CS).uint8 and 3
     vpn = laddr shr 12
     offset = laddr.uint16 and ((1 shl 12) - 1)
-    if not(this.search_tlb(vpn, addr pte)):
-      var pdir_base, ptbl_base: uint32
-      var pdir_index, ptbl_index: uint16
+    if not(this.searchTlb(vpn, addr pte)):
+      var pdirBase, ptblBase: uint32
+      var pdirIndex, ptblIndex: uint16
       var pde: PDE
-      pdir_index = uint16(laddr shr 22)
-      ptbl_index = uint16((laddr shr 12) and ((1 shl 10) - 1))
-      pdir_base = this.cpu.get_pdir_base() shl 12
-      discard this.mem.read_data(
-        addr pde,
-        uint32(pdir_base + pdir_index) * sizeof(PDE).uint32,
-        sizeof(PDE).csize_t)
+      pdirIndex = uint16(laddr shr 22)
+      ptblIndex = uint16((laddr shr 12) and ((1 shl 10) - 1))
+      pdirBase = this.cpu.getPdirBase() shl 12
+      this.mem.readDataBlob(
+        pde,
+        uint32(pdirBase + pdirIndex) * sizeof(PDE).uint32)
 
-      EXCEPTION_WITH(EXP_PF, not(pde.P).bool, this.cpu.set_crn(2, laddr))
-      EXCEPTION_WITH(EXP_PF, not(pde.RW).bool and mode == MODE_WRITE, this.cpu.set_crn(2, laddr))
-      EXCEPTION_WITH(EXP_PF, not(pde.US).bool and cpl > 2, this.cpu.set_crn(2, laddr))
-      ptbl_base = pde.ptbl_base shl 12
-      discard this.mem.read_data(
-        addr pte,
-        uint32(ptbl_base + ptbl_index) * sizeof(PTE).uint32(),
-        sizeof(PTE).uint32())
+      EXCEPTIONWITH(EXPPF, not(pde.P).bool, this.cpu.setCrn(2, laddr))
+      EXCEPTIONWITH(EXPPF, not(pde.RW).bool and mode == MODEWRITE, this.cpu.setCrn(2, laddr))
+      EXCEPTIONWITH(EXPPF, not(pde.US).bool and cpl > 2, this.cpu.setCrn(2, laddr))
+      ptblBase = pde.ptblBase shl 12
+      this.mem.readDataBlob(
+        pte,
+        uint32(ptblBase + ptblIndex) * sizeof(PTE).uint32())
 
-      this.cache_tlb(vpn, pte)
-      INFO(3, "Cache TLB : pdir_base=0x%04x, ptbl_base=0x%04x {vpn=0x%04x, pfn=0x%04x}",
-           pdir_base, ptbl_base, vpn, pte.page_base)
+      this.cacheTlb(vpn, pte)
+      INFO(3, "Cache TLB : pdirBase=0x%04x, ptblBase=0x%04x {vpn=0x%04x, pfn=0x%04x}",
+           pdirBase, ptblBase, vpn, pte.pageBase)
 
-    EXCEPTION_WITH(EXP_PF, not(pte.P).bool, this.cpu.set_crn(2, laddr))
-    EXCEPTION_WITH(EXP_PF, not(pte.RW).bool and mode == MODE_WRITE, this.cpu.set_crn(2, laddr))
-    EXCEPTION_WITH(EXP_PF, not(pte.US).bool and cpl > 2, this.cpu.set_crn(2, laddr))
-    paddr = (pte.page_base shl 12) + offset
+    EXCEPTIONWITH(EXPPF, not(pte.P).bool, this.cpu.setCrn(2, laddr))
+    EXCEPTIONWITH(EXPPF, not(pte.RW).bool and mode == MODEWRITE, this.cpu.setCrn(2, laddr))
+    EXCEPTIONWITH(EXPPF, not(pte.US).bool and cpl > 2, this.cpu.setCrn(2, laddr))
+    paddr = (pte.pageBase shl 12) + offset
 
   else:
     paddr = laddr
 
-  if not(this.mem.is_ena_a20gate()):
+  if not(this.mem.isEnaA20gate()):
     paddr = (paddr and (1 shl 20) - 1)
 
   return paddr
 
-proc read_mem32_seg*(this: var DataAccess, seg: sgreg_t, `addr`: uint32): uint32 =
-  var paddr, io_base: uint32
-  paddr = this.trans_v2p(MODE_READ, seg, `addr`)
-  io_base = this.io.chk_memio(paddr)
-  if io_base != 0:
-    return this.io.read_memio32(io_base, paddr - io_base)
+proc readMem32Seg*(this: var DataAccess, seg: sgregT, `addr`: uint32): uint32 =
+  var paddr, ioBase: uint32
+  paddr = this.transV2p(MODEREAD, seg, `addr`)
+  ioBase = this.io.chkMemio(paddr)
+  if ioBase != 0:
+    return this.io.readMemio32(ioBase, paddr - ioBase)
 
   else:
-    return this.mem.read_mem32(paddr)
+    return this.mem.readMem32(paddr)
 
-proc read_mem16_seg*(this: var DataAccess, seg: sgreg_t, `addr`: uint32): uint16 =
-  var paddr, io_base: uint32
-  paddr = this.trans_v2p(MODE_READ, seg, `addr`)
-  io_base = this.io.chk_memio(paddr)
-  return (if io_base != 0:
-            this.io.read_memio16(io_base, paddr - io_base)
+proc readMem16Seg*(this: var DataAccess, seg: sgregT, `addr`: uint32): uint16 =
+  var paddr, ioBase: uint32
+  paddr = this.transV2p(MODEREAD, seg, `addr`)
+  ioBase = this.io.chkMemio(paddr)
+  return (if ioBase != 0:
+            this.io.readMemio16(ioBase, paddr - ioBase)
 
           else:
-            this.mem.read_mem16(paddr)
+            this.mem.readMem16(paddr)
           )
 
-proc read_mem8_seg*(this: var DataAccess, seg: sgreg_t, `addr`: uint32): uint8 =
-  var paddr, io_base: uint32
-  paddr = this.trans_v2p(MODE_READ, seg, `addr`)
-  io_base = this.io.chk_memio(paddr)
-  return (if io_base != 0:
-            this.io.read_memio8(io_base, paddr - io_base)
+proc readMem8Seg*(this: var DataAccess, seg: sgregT, `addr`: uint32): uint8 =
+  var paddr, ioBase: uint32
+  paddr = this.transV2p(MODEREAD, seg, `addr`)
+  ioBase = this.io.chkMemio(paddr)
+  return (if ioBase != 0:
+            this.io.readMemio8(ioBase, paddr - ioBase)
 
           else:
-            this.mem.read_mem8(paddr)
+            this.mem.readMem8(paddr)
           )
 
-proc write_mem32_seg*(this: var DataAccess, seg: sgreg_t, `addr`: uint32, v: uint32): void =
-  var paddr, io_base: uint32
-  paddr = this.trans_v2p(MODE_WRITE, seg, `addr`)
-  io_base = this.io.chk_memio(paddr)
-  if io_base != 0:
-    this.io.write_memio32(io_base, paddr - io_base, v)
+proc writeMem32Seg*(this: var DataAccess, seg: sgregT, `addr`: uint32, v: uint32): void =
+  var paddr, ioBase: uint32
+  paddr = this.transV2p(MODEWRITE, seg, `addr`)
+  ioBase = this.io.chkMemio(paddr)
+  if ioBase != 0:
+    this.io.writeMemio32(ioBase, paddr - ioBase, v)
 
   else:
-    this.mem.write_mem32(paddr, v)
+    this.mem.writeMem32(paddr, v)
 
 
-proc write_mem16_seg*(this: var DataAccess, seg: sgreg_t, `addr`: uint32, v: uint16): void =
-  var paddr, io_base: uint32
-  paddr = this.trans_v2p(MODE_WRITE, seg, `addr`)
-  io_base = this.io.chk_memio(paddr)
-  if io_base != 0:
-    this.io.write_memio16(io_base, paddr - io_base, v)
-
-  else:
-    this.mem.write_mem16(paddr, v)
-
-
-proc write_mem8_seg*(this: var DataAccess, seg: sgreg_t, `addr`: uint32, v: uint8): void =
-  var paddr, io_base: uint32
-  paddr = this.trans_v2p(MODE_WRITE, seg, `addr`)
-  io_base = this.io.chk_memio(paddr)
-  if io_base != 0:
-    this.io.write_memio8(io_base, paddr - io_base, v)
+proc writeMem16Seg*(this: var DataAccess, seg: sgregT, `addr`: uint32, v: uint16): void =
+  var paddr, ioBase: uint32
+  paddr = this.transV2p(MODEWRITE, seg, `addr`)
+  ioBase = this.io.chkMemio(paddr)
+  if ioBase != 0:
+    this.io.writeMemio16(ioBase, paddr - ioBase, v)
 
   else:
-    this.mem.write_mem8(paddr, v)
+    this.mem.writeMem16(paddr, v)
+
+
+proc writeMem8Seg*(this: var DataAccess, seg: sgregT, `addr`: uint32, v: uint8): void =
+  var paddr, ioBase: uint32
+  paddr = this.transV2p(MODEWRITE, seg, `addr`)
+  ioBase = this.io.chkMemio(paddr)
+  if ioBase != 0:
+    this.io.writeMemio8(ioBase, paddr - ioBase, v)
+
+  else:
+    this.mem.writeMem8(paddr, v)
 
 
 
-proc exec_mem8_seg*(this: var DataAccess, seg: sgreg_t, `addr`: uint32): uint8 =
-  return this.mem.read_mem8(this.trans_v2p(MODE_EXEC, seg, `addr`))
+proc execMem8Seg*(this: var DataAccess, seg: sgregT, `addr`: uint32): uint8 =
+  return this.mem.readMem8(this.transV2p(MODEEXEC, seg, `addr`))
 
-proc exec_mem16_seg*(this: var DataAccess, seg: sgreg_t, `addr`: uint32): uint16 =
-  return this.mem.read_mem16(this.trans_v2p(MODE_EXEC, seg, `addr`))
+proc execMem16Seg*(this: var DataAccess, seg: sgregT, `addr`: uint32): uint16 =
+  return this.mem.readMem16(this.transV2p(MODEEXEC, seg, `addr`))
 
-proc get_data8*(this: var DataAccess, seg: sgreg_t, `addr`: uint32): uint8 =
-  return this.read_mem8_seg(seg, `addr`)
+proc getData8*(this: var DataAccess, seg: sgregT, `addr`: uint32): uint8 =
+  return this.readMem8Seg(seg, `addr`)
 
-proc get_data16*(this: var DataAccess, seg: sgreg_t, `addr`: uint32): uint16 =
-  return this.read_mem16_seg(seg, `addr`)
+proc getData16*(this: var DataAccess, seg: sgregT, `addr`: uint32): uint16 =
+  return this.readMem16Seg(seg, `addr`)
 
-proc get_data32*(this: var DataAccess, seg: sgreg_t, `addr`: uint32): uint32 =
-  return this.read_mem32_seg(seg, `addr`)
+proc getData32*(this: var DataAccess, seg: sgregT, `addr`: uint32): uint32 =
+  return this.readMem32Seg(seg, `addr`)
 
-proc put_data8*(this: var DataAccess, seg: sgreg_t, `addr`: uint32, v: uint8): void =
-  this.write_mem8_seg(seg, `addr`, v)
+proc putData8*(this: var DataAccess, seg: sgregT, `addr`: uint32, v: uint8): void =
+  this.writeMem8Seg(seg, `addr`, v)
 
-proc put_data16*(this: var DataAccess, seg: sgreg_t, `addr`: uint32, v: uint16): void =
-  this.write_mem16_seg(seg, `addr`, v)
+proc putData16*(this: var DataAccess, seg: sgregT, `addr`: uint32, v: uint16): void =
+  this.writeMem16Seg(seg, `addr`, v)
 
-proc put_data32*(this: var DataAccess, seg: sgreg_t, `addr`: uint32, v: uint32): void =
-  this.write_mem32_seg(seg, `addr`, v)
+proc putData32*(this: var DataAccess, seg: sgregT, `addr`: uint32, v: uint32): void =
+  this.writeMem32Seg(seg, `addr`, v)
 
-proc get_code8*(this: var DataAccess, index: cint): uint8 =
-  return this.exec_mem8_seg(CS, this.cpu.get_eip() + index.uint32)
+proc getCode8*(this: var DataAccess, index: cint): uint8 =
+  return this.execMem8Seg(CS, this.cpu.getEip() + index.uint32)
 
-proc get_code16*(this: var DataAccess, index: cint): uint16 =
-  return this.exec_mem16_seg(CS, this.cpu.get_eip() + index.uint32)
+proc getCode16*(this: var DataAccess, index: cint): uint16 =
+  return this.execMem16Seg(CS, this.cpu.getEip() + index.uint32)
 
-proc exec_mem32_seg*(this: var DataAccess, seg: sgreg_t, `addr`: uint32): uint32 =
-  return this.mem.read_mem32(this.trans_v2p(MODE_EXEC, seg, `addr`))
+proc execMem32Seg*(this: var DataAccess, seg: sgregT, `addr`: uint32): uint32 =
+  return this.mem.readMem32(this.transV2p(MODEEXEC, seg, `addr`))
 
-proc get_code32*(this: var DataAccess, index: cint): uint32 =
-  return this.exec_mem32_seg(CS, this.cpu.get_eip() + index.uint32)
+proc getCode32*(this: var DataAccess, index: cint): uint32 =
+  return this.execMem32Seg(CS, this.cpu.getEip() + index.uint32)
 
 
 proc push32*(this: var DataAccess, value: uint32): void =
   var esp: uint32
-  discard this.cpu.update_gpreg(ESP, -4)
-  esp = this.cpu.get_gpreg(ESP)
-  this.write_mem32_seg(SS, esp, value)
+  discard this.cpu.updateGpreg(ESP, -4)
+  esp = this.cpu.getGpreg(ESP)
+  this.writeMem32Seg(SS, esp, value)
 
 proc pop32*(this: var DataAccess): uint32 =
   var esp, value: uint32
-  esp = this.cpu.get_gpreg(ESP)
-  value = this.read_mem32_seg(SS, esp)
-  discard this.cpu.update_gpreg(ESP, 4)
+  esp = this.cpu.getGpreg(ESP)
+  value = this.readMem32Seg(SS, esp)
+  discard this.cpu.updateGpreg(ESP, 4)
   return value
 
 proc push16*(this: var DataAccess, value: uint16): void =
   var sp: uint16
-  discard this.cpu.update_gpreg(SP, -2)
-  sp = this.cpu.get_gpreg(SP)
-  this.write_mem16_seg(SS, sp, value)
+  discard this.cpu.updateGpreg(SP, -2)
+  sp = this.cpu.getGpreg(SP)
+  this.writeMem16Seg(SS, sp, value)
 
 proc pop16*(this: var DataAccess): uint16 =
   var sp, value: uint16
-  sp = this.cpu.get_gpreg(SP)
-  value = this.read_mem16_seg(SS, sp)
-  discard this.cpu.update_gpreg(SP, 2)
+  sp = this.cpu.getGpreg(SP)
+  value = this.readMem16Seg(SS, sp)
+  discard this.cpu.updateGpreg(SP, 2)
   return value
 
