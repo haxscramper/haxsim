@@ -409,7 +409,10 @@ type
 
     
 proc initVGA*(): VGA =
-  new(result)
+  result = VGA(
+    memio: initMemoryIO().asRef(),
+    portio: initPortIO())
+
   for i in 0 ..< 4:
     result.plane[i] = newSeqWith(1 shl 16, 0'u8)
 

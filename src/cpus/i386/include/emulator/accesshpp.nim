@@ -40,6 +40,8 @@ type
 
 proc initDataAccess*(size: uint32 = 0): DataAccess =
   asgnAux[Hardware](result, initHardware(size))
+  assertRef(result.mem)
+  assertRef(result.io.memory)
 
 import emulator/exceptionhpp
 import emulator/descriptorhpp

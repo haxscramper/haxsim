@@ -4,7 +4,7 @@ import device/dev_iohpp
 import std/tables
 
 type
-  IO* {.bycopy.} = object
+  IO* {.requiresinit.} = object
     memory*: Memory
     portIo*: Table[uint16, PortIO]
     portIoMap*: Table[uint16, csizeT]
@@ -13,9 +13,6 @@ type
   
 proc initIO*(mem: Memory): IO =
   result.memory = mem
-
-proc initIO*(): IO = 
-  discard 
 
 proc destroyIO*(this: var IO): void =
   this.portIo.clear()
@@ -86,6 +83,8 @@ proc outIo16*(this: var IO, `addr`: uint16, value: uint16): void =
     this.outIo8(`addr` + uint16(i), uint8((value shr (8 * i)) and 0xff))
 
 proc setMemio*(this: var IO, base: uint32, len: csizeT, dev: ref MemoryIO): void =
+  assertRef(this.memory)
+  assertRef(dev)
   var `addr`: uint32
   ASSERT(not((base != 0 and ((1 shl 12) - 1) != 0)))
   dev[].setMem(this.memory, base, len)

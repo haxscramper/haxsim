@@ -13,3 +13,4 @@ type
   
 proc initHardware*(size: uint32): Hardware =
   result.mem = initMemory(size)
+  result.io = initIO(result.mem)

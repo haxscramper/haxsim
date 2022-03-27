@@ -46,7 +46,7 @@ proc `click=`*(this: var UI): array[2, bool] = this.field7.click
 
 proc initUI*(m: Memory, s: UISetting): UI =
   result = UI(
-    vga: initVGA().asRef(),
+    vga: initVGA(),
     keyboard: initKeyboard(m),
     set: s,
     working: true,
