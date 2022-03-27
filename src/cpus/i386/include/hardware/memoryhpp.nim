@@ -57,8 +57,7 @@ proc readMem8*(this: var Memory, `addr`: uint32): uint8 =
     return 0
 
 proc initMemory*(size: uint32): Memory =
-  result.memory = newSeq[uint8](size)
-  result.a20gate = false
+  Memory(memory: newSeq[uint8](size), a20gate: false)
 
 proc destroyMemory*(this: var Memory): void =
   discard

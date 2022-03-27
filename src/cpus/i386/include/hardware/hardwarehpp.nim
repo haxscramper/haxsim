@@ -6,11 +6,10 @@ import iohpp
 export commonhpp, processorhpp, memoryhpp, iohpp
 
 type
-  Hardware* {.bycopy, inheritable.} = object
+  Hardware* {.inheritable.} = object
     cpu*: Processor
     mem*: Memory
     io*: IO
   
-proc initHardware*(size: csize_t): Hardware =
-  discard
-  # result.mem = initMemory(size)
+proc initHardware*(size: uint32): Hardware =
+  result.mem = initMemory(size)

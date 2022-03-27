@@ -35,8 +35,11 @@ type
     MODE_EXEC
 
 type
-  DataAccess* {.bycopy.} = object of Hardware
+  DataAccess* = object of Hardware
     tlb*: seq[ptr PTE]
+
+proc initDataAccess*(size: uint32 = 0): DataAccess =
+  asgnAux[Hardware](result, initHardware(size))
 
 import emulator/exceptionhpp
 import emulator/descriptorhpp

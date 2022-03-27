@@ -66,6 +66,7 @@ proc initEmulator*(set: EmuSetting): Emulator =
   picM.setIrq(2, picS)
   picM.setIrq(6, result.fdd)
   picS.setIrq(4, kb.getMouse())
+  result.accs = initDataAccess()
 
   with result.accs.io:
     setPortio(0x020, 2, picM.portio)

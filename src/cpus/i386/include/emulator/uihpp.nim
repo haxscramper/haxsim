@@ -45,18 +45,22 @@ proc click*(this: var UI): var array[2, bool] = this.field7.click
 proc `click=`*(this: var UI): array[2, bool] = this.field7.click
 
 proc initUI*(m: Memory, s: UISetting): UI =
-  result.vga = initVGA().asRef()
-  result.keyboard = initKeyboard(m)
-  result.set = s
-  result.working = true
-  result.capture = false
-  result.size_x = 320
-  result.size_y = 200
+  result = UI(
+    vga: initVGA().asRef(),
+    keyboard: initKeyboard(m),
+    set: s,
+    working: true,
+    capture: false,
+    size_x: 320,
+    size_y: 200,
+  )
+
   result.image = newSeq[uint8](result.size_x * result.size_y * 3)
   result.X = int16(result.size_x div 2)
   result.Y = int16(result.size_y div 2)
   result.click[0] = false
   result.click[1] = false
+
   # if set.enable:
   #   main_th = std.thread(addr UI.ui_main, this)
   #   main_th.detach()

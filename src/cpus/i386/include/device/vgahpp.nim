@@ -409,6 +409,7 @@ type
 
     
 proc initVGA*(): VGA =
+  new(result)
   for i in 0 ..< 4:
     result.plane[i] = newSeqWith(1 shl 16, 0'u8)
 

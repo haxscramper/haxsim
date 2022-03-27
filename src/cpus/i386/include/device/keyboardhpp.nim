@@ -46,10 +46,7 @@ type
 
 
 proc initMouse*(kb: Keyboard): Mouse =
-  result.keyboard = kb
-  result.enable = false
-
-
+  Mouse(keyboard: kb, enable: false)
 
 proc initKeyboard*(m: Memory): Keyboard =
   new(result)

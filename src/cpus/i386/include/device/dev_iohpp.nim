@@ -3,7 +3,7 @@ import hardware/memoryhpp
 import std/lenientops
 
 type
-  PortIO* {.bycopy.} = object
+  PortIO* = object
     in8*: proc(`addr`: uint16): uint8
     out8*: proc(`addr`: uint16, v: uint8): void
 
@@ -12,15 +12,16 @@ proc initPortIO*(): PortIO =
 
 
 type
-  MemoryIO* {.bycopy.} = object
-    memory*: ptr Memory
+  MemoryIO* = object
+    memory*: Memory
     paddr*: uint32    
-    size*: csize_t    
+    size*: csizeT
   
 proc initMemoryIO*(): MemoryIO = 
   discard 
 
-proc set_mem*(this: var MemoryIO, mem: ptr Memory, `addr`: uint32, len: csize_t): void = 
+proc setMem*(this: var MemoryIO, mem: Memory, `addr`: uint32, len: csizeT): void =
+  assertRef(mem)
   this.memory = mem
   this.paddr = `addr`
   this.size = len

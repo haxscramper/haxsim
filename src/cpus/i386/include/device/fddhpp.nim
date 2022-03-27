@@ -444,6 +444,7 @@ proc fdd_configure*(this: var FDD): void =
 
 
 proc initFDD*(): FDD =
+  new(result)
   result.fddfuncs[FDD_READ_TRACK] = fddfunc_t(fdd_read_track)
   result.fddfuncs[FDD_WRITE_DATA] = fddfunc_t(fdd_write_data)
   result.fddfuncs[FDD_READ_DATA] = fddfunc_t(fdd_read_data)
