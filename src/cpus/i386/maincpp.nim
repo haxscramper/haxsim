@@ -79,7 +79,14 @@ proc loop*(full: var FullImpl) =
     # except:
     #   emu.dumpRegs()
     #   emu.stop()
-  
+
+proc initFull*(emuset: var EmuSetting): FullImpl =
+  var full = FullImpl(emu: initEmulator(emuset))
+  full.impl16 = initInstr16(addr full.emu, addr full.data)
+  full.impl32 = initInstr32(addr full.emu, addr full.data)
+  return full
+
+
 proc runEmulator*(eset: Setting): void =
   var emuset: EmuSetting
   emuset.memSize = eset.memSize
@@ -87,10 +94,7 @@ proc runEmulator*(eset: Setting): void =
   emuset.uiset.full = eset.uiFull
   emuset.uiset.vm = eset.uiVm
 
-  var full = FullImpl(emu: initEmulator(emuset))
-  full.impl16 = initInstr16(addr full.emu, addr full.data)
-  full.impl32 = initInstr32(addr full.emu, addr full.data)
-
+  var full = initFull(emuset)
   if not(full.emu.insertFloppy(0, eset.imageName, false)):
     WARN("cannot load image \'%s\'", eset.imageName)
     return 
@@ -114,3 +118,15 @@ proc main*(): cint =
 
   var opt: char
   runEmulator(eset)
+
+proc main1() =
+  var eset = EmuSetting(memSize: 128)
+  var full = initFull(eset)
+  full.emu.loadBlob(@[
+    # `inc al`
+    0xFE'u8, 0xC0,
+    # `hlt`
+    0xF4
+  ])
+
+main1()

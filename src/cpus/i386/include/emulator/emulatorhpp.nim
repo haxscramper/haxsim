@@ -85,6 +85,9 @@ proc initEmulator*(set: EmuSetting): Emulator =
   result.accs.io.setPortio(0x3f8, 1, com.portio)
   result.accs.io.setMemio(0xa0000, 0x20000, vga.memio)
 
+proc loadBlob*(this: var Emulator, blob: seq[uint8], pos: uint32 = 0) =
+  discard this.accs.mem.writeData(pos, unsafeAddr blob[0], blob.len().csize_t)
+
 proc loadBinary*(this: var Emulator, fname: cstring, `addr`: uint32, offset: uint32, size: int64): void =
   var fp: FILE
   var size = size
