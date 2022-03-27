@@ -5,7 +5,7 @@ import commonhpp
 
 template INSTR(): untyped = this.exec.instr[]
 
-proc exec*(this: var InstrBase): bool =
+proc exec*(this: var InstrImpl): bool =
   var opcode: uint16 = INSTR.opcode
   if opcode shr 8 == 0x0f:
     opcode = (opcode and 0xff) or 0x0100

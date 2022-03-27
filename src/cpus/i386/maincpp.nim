@@ -25,8 +25,8 @@ type
 
   FullImpl = object
     data: InstrData
-    impl16: Instr16
-    impl32: Instr32
+    impl16: InstrImpl
+    impl32: InstrImpl
     emu: Emulator
   
 proc help*(name: cstring): void =
@@ -82,8 +82,8 @@ proc loop*(full: var FullImpl) =
 
 proc initFull*(emuset: var EmuSetting): FullImpl =
   var full = FullImpl(emu: initEmulator(emuset))
-  full.impl16 = initInstr16(addr full.emu, addr full.data)
-  full.impl32 = initInstr32(addr full.emu, addr full.data)
+  full.impl16 = initInstrImpl16(addr full.emu, addr full.data)
+  full.impl32 = initInstrImpl32(addr full.emu, addr full.data)
   return full
 
 

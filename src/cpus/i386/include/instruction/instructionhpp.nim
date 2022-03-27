@@ -251,12 +251,12 @@ type
   ExecInstr* {.bycopy.} = object of Instruction
     instrfuncs*: array[MAX_OPCODE, instrfunc_t]
 
-  InstrBase* {.bycopy, inheritable.} = object
+  InstrImpl* {.bycopy, inheritable.} = object
     exec*: ExecInstr
     parse*: ParseInstr
     emu*: EmuInstr
 
-  instrfunc_t* = proc(this: var InstrBase)
+  instrfunc_t* = proc(this: var InstrImpl)
 
 
 proc dmodrm*(this: InstrData): uint8 =

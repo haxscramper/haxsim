@@ -3,7 +3,7 @@ import commonhpp
 import emulator/[accesshpp, emulatorhpp]
 import hardware/processorhpp
 
-proc get_emu*(this: var InstrBase): ptr Emulator =
+proc get_emu*(this: var InstrImpl): ptr Emulator =
   this.exec.get_emu()
 
 template PRE_SEGMENT*(): untyped {.dirty.} =
@@ -29,7 +29,7 @@ template DISP32*(): untyped {.dirty.} =
 
 template INSTR(): untyped = this.exec.instr[]
 
-proc parse_prefix*(this: var InstrBase): uint8 =
+proc parse_prefix*(this: var InstrImpl): uint8 =
   var chsz, code: uint8 = 0
   while (true):
     code = ACS.get_code8(0)
@@ -71,7 +71,7 @@ proc parse_prefix*(this: var InstrBase): uint8 =
         block next:
           discard UPDATE_EIP(1)
 
-proc parse_opcode*(this: var InstrBase): void =
+proc parse_opcode*(this: var InstrImpl): void =
   OPCODE = ACS.get_code8(0)
   discard UPDATE_EIP(1)
   
@@ -86,7 +86,7 @@ proc parse_opcode*(this: var InstrBase): void =
     DEBUG_MSG(5, "CS:%04x  IP:0x%04x opcode:%02x ", EMU.get_segment(CS), GET_IP() - 1, OPCODE)
   
 
-proc parse_modrm32*(this: var InstrBase): void =
+proc parse_modrm32*(this: var InstrImpl): void =
   if MOD != 3 and RM == 4:
     INSTR.dSIB = ACS.get_code8(0)
     discard UPDATE_EIP(1)
@@ -105,7 +105,7 @@ proc parse_modrm32*(this: var InstrBase): void =
     
   
 
-proc parse_modrm16*(this: var InstrBase): void =
+proc parse_modrm16*(this: var InstrImpl): void =
   if (MOD == 0 and RM == 6) or MOD == 2:
     INSTR.disp16 = ACS.get_code32(0).int16()
     discard UPDATE_EIP(2)
@@ -118,7 +118,7 @@ proc parse_modrm16*(this: var InstrBase): void =
       DEBUG_MSG(5, "disp8:0x%02x ", DISP8)
     
 
-proc parse_modrm_sib_disp*(this: var InstrBase): void =
+proc parse_modrm_sib_disp*(this: var InstrImpl): void =
   INSTR.dmodrm = ACS.get_code8(0)
   discard UPDATE_EIP(1)
   DEBUG_MSG(5, "[mod:0x%02x reg:0x%02x rm:0x%02x] ", MOD, REG, RM)
@@ -130,7 +130,7 @@ proc parse_modrm_sib_disp*(this: var InstrBase): void =
 
   
 
-proc parse_moffs*(this: var InstrBase): void =
+proc parse_moffs*(this: var InstrImpl): void =
   if CPU.is_mode32() xor this.exec.chsz_ad:
     INSTR.moffs = ACS.get_code32(0)
     discard UPDATE_EIP(4)
@@ -141,7 +141,7 @@ proc parse_moffs*(this: var InstrBase): void =
   
   DEBUG_MSG(5, "moffs:0x%04x ", MOFFS)
 
-proc parse*(this: var InstrBase): void =
+proc parse*(this: var InstrImpl): void =
   var opcode: uint16
   this.parse_opcode()
   opcode = OPCODE

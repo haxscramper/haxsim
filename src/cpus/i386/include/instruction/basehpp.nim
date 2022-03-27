@@ -2,130 +2,125 @@ import commonhpp
 import instructionhpp
 
 
-template instr*(b: InstrBase): untyped = b.exec.instr
+template instr*(b: InstrImpl): untyped = b.exec.instr
 
-# proc code_0f01*(this: var InstrBase): void =
+# proc code_0f01*(this: var InstrImpl): void =
 #   discard
 
-proc set_chsz_ad*(this: var InstrBase, ad: bool): void =
+proc set_chsz_ad*(this: var InstrImpl, ad: bool): void =
   this.exec.chsz_ad = ad
 
-# proc code_0f00*(this: var InstrBase): void =
+# proc code_0f00*(this: var InstrImpl): void =
 #   discard
 
-# proc code_ff*(this: var InstrBase): void =
+# proc code_ff*(this: var InstrImpl): void =
 #   discard
 
-# proc code_f7*(this: var InstrBase): void =
+# proc code_f7*(this: var InstrImpl): void =
 #   discard
 
-# proc code_83*(this: var InstrBase): void =
+# proc code_83*(this: var InstrImpl): void =
 #   discard
 
-# proc code_81*(this: var InstrBase): void =
+# proc code_81*(this: var InstrImpl): void =
 #   discard
 
-# proc setnle_rm8*(this: var InstrBase): void =
+# proc setnle_rm8*(this: var InstrImpl): void =
 #   discard
 
-# proc setle_rm8*(this: var InstrBase): void =
+# proc setle_rm8*(this: var InstrImpl): void =
 #   discard
 
-# proc setnl_rm8*(this: var InstrBase): void =
+# proc setnl_rm8*(this: var InstrImpl): void =
 #   discard
 
-# proc setl_rm8*(this: var InstrBase): void =
+# proc setl_rm8*(this: var InstrImpl): void =
 #   discard
 
-# proc setnp_rm8*(this: var InstrBase): void =
+# proc setnp_rm8*(this: var InstrImpl): void =
 #   discard
 
-# proc setp_rm8*(this: var InstrBase): void =
+# proc setp_rm8*(this: var InstrImpl): void =
 #   discard
 
-# proc setns_rm8*(this: var InstrBase): void =
+# proc setns_rm8*(this: var InstrImpl): void =
 #   discard
 
-# proc sets_rm8*(this: var InstrBase): void =
+# proc sets_rm8*(this: var InstrImpl): void =
 #   discard
 
-# proc seta_rm8*(this: var InstrBase): void =
+# proc seta_rm8*(this: var InstrImpl): void =
 #   discard
 
-# proc setbe_rm8*(this: var InstrBase): void =
+# proc setbe_rm8*(this: var InstrImpl): void =
 #   discard
 
-# proc setnz_rm8*(this: var InstrBase): void =
+# proc setnz_rm8*(this: var InstrImpl): void =
 #   discard
 
-# proc setz_rm8*(this: var InstrBase): void =
+# proc setz_rm8*(this: var InstrImpl): void =
 #   discard
 
-# proc setnb_rm8*(this: var InstrBase): void =
+# proc setnb_rm8*(this: var InstrImpl): void =
 #   discard
 
-# proc setb_rm8*(this: var InstrBase): void =
+# proc setb_rm8*(this: var InstrImpl): void =
 #   discard
 
-# proc jo_rel8*(this: var InstrBase): void =
+# proc jo_rel8*(this: var InstrImpl): void =
 #   discard
 
-# proc jno_rel8*(this: var InstrBase): void =
+# proc jno_rel8*(this: var InstrImpl): void =
 #   discard
 
-# proc jb_rel8*(this: var InstrBase): void =
+# proc jb_rel8*(this: var InstrImpl): void =
 #   discard
 
-# proc jnb_rel8*(this: var InstrBase): void =
+# proc jnb_rel8*(this: var InstrImpl): void =
 #   discard
 
-# proc jz_rel8*(this: var InstrBase): void =
+# proc jz_rel8*(this: var InstrImpl): void =
 #   discard
 
-# proc jnz_rel8*(this: var InstrBase): void =
+# proc jnz_rel8*(this: var InstrImpl): void =
 #   discard
 
-# proc jbe_rel8*(this: var InstrBase): void =
+# proc jbe_rel8*(this: var InstrImpl): void =
 #   discard
 
-# proc ja_rel8*(this: var InstrBase): void =
+# proc ja_rel8*(this: var InstrImpl): void =
 #   discard
 
-# proc js_rel8*(this: var InstrBase): void =
+# proc js_rel8*(this: var InstrImpl): void =
 #   discard
 
-# proc jns_rel8*(this: var InstrBase): void =
+# proc jns_rel8*(this: var InstrImpl): void =
 #   discard
 
-# proc jp_rel8*(this: var InstrBase): void =
+# proc jp_rel8*(this: var InstrImpl): void =
 #   discard
 
-# proc jnp_rel8*(this: var InstrBase): void =
+# proc jnp_rel8*(this: var InstrImpl): void =
 #   discard
 
-# proc jl_rel8*(this: var InstrBase): void =
+# proc jl_rel8*(this: var InstrImpl): void =
 #   discard
 
-# proc jnl_rel8*(this: var InstrBase): void =
+# proc jnl_rel8*(this: var InstrImpl): void =
 #   discard
 
-# proc jle_rel8*(this: var InstrBase): void =
+# proc jle_rel8*(this: var InstrImpl): void =
 #   discard
 
-# proc jnle_rel8*(this: var InstrBase): void =
+# proc jnle_rel8*(this: var InstrImpl): void =
 #   discard
 
-# proc setno_rm8*(this: var InstrBase): void =
+# proc setno_rm8*(this: var InstrImpl): void =
 #   discard
 
-# proc seto_rm8*(this: var InstrBase): void =
+# proc seto_rm8*(this: var InstrImpl): void =
 #   discard
 
-type
-  Instr16* {.bycopy.} = object of InstrBase
-  Instr32* {.bycopy.} = object of InstrBase
-   
-  
 # proc jnle_rel16*(this: var Instr16): void =
 #   discard
 
