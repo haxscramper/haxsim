@@ -3,8 +3,9 @@ import commonhpp
 import emulator/[accesshpp, emulatorhpp]
 import hardware/processorhpp
 
-proc get_emu*(this: var InstrImpl): ptr Emulator =
-  this.exec.get_emu()
+proc get_emu*(this: var InstrImpl): Emulator =
+  result = this.exec.get_emu()
+  assertRef(result)
 
 template PRE_SEGMENT*(): untyped {.dirty.} =
   (this.exec.instr.pre_segment)
@@ -16,23 +17,23 @@ template OPCODE*(): untyped {.dirty.} =
   (this.exec.instr.opcode)
 
 template MOD*(): untyped {.dirty.} =
-  (this.exec.instr[].modrm.`mod`)
+  (this.exec.instr.modrm.`mod`)
 
 template RM*(): untyped {.dirty.} =
-  (this.exec.instr[].modrm.rm)
+  (this.exec.instr.modrm.rm)
 
 template BASE*(): untyped {.dirty.} =
-  (this.exec.instr[].sib.base)
+  (this.exec.instr.sib.base)
 
 template DISP32*(): untyped {.dirty.} =
-  (this.exec.instr[].disp32)
+  (this.exec.instr.disp32)
 
-template INSTR(): untyped = this.exec.instr[]
+template INSTR(): untyped = this.exec.instr
 
 proc parse_prefix*(this: var InstrImpl): uint8 =
   var chsz, code: uint8 = 0
   while (true):
-    code = ACS.get_code8(0)
+    code = this.get_emu().accs.get_code8(0)
     case code:
       of 0x26:
         PRE_SEGMENT = ES

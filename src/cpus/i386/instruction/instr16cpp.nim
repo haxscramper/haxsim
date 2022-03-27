@@ -788,8 +788,10 @@ proc code0f01*(this: var InstrImpl): void =
       ERROR("not implemented: 0x0f01 /%d\\n", REG)
 
 
-proc initInstrImpl16*(r: var InstrImpl, e: ptr Emulator, id: ptr InstrData): InstrImpl =
-  initInstrImpl(r)
+proc initInstrImpl16*(r: var InstrImpl, instr: Instruction) =
+  initInstrImpl(r, instr)
+  assertRef(r.exec.get_emu())
+
   r.setFuncflag(ICode(0x01), instr16(addRm16R16), CHKMODRM)
 
   r.setFuncflag(ICode(0x03), instr16(addR16Rm16), CHKMODRM)
@@ -926,5 +928,6 @@ proc initInstrImpl16*(r: var InstrImpl, e: ptr Emulator, id: ptr InstrData): Ins
   r.setFuncflag(ICode(0x0f01), instr16(code0f01), CHKMODRM)
 
 
-proc initInstrImpl16*(e: ptr Emulator, id: ptr InstrData): InstrImpl =
-  initInstrImpl16(result, e, id)
+proc initInstrImpl16*(instr: Instruction): InstrImpl =
+  initInstrImpl16(result, instr)
+  assertRef(result.exec.get_emu())

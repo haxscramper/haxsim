@@ -42,6 +42,8 @@ proc init*(): void =
     setbuf(stderr, nil)
 
 proc loop*(full: var FullImpl) =
+  assertRef(full.impl16.get_emu())
+  assertRef(full.impl16.get_emu())
   while (full.emu.isRunning()):
     var isMode32: bool
     var prefix: uint8
@@ -86,8 +88,11 @@ proc loop*(full: var FullImpl) =
 
 proc initFull*(emuset: var EmuSetting): FullImpl =
   var full = FullImpl(emu: initEmulator(emuset))
-  full.impl16 = initInstrImpl16(addr full.emu, addr full.data)
-  full.impl32 = initInstrImpl32(addr full.emu, addr full.data)
+  var instr = initInstruction(full.emu, full.data, false)
+  assertRef(full.emu)
+  full.impl16 = initInstrImpl16(instr)
+  full.impl32 = initInstrImpl32(instr)
+  assertRef(full.impl16.get_emu())
   return full
 
 

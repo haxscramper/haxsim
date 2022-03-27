@@ -18,8 +18,9 @@ proc setFuncflag*(this: var InstrImpl, opcode: ICode, `func`: instrfuncT, flags:
   this.exec.instrfuncs[opcode] = `func`
   this.parse.chk[opcode].flags = flags
   
-proc getEmu*(this: var InstrImpl): ptr Emulator =
-  this.exec.getEmu()
+proc getEmu*(this: var InstrImpl): Emulator =
+  result = this.exec.getEmu()
+  assertRef(result)
 
 proc addRm8R8*(this: var InstrImpl): void =
   var r8, rm8: uint8
@@ -463,7 +464,10 @@ proc codeF6*(this: var InstrImpl): void =
     else:
       ERROR("not implemented: 0xf6 /%d\\n", REG)
 
-proc initInstrImpl*(r: var InstrImpl) =
+proc initInstrImpl*(r: var InstrImpl, instr: Instruction) =
+  asgnAux[Instruction](r.exec, instr)
+  assertRef(r.exec.get_emu())
+
   r.setFuncflag(ICode(0x00), instrbase(addRm8R8), CHKMODRM)
   r.setFuncflag(ICode(0x02), instrbase(addR8Rm8), CHKMODRM)
   r.setFuncflag(ICode(0x04), instrbase(addAlImm8), CHKIMM8)
@@ -548,5 +552,5 @@ proc initInstrImpl*(r: var InstrImpl) =
   r.setFuncflag(ICode(0xc0), instrbase(codeC0), CHKMODRM or CHKIMM8)
   r.setFuncflag(ICode(0xf6), instrbase(codeF6), CHKMODRM)
 
-proc initInstrImpl*(): InstrImpl =
-  initInstrImpl(result)
+proc initInstrImpl*(instr: Instruction): InstrImpl =
+  initInstrImpl(result, instr)

@@ -2,14 +2,16 @@ import hardware/processorhpp
 import std/tables
 import commonhpp
 import emulator/emulatorhpp
-template EMU*(): untyped {.dirty.} =
-  this.get_emu()
+template EMU*(): untyped =
+  let tmp = this.get_emu()
+  assertRef(tmp)
+  tmp
 
-template CPU*(): untyped = EMU.accs.cpu
-template MEM*(): untyped = EMU.accs.mem
-template ACS*(): untyped = EMU.accs
-template INT*(): untyped = EMU.intr
-template EIO*(): untyped = EMU.accs.io
+template CPU*(): untyped {.dirty.} = EMU.accs.cpu
+template MEM*(): untyped {.dirty.} = EMU.accs.mem
+template ACS*(): untyped {.dirty.} = EMU.accs
+template INT*(): untyped {.dirty.} = EMU.intr
+template EIO*(): untyped {.dirty.} = EMU.accs.io
 
 template GET_EIP*(): untyped {.dirty.} =
   CPU.get_eip()
@@ -111,67 +113,67 @@ template POP16*(): untyped {.dirty.} =
   ACS.pop16()
 
 template PREFIX*(): untyped {.dirty.} =
-  (this.exec.instr[].prefix)
+  (this.exec.instr.prefix)
 
 template OPCODE*(): untyped {.dirty.} =
-  (this.instr[].opcode)
+  (this.instr.opcode)
 
 template dMODRM*(): untyped {.dirty.} =
-  (this.exec.instr[].dmodrm)
+  (this.exec.instr.dmodrm)
 
 template MOD*(): untyped {.dirty.} =
-  (this.instr[].modrm.`mod`)
+  (this.instr.modrm.`mod`)
 
 template REG*(): untyped {.dirty.} =
-  (this.instr[].modrm.reg)
+  (this.instr.modrm.reg)
 
 template RM*(): untyped {.dirty.} =
-  (this.instr[].modrm.rm)
+  (this.instr.modrm.rm)
 
 template dSIB*(): untyped {.dirty.} =
-  (this.exec.instr[].dsib)
+  (this.exec.instr.dsib)
 
 template SCALE*(): untyped {.dirty.} =
-  (this.instr[].sib.scale)
+  (this.instr.sib.scale)
 
 template INDEX*(): untyped {.dirty.} =
-  (this.instr[].sib.index)
+  (this.instr.sib.index)
 
 template BASE*(): untyped {.dirty.} =
-  (this.instr[].sib.base)
+  (this.instr.sib.base)
 
 template DISP32*(): untyped {.dirty.} =
-  (this.instr[].disp32)
+  (this.instr.disp32)
 
 template DISP16*(): untyped {.dirty.} =
-  (this.instr[].disp16)
+  (this.instr.disp16)
 
 template DISP8*(): untyped {.dirty.} =
-  (this.instr[].disp8)
+  (this.instr.disp8)
 
 template IMM32*(): untyped {.dirty.} =
-  (this.exec.instr[].imm32)
+  (this.exec.instr.imm32)
 
 template IMM16*(): untyped {.dirty.} =
-  (this.exec.instr[].imm16)
+  (this.exec.instr.imm16)
 
 template IMM8*(): untyped {.dirty.} =
-  (this.exec.instr[].imm8)
+  (this.exec.instr.imm8)
 
 template PTR16*(): untyped {.dirty.} =
-  (this.exec.instr[].ptr16)
+  (this.exec.instr.ptr16)
 
 template MOFFS*(): untyped {.dirty.} =
-  (this.instr[].moffs)
+  (this.instr.moffs)
 
 template PRE_SEGMENT*(): untyped {.dirty.} =
-  (this.instr[].pre_segment)
+  (this.instr.pre_segment)
 
 template PRE_REPEAT*(): untyped {.dirty.} =
-  (this.instr[].pre_repeat)
+  (this.instr.pre_repeat)
 
 template SEGMENT*(): untyped {.dirty.} =
-  (this.instr[].segment)
+  (this.instr.segment)
 
 const MAX_OPCODE* = 0x200
 type
@@ -224,9 +226,9 @@ type
     imm32*: int32
 
   Instruction* {.bycopy, inheritable.} = object
-    instr*: ptr InstrData
+    instr*: InstrData
     chsz_ad*: bool
-    emu*: ptr Emulator
+    emu*: Emulator
     mode32*: bool
 
   InstrFlags* {.bycopy, union.} = object
@@ -323,13 +325,14 @@ proc `imm32=`*(this: var InstrData, value: int32) =
 proc initInstruction*(): Instruction =
   discard
 
-proc initInstruction*(e: ptr Emulator, i: ptr InstrData, m: bool): Instruction =
+proc initInstruction*(e: Emulator, i: InstrData, m: bool): Instruction =
   result.emu = e
   result.instr = i
   result.mode32 = m
 
-proc get_emu*(this: var Instruction): ptr Emulator =
-  return this.emu
+proc get_emu*(this: var Instruction): Emulator =
+  result = this.emu
+  assertRef(result)
 
 proc is_mode32*(this: var Instruction): bool =
   return this.mode32

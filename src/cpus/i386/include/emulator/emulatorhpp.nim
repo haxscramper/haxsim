@@ -24,7 +24,7 @@ type
     memSize*: csizeT
     uiset*: UISetting
   
-  Emulator* = object
+  Emulator* = ref object
     accs*: DataAccess
     intr*: Interrupt
     ui*: UI
@@ -44,6 +44,7 @@ proc insertFloppy*(this: var Emulator, slot: uint8, disk: cstring, write: bool):
   return (if not this.fdd.isNil(): this.fdd.insertDisk(slot, disk, write) else: false)
 
 proc initEmulator*(set: EmuSetting): Emulator =
+  new(result)
   var picM, picS: PIC
   var pit: ref PIT
   var syscon: ref SysControl

@@ -23,6 +23,7 @@ type
     pic_s*, pic_m*: PIC
 
 proc set_pic*(this: var Interrupt, pic: PIC, master: bool): void =
+  assertRef(pic)
   if master:
     this.pic_m = pic
 

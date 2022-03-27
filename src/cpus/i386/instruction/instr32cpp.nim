@@ -804,8 +804,8 @@ proc code_0f01*(this: var InstrImpl): void =
 
 
 
-proc initInstrImpl32*(r: var InstrImpl, e: ptr Emulator, id: ptr InstrData) =
-  initInstrImpl(r)
+proc initInstrImpl32*(r: var InstrImpl, instr: Instruction) =
+  initInstrImpl(r, instr)
 
   r.setFuncflag(ICode(0x01), instr32(addRm32R32), CHKMODRM)
 
@@ -943,5 +943,5 @@ proc initInstrImpl32*(r: var InstrImpl, e: ptr Emulator, id: ptr InstrData) =
   r.setFuncflag(ICode(0x0f01), instr32(code_0f01), CHKMODRM)
 
 
-proc initInstrImpl32*(e: ptr Emulator, id: ptr InstrData): InstrImpl =
-  initInstrImpl32(result, e, id)
+proc initInstrImpl32*(instr: Instruction): InstrImpl =
+  initInstrImpl32(result, instr)

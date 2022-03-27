@@ -3,8 +3,7 @@ import hardware/[processorhpp, crhpp]
 import emulator/accesshpp
 import commonhpp
 
-template INSTR(): untyped = this.exec.instr[]
-
+template INSTR(): untyped = this.exec.instr
 
 proc exec*(this: var InstrImpl): bool =
   var opcode: uint16 = INSTR.opcode

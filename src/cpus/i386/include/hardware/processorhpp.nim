@@ -201,10 +201,10 @@ proc is_protected*(this: var Processor): bool =
   return CR(this).is_protected()
 
 proc get_eip*(this: var Processor): uint32 =
-  echov this.halt
-  pprint this
+  # echov this.halt
+  # pprint this
   result = this.eip
-  echov "end"
+  # echov "end"
 
 proc get_ip*(this: var Processor): uint32 =
   return this.ip
