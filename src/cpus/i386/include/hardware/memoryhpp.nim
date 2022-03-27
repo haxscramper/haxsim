@@ -1,18 +1,17 @@
-import
-  commonhpp
+import commonhpp
+
 template DEFAULTMEMORYSIZE*(): untyped {.dirty.} =
   (1 * KB)
 
-template ASSERTRANGE*(`addr`: untyped, len: untyped): untyped {.dirty.} =
-  ASSERT(`addr` + len - 1 < this.memSize)
+template ASSERTRANGE*(`addr`: untyped, memLen: untyped): untyped {.dirty.} =
+  ASSERT(int(`addr` + memLen - 1) < this.memory.len())
 
-template INRANGE*(`addr`: untyped, len: untyped): untyped {.dirty.} =
-  (`addr` + len - 1 < this.memSize)
+template INRANGE*(`addr`: untyped, memLen: untyped): untyped {.dirty.} =
+  (int(`addr` + memLen - 1) < this.memory.len())
 
 type
-  Memory* {.bycopy, importcpp.} = object
-    memSize*: uint32
-    memory*: ptr UncheckedArray[uint8]
+  Memory* = ref object
+    memory*: seq[uint8]
     a20gate*: bool
 
 proc setA20gate*(this: var Memory, ena: bool): void =
@@ -58,14 +57,11 @@ proc readMem8*(this: var Memory, `addr`: uint32): uint8 =
     return 0
 
 proc initMemory*(size: uint32): Memory =
-  result.memSize = size
-  # FIXME allocate memory array
-  # result.memory = newSeq[uint8](size)
+  result.memory = newSeq[uint8](size)
   result.a20gate = false
 
 proc destroyMemory*(this: var Memory): void =
-  # cxxDelete memory
-  this.memSize = 0
+  discard
 
 proc dumpMem*(this: var Memory, `addr`: uint32, size: csizeT): void =
   let `addr` = (`addr` and not((0x10 - 1)).uint32())

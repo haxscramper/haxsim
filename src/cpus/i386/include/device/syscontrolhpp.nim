@@ -3,9 +3,9 @@ import dev_iohpp
 import hardware/memoryhpp
 
 type
-  SysControl* {.bycopy.} = object
+  SysControl* = object
     portio*: PortIO
-    mem*: ptr Memory
+    mem*: Memory
   
-proc initSysControl*(m: ptr Memory): SysControl = 
+proc initSysControl*(m: Memory): SysControl =
   result.mem = m

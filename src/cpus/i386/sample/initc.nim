@@ -1,13 +1,13 @@
 import
   commonh
 type
-  DTReg* {.bycopy, importcpp.} = object
+  DTReg* {.bycopy.} = object
     limit*: uint16
     base_l*: uint16
     base_h*: uint16
   
 type
-  IDT* {.bycopy, importcpp.} = object
+  IDT* {.bycopy.} = object
     offset_l*:        uint16
     selector*:        uint16
     * {.bitsize: 8.}: uint8
@@ -19,7 +19,7 @@ type
     offset_h*:        uint16
   
 type
-  PDE* {.bycopy, importcpp.} = object
+  PDE* {.bycopy.} = object
     P* {.bitsize: 1.}: uint32
     RW* {.bitsize: 1.}: uint32
     US* {.bitsize: 1.}: uint32

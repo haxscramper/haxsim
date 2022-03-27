@@ -12,7 +12,7 @@ type
     MODE_GRAPHIC
     MODE_GRAPHIC256
 
-  VGA* {.bycopy, importcpp.} = object
+  VGA* = ref object
     mor*: VGA_mor
     portio*: PortIO
     memio*: ref MemoryIO
@@ -24,7 +24,7 @@ type
     attr*: Attribute
     dac*: DAC
 
-  Sequencer* {.bycopy, importcpp.} = object
+  Sequencer* = object
     vga*: ptr VGA
     portio*: PortIO
     sar*: Sequencer_sar
@@ -35,7 +35,7 @@ type
     regs*: array[8, ptr uint8]
     get_font*: ptr uint8
 
-  CRT* {.bycopy, importcpp.} = object
+  CRT* = object
     vga*: ptr VGA
     portio*: PortIO
     crtcar*: CRT_crtcar
@@ -55,8 +55,8 @@ type
     crtmcr*: CRT_crtmcr
     regs*: array[25, ptr uint8]
 
-  GraphicController* {.bycopy, importcpp.} = object
-    vga*: ptr VGA
+  GraphicController* = object
+    vga*: VGA
     portio*: PortIO
     gcar*: GraphicController_gcar
     sr*: GraphicController_sr
@@ -68,8 +68,8 @@ type
     mr*: GraphicController_mr
     regs*: array[9, ptr uint8]
 
-  Attribute* {.bycopy, importcpp.} = object
-    vga*: ptr VGA
+  Attribute* = object
+    vga*: VGA
     acar*: Attribute_acar
     field2*: Attribute_field2
     amcr*: Attribute_amcr
@@ -79,8 +79,8 @@ type
     csr*: Attribute_csr
     regs*: array[21, ptr uint8]
 
-  DAC* {.bycopy, importcpp.} = object
-    vga*: ptr VGA
+  DAC* = object
+    vga*: VGA
     progress*: uint8
     field2*: DAC_field2
     portio*: PortIO
@@ -474,7 +474,7 @@ proc in8*(this: var CRT, `addr`: uint16): uint8 =
 proc out8*(this: var CRT, `addr`: uint16, v: uint8): void =
   discard
 
-proc initGraphicController*(v: ptr VGA): GraphicController =
+proc initGraphicController*(v: VGA): GraphicController =
   result.vga = v
   for i in 0 ..< len(result.regs):
     if not result.regs[i].isNil():
@@ -501,7 +501,7 @@ proc in8*(this: var GraphicController, `addr`: uint16): uint8 =
 proc out8*(this: var GraphicController, `addr`: uint16, v: uint8): void =
   discard
 
-proc initAttribute*(v: ptr VGA): Attribute =
+proc initAttribute*(v: VGA): Attribute =
   result.vga = v
   for i in 0 ..< len(result.regs):
     if not result.regs[i].isNil():
@@ -517,7 +517,7 @@ proc in8*(this: var Attribute, `addr`: uint16): uint8 =
 proc out8*(this: var Attribute, `addr`: uint16, v: uint8): void =
   discard
 
-proc initDAC*(v: ptr VGA): DAC =
+proc initDAC*(v: VGA): DAC =
   result.vga = v
 
 proc translate_rgb*(this: var DAC, index: uint8): uint32 =

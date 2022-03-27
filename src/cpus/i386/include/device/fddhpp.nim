@@ -37,7 +37,7 @@ type
     mtx*: Lock
     max*: uint16
 
-  FDD* {.bycopy.} = object of IRQ
+  FDD* = ref object of IRQ
     portio*: PortIO
     fddfuncs*: Table[uint8, fddfunc_t]
     drive*: array[MAX_FDD, ref DRIVE]
@@ -346,11 +346,13 @@ proc sync_position*(this: var FDD, slot: uint8): void =
     return
 
   this.drive[slot].progress = 0
-  postInc(this.drive[slot].sector)
+  inc this.drive[slot].sector
   if this.drive[slot].sector > N_SpH:
     this.drive[slot].sector = 1
-    if postInc(this.drive[slot].head).toBool():
-      postInc(this.drive[slot].cylinder)
+    var before = this.drive[slot].head
+    inc this.drive[slot].head
+    if before.toBool():
+      inc this.drive[slot].cylinder
 
 proc read*(this: var FDD, slot: uint8): uint8 =
   var v: uint8

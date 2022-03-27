@@ -120,6 +120,7 @@ proc main*(): cint =
   runEmulator(eset)
 
 proc main1() =
+  echo "Created settings"
   var eset = EmuSetting(memSize: 128)
   var full = initFull(eset)
   full.emu.loadBlob(@[

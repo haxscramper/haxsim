@@ -5,7 +5,7 @@ import
 import
   unordered_map
 type
-  LRU*[K, V] {.bycopy, importcpp.} = object
+  LRU*[K, V] {.bycopy.} = object
     item_list*: std_list[std_pair[K, V]]
     item_map*: std_unordered_map[K, typeof(item_list.begin())]
     size*: uint16      

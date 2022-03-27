@@ -12,7 +12,7 @@ proc initPortIO*(): PortIO =
 
 
 type
-  MemoryIO* {.bycopy, importcpp.} = object
+  MemoryIO* {.bycopy.} = object
     memory*: ptr Memory
     paddr*: uint32    
     size*: csize_t    

@@ -56,7 +56,7 @@ type
     DTREGS_COUNT
 
 type
-  GPRegister* {.bycopy, union, importcpp.} = object
+  GPRegister* {.bycopy, union.} = object
     reg32*: uint32
     reg16*: uint16
     field2*: GPRegister_field2
@@ -78,7 +78,7 @@ proc `reg8_h =`*(this: var GPRegister, value: uint8) =
   this.field2.reg8_h = value
 
 type
-  SGRegCache* {.bycopy, importcpp.} = object
+  SGRegCache* {.bycopy.} = object
     base*:        uint32
     limit* {.bitsize: 20.}: uint32
     flags*:        SGRegCache_flags
@@ -115,7 +115,7 @@ type
     `type`*:        `type`
     field2*:        SGRegCache_flags_field2
 
-  SGRegister* {.bycopy, importcpp.} = object
+  SGRegister* {.bycopy.} = object
     field0*: SGRegister_field0
     cache*: SGRegCache
 

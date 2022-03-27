@@ -1,7 +1,7 @@
 import
   commonh
 type
-  IVT* {.bycopy, importcpp.} = object
+  IVT* {.bycopy.} = object
     offset*: uint16
     segment*: uint16
   

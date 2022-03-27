@@ -5,12 +5,12 @@ import mousehpp
 import hardware/memoryhpp
 
 type
-  Mouse* {.bycopy, importcpp.} = object of IRQ
+  Mouse* = ref object of IRQ
     portio*: PortIO
-    keyboard*: ref Keyboard
+    keyboard*: Keyboard
     enable*: bool
 
-  CCB* {.bycopy, importcpp.} = object
+  CCB* = object
     KIE* {.bitsize: 1.}: uint8
     MIE* {.bitsize: 1.}: uint8
     SYSF* {.bitsize: 1.}: uint8
@@ -19,10 +19,10 @@ type
     ME* {.bitsize: 1.}: uint8
     XLATE* {.bitsize: 1.}: uint8
 
-  Keyboard* {.bycopy, importcpp.} = object of IRQ
+  Keyboard* = ref object of IRQ
     portio*: PortIO
-    mouse*: ref Mouse
-    mem*: ref Memory
+    mouse*: Mouse
+    mem*: Memory
     mode*: uint8
     kcsr*: Keyboard_kcsr_Type
     out_buf*: uint8
@@ -45,20 +45,20 @@ type
     field1*: field1_Type
 
 
-proc initMouse*(kb: ref Keyboard): Mouse =
+proc initMouse*(kb: Keyboard): Mouse =
   result.keyboard = kb
   result.enable = false
 
 
 
-proc initKeyboard*(m: ref Memory): ref Keyboard =
+proc initKeyboard*(m: Memory): Keyboard =
   new(result)
   new(result.mouse)
-  result.mouse[] = initMouse(result)
+  result.mouse = initMouse(result)
   result.kcsr.raw = 0
   result.mem = m
 
-proc get_mouse*(this: var Keyboard): ref Mouse =
+proc get_mouse*(this: var Keyboard): Mouse =
   return this.mouse
 
 proc OBF*(this: Keyboard_kcsr_Type): uint8 = this.field1.OBF

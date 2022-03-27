@@ -20,9 +20,9 @@ proc `segment=`*(this: var IVT, value: uint16) = this.field1.segment = value
 type
   Interrupt* {.bycopy.} = object of DataAccess
     intr_q*: Deque[(uint8, bool)]
-    pic_s*, pic_m*: ptr PIC
+    pic_s*, pic_m*: PIC
 
-proc set_pic*(this: var Interrupt, pic: ptr PIC, master: bool): void =
+proc set_pic*(this: var Interrupt, pic: PIC, master: bool): void =
   if master:
     this.pic_m = pic
 

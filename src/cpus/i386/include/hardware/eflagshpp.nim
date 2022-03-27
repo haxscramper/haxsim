@@ -1,7 +1,7 @@
 import
   commonhpp
 type
-  EflagsImpl* {.bycopy, union, importcpp.} = object
+  EflagsImpl* {.bycopy, union.} = object
     reg32*: uint32
     reg16*: uint16
     field2*: EflagsImpl_field2_Type
@@ -32,103 +32,103 @@ type
 proc CF*(this: EflagsImpl): uint32 =
   this.field2.CF
 
-proc `CF =`*(this: var EflagsImpl, value: uint32) =
+proc `CF=`*(this: var EflagsImpl, value: uint32) =
   this.field2.CF = value
 
 proc PF*(this: EflagsImpl): uint32 =
   this.field2.PF
 
-proc `PF =`*(this: var EflagsImpl, value: uint32) =
+proc `PF=`*(this: var EflagsImpl, value: uint32) =
   this.field2.PF = value
 
 proc AF*(this: EflagsImpl): uint32 =
   this.field2.AF
 
-proc `AF =`*(this: var EflagsImpl, value: uint32) =
+proc `AF=`*(this: var EflagsImpl, value: uint32) =
   this.field2.AF = value
 
 proc ZF*(this: EflagsImpl): uint32 =
   this.field2.ZF
 
-proc `ZF =`*(this: var EflagsImpl, value: uint32) =
+proc `ZF=`*(this: var EflagsImpl, value: uint32) =
   this.field2.ZF = value
 
 proc SF*(this: EflagsImpl): uint32 =
   this.field2.SF
 
-proc `SF =`*(this: var EflagsImpl, value: uint32) =
+proc `SF=`*(this: var EflagsImpl, value: uint32) =
   this.field2.SF = value
 
 proc TF*(this: EflagsImpl): uint32 =
   this.field2.TF
 
-proc `TF =`*(this: var EflagsImpl, value: uint32) =
+proc `TF=`*(this: var EflagsImpl, value: uint32) =
   this.field2.TF = value
 
 proc IF*(this: EflagsImpl): uint32 =
   this.field2.IF
 
-proc `IF =`*(this: var EflagsImpl, value: uint32) =
+proc `IF=`*(this: var EflagsImpl, value: uint32) =
   this.field2.IF = value
 
 proc DF*(this: EflagsImpl): uint32 =
   this.field2.DF
 
-proc `DF =`*(this: var EflagsImpl, value: uint32) =
+proc `DF=`*(this: var EflagsImpl, value: uint32) =
   this.field2.DF = value
 
 proc OF*(this: EflagsImpl): uint32 =
   this.field2.OF
 
-proc `OF =`*(this: var EflagsImpl, value: uint32) =
+proc `OF=`*(this: var EflagsImpl, value: uint32) =
   this.field2.OF = value
 
 proc IOPL*(this: EflagsImpl): uint32 =
   this.field2.IOPL
 
-proc `IOPL =`*(this: var EflagsImpl, value: uint32) =
+proc `IOPL=`*(this: var EflagsImpl, value: uint32) =
   this.field2.IOPL = value
 
 proc NT*(this: EflagsImpl): uint32 =
   this.field2.NT
 
-proc `NT =`*(this: var EflagsImpl, value: uint32) =
+proc `NT=`*(this: var EflagsImpl, value: uint32) =
   this.field2.NT = value
 
 proc RF*(this: EflagsImpl): uint32 =
   this.field2.RF
 
-proc `RF =`*(this: var EflagsImpl, value: uint32) =
+proc `RF=`*(this: var EflagsImpl, value: uint32) =
   this.field2.RF = value
 
 proc VM*(this: EflagsImpl): uint32 =
   this.field2.VM
 
-proc `VM =`*(this: var EflagsImpl, value: uint32) =
+proc `VM=`*(this: var EflagsImpl, value: uint32) =
   this.field2.VM = value
 
 proc AC*(this: EflagsImpl): uint32 =
   this.field2.AC
 
-proc `AC =`*(this: var EflagsImpl, value: uint32) =
+proc `AC=`*(this: var EflagsImpl, value: uint32) =
   this.field2.AC = value
 
 proc VIF*(this: EflagsImpl): uint32 =
   this.field2.VIF
 
-proc `VIF =`*(this: var EflagsImpl, value: uint32) =
+proc `VIF=`*(this: var EflagsImpl, value: uint32) =
   this.field2.VIF = value
 
 proc VIP*(this: EflagsImpl): uint32 =
   this.field2.VIP
 
-proc `VIP =`*(this: var EflagsImpl, value: uint32) =
+proc `VIP=`*(this: var EflagsImpl, value: uint32) =
   this.field2.VIP = value
 
 proc ID*(this: EflagsImpl): uint32 =
   this.field2.ID
 
-proc `ID =`*(this: var EflagsImpl, value: uint32) =
+proc `ID=`*(this: var EflagsImpl, value: uint32) =
   this.field2.ID = value
 
 type

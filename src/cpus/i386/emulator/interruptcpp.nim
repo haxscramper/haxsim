@@ -1,5 +1,6 @@
 import emulator/interrupthpp
 import std/deques
+import device/[dev_irqhpp, pichpp]
 import commonhpp
 import ../device/piccpp
 import hardware/[crhpp, processorhpp, memoryhpp, eflagshpp]
@@ -101,12 +102,12 @@ proc chkIrq*(this: var Interrupt): bool =
   if not(this.cpu.eflags.isInterrupt()):
     return false
   
-  if not(this.picM.toBool()) or not(this.picM[].chkIntreq()):
+  if not(this.picM.toBool()) or not(this.picM.chk_intreq()):
     return false
   
-  nIntr = this.picM[].getNintr()
+  nIntr = this.picM.getNintr()
   if nIntr < 0:
-    nIntr = this.picS[].getNintr()
+    nIntr = this.picS.getNintr()
   
   queueInterrupt(this, nIntr.uint8, true)
   return true

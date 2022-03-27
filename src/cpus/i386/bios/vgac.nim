@@ -3,7 +3,7 @@ import
 import
   font8x8h
 type
-  rgb_t* {.bycopy, importcpp.} = object
+  rgb_t* {.bycopy.} = object
     red*: uint8
     green*: uint8
     blue*: uint8

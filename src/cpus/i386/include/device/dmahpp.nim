@@ -5,7 +5,7 @@ import
 import
   dev_iohpp
 type
-  DMA* {.bycopy, importcpp.} = object
+  DMA* {.bycopy.} = object
     drq*: array[4, ptr DRQ]
     adrr*: array[4, uint16]    
     xpadrr*: array[4, uint8]    
@@ -273,4 +273,3 @@ type
   DMA_statr_Type* {.bycopy, union.} = object
     raw*: uint8
     field1*: field1_Type
-  
