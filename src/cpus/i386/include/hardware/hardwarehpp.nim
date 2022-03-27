@@ -1,5 +1,6 @@
 import commonhpp
 import processorhpp
+import ../../hardware/processorcpp
 import memoryhpp
 import iohpp
 
@@ -12,5 +13,6 @@ type
     io*: IO
   
 proc initHardware*(size: uint32): Hardware =
+  result.cpu = initProcessor()
   result.mem = initMemory(size)
   result.io = initIO(result.mem)

@@ -1,5 +1,7 @@
 import util/debughpp
 import hmisc/wrappers/wraphelp
+import hmisc/other/hpprint
+export pprint
 export debughpp
 import hmisc/core/all
 export all

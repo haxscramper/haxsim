@@ -178,7 +178,7 @@ type
     eip*: uint32
     ip*: uint16
 
-  Processor* {.bycopy.} = object of CR
+  Processor* = ref object of CR
     eflags*: Eflags
     field0*: Processor_field0
     gpregs*: array[GPREGS_COUNT, GPRegister]
@@ -198,10 +198,13 @@ proc is_protected*(this: var Processor): bool =
   # FIXME will cause infinite recursion because original implementation of
   # the processor called into `CR::is_protected()` for the parent class
   # implementation.
-  return this.is_protected()
+  return CR(this).is_protected()
 
 proc get_eip*(this: var Processor): uint32 =
-  return this.eip
+  echov this.halt
+  pprint this
+  result = this.eip
+  echov "end"
 
 proc get_ip*(this: var Processor): uint32 =
   return this.ip

@@ -18,7 +18,7 @@ proc segment*(this: IVT): uint16 = this.field1.segment
 proc `segment=`*(this: var IVT, value: uint16) = this.field1.segment = value
 
 type
-  Interrupt* {.bycopy.} = object of DataAccess
+  Interrupt* = object
     intr_q*: Deque[(uint8, bool)]
     pic_s*, pic_m*: PIC
 

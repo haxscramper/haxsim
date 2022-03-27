@@ -59,7 +59,7 @@ type
     field11* {.bitsize: 21.}: uint32
 
   
-  CR* {.bycopy, inheritable.} = object
+  CR* {.inheritable.} = ref object
     cr0*: CR_cr0
     cr1*: CR_cr1
     cr2*: CR_cr2
@@ -67,19 +67,19 @@ type
     cr4*: CR_cr4
     cr*: array[5, ptr uint32]
 
-proc get_crn*(this: var CR, n: uint8): uint32 =
+proc get_crn*(this: CR, n: uint8): uint32 =
   if n >= sizeof(this.cr).uint8:
     ERROR("")
 
   return this.cr[n][]
 
-proc set_crn*(this: var CR, n: uint8, v: uint32): void =
+proc set_crn*(this: CR, n: uint8, v: uint32): void =
   if n >= sizeof(this.cr).uint8:
     ERROR("")
 
   this.cr[n][] = v
 
-proc initCR*(): CR =
+proc initCR*(result: CR) =
   result.cr[0] = addr result.cr0.raw
   result.cr[1] = addr result.cr1.raw
   result.cr[2] = addr result.cr2.raw
@@ -89,162 +89,164 @@ proc initCR*(): CR =
     result.set_crn(i.uint8, 0)
 
 
+proc initCR*(): CR = initCR(result)
+
 proc PE*(this: CR_cr0): uint32 =
   this.field1.PE
 
-proc `PE =`*(this: var CR_cr0, value: uint32) =
+proc `PE=`*(this: var CR_cr0, value: uint32) =
   this.field1.PE = value
 
 proc MP*(this: CR_cr0): uint32 =
   this.field1.MP
 
-proc `MP =`*(this: var CR_cr0, value: uint32) =
+proc `MP=`*(this: var CR_cr0, value: uint32) =
   this.field1.MP = value
 
 proc EM*(this: CR_cr0): uint32 =
   this.field1.EM
 
-proc `EM =`*(this: var CR_cr0, value: uint32) =
+proc `EM=`*(this: var CR_cr0, value: uint32) =
   this.field1.EM = value
 
 proc TS*(this: CR_cr0): uint32 =
   this.field1.TS
 
-proc `TS =`*(this: var CR_cr0, value: uint32) =
+proc `TS=`*(this: var CR_cr0, value: uint32) =
   this.field1.TS = value
 
 proc ET*(this: CR_cr0): uint32 =
   this.field1.ET
 
-proc `ET =`*(this: var CR_cr0, value: uint32) =
+proc `ET=`*(this: var CR_cr0, value: uint32) =
   this.field1.ET = value
 
 proc NE*(this: CR_cr0): uint32 =
   this.field1.NE
 
-proc `NE =`*(this: var CR_cr0, value: uint32) =
+proc `NE=`*(this: var CR_cr0, value: uint32) =
   this.field1.NE = value
 
 proc WP*(this: CR_cr0): uint32 =
   this.field1.WP
 
-proc `WP =`*(this: var CR_cr0, value: uint32) =
+proc `WP=`*(this: var CR_cr0, value: uint32) =
   this.field1.WP = value
 
 proc AM*(this: CR_cr0): uint32 =
   this.field1.AM
 
-proc `AM =`*(this: var CR_cr0, value: uint32) =
+proc `AM=`*(this: var CR_cr0, value: uint32) =
   this.field1.AM = value
 
 proc NW*(this: CR_cr0): uint32 =
   this.field1.NW
 
-proc `NW =`*(this: var CR_cr0, value: uint32) =
+proc `NW=`*(this: var CR_cr0, value: uint32) =
   this.field1.NW = value
 
 proc CD*(this: CR_cr0): uint32 =
   this.field1.CD
 
-proc `CD =`*(this: var CR_cr0, value: uint32) =
+proc `CD=`*(this: var CR_cr0, value: uint32) =
   this.field1.CD = value
 
 proc PG*(this: CR_cr0): uint32 =
   this.field1.PG
 
-proc `PG =`*(this: var CR_cr0, value: uint32) =
+proc `PG=`*(this: var CR_cr0, value: uint32) =
   this.field1.PG = value
 
 proc PWT*(this: CR_cr3): uint32 =
   this.field1.PWT
 
-proc `PWT =`*(this: var CR_cr3, value: uint32) =
+proc `PWT=`*(this: var CR_cr3, value: uint32) =
   this.field1.PWT = value
 
 proc PCD*(this: CR_cr3): uint32 =
   this.field1.PCD
 
-proc `PCD =`*(this: var CR_cr3, value: uint32) =
+proc `PCD=`*(this: var CR_cr3, value: uint32) =
   this.field1.PCD = value
 
 proc PageDirBase*(this: CR_cr3): uint32 =
   this.field1.PageDirBase
 
-proc `PageDirBase =`*(this: var CR_cr3, value: uint32) =
+proc `PageDirBase=`*(this: var CR_cr3, value: uint32) =
   this.field1.PageDirBase = value
 
 proc VME*(this: CR_cr4): uint32 =
   this.field1.VME
 
-proc `VME =`*(this: var CR_cr4, value: uint32) =
+proc `VME=`*(this: var CR_cr4, value: uint32) =
   this.field1.VME = value
 
 proc PVI*(this: CR_cr4): uint32 =
   this.field1.PVI
 
-proc `PVI =`*(this: var CR_cr4, value: uint32) =
+proc `PVI=`*(this: var CR_cr4, value: uint32) =
   this.field1.PVI = value
 
 proc TSD*(this: CR_cr4): uint32 =
   this.field1.TSD
 
-proc `TSD =`*(this: var CR_cr4, value: uint32) =
+proc `TSD=`*(this: var CR_cr4, value: uint32) =
   this.field1.TSD = value
 
 proc DE*(this: CR_cr4): uint32 =
   this.field1.DE
 
-proc `DE =`*(this: var CR_cr4, value: uint32) =
+proc `DE=`*(this: var CR_cr4, value: uint32) =
   this.field1.DE = value
 
 proc PSE*(this: CR_cr4): uint32 =
   this.field1.PSE
 
-proc `PSE =`*(this: var CR_cr4, value: uint32) =
+proc `PSE=`*(this: var CR_cr4, value: uint32) =
   this.field1.PSE = value
 
 proc PAE*(this: CR_cr4): uint32 =
   this.field1.PAE
 
-proc `PAE =`*(this: var CR_cr4, value: uint32) =
+proc `PAE=`*(this: var CR_cr4, value: uint32) =
   this.field1.PAE = value
 
 proc MCE*(this: CR_cr4): uint32 =
   this.field1.MCE
 
-proc `MCE =`*(this: var CR_cr4, value: uint32) =
+proc `MCE=`*(this: var CR_cr4, value: uint32) =
   this.field1.MCE = value
 
 proc PGE*(this: CR_cr4): uint32 =
   this.field1.PGE
 
-proc `PGE =`*(this: var CR_cr4, value: uint32) =
+proc `PGE=`*(this: var CR_cr4, value: uint32) =
   this.field1.PGE = value
 
 proc PCE*(this: CR_cr4): uint32 =
   this.field1.PCE
 
-proc `PCE =`*(this: var CR_cr4, value: uint32) =
+proc `PCE=`*(this: var CR_cr4, value: uint32) =
   this.field1.PCE = value
 
 proc OSFXSR*(this: CR_cr4): uint32 =
   this.field1.OSFXSR
 
-proc `OSFXSR =`*(this: var CR_cr4, value: uint32) =
+proc `OSFXSR=`*(this: var CR_cr4, value: uint32) =
   this.field1.OSFXSR = value
 
 proc OSXMMEXCPT*(this: CR_cr4): uint32 =
   this.field1.OSXMMEXCPT
 
-proc `OSXMMEXCPT =`*(this: var CR_cr4, value: uint32) =
+proc `OSXMMEXCPT=`*(this: var CR_cr4, value: uint32) =
   this.field1.OSXMMEXCPT = value
 
 
-proc is_protected*(this: var CR): bool =
+proc is_protected*(this: CR): bool =
   return this.cr0.PE.bool
 
-proc is_ena_paging*(this: var CR): bool =
+proc is_ena_paging*(this: CR): bool =
   return this.cr0.PG.bool
 
-proc get_pdir_base*(this: var CR): uint32 =
+proc get_pdir_base*(this: CR): uint32 =
   return this.cr3.PageDirBase

@@ -48,36 +48,36 @@ proc loop*(full: var FullImpl) =
     var chszAd, chszOp: bool
     full.data = InstrData()
     # memset(addr instr, 0, sizeof((InstrData)))
-    try:
-      if full.emu.intr.chkIrq():
-        full.emu.accs.cpu.doHalt(false)
+    # try:
+    if full.emu.accs.chkIrq(full.emu.intr):
+      full.emu.accs.cpu.doHalt(false)
 
-      if full.emu.accs.cpu.isHalt():
-        {.warning: "[FIXME] 'std.thisThread.sleepFor(std.chrono.milliseconds(10))'".}
-        continue
+    if full.emu.accs.cpu.isHalt():
+      {.warning: "[FIXME] 'std.thisThread.sleepFor(std.chrono.milliseconds(10))'".}
+      continue
 
-      full.emu.intr.hundleInterrupt()
-      isMode32 = full.emu.accs.cpu.isMode32()
-      if isMode32:
-        prefix = full.impl32.parsePrefix()
+    full.emu.accs.hundleInterrupt(full.emu.intr)
+    isMode32 = full.emu.accs.cpu.isMode32()
+    if isMode32:
+      prefix = full.impl32.parsePrefix()
 
-      else:
-        prefix = full.impl16.parsePrefix()
-      chszOp = toBool(prefix and CHSZOP)
-      chszAd = toBool(prefix and CHSZAD)
-      if isMode32 xor chszOp:
-        full.impl32.setChszAd(not((isMode32 xor chszAd)))
-        parse(full.impl32)
-        discard exec(full.impl32)
+    else:
+      prefix = full.impl16.parsePrefix()
+    chszOp = toBool(prefix and CHSZOP)
+    chszAd = toBool(prefix and CHSZAD)
+    if isMode32 xor chszOp:
+      full.impl32.setChszAd(not((isMode32 xor chszAd)))
+      parse(full.impl32)
+      discard exec(full.impl32)
 
-      else:
-        full.impl16.setChszAd(isMode32 xor chszAd)
-        parse(full.impl16)
-        discard exec(full.impl16)
+    else:
+      full.impl16.setChszAd(isMode32 xor chszAd)
+      parse(full.impl16)
+      discard exec(full.impl16)
 
-    except:
-      # emu.queueInterrupt(n, true)
-      assert false
+    # except:
+    #   # emu.queueInterrupt(n, true)
+    #   raise
       # ERROR("Exception %d", n)
 
     # except:
@@ -133,6 +133,9 @@ proc main1() =
     # `hlt`
     0xF4
   ])
+
+  # assertRef(full.emu.cpu)
+  full.loop()
 
 startHax()
 main1()
