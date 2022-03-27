@@ -1,5 +1,6 @@
 import std/parsecsv
 import std/streams
+import std/tables
 import std/strformat
 import std/strutils
 import std/enumutils
@@ -52,11 +53,11 @@ var flags = {
   "undef f": ""
 }
 
+var resMnemonics: Table[string, seq[string]]
+
 while readRow(x):
   var args = ""
   var mne = ""
-  # echo x.row
-
   let num = align(
     join([
       x.rowEntry("po").toUpper().align(2, padding = '0'),
@@ -83,7 +84,9 @@ while readRow(x):
 
       args.addf("_$#_$#", getAddrKind(en), getDataKind(en))
 
-  let opname = "op" & x.rowEntry("mnemonic") & args
+  let mneName = x.rowEntry("mnemonic")
+  let opname = "op" & mneName & args
+  resMnemonics.mgetOrPut(mneName, @[]).add opname
   operands.addf("\n    of $#: [$#]", opname.alignLeft(30), operandsTmp)
 
 
@@ -105,6 +108,22 @@ while readRow(x):
           body.addf("$#, ", symbolName(parseEnum[OpFlagIO]($ch)))
 
     body.add "})"
+
+res.add """
+
+  ICodeMnemonic* = enum"""
+
+for mne, impl in resMnemonics:
+  res.addf("\n    opMne$# = \"$#\"", mne.alignLeft(12), mne)
+
+res.add """
+
+
+func getOpcodes*(code: ICodeMnemonic): seq[ICode] =
+  case code:"""
+
+for mne, impl in resMnemonics:
+  res.addf("\n    of opMne$#: @[ $# ]", mne.alignLeft(12), impl.join(", "))
 
 writeFile(
   "instruction/opcodes.nim",

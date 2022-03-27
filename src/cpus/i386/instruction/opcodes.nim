@@ -350,6 +350,326 @@ type
     opJMP_RegMem_V                 = (0xFF_00_04, "JMP r/m16/32")
     opJMPF_Mem_P                   = (0xFF_00_05, "JMPF m16:16/32")
     opPUSH_RegMem_V                = (0xFF_00_06, "PUSH r/m16/32")
+  ICodeMnemonic* = enum
+    opMneMOVSX        = "MOVSX"
+    opMnePOPFD        = "POPFD"
+    opMneJZ           = "JZ"
+    opMneSTR          = "STR"
+    opMneSIDT         = "SIDT"
+    opMneDAS          = "DAS"
+    opMneSS           = "SS"
+    opMneSTOS         = "STOS"
+    opMneSCAS         = "SCAS"
+    opMneJP           = "JP"
+    opMneDAA          = "DAA"
+    opMneTEST         = "TEST"
+    opMneLAR          = "LAR"
+    opMneRETN         = "RETN"
+    opMneLOOP         = "LOOP"
+    opMneNEG          = "NEG"
+    opMneSTI          = "STI"
+    opMneSETS         = "SETS"
+    opMneOUT          = "OUT"
+    opMneNOT          = "NOT"
+    opMneSTD          = "STD"
+    opMneDS           = "DS"
+    opMneSETNL        = "SETNL"
+    opMneLLDT         = "LLDT"
+    opMneREPZ         = "REPZ"
+    opMneCLTS         = "CLTS"
+    opMneGS           = "GS"
+    opMneVERR         = "VERR"
+    opMneJNBE         = "JNBE"
+    opMneLEA          = "LEA"
+    opMneJC           = "JC"
+    opMneVERW         = "VERW"
+    opMneLMSW         = "LMSW"
+    opMneJB           = "JB"
+    opMneIDIV         = "IDIV"
+    opMneAAA          = "AAA"
+    opMneSMSW         = "SMSW"
+    opMneAND          = "AND"
+    opMneSHLD         = "SHLD"
+    opMnePOP          = "POP"
+    opMneXOR          = "XOR"
+    opMneCWDE         = "CWDE"
+    opMneLOCK         = "LOCK"
+    opMneCMC          = "CMC"
+    opMneSETL         = "SETL"
+    opMneJNLE         = "JNLE"
+    opMneBTS          = "BTS"
+    opMneSETNBE       = "SETNBE"
+    opMneCS           = "CS"
+    opMneHLT          = "HLT"
+    opMneLODS         = "LODS"
+    opMneJG           = "JG"
+    opMneROR          = "ROR"
+    opMneIRET         = "IRET"
+    opMneJNP          = "JNP"
+    opMneSBB          = "SBB"
+    opMneLES          = "LES"
+    opMneSETZ         = "SETZ"
+    opMneAAM          = "AAM"
+    opMneADD          = "ADD"
+    opMneJNZ          = "JNZ"
+    opMneLAHF         = "LAHF"
+    opMneADX          = "ADX"
+    opMneINT1         = "INT1"
+    opMneBSF          = "BSF"
+    opMneCLI          = "CLI"
+    opMneAMX          = "AMX"
+    opMneJNC          = "JNC"
+    opMneJBE          = "JBE"
+    opMneLTR          = "LTR"
+    opMneAAS          = "AAS"
+    opMneSETO         = "SETO"
+    opMnePUSHA        = "PUSHA"
+    opMneJNS          = "JNS"
+    opMneSETNB        = "SETNB"
+    opMneFS           = "FS"
+    opMneBT           = "BT"
+    opMneINS          = "INS"
+    opMneLGS          = "LGS"
+    opMneLFS          = "LFS"
+    opMneLOOPNZ       = "LOOPNZ"
+    opMneSETB         = "SETB"
+    opMneAAD          = "AAD"
+    opMneLIDT         = "LIDT"
+    opMneBOUND        = "BOUND"
+    opMneDEC          = "DEC"
+    opMneCLC          = "CLC"
+    opMneLDS          = "LDS"
+    opMneSHR          = "SHR"
+    opMneSLDT         = "SLDT"
+    opMneCALLF        = "CALLF"
+    opMneSGDT         = "SGDT"
+    opMneSUB          = "SUB"
+    opMneOUTS         = "OUTS"
+    opMneIMUL         = "IMUL"
+    opMneINT          = "INT"
+    opMneLSS          = "LSS"
+    opMneCALL         = "CALL"
+    opMneARPL         = "ARPL"
+    opMneINTO         = "INTO"
+    opMneJMP          = "JMP"
+    opMneSTC          = "STC"
+    opMneXLAT         = "XLAT"
+    opMneCDQ          = "CDQ"
+    opMneCMPS         = "CMPS"
+    opMneSETNLE       = "SETNLE"
+    opMneSAR          = "SAR"
+    opMneES           = "ES"
+    opMneSALC         = "SALC"
+    opMneINC          = "INC"
+    opMneCMP          = "CMP"
+    opMneJCXZ         = "JCXZ"
+    opMneBTC          = "BTC"
+    opMnePUSH         = "PUSH"
+    opMneSETP         = "SETP"
+    opMneMUL          = "MUL"
+    opMneDIV          = "DIV"
+    opMneJNB          = "JNB"
+    opMneJS           = "JS"
+    opMneSHL          = "SHL"
+    opMneLSL          = "LSL"
+    opMneJNO          = "JNO"
+    opMneCLD          = "CLD"
+    opMneSHRD         = "SHRD"
+    opMneSAHF         = "SAHF"
+    opMneSETNP        = "SETNP"
+    opMneROL          = "ROL"
+    opMneSAL          = "SAL"
+    opMneJMPF         = "JMPF"
+    opMneRCR          = "RCR"
+    opMneJL           = "JL"
+    opMnePOPA         = "POPA"
+    opMneREPNZ        = "REPNZ"
+    opMneLOOPZ        = "LOOPZ"
+    opMneRCL          = "RCL"
+    opMneSETNO        = "SETNO"
+    opMnePUSHFD       = "PUSHFD"
+    opMneRETF         = "RETF"
+    opMneSETLE        = "SETLE"
+    opMneUD2          = "UD2"
+    opMneSETNZ        = "SETNZ"
+    opMneMOVS         = "MOVS"
+    opMneMOV          = "MOV"
+    opMneSETNS        = "SETNS"
+    opMneBTR          = "BTR"
+    opMneLGDT         = "LGDT"
+    opMneADC          = "ADC"
+    opMneJO           = "JO"
+    opMneSETBE        = "SETBE"
+    opMneLEAVE        = "LEAVE"
+    opMneBSR          = "BSR"
+    opMneJNL          = "JNL"
+    opMneOR           = "OR"
+    opMneJLE          = "JLE"
+    opMneIN           = "IN"
+    opMneENTER        = "ENTER"
+    opMneMOVZX        = "MOVZX"
+    opMneXCHG         = "XCHG"
+
+func getOpcodes*(code: ICodeMnemonic): seq[ICode] =
+  case code:
+    of opMneMOVSX       : @[ opMOVSX_Reg_V_RegMem_B, opMOVSX_Reg_V_RegMem_W ]
+    of opMnePOPFD       : @[ opPOPFD_EFLAGS_D ]
+    of opMneJZ          : @[ opJZ_Imm_V, opJZ_Imm_B ]
+    of opMneSTR         : @[ opSTR_Mem_W_TR_W ]
+    of opMneSIDT        : @[ opSIDT_Mem_P_IDTR_W ]
+    of opMneDAS         : @[ opDAS_AL_B ]
+    of opMneSS          : @[ opSS_SS_B ]
+    of opMneSTOS        : @[ opSTOS_Mem_B_AL_B, opSTOS_Mem_V_EAX_D ]
+    of opMneSCAS        : @[ opSCAS_Mem_B_AL_B, opSCAS_Mem_V_EAX_D ]
+    of opMneJP          : @[ opJP_Imm_V, opJP_Imm_B ]
+    of opMneDAA         : @[ opDAA_AL_B ]
+    of opMneTEST        : @[ opTEST_RegMem_B_Reg_B, opTEST_RegMem_V_Reg_V, opTEST_AL_B_Imm_B, opTEST_EAX_D_Imm_V, opTEST_RegMem_B_Imm_B, opTEST_RegMem_V_Imm_V ]
+    of opMneLAR         : @[ opLAR_Reg_V_Mem_W ]
+    of opMneRETN        : @[ opRETN_Imm_W, opRETN ]
+    of opMneLOOP        : @[ opLOOP_ECX_D_Imm_B ]
+    of opMneNEG         : @[ opNEG_RegMem_B, opNEG_RegMem_V ]
+    of opMneSTI         : @[ opSTI ]
+    of opMneSETS        : @[ opSETS_RegMem_B ]
+    of opMneOUT         : @[ opOUT_Imm_B_AL_B, opOUT_Imm_B_EAX_D, opOUT_DX_W_AL_B, opOUT_DX_W_EAX_D ]
+    of opMneNOT         : @[ opNOT_RegMem_B, opNOT_RegMem_V ]
+    of opMneSTD         : @[ opSTD ]
+    of opMneDS          : @[ opDS_DS_W ]
+    of opMneSETNL       : @[ opSETNL_RegMem_B ]
+    of opMneLLDT        : @[ opLLDT_LDTR_W_RegMem_W ]
+    of opMneREPZ        : @[ opREPZ_ECX_D ]
+    of opMneCLTS        : @[ opCLTS_CR_F ]
+    of opMneGS          : @[ opGS_GS_B ]
+    of opMneVERR        : @[ opVERR_RegMem_W ]
+    of opMneJNBE        : @[ opJNBE_Imm_V, opJNBE_Imm_B ]
+    of opMneLEA         : @[ opLEA_Reg_V_Mem_V ]
+    of opMneJC          : @[ opJC_Imm_B ]
+    of opMneVERW        : @[ opVERW_RegMem_W ]
+    of opMneLMSW        : @[ opLMSW_MSW_W_RegMem_W ]
+    of opMneJB          : @[ opJB_Imm_V ]
+    of opMneIDIV        : @[ opIDIV_AL_B_AH_B_AX_W_RegMem_B, opIDIV_EDX_D_EAX_D_RegMem_V ]
+    of opMneAAA         : @[ opAAA_AL_B_AH_B ]
+    of opMneSMSW        : @[ opSMSW_Mem_W_MSW_W ]
+    of opMneAND         : @[ opAND_RegMem_B_Reg_B, opAND_RegMem_V_Reg_V, opAND_Reg_B_RegMem_B, opAND_Reg_V_RegMem_V, opAND_AL_B_Imm_B, opAND_EAX_D_Imm_V, opAND_RegMem_B_Imm_B, opAND_RegMem_V_Imm_V ]
+    of opMneSHLD        : @[ opSHLD_RegMem_V_Reg_V_Imm_B, opSHLD_RegMem_V_Reg_V_CL_B ]
+    of opMnePOP         : @[ opPOP_ES_W, opPOP_FS_W, opPOP_GS_B, opPOP_SS_B, opPOP_DS_W, opPOP_Reg_V, opPOP_RegMem_V ]
+    of opMneXOR         : @[ opXOR_RegMem_B_Reg_B, opXOR_RegMem_V_Reg_V, opXOR_Reg_B_RegMem_B, opXOR_Reg_V_RegMem_V, opXOR_AL_B_Imm_B, opXOR_EAX_D_Imm_V, opXOR_RegMem_B_Imm_B, opXOR_RegMem_V_Imm_V ]
+    of opMneCWDE        : @[ opCWDE_EAX_D_AX_W ]
+    of opMneLOCK        : @[ opLOCK ]
+    of opMneCMC         : @[ opCMC ]
+    of opMneSETL        : @[ opSETL_RegMem_B ]
+    of opMneJNLE        : @[ opJNLE_Imm_V ]
+    of opMneBTS         : @[ opBTS_RegMem_V_Reg_V, opBTS_RegMem_V_Imm_B ]
+    of opMneSETNBE      : @[ opSETNBE_RegMem_B ]
+    of opMneCS          : @[ opCS_CS_W ]
+    of opMneHLT         : @[ opHLT ]
+    of opMneLODS        : @[ opLODS_AL_B_Mem_B, opLODS_EAX_D_Mem_V ]
+    of opMneJG          : @[ opJG_Imm_B ]
+    of opMneROR         : @[ opROR_RegMem_B_Imm_B, opROR_RegMem_V_Imm_B, opROR_RegMem_B_One_B, opROR_RegMem_V_One_B, opROR_RegMem_B_CL_B, opROR_RegMem_V_CL_B ]
+    of opMneIRET        : @[ opIRET_EFLAGS_D ]
+    of opMneJNP         : @[ opJNP_Imm_V, opJNP_Imm_B ]
+    of opMneSBB         : @[ opSBB_RegMem_B_Reg_B, opSBB_RegMem_V_Reg_V, opSBB_Reg_B_RegMem_B, opSBB_Reg_V_RegMem_V, opSBB_AL_B_Imm_B, opSBB_EAX_D_Imm_V, opSBB_RegMem_B_Imm_B, opSBB_RegMem_V_Imm_V ]
+    of opMneLES         : @[ opLES_ES_W_Reg_V_Mem_P ]
+    of opMneSETZ        : @[ opSETZ_RegMem_B ]
+    of opMneAAM         : @[ opAAM_AL_B_AH_B ]
+    of opMneADD         : @[ opADD_RegMem_B_Reg_B, opADD_RegMem_V_Reg_V, opADD_Reg_B_RegMem_B, opADD_Reg_V_RegMem_V, opADD_AL_B_Imm_B, opADD_EAX_D_Imm_V, opADD_RegMem_B_Imm_B, opADD_RegMem_V_Imm_V ]
+    of opMneJNZ         : @[ opJNZ_Imm_V, opJNZ_Imm_B ]
+    of opMneLAHF        : @[ opLAHF_AH_B ]
+    of opMneADX         : @[ opADX_AL_B_AH_B_Imm_B ]
+    of opMneINT1        : @[ opINT1_EFLAGS_D ]
+    of opMneBSF         : @[ opBSF_Reg_V_RegMem_V ]
+    of opMneCLI         : @[ opCLI ]
+    of opMneAMX         : @[ opAMX_AL_B_AH_B_Imm_B ]
+    of opMneJNC         : @[ opJNC_Imm_B ]
+    of opMneJBE         : @[ opJBE_Imm_V, opJBE_Imm_B ]
+    of opMneLTR         : @[ opLTR_TR_W_RegMem_W ]
+    of opMneAAS         : @[ opAAS_AL_B_AH_B ]
+    of opMneSETO        : @[ opSETO_RegMem_B ]
+    of opMnePUSHA       : @[ opPUSHA_AX_W_CX_W_DX_W_STACK_V ]
+    of opMneJNS         : @[ opJNS_Imm_V, opJNS_Imm_B ]
+    of opMneSETNB       : @[ opSETNB_RegMem_B ]
+    of opMneFS          : @[ opFS_FS_W ]
+    of opMneBT          : @[ opBT_RegMem_V_Reg_V, opBT_RegMem_V_Imm_B ]
+    of opMneINS         : @[ opINS_Mem_B_DX_W, opINS_Mem_V_DX_W ]
+    of opMneLGS         : @[ opLGS_GS_B_Reg_V_Mem_P ]
+    of opMneLFS         : @[ opLFS_FS_W_Reg_V_Mem_P ]
+    of opMneLOOPNZ      : @[ opLOOPNZ_ECX_D_Imm_B ]
+    of opMneSETB        : @[ opSETB_RegMem_B ]
+    of opMneAAD         : @[ opAAD_AL_B_AH_B ]
+    of opMneLIDT        : @[ opLIDT_IDTR_W_Mem_P ]
+    of opMneBOUND       : @[ opBOUND_Reg_V_Mem_A_EFLAGS_D ]
+    of opMneDEC         : @[ opDEC_Reg_V, opDEC_RegMem_B, opDEC_RegMem_V ]
+    of opMneCLC         : @[ opCLC ]
+    of opMneLDS         : @[ opLDS_DS_W_Reg_V_Mem_P ]
+    of opMneSHR         : @[ opSHR_RegMem_B_Imm_B, opSHR_RegMem_V_Imm_B, opSHR_RegMem_B_One_B, opSHR_RegMem_V_One_B, opSHR_RegMem_B_CL_B, opSHR_RegMem_V_CL_B ]
+    of opMneSLDT        : @[ opSLDT_Mem_W_LDTR_W ]
+    of opMneCALLF       : @[ opCALLF_A_P, opCALLF_Mem_P ]
+    of opMneSGDT        : @[ opSGDT_Mem_P_GDTR_W ]
+    of opMneSUB         : @[ opSUB_RegMem_B_Reg_B, opSUB_RegMem_V_Reg_V, opSUB_Reg_B_RegMem_B, opSUB_Reg_V_RegMem_V, opSUB_AL_B_Imm_B, opSUB_EAX_D_Imm_V, opSUB_RegMem_B_Imm_B, opSUB_RegMem_V_Imm_V ]
+    of opMneOUTS        : @[ opOUTS_DX_W_Mem_B, opOUTS_DX_W_Mem_V ]
+    of opMneIMUL        : @[ opIMUL_Reg_V_RegMem_V, opIMUL_Reg_V_RegMem_V_Imm_V, opIMUL_Reg_V_RegMem_V_Imm_B, opIMUL_AX_W_AL_B_RegMem_B, opIMUL_EDX_D_EAX_D_RegMem_V ]
+    of opMneINT         : @[ opINT_Three_B_EFLAGS_D, opINT_Imm_B_EFLAGS_D ]
+    of opMneLSS         : @[ opLSS_SS_B_Reg_V_Mem_P ]
+    of opMneCALL        : @[ opCALL_Imm_V, opCALL_RegMem_V ]
+    of opMneARPL        : @[ opARPL_RegMem_W_Reg_W ]
+    of opMneINTO        : @[ opINTO_EFLAGS_D ]
+    of opMneJMP         : @[ opJMP_Imm_V, opJMP_Imm_B, opJMP_RegMem_V ]
+    of opMneSTC         : @[ opSTC ]
+    of opMneXLAT        : @[ opXLAT_AL_B_Mem_B ]
+    of opMneCDQ         : @[ opCDQ_EDX_D_EAX_D ]
+    of opMneCMPS        : @[ opCMPS_Mem_B_Mem_B, opCMPS_Mem_V_Mem_V ]
+    of opMneSETNLE      : @[ opSETNLE_RegMem_B ]
+    of opMneSAR         : @[ opSAR_RegMem_B_Imm_B, opSAR_RegMem_V_Imm_B, opSAR_RegMem_B_One_B, opSAR_RegMem_V_One_B, opSAR_RegMem_B_CL_B, opSAR_RegMem_V_CL_B ]
+    of opMneES          : @[ opES_ES_W ]
+    of opMneSALC        : @[ opSALC_AL_B ]
+    of opMneINC         : @[ opINC_Reg_V, opINC_RegMem_B, opINC_RegMem_V ]
+    of opMneCMP         : @[ opCMP_RegMem_B_Reg_B, opCMP_RegMem_V_Reg_V, opCMP_Reg_B_RegMem_B, opCMP_Reg_V_RegMem_V, opCMP_AL_B_Imm_B, opCMP_EAX_D_Imm_V, opCMP_RegMem_B_Imm_B, opCMP_RegMem_V_Imm_V ]
+    of opMneJCXZ        : @[ opJCXZ_Imm_B_CX_W ]
+    of opMneBTC         : @[ opBTC_RegMem_V_Imm_B, opBTC_RegMem_V_Reg_V ]
+    of opMnePUSH        : @[ opPUSH_ES_W, opPUSH_CS_W, opPUSH_FS_W, opPUSH_GS_B, opPUSH_SS_B, opPUSH_DS_W, opPUSH_Reg_V, opPUSH_Imm_V, opPUSH_Imm_B, opPUSH_RegMem_V ]
+    of opMneSETP        : @[ opSETP_RegMem_B ]
+    of opMneMUL         : @[ opMUL_AX_W_AL_B_RegMem_B, opMUL_EDX_D_EAX_D_RegMem_V ]
+    of opMneDIV         : @[ opDIV_AL_B_AH_B_AX_W_RegMem_B, opDIV_EDX_D_EAX_D_RegMem_V ]
+    of opMneJNB         : @[ opJNB_Imm_V ]
+    of opMneJS          : @[ opJS_Imm_V, opJS_Imm_B ]
+    of opMneSHL         : @[ opSHL_RegMem_B_Imm_B, opSHL_RegMem_V_Imm_B, opSHL_RegMem_B_One_B, opSHL_RegMem_V_One_B, opSHL_RegMem_B_CL_B, opSHL_RegMem_V_CL_B ]
+    of opMneLSL         : @[ opLSL_Reg_V_Mem_W ]
+    of opMneJNO         : @[ opJNO_Imm_V, opJNO_Imm_B ]
+    of opMneCLD         : @[ opCLD ]
+    of opMneSHRD        : @[ opSHRD_RegMem_V_Reg_V_Imm_B, opSHRD_RegMem_V_Reg_V_CL_B ]
+    of opMneSAHF        : @[ opSAHF_AH_B ]
+    of opMneSETNP       : @[ opSETNP_RegMem_B ]
+    of opMneROL         : @[ opROL_RegMem_B_Imm_B, opROL_RegMem_V_Imm_B, opROL_RegMem_B_One_B, opROL_RegMem_V_One_B, opROL_RegMem_B_CL_B, opROL_RegMem_V_CL_B ]
+    of opMneSAL         : @[ opSAL_RegMem_B_Imm_B, opSAL_RegMem_V_Imm_B, opSAL_RegMem_B_One_B, opSAL_RegMem_V_One_B, opSAL_RegMem_B_CL_B, opSAL_RegMem_V_CL_B ]
+    of opMneJMPF        : @[ opJMPF_A_P, opJMPF_Mem_P ]
+    of opMneRCR         : @[ opRCR_RegMem_B_Imm_B, opRCR_RegMem_V_Imm_B, opRCR_RegMem_B_One_B, opRCR_RegMem_V_One_B, opRCR_RegMem_B_CL_B, opRCR_RegMem_V_CL_B ]
+    of opMneJL          : @[ opJL_Imm_V, opJL_Imm_B ]
+    of opMnePOPA        : @[ opPOPA_DI_W_SI_W_BP_W_STACK_V ]
+    of opMneREPNZ       : @[ opREPNZ_ECX_D ]
+    of opMneLOOPZ       : @[ opLOOPZ_ECX_D_Imm_B ]
+    of opMneRCL         : @[ opRCL_RegMem_B_Imm_B, opRCL_RegMem_V_Imm_B, opRCL_RegMem_B_One_B, opRCL_RegMem_V_One_B, opRCL_RegMem_B_CL_B, opRCL_RegMem_V_CL_B ]
+    of opMneSETNO       : @[ opSETNO_RegMem_B ]
+    of opMnePUSHFD      : @[ opPUSHFD_EFLAGS_D ]
+    of opMneRETF        : @[ opRETF_Imm_W, opRETF ]
+    of opMneSETLE       : @[ opSETLE_RegMem_B ]
+    of opMneUD2         : @[ opUD2 ]
+    of opMneSETNZ       : @[ opSETNZ_RegMem_B ]
+    of opMneMOVS        : @[ opMOVS_Mem_B_Mem_B, opMOVS_Mem_V_Mem_V ]
+    of opMneMOV         : @[ opMOV_Reg_D_CR_F, opMOV_Reg_D_DR_F, opMOV_CR_F_Reg_D, opMOV_DR_F_Reg_D, opMOV_RegMem_B_Reg_B, opMOV_RegMem_V_Reg_V, opMOV_Reg_B_RegMem_B, opMOV_Reg_V_RegMem_V, opMOV_Mem_W_SREG_W, opMOV_SREG_W_RegMem_W, opMOV_AL_B_Imm_B, opMOV_EAX_D_Imm_V, opMOV_Imm_B_AL_B, opMOV_Imm_V_EAX_D, opMOV_Reg_B_Imm_B, opMOV_Reg_V_Imm_V, opMOV_RegMem_B_Imm_B, opMOV_RegMem_V_Imm_V ]
+    of opMneSETNS       : @[ opSETNS_RegMem_B ]
+    of opMneBTR         : @[ opBTR_RegMem_V_Reg_V, opBTR_RegMem_V_Imm_B ]
+    of opMneLGDT        : @[ opLGDT_GDTR_W_Mem_P ]
+    of opMneADC         : @[ opADC_RegMem_B_Reg_B, opADC_RegMem_V_Reg_V, opADC_Reg_B_RegMem_B, opADC_Reg_V_RegMem_V, opADC_AL_B_Imm_B, opADC_EAX_D_Imm_V, opADC_RegMem_B_Imm_B, opADC_RegMem_V_Imm_V ]
+    of opMneJO          : @[ opJO_Imm_V, opJO_Imm_B ]
+    of opMneSETBE       : @[ opSETBE_RegMem_B ]
+    of opMneLEAVE       : @[ opLEAVE_EBP_D ]
+    of opMneBSR         : @[ opBSR_Reg_V_RegMem_V ]
+    of opMneJNL         : @[ opJNL_Imm_V, opJNL_Imm_B ]
+    of opMneOR          : @[ opOR_RegMem_B_Reg_B, opOR_RegMem_V_Reg_V, opOR_Reg_B_RegMem_B, opOR_Reg_V_RegMem_V, opOR_AL_B_Imm_B, opOR_EAX_D_Imm_V, opOR_RegMem_B_Imm_B, opOR_RegMem_V_Imm_V ]
+    of opMneJLE         : @[ opJLE_Imm_V, opJLE_Imm_B ]
+    of opMneIN          : @[ opIN_AL_B_Imm_B, opIN_EAX_D_Imm_B, opIN_AL_B_DX_W, opIN_EAX_D_DX_W ]
+    of opMneENTER       : @[ opENTER_EBP_D_Imm_W_Imm_B ]
+    of opMneMOVZX       : @[ opMOVZX_Reg_V_RegMem_B, opMOVZX_Reg_V_RegMem_W ]
+    of opMneXCHG        : @[ opXCHG_Reg_B_RegMem_B, opXCHG_Reg_V_RegMem_V, opXCHG_Reg_V_EAX_D ]
 
 func getTestedFlags*(code: ICode): set[OpFlagIO] =
   case code:
