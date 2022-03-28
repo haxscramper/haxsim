@@ -3,7 +3,7 @@ import eflagshpp
 import crhpp
 
 type
-  reg32T* = enum
+  Reg32T* = enum
     EAX
     ECX
     EDX
@@ -15,7 +15,7 @@ type
     GPREGSCOUNT
 
 type
-  reg16T* = enum
+  Reg16T* = enum
     AX
     CX
     DX
@@ -26,7 +26,7 @@ type
     DI
 
 type
-  reg8T* = enum
+  Reg8T* = enum
     AL
     CL
     DL
@@ -209,21 +209,21 @@ proc getEip*(this: var Processor): uint32 =
 proc getIp*(this: var Processor): uint32 =
   return this.ip
 
-proc getGpreg*(this: var Processor, n: reg32T): uint32 =
+proc getGpreg*(this: var Processor, n: Reg32T): uint32 =
   ASSERT(n < GPREGSCOUNT)
   return this.gpregs[n].reg32
 
-proc getGpreg*(this: var Processor, n: reg16T): uint16 =
-  ASSERT(cast[reg32T](n) < GPREGSCOUNT)
-  return this.gpregs[reg32T(n)].reg16
+proc getGpreg*(this: var Processor, n: Reg16T): uint16 =
+  ASSERT(cast[Reg32T](n) < GPREGSCOUNT)
+  return this.gpregs[Reg32T(n)].reg16
 
-proc getGpreg*(this: var Processor, n: reg8T): uint8 =
-  ASSERT(cast[reg32T](n) < GPREGSCOUNT)
+proc getGpreg*(this: var Processor, n: Reg8T): uint8 =
+  ASSERT(cast[Reg32T](n) < GPREGSCOUNT)
   return (if n < AH:
-            this.gpregs[reg32T(n)].reg8L
+            this.gpregs[Reg32T(n)].reg8L
 
           else:
-            this.gpregs[reg32T(n.int - AH.int)].reg8H
+            this.gpregs[Reg32T(n.int - AH.int)].reg8H
           )
 
 proc getSgreg*(this: Processor, n: sgregT, reg: var SGRegister): void =
@@ -248,21 +248,21 @@ proc setEip*(this: var Processor, v: uint32): void =
 proc setIp*(this: var Processor, v: uint16): void =
   this.ip = v
 
-proc setGpreg*(this: var Processor, n: reg32T, v: uint32): void =
+proc setGpreg*(this: var Processor, n: Reg32T, v: uint32): void =
   ASSERT(n < GPREGSCOUNT)
   this.gpregs[n].reg32 = v
 
-proc setGpreg*(this: var Processor, n: reg16T, v: uint16): void =
-  ASSERT(cast[reg32T](n) < GPREGSCOUNT)
-  this.gpregs[reg32T(n)].reg16 = v
+proc setGpreg*(this: var Processor, n: Reg16T, v: uint16): void =
+  ASSERT(cast[Reg32T](n) < GPREGSCOUNT)
+  this.gpregs[Reg32T(n)].reg16 = v
 
-proc setGpreg*(this: var Processor, n: reg8T, v: uint8): void =
-  ASSERT(cast[reg32T](n) < GPREGSCOUNT)
+proc setGpreg*(this: var Processor, n: Reg8T, v: uint8): void =
+  ASSERT(cast[Reg32T](n) < GPREGSCOUNT)
   if n < AH:
-    this.gpregs[reg32T(n)].reg8L = v
+    this.gpregs[Reg32T(n)].reg8L = v
 
   else:
-    this.gpregs[reg32T(n.int - AH.int)].reg8H = v
+    this.gpregs[Reg32T(n.int - AH.int)].reg8H = v
 
 proc setSgreg*(this: var Processor, n: sgregT, reg: SGRegister): void =
   ASSERT(n < SGREGSCOUNT)
@@ -282,28 +282,28 @@ proc updateIp*(this: var Processor, v: int32): uint32 =
   this.ip = (this.ip + v.uint16)
   return this.ip
 
-proc updateGpreg*(this: var Processor, n: reg32T, v: int32): uint32 =
+proc updateGpreg*(this: var Processor, n: Reg32T, v: int32): uint32 =
   ASSERT(n < GPREGSCOUNT)
   this.gpregs[n].reg32 = (this.gpregs[n].reg32 + v.uint32)
   return this.gpregs[n].reg32
 
-proc updateGpreg*(this: var Processor, n: reg16T, v: int16): uint16 =
-  ASSERT(cast[reg32T](n) < GPREGSCOUNT)
-  this.gpregs[reg32T(n)].reg16 = (this.gpregs[reg32T(n)].reg16 + v.uint16)
-  return this.gpregs[reg32T(n)].reg16
+proc updateGpreg*(this: var Processor, n: Reg16T, v: int16): uint16 =
+  ASSERT(cast[Reg32T](n) < GPREGSCOUNT)
+  this.gpregs[Reg32T(n)].reg16 = (this.gpregs[Reg32T(n)].reg16 + v.uint16)
+  return this.gpregs[Reg32T(n)].reg16
 
-proc updateGpreg*(this: var Processor, n: reg8T, v: int8): uint8 =
-  ASSERT(cast[reg32T](n) < GPREGSCOUNT)
+proc updateGpreg*(this: var Processor, n: Reg8T, v: int8): uint8 =
+  ASSERT(cast[Reg32T](n) < GPREGSCOUNT)
   let rhs = if n < AH:
-              this.gpregs[reg32T(n)].reg8L + v.uint8
+              this.gpregs[Reg32T(n)].reg8L + v.uint8
             else:
-              this.gpregs[reg32T(n.int - AH.int)].reg8H + v.uint8
+              this.gpregs[Reg32T(n.int - AH.int)].reg8H + v.uint8
 
   if n < AH:
-    this.gpregs[reg32T(n)].reg8L = rhs
+    this.gpregs[Reg32T(n)].reg8L = rhs
 
   else:
-    this.gpregs[reg32T(n.int - AH.int)].reg8H = rhs
+    this.gpregs[Reg32T(n.int - AH.int)].reg8H = rhs
 
   return rhs
 

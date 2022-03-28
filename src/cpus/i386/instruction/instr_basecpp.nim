@@ -203,7 +203,7 @@ proc testAlImm8*(this: var InstrImpl): void =
 proc movR8Imm8*(this: var InstrImpl): void =
   var reg: uint8
   reg = uint8(OPCODE and ((1 shl 3) - 1))
-  SETGPREG(cast[reg8T](reg), IMM8.uint8)
+  SETGPREG(cast[Reg8T](reg), IMM8.uint8)
 
 proc movRm8Imm8*(this: var InstrImpl): void =
   this.exec.setRm8(IMM8.uint8)
@@ -269,18 +269,18 @@ proc ltrRm16*(this: var InstrImpl): void =
 proc movR32Crn*(this: var InstrImpl): void =
   var crn: uint32
   crn = this.exec.getCrn()
-  SETGPREG(cast[reg32T](RM), crn)
+  SETGPREG(cast[Reg32T](RM), crn)
   
 
 proc movCrnR32*(this: var InstrImpl): void =
   var r32: uint32
   EXCEPTION(EXPGP, not(this.emu.chkRing(0)))
-  r32 = GETGPREG(cast[reg32T](RM))
+  r32 = GETGPREG(cast[Reg32T](RM))
   this.exec.setCrn(r32)
 
 template SETCCRM8*(cc: untyped, isFlag: untyped): untyped {.dirty.} =
   proc `set cc rm8`*(this: var InstrImpl): void =
-    SETGPREG(cast[reg32T](RM), uint32(isFlag))
+    SETGPREG(cast[Reg32T](RM), uint32(isFlag))
   
 
 SETCCRM8(o, EFLAGSOF)

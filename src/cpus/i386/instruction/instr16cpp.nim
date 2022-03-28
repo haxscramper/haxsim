@@ -150,27 +150,27 @@ proc incR16*(this: var InstrImpl): void =
   var reg: uint8
   var r16: uint16
   reg = uint8(OPCODE and ((1 shl 3) - 1))
-  r16 = GETGPREG(cast[reg16T](reg))
-  SETGPREG(cast[reg16T](reg), r16 + 1)
+  r16 = GETGPREG(cast[Reg16T](reg))
+  SETGPREG(cast[Reg16T](reg), r16 + 1)
   discard EFLAGSUPDATEADD(r16, 1)
 
 proc decR16*(this: var InstrImpl): void =
   var reg: uint8
   var r16: uint16
   reg = uint8(OPCODE and ((1 shl 3) - 1))
-  r16 = GETGPREG(cast[reg16T](reg))
-  SETGPREG(cast[reg16T](reg), r16 - 1)
+  r16 = GETGPREG(cast[Reg16T](reg))
+  SETGPREG(cast[Reg16T](reg), r16 - 1)
   discard EFLAGSUPDATESUB(r16, 1)
 
 proc pushR16*(this: var InstrImpl): void =
   var reg: uint8
   reg = uint8(OPCODE and ((1 shl 3) - 1))
-  PUSH16(GETGPREG(cast[reg16T](reg)))
+  PUSH16(GETGPREG(cast[Reg16T](reg)))
 
 proc popR16*(this: var InstrImpl): void =
   var reg: uint8
   reg = uint8(OPCODE and ((1 shl 3) - 1))
-  SETGPREG(cast[reg16T](reg), POP16())
+  SETGPREG(cast[Reg16T](reg), POP16())
 
 proc pusha*(this: var InstrImpl): void =
   var sp: uint16
@@ -336,7 +336,7 @@ proc testAxImm16*(this: var InstrImpl): void =
 proc movR16Imm16*(this: var InstrImpl): void =
   var reg: uint8
   reg = uint8(OPCODE and ((1 shl 3) - 1))
-  SETGPREG(cast[reg16T](reg), IMM16.uint16)
+  SETGPREG(cast[Reg16T](reg), IMM16.uint16)
 
 proc ret*(this: var InstrImpl): void =
   SETIP(POP16())

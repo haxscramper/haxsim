@@ -150,27 +150,27 @@ proc incR32*(this: var InstrImpl): void =
   var reg: uint8
   var r32: uint32
   reg = uint8(OPCODE and ((1 shl 3) - 1))
-  r32 = GETGPREG(cast[reg32T](reg))
-  SETGPREG(cast[reg32T](reg), r32 + 1)
+  r32 = GETGPREG(cast[Reg32T](reg))
+  SETGPREG(cast[Reg32T](reg), r32 + 1)
   discard EFLAGSUPDATEADD(r32, 1)
 
 proc decR32*(this: var InstrImpl): void =
   var reg: uint8
   var r32: uint32
   reg = uint8(OPCODE and ((1 shl 3) - 1))
-  r32 = GETGPREG(cast[reg32T](reg))
-  SETGPREG(cast[reg32T](reg), r32 - 1)
+  r32 = GETGPREG(cast[Reg32T](reg))
+  SETGPREG(cast[Reg32T](reg), r32 - 1)
   discard EFLAGSUPDATESUB(r32, 1)
 
 proc pushR32*(this: var InstrImpl): void =
   var reg: uint8
   reg = uint8(OPCODE and ((1 shl 3) - 1))
-  PUSH32(GETGPREG(cast[reg32T](reg)))
+  PUSH32(GETGPREG(cast[Reg32T](reg)))
 
 proc popR32*(this: var InstrImpl): void =
   var reg: uint8
   reg = uint8(OPCODE and ((1 shl 3) - 1))
-  SETGPREG(cast[reg32T](reg), POP32())
+  SETGPREG(cast[Reg32T](reg), POP32())
 
 proc pushad*(this: var InstrImpl): void =
   var esp: uint32
@@ -337,7 +337,7 @@ proc testEaxImm32*(this: var InstrImpl): void =
 proc movR32Imm32*(this: var InstrImpl): void =
   var reg: uint8
   reg = uint8(OPCODE and ((1 shl 3) - 1))
-  SETGPREG(cast[reg32T](reg), IMM32.uint32)
+  SETGPREG(cast[Reg32T](reg), IMM32.uint32)
 
 proc ret*(this: var InstrImpl): void =
   SETEIP(POP32())

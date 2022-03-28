@@ -18,7 +18,7 @@ proc exec*(this: var InstrImpl): bool =
   this.exec.instrfuncs[opcode](this)
   return true
 
-proc calc_modrm16*(this: var ExecInstr): uint32 =
+proc calcModrm16*(this: var ExecInstr): uint32 =
   var `addr`: uint32 = 0
   case MOD:
     of 1: `addr` = (`addr` + DISP8.uint32)
@@ -26,13 +26,13 @@ proc calc_modrm16*(this: var ExecInstr): uint32 =
     else: assert false, $MOD
   case RM:
     of 0, 1, 7:
-      `addr` = (`addr` + GET_GPREG(BX))
+      `addr` = (`addr` + GETGPREG(BX))
     of 2, 3, 6:
       if MOD == 0 and RM == 6:
         `addr` = (`addr` + DISP16.uint32)
 
       else:
-        `addr` = (`addr` + GET_GPREG(BP))
+        `addr` = (`addr` + GETGPREG(BP))
         SEGMENT = SS
 
     else:
@@ -40,15 +40,15 @@ proc calc_modrm16*(this: var ExecInstr): uint32 =
 
   if RM < 6:
     if toBool(RM mod 2):
-      `addr` = (`addr` + GET_GPREG(DI))
+      `addr` = (`addr` + GETGPREG(DI))
 
     else:
-      `addr` = (`addr` + GET_GPREG(SI))
+      `addr` = (`addr` + GETGPREG(SI))
 
 
   return `addr`
 
-proc calc_sib*(this: var ExecInstr): uint32 =
+proc calcSib*(this: var ExecInstr): uint32 =
   var base: uint32
   if BASE == 5 and MOD == 0:
     base = DISP32.uint32
@@ -70,13 +70,13 @@ proc calc_sib*(this: var ExecInstr): uint32 =
           else:
             DS
           )
-      base = GET_GPREG(cast[reg32_t](BASE))
+      base = GETGPREG(cast[Reg32T](BASE))
 
 
-  return base + GET_GPREG(cast[reg32_t](INDEX)) * (1 shl SCALE).uint32
+  return base + GETGPREG(cast[Reg32T](INDEX)) * (1 shl SCALE).uint32
 
 
-proc calc_modrm32*(this: var ExecInstr): uint32 =
+proc calcModrm32*(this: var ExecInstr): uint32 =
   var `addr`: uint32 = 0
   case MOD:
     of 1: `addr` = (`addr` + DISP8.uint32)
@@ -84,129 +84,129 @@ proc calc_modrm32*(this: var ExecInstr): uint32 =
     else: assert false
   case RM:
     of 4:
-      `addr` = (`addr` + this.calc_sib())
+      `addr` = (`addr` + this.calcSib())
     of 5:
       if MOD == 0:
         `addr` = (`addr` + DISP32.uint32)
 
     else:
       SEGMENT = (if (RM == 5): SS else: DS)
-      `addr` = (`addr` + GET_GPREG(cast[reg32_t](RM)))
+      `addr` = (`addr` + GETGPREG(cast[Reg32T](RM)))
 
   return `addr`
 
 
-proc calc_modrm*(this: var ExecInstr): uint32 =
+proc calcModrm*(this: var ExecInstr): uint32 =
   ASSERT(MOD != 3)
   SEGMENT = DS
-  if this.is_mode32() xor this.chsz_ad:
-    return this.calc_modrm32()
+  if this.isMode32() xor this.chszAd:
+    return this.calcModrm32()
 
   else:
-    return this.calc_modrm16()
+    return this.calcModrm16()
   
-proc set_rm32*(this: var ExecInstr, value: uint32): void = 
+proc setRm32*(this: var ExecInstr, value: uint32): void =
   if MOD == 3:
-    SET_GPREG(cast[reg32_t](RM), value)
+    SETGPREG(cast[Reg32T](RM), value)
   
   else:
-    WRITE_MEM32(this.calc_modrm(), value)
+    WRITEMEM32(this.calcModrm(), value)
   
 
-proc get_rm32*(this: var ExecInstr): uint32 = 
+proc getRm32*(this: var ExecInstr): uint32 =
   if MOD == 3:
-    return GET_GPREG(cast[reg32_t](RM))
+    return GETGPREG(cast[Reg32T](RM))
   
   else:
-    return READ_MEM32(this.calc_modrm())
+    return READMEM32(this.calcModrm())
   
 
-proc set_r32*(this: var ExecInstr, value: uint32): void = 
-  SET_GPREG(cast[reg32_t](REG), value)
+proc setR32*(this: var ExecInstr, value: uint32): void =
+  SETGPREG(cast[Reg32T](REG), value)
 
-proc get_r32*(this: var ExecInstr): uint32 = 
-  return GET_GPREG(cast[reg32_t](REG))
+proc getR32*(this: var ExecInstr): uint32 =
+  return GETGPREG(cast[Reg32T](REG))
 
-proc set_moffs32*(this: var ExecInstr, value: uint32): void = 
+proc setMoffs32*(this: var ExecInstr, value: uint32): void =
   SEGMENT = DS
-  WRITE_MEM32(MOFFS, value)
+  WRITEMEM32(MOFFS, value)
 
-proc get_moffs32*(this: var ExecInstr): uint32 = 
+proc getMoffs32*(this: var ExecInstr): uint32 =
   SEGMENT = DS
-  return READ_MEM32(MOFFS)
+  return READMEM32(MOFFS)
 
-proc set_rm16*(this: var ExecInstr, value: uint16): void = 
+proc setRm16*(this: var ExecInstr, value: uint16): void =
   if MOD == 3:
-    SET_GPREG(cast[reg16_t](RM), value)
+    SETGPREG(cast[Reg16T](RM), value)
   
   else:
-    WRITE_MEM16(this.calc_modrm(), value)
+    WRITEMEM16(this.calcModrm(), value)
   
 
-proc get_rm16*(this: var ExecInstr): uint16 = 
+proc getRm16*(this: var ExecInstr): uint16 =
   if MOD == 3:
-    return GET_GPREG(cast[reg16_t](RM))
+    return GETGPREG(cast[Reg16T](RM))
   
   else:
-    return READ_MEM16(this.calc_modrm())
+    return READMEM16(this.calcModrm())
   
 
-proc set_r16*(this: var ExecInstr, value: uint16): void = 
-  SET_GPREG(cast[reg16_t](REG), value)
+proc setR16*(this: var ExecInstr, value: uint16): void =
+  SETGPREG(cast[Reg16T](REG), value)
 
-proc get_r16*(this: var ExecInstr): uint16 = 
-  return GET_GPREG(cast[reg16_t](REG))
+proc getR16*(this: var ExecInstr): uint16 =
+  return GETGPREG(cast[Reg16T](REG))
 
-proc set_moffs16*(this: var ExecInstr, value: uint16): void = 
+proc setMoffs16*(this: var ExecInstr, value: uint16): void =
   SEGMENT = DS
-  WRITE_MEM16(MOFFS, value)
+  WRITEMEM16(MOFFS, value)
 
-proc get_moffs16*(this: var ExecInstr): uint16 = 
+proc getMoffs16*(this: var ExecInstr): uint16 =
   SEGMENT = DS
-  return READ_MEM16(MOFFS)
+  return READMEM16(MOFFS)
 
-proc set_rm8*(this: var ExecInstr, value: uint8): void = 
+proc setRm8*(this: var ExecInstr, value: uint8): void =
   if MOD == 3:
-    SET_GPREG(cast[reg8_t](RM), value)
+    SETGPREG(cast[Reg8T](RM), value)
   
   else:
-    WRITE_MEM8(this.calc_modrm(), value)
+    WRITEMEM8(this.calcModrm(), value)
   
 
-proc get_rm8*(this: var ExecInstr): uint8 = 
+proc getRm8*(this: var ExecInstr): uint8 =
   if MOD == 3:
-    return GET_GPREG(cast[reg8_t](RM))
+    return GETGPREG(cast[Reg8T](RM))
   
   else:
-    return READ_MEM8(this.calc_modrm())
+    return READMEM8(this.calcModrm())
   
 
-proc set_r8*(this: var ExecInstr, value: uint8): void = 
-  SET_GPREG(cast[reg8_t](REG), value)
+proc setR8*(this: var ExecInstr, value: uint8): void =
+  SETGPREG(cast[Reg8T](REG), value)
 
-proc set_moffs8*(this: var ExecInstr, value: uint8): void = 
+proc setMoffs8*(this: var ExecInstr, value: uint8): void =
   SEGMENT = DS
-  WRITE_MEM8(MOFFS, value)
+  WRITEMEM8(MOFFS, value)
 
-proc get_moffs8*(this: var ExecInstr): uint8 = 
+proc getMoffs8*(this: var ExecInstr): uint8 =
   SEGMENT = DS
-  return READ_MEM8(MOFFS)
+  return READMEM8(MOFFS)
 
-proc get_r8*(this: var ExecInstr): uint8 = 
-  return GET_GPREG(cast[reg8_t](REG))
+proc getR8*(this: var ExecInstr): uint8 =
+  return GETGPREG(cast[Reg8T](REG))
 
-proc get_m*(this: var ExecInstr): uint32 = 
-  return this.calc_modrm()
+proc getM*(this: var ExecInstr): uint32 =
+  return this.calcModrm()
 
-proc set_sreg*(this: var ExecInstr, value: uint16): void = 
-  EMU.accs.set_segment(cast[sgreg_t](REG), value)
+proc setSreg*(this: var ExecInstr, value: uint16): void =
+  EMU.accs.setSegment(cast[sgregT](REG), value)
 
-proc get_sreg*(this: var ExecInstr): uint16 = 
-  return EMU.accs.get_segment(cast[sgreg_t](REG))
+proc getSreg*(this: var ExecInstr): uint16 =
+  return EMU.accs.getSegment(cast[sgregT](REG))
 
-proc set_crn*(this: var ExecInstr, value: uint32): void = 
+proc setCrn*(this: var ExecInstr, value: uint32): void =
   INFO(2, "set CR%d = %x", REG, value)
-  EMU.accs.cpu.set_crn(REG, value)
+  EMU.accs.cpu.setCrn(REG, value)
 
-proc get_crn*(this: var ExecInstr): uint32 = 
-  return CPU.get_crn(REG)
+proc getCrn*(this: var ExecInstr): uint32 =
+  return CPU.getCrn(REG)
