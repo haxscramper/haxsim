@@ -70,10 +70,7 @@ proc loop*(full: var FullImpl) =
   dumpMem(full.emu.accs.mem)
 
   while (full.emu.isRunning()):
-    # pprint full.emu.accs.cpu.gpregs
     full.data = InstrData()
-    # memset(addr instr, 0, sizeof((InstrData)))
-    # try:
     if full.emu.accs.chkIrq(full.emu.intr):
       full.emu.accs.cpu.doHalt(false)
 
@@ -83,7 +80,8 @@ proc loop*(full: var FullImpl) =
 
     full.emu.accs.hundleInterrupt(full.emu.intr)
     let prefix = fetch(full)
-    pprint full.data
+    pprinte full.data.opcodeData
+    pprinte full.impl16.exec.instr.opcodeData
     if full.emu.accs.cpu.isMode32() xor toBool(prefix and CHSZOP):
       discard exec(full.impl32)
 
@@ -151,10 +149,10 @@ proc main1() =
   full.emu.accs.cpu.setEip(0)
 
   full.emu.loadBlob(asVar @[
-    # `inc al`
-    0xFE'u8, 0xC0,
+    # # `inc al`
+    # 0xFE'u8, 0xC0,
     # `hlt`
-    0xF4
+    0xF4'u8
   ])
 
   # assertRef(full.emu.cpu)

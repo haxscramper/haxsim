@@ -23,7 +23,7 @@ proc calcModrm16*(this: var ExecInstr): uint32 =
   case MOD:
     of 1: `addr` = (`addr` + DISP8.uint32)
     of 2: `addr` = (`addr` + DISP16.uint32)
-    else: assert false, $MOD
+    else: assert false
   case RM:
     of 0, 1, 7:
       `addr` = (`addr` + GETGPREG(BX))
@@ -111,7 +111,7 @@ proc setRm32*(this: var ExecInstr, value: uint32): void =
   
   else:
     WRITEMEM32(this.calcModrm(), value)
-  
+
 
 proc getRm32*(this: var ExecInstr): uint32 =
   if MOD == 3:
@@ -119,7 +119,7 @@ proc getRm32*(this: var ExecInstr): uint32 =
   
   else:
     return READMEM32(this.calcModrm())
-  
+
 
 proc setR32*(this: var ExecInstr, value: uint32): void =
   SETGPREG(cast[Reg32T](REG), value)

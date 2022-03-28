@@ -194,7 +194,6 @@ type
     REPNZ
 
   OpcodeData* {.union.} = object
-    name*: ICode
     code*: uint16
 
   InstrData* = object
@@ -255,13 +254,27 @@ type
   ExecInstr* {.bycopy.} = object of Instruction
     instrfuncs*: array[MAXOPCODE, instrfuncT]
 
-  InstrImpl* {.bycopy, inheritable.} = object
+  InstrImpl* {.inheritable.} = object
     exec*: ExecInstr
     parse*: ParseInstr
     emu*: EmuInstr
 
   instrfuncT* = proc(this: var InstrImpl)
 
+
+proc toPPrintTree*(val: OpcodeData, conf: var PPrintConf, path: PPrintPath): PPrintTree =
+  result = newPPrintConst(
+    "0x$# ($#)" % [
+      toHex(val.code)[^4 .. ^1],
+      # toHex(val.code.uint64 shl 16),
+      # $ICode(val.code.uint64 shl 16)
+      tern(toBool(val.code and 0x0F00),
+           $ICode(val.code.uint64 shl 12),
+           $ICode(val.code.uint64 shl 16))
+    ],
+    "int", conf.getId(val), fgCyan, path)
+
+  result.updateCounts(conf.sortBySize)
 
 proc opcode*(this: InstrData): uint16 = this.opcodeData.code
 proc opcode*(this: var InstrData): var uint16 = this.opcodeData.code
@@ -292,6 +305,8 @@ proc initInstruction*(): Instruction =
   discard
 
 proc initInstruction*(e: Emulator, i: InstrData, m: bool): Instruction =
+  let t = globalTick()
+
   result.emu = e
   result.instr = i
   result.mode32 = m

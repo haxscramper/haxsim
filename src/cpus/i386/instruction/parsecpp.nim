@@ -83,20 +83,14 @@ proc parsePrefix*(this: var InstrImpl): uint8 =
 
 proc parseOpcode*(this: var InstrImpl): void =
   OPCODE = ACS.getCode8(0)
+  echov OPCODE
   discard UPDATEEIP(1)
   
   if OPCODE == 0x0f:
     OPCODE = (OPCODE shl 8) + ACS.getCode8(0)
     discard UPDATEEIP(1)
   
-  if CPU.isMode32():
-    DEBUGMSG(5, "CS:%04x EIP:0x%04x opcode:%02x ",
-              EMU.getSegment(CS), GETEIP() - 1, OPCODE)
-  
-  else:
-    DEBUGMSG(5, "CS:%04x  IP:0x%04x opcode:%02x ",
-              EMU.getSegment(CS), GETIP() - 1, OPCODE)
-  
+
 
 proc parseModrm32*(this: var InstrImpl): void =
   if MOD != 3 and RM == 4:
@@ -154,32 +148,34 @@ proc parseMoffs*(this: var InstrImpl): void =
   DEBUGMSG(5, "moffs:0x%04x ", MOFFS)
 
 proc parse*(this: var InstrImpl): void =
-  var opcode: uint16
   this.parseOpcode()
-  opcode = OPCODE
-  if opcode shr 8 == 0x0f:
-    opcode = (opcode and 0xff) or 0x0100
+  var op = OPCODE
+  # REVIEW not sure if this bithack is really necessary - implementation
+  # uses values like `0x0F81` explicitly, so I doubt this is really
+  # necessary.
+  if op shr 8 == 0x0f:
+    op = (op and 0xff) or 0x0100
 
-  if iParseModrm in this.parse.chk[opcode]:
+  if iParseModrm in this.parse.chk[op]:
     this.parseModrmSibDisp()
 
-  if iParseImm32 in this.parse.chk[opcode]:
+  if iParseImm32 in this.parse.chk[op]:
     INSTR.imm32 = ACS.getCode32(0).int32()
     discard UPDATEEIP(4)
 
-  elif iParseImm16 in this.parse.chk[opcode]:
+  elif iParseImm16 in this.parse.chk[op]:
     INSTR.imm16 = ACS.getCode16(0).int16()
     discard UPDATEEIP(2)
 
-  elif iParseImm8 in this.parse.chk[opcode]:
+  elif iParseImm8 in this.parse.chk[op]:
     INSTR.imm8 = cast[int8](ACS.getCode8(0))
     discard UPDATEEIP(1)
 
-  if iParsePtr16 in this.parse.chk[opcode]:
+  if iParsePtr16 in this.parse.chk[op]:
     PTR16 = ACS.getCode16(0).int8()
     discard UPDATEEIP(2)
 
-  if iParseMoffs in this.parse.chk[opcode]:
+  if iParseMoffs in this.parse.chk[op]:
     this.parseMoffs()
 
-  DEBUGMSG(5, "\\n")
+  pprinte this.exec.instr.opcode

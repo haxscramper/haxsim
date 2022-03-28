@@ -3,7 +3,7 @@ import std/strutils
 export strutils
 import hmisc/wrappers/wraphelp
 import hmisc/other/hpprint
-export pprint
+export hpprint
 export debughpp
 import hmisc/core/all
 export all
