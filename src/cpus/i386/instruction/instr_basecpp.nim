@@ -473,6 +473,7 @@ proc codeF6*(this: var InstrImpl): void =
 proc initInstrImpl*(r: var InstrImpl, instr: Instruction) =
   asgnAux[Instruction](r.exec, instr)
   assertRef(r.exec.get_emu())
+  r.emu.emu = instr.emu
 
   r.setFuncflag(ICode(0x00), instrbase(addRm8R8),    CHKMODRM)
   r.setFuncflag(ICode(0x02), instrbase(addR8Rm8),    CHKMODRM)

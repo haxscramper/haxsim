@@ -50,8 +50,6 @@ proc fetch*(full: var FullImpl): uint8 =
     else:
       full.impl16.parsePrefix()
 
-  echov prefix
-
   let chszOp = toBool(prefix and CHSZOP)
   let chszAd = toBool(prefix and CHSZAD)
   if isMode32 xor chszOp:
@@ -69,8 +67,8 @@ proc loop*(full: var FullImpl) =
   assertRef(full.impl16.get_emu())
   dumpMem(full.emu.accs.mem)
 
-  while (full.emu.isRunning()):
-    full.data = InstrData()
+  while not full.emu.accs.cpu.isHalt():
+    zeroMem(addr full.data[], sizeof(full.data[]))
     if full.emu.accs.chkIrq(full.emu.intr):
       full.emu.accs.cpu.doHalt(false)
 
@@ -80,8 +78,6 @@ proc loop*(full: var FullImpl) =
 
     full.emu.accs.hundleInterrupt(full.emu.intr)
     let prefix = fetch(full)
-    pprinte full.data.opcodeData
-    pprinte full.impl16.exec.instr.opcodeData
     if full.emu.accs.cpu.isMode32() xor toBool(prefix and CHSZOP):
       discard exec(full.impl32)
 
@@ -98,7 +94,7 @@ proc loop*(full: var FullImpl) =
     #   emu.stop()
 
 proc initFull*(emuset: var EmuSetting): FullImpl =
-  var full = FullImpl(emu: initEmulator(emuset))
+  var full = FullImpl(emu: initEmulator(emuset), data: InstrData())
   var instr = initInstruction(full.emu, full.data, false)
   assertRef(full.emu)
   full.impl16 = initInstrImpl16(instr)
@@ -149,8 +145,8 @@ proc main1() =
   full.emu.accs.cpu.setEip(0)
 
   full.emu.loadBlob(asVar @[
-    # # `inc al`
-    # 0xFE'u8, 0xC0,
+    # `inc al`
+    0xFE'u8, 0xC0,
     # `hlt`
     0xF4'u8
   ])
@@ -160,3 +156,4 @@ proc main1() =
 
 startHax()
 main1()
+echo "done"

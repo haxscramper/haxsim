@@ -266,7 +266,6 @@ proc writeMem8Seg*(this: var DataAccess, seg: SgRegT, memAddr: uint32, v: uint8)
 
 proc execMem8Seg*(this: var DataAccess, seg: SgRegT, memAddr: uint32): uint8 =
   let pos = this.transV2p(MODEEXEC, seg, memAddr)
-  echov pos
   return this.mem.readMem8(pos)
 
 proc execMem16Seg*(this: var DataAccess, seg: SgRegT, memAddr: uint32): uint16 =

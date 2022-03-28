@@ -196,7 +196,7 @@ type
   OpcodeData* {.union.} = object
     code*: uint16
 
-  InstrData* = object
+  InstrData* = ref object
     prefix*: uint16
     preSegment*: SgRegT
     preRepeat*: repT
@@ -209,27 +209,27 @@ type
     ptr16*: int16
     moffs*: uint32
 
-  InstrDataField5* {.bycopy, union.} = object
+  InstrDataField5* {.union.} = object
     ## Parsed ModRM instruction byte. Controls execution of the several
     ## commands.
     dmodrm*: uint8
     modrm*: ModRM
 
-  InstrDataField6* {.bycopy, union.} = object
+  InstrDataField6* {.union.} = object
     dsib*: uint8
     sib*: SIB
 
-  InstrDataField7* {.bycopy, union.} = object
+  InstrDataField7* {.union.} = object
     disp8*: int8
     disp16*: int16
     disp32*: int32
 
-  InstrDataField8* {.bycopy, union.} = object
+  InstrDataField8* {.union.} = object
     imm8*: int8
     imm16*: int16
     imm32*: int32
 
-  Instruction* {.bycopy, inheritable.} = object
+  Instruction* {.inheritable.} = object
     instr*: InstrData
     chszAd*: bool
     emu*: Emulator
@@ -305,6 +305,8 @@ proc initInstruction*(): Instruction =
   discard
 
 proc initInstruction*(e: Emulator, i: InstrData, m: bool): Instruction =
+  assertRef(i)
+  assertRef(e)
   let t = globalTick()
 
   result.emu = e

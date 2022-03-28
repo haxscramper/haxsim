@@ -34,7 +34,6 @@ proc parsePrefix*(this: var InstrImpl): uint8 =
   var chsz, code: uint8 = 0
   while (true):
     code = this.getEmu().accs.getCode8(0)
-    echov code
     var setPre = false
     case code:
       of 0x26:
@@ -83,7 +82,6 @@ proc parsePrefix*(this: var InstrImpl): uint8 =
 
 proc parseOpcode*(this: var InstrImpl): void =
   OPCODE = ACS.getCode8(0)
-  echov OPCODE
   discard UPDATEEIP(1)
   
   if OPCODE == 0x0f:
@@ -177,5 +175,3 @@ proc parse*(this: var InstrImpl): void =
 
   if iParseMoffs in this.parse.chk[op]:
     this.parseMoffs()
-
-  pprinte this.exec.instr.opcode
