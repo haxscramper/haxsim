@@ -177,6 +177,7 @@ proc setRm8*(this: var ExecInstr, value: uint8): void =
   
 
 proc getRm8*(this: var ExecInstr): uint8 =
+  echov MOD
   if MOD == 3:
     return GETGPREG(cast[Reg8T](RM))
   

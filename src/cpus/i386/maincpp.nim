@@ -104,15 +104,8 @@ proc initFull*(emuset: var EmuSetting): FullImpl =
   var emu = initEmulator(emuset)
   let data = InstrData()
   proc echoHandler(ev: EmuEvent) =
-    echov ev.kind
-    if ev.kind in {eekStartInstructionFetch, eekEndInstructionFetch}:
-      echov emu.cpu.eip
-
-    if ev.kind == eekEndInstructionFetch:
-      pprinte data
-
-    elif ev.kind == eekCallOpcodeEnd:
-      pprinte emu.cpu.gpregs
+    if ev.kind == eekCallOpcodeEnd:
+      pprinte emu.cpu.gpregs[EAX]
 
   emu.logger = initEmuLogger(echoHandler)
   var full = FullImpl(emu: emu, data: data)
@@ -167,10 +160,10 @@ proc main1() =
   full.emu.cpu.setEip(0)
 
   full.emu.loadBlob(asVar @[
-    # # `inc al`
-    # 0xFE'u8, 0xC0,
-    # `mov 4`
+    # `mov al, 4`
     0xB0'u8, 0x04,
+    # `inc al`
+    0xFE'u8, 0xC0,
     # `hlt`
     0xF4'u8
   ])

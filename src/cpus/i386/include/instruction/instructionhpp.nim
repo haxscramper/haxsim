@@ -178,7 +178,10 @@ template SEGMENT*(): untyped {.dirty.} =
 
 const MAXOPCODE* = 0x200
 type
-  ModRM* {.bycopy.} = object
+  ModRM* = object
+    ## The ModR/M byte encodes a register or an opcode extension, and a
+    ## register or a memory address.
+    ## https://wiki.osdev.org/X86-64_Instruction_Encoding#ModR.2FM
     rm* {.bitsize: 3.}: uint8
     reg* {.bitsize: 3.}: uint8
     `mod`* {.bitsize: 2.}: uint8

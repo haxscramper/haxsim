@@ -453,6 +453,17 @@ proc codeF6*(this: var InstrImpl): void =
     else:
       ERROR("not implemented: 0xf6 /%d\\n", REG)
 
+proc incRm8*(this: var InstrImpl) =
+  let val = this.exec.getRm8().uint8()
+  this.exec.setRm8(val + 1)
+  discard EFLAGSUPDATEADD(val, 0)
+
+proc codeFE*(this: var InstrImpl) =
+  case REG:
+    of 0: this.incRm8()
+    else:
+      assert false, $REG
+
 proc initInstrImpl*(r: var InstrImpl, instr: Instruction) =
   asgnAux[Instruction](r.exec, instr)
   assertRef(r.exec.get_emu())
@@ -541,6 +552,8 @@ proc initInstrImpl*(r: var InstrImpl, instr: Instruction) =
   r.setFuncflag(ICode(0x82),   instrbase(code_82),    CHKMODRM + CHKIMM8)
   r.setFuncflag(ICode(0xc0),   instrbase(codeC0),     CHKMODRM + CHKIMM8)
   r.setFuncflag(ICode(0xf6),   instrbase(codeF6),     CHKMODRM)
+  r.setFuncFlag(ICode(0xfe),   instrbase(codeFE),     CHKMODRM)
+
 
 proc initInstrImpl*(instr: Instruction): InstrImpl =
   initInstrImpl(result, instr)
