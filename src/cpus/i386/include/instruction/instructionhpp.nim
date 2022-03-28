@@ -202,29 +202,29 @@ type
     preRepeat*: repT
     segment*: SgRegT
     opcodeData*: OpcodeData
-    field5*: InstrDataField5
-    field6*: InstrDataField6
-    field7*: InstrDataField7
-    field8*: InstrDataField8
+    fieldModRM*: InstrDataModRM
+    fieldDSib*: InstrDataDSib
+    fieldDisp*: InstrDataDisp
+    fieldImm*: InstrDataImm
     ptr16*: int16
     moffs*: uint32
 
-  InstrDataField5* {.union.} = object
+  InstrDataModRM* {.union.} = object
     ## Parsed ModRM instruction byte. Controls execution of the several
     ## commands.
     dmodrm*: uint8
     modrm*: ModRM
 
-  InstrDataField6* {.union.} = object
+  InstrDataDSib* {.union.} = object
     dsib*: uint8
     sib*: SIB
 
-  InstrDataField7* {.union.} = object
+  InstrDataDisp* {.union.} = object
     disp8*: int8
     disp16*: int16
     disp32*: int32
 
-  InstrDataField8* {.union.} = object
+  InstrDataImm* {.union.} = object
     imm8*: int8
     imm16*: int16
     imm32*: int32
@@ -280,26 +280,26 @@ proc opcode*(this: InstrData): uint16 = this.opcodeData.code
 proc opcode*(this: var InstrData): var uint16 = this.opcodeData.code
 proc `opcode=`*(this: var InstrData, code: uint16) = this.opcodeData.code = code
 
-proc dmodrm*(this: InstrData): uint8 = this.field5.dmodrm
-proc `dmodrm=`*(this: var InstrData, value: uint8) = this.field5.dmodrm = value
-proc modrm*(this: InstrData): ModRM = this.field5.modrm
-proc `modrm=`*(this: var InstrData, value: ModRM) = this.field5.modrm = value
-proc dsib*(this: InstrData): uint8 = this.field6.dsib
-proc `dsib=`*(this: var InstrData, value: uint8) = this.field6.dsib = value
-proc sib*(this: InstrData): SIB = this.field6.sib
-proc `sib=`*(this: var InstrData, value: SIB) = this.field6.sib = value
-proc disp8*(this: InstrData): int8 = this.field7.disp8
-proc `disp8=`*(this: var InstrData, value: int8) = this.field7.disp8 = value
-proc disp16*(this: InstrData): int16 = this.field7.disp16
-proc `disp16=`*(this: var InstrData, value: int16) = this.field7.disp16 = value
-proc disp32*(this: InstrData): int32 = this.field7.disp32
-proc `disp32=`*(this: var InstrData, value: int32) = this.field7.disp32 = value
-proc imm8*(this: InstrData): int8 = this.field8.imm8
-proc `imm8=`*(this: var InstrData, value: int8) = this.field8.imm8 = value
-proc imm16*(this: InstrData): int16 = this.field8.imm16
-proc `imm16=`*(this: var InstrData, value: int16) = this.field8.imm16 = value
-proc imm32*(this: InstrData): int32 = this.field8.imm32
-proc `imm32=`*(this: var InstrData, value: int32) = this.field8.imm32 = value
+proc dmodrm*(this: InstrData): uint8 = this.fieldModRM.dmodrm
+proc `dmodrm=`*(this: var InstrData, value: uint8) = this.fieldModRM.dmodrm = value
+proc modrm*(this: InstrData): ModRM = this.fieldModRM.modrm
+proc `modrm=`*(this: var InstrData, value: ModRM) = this.fieldModRM.modrm = value
+proc dsib*(this: InstrData): uint8 = this.fieldDSib.dsib
+proc `dsib=`*(this: var InstrData, value: uint8) = this.fieldDSib.dsib = value
+proc sib*(this: InstrData): SIB = this.fieldDSib.sib
+proc `sib=`*(this: var InstrData, value: SIB) = this.fieldDSib.sib = value
+proc disp8*(this: InstrData): int8 = this.fieldDisp.disp8
+proc `disp8=`*(this: var InstrData, value: int8) = this.fieldDisp.disp8 = value
+proc disp16*(this: InstrData): int16 = this.fieldDisp.disp16
+proc `disp16=`*(this: var InstrData, value: int16) = this.fieldDisp.disp16 = value
+proc disp32*(this: InstrData): int32 = this.fieldDisp.disp32
+proc `disp32=`*(this: var InstrData, value: int32) = this.fieldDisp.disp32 = value
+proc imm8*(this: InstrData): int8 = this.fieldImm.imm8
+proc `imm8=`*(this: var InstrData, value: int8) = this.fieldImm.imm8 = value
+proc imm16*(this: InstrData): int16 = this.fieldImm.imm16
+proc `imm16=`*(this: var InstrData, value: int16) = this.fieldImm.imm16 = value
+proc imm32*(this: InstrData): int32 = this.fieldImm.imm32
+proc `imm32=`*(this: var InstrData, value: int32) = this.fieldImm.imm32 = value
 
 proc initInstruction*(): Instruction =
   discard
