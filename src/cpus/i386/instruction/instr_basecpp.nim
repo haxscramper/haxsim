@@ -29,117 +29,99 @@ proc getEmu*(this: var InstrImpl): Emulator =
   assertRef(result)
 
 proc addRm8R8*(this: var InstrImpl): void =
-  var r8, rm8: uint8
-  rm8 = this.exec.getRm8()
-  r8 = this.exec.getR8()
+  let rm8 = this.exec.getRm8()
+  let r8 = this.exec.getR8()
   this.exec.setRm8(rm8 + r8)
   discard EFLAGSUPDATEADD(rm8, r8)
 
 proc addR8Rm8*(this: var InstrImpl): void =
-  var rm8, r8: uint8
-  r8 = this.exec.getR8()
-  rm8 = this.exec.getRm8()
+  let r8 = this.exec.getR8()
+  let rm8 = this.exec.getRm8()
   this.exec.setR8(r8 + rm8)
   discard EFLAGSUPDATEADD(r8, rm8)
 
 proc addAlImm8*(this: var InstrImpl): void =
-  var al: uint8
-  al = GETGPREG(AL)
+  let al = GETGPREG(AL)
   SETGPREG(AL, al + IMM8.uint8)
   discard EFLAGSUPDATEADD(al, IMM8.uint32)
 
 proc orRm8R8*(this: var InstrImpl): void =
-  var r8, rm8: uint8
-  rm8 = this.exec.getRm8()
-  r8 = this.exec.getR8()
+  let rm8 = this.exec.getRm8()
+  let r8 = this.exec.getR8()
   this.exec.setRm8(rm8 or r8)
   discard EFLAGSUPDATEOR(rm8, r8)
 
 proc orAlImm8*(this: var InstrImpl): void =
-  var al: uint8
-  al = GETGPREG(AL)
+  let al = GETGPREG(AL)
   SETGPREG(AL, al or IMM8.uint8)
   discard EFLAGSUPDATEOR(al, IMM8.uint8)
 
 proc orR8Rm8*(this: var InstrImpl): void =
-  var rm8, r8: uint8
-  r8 = this.exec.getR8()
-  rm8 = this.exec.getRm8()
+  let r8 = this.exec.getR8()
+  let rm8 = this.exec.getRm8()
   this.exec.setR8(r8 or rm8)
   discard EFLAGSUPDATEOR(r8, rm8)
 
 proc andRm8R8*(this: var InstrImpl): void =
-  var r8, rm8: uint8
-  rm8 = this.exec.getRm8()
-  r8 = this.exec.getR8()
+  let rm8 = this.exec.getRm8()
+  let r8 = this.exec.getR8()
   this.exec.setRm8(rm8 and r8)
   discard EFLAGSUPDATEAND(rm8, r8)
 
 proc andR8Rm8*(this: var InstrImpl): void =
-  var rm8, r8: uint8
-  r8 = this.exec.getR8()
-  rm8 = this.exec.getRm8()
+  let r8 = this.exec.getR8()
+  let rm8 = this.exec.getRm8()
   this.exec.setR8(r8 and rm8)
   discard EFLAGSUPDATEAND(r8, rm8)
 
 proc andAlImm8*(this: var InstrImpl): void =
-  var al: uint8
-  al = GETGPREG(AL)
+  let al = GETGPREG(AL)
   SETGPREG(AL, al and IMM8.uint8)
   discard EFLAGSUPDATEAND(al, IMM8.uint8)
 
 proc subRm8R8*(this: var InstrImpl): void =
-  var r8, rm8: uint8
-  rm8 = this.exec.getRm8()
-  r8 = this.exec.getR8()
+  let rm8 = this.exec.getRm8()
+  let r8 = this.exec.getR8()
   this.exec.setRm8(rm8 - r8)
   discard EFLAGSUPDATESUB(rm8, r8)
 
 proc subR8Rm8*(this: var InstrImpl): void =
-  var rm8, r8: uint8
-  r8 = this.exec.getR8()
-  rm8 = this.exec.getRm8()
+  let r8 = this.exec.getR8()
+  let rm8 = this.exec.getRm8()
   this.exec.setR8(r8 - rm8)
   discard EFLAGSUPDATESUB(r8, rm8)
 
 proc subAlImm8*(this: var InstrImpl): void =
-  var al: uint8
-  al = GETGPREG(AL)
+  let al = GETGPREG(AL)
   SETGPREG(AL, al - IMM8.uint8)
   discard EFLAGSUPDATESUB(al, IMM8.uint8)
 
 proc xorRm8R8*(this: var InstrImpl): void =
-  var r8, rm8: uint8
-  rm8 = this.exec.getRm8()
-  r8 = this.exec.getR8()
+  let rm8 = this.exec.getRm8()
+  let r8 = this.exec.getR8()
   this.exec.setRm8(rm8 xor r8)
 
 proc xorR8Rm8*(this: var InstrImpl): void =
-  var rm8, r8: uint8
-  r8 = this.exec.getR8()
-  rm8 = this.exec.getRm8()
+  let r8 = this.exec.getR8()
+  let rm8 = this.exec.getRm8()
   this.exec.setR8(r8 xor rm8)
 
 proc xorAlImm8*(this: var InstrImpl): void =
-  var al: uint8
-  al = GETGPREG(AL)
+  let al = GETGPREG(AL)
   SETGPREG(AL, al xor IMM8.uint8)
 
 proc cmpRm8R8*(this: var InstrImpl): void =
-  var r8, rm8: uint8
-  rm8 = this.exec.getRm8()
-  r8 = this.exec.getR8()
+  let rm8 = this.exec.getRm8()
+  let r8 = this.exec.getR8()
   discard EFLAGSUPDATESUB(rm8, r8)
 
 proc cmpR8Rm8*(this: var InstrImpl): void =
-  var rm8, r8: uint8
-  r8 = this.exec.getR8()
-  rm8 = this.exec.getRm8()
+  let r8 = this.exec.getR8()
+  let rm8 = this.exec.getRm8()
   discard EFLAGSUPDATESUB(r8, rm8)
 
 proc cmpAlImm8*(this: var InstrImpl): void =
-  var al: uint8
-  al = GETGPREG(AL)
+  let al = GETGPREG(AL)
   discard EFLAGSUPDATESUB(al, IMM8.uint8)
 
 template JCCREL8*(cc: untyped, isFlag: untyped): untyped {.dirty.} =
@@ -163,6 +145,7 @@ JCCREL8(l, EFLAGSSF != EFLAGSOF)
 JCCREL8(nl, EFLAGSSF == EFLAGSOF)
 JCCREL8(le, EFLAGSZF or (EFLAGSSF != EFLAGSOF))
 JCCREL8(nle, not(EFLAGSZF) and (EFLAGSSF == EFLAGSOF))
+
 proc testRm8R8*(this: var InstrImpl): void =
   var r8, rm8: uint8
   rm8 = this.exec.getRm8()

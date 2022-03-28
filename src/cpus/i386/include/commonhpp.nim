@@ -7,6 +7,8 @@ export hpprint
 export debughpp
 import hmisc/core/all
 export all
+import eventer
+export eventer
 
 const KB* = 1024
 template MB*(): untyped {.dirty.} = (KB * 1024)

@@ -28,11 +28,15 @@ type
     uiVm*: bool
 
   FullImpl = ref object
+    logger: EmuLogger
     data: InstrData
     impl16: InstrImpl
     impl32: InstrImpl
     emu: Emulator
-  
+
+template log*(full: FullImpl, ev: EmuEvent): untyped =
+  full.logger.log(ev, -2)
+
 proc help*(name: cstring): void =
   discard 
 
@@ -42,7 +46,9 @@ proc init*(): void =
     setbuf(stderr, nil)
 
 proc fetch*(full: var FullImpl): uint8 =
-  let isMode32 = full.emu.accs.cpu.isMode32()
+  full.log ev(eekStartInstructionFetch)
+
+  let isMode32 = full.emu.cpu.isMode32()
   let prefix =
     if isMode32:
       full.impl32.parsePrefix()
@@ -60,29 +66,34 @@ proc fetch*(full: var FullImpl): uint8 =
     full.impl16.setChszAd(isMode32 xor chszAd)
     parse(full.impl16)
 
+  full.log ev(eekEndInstructionFetch)
   return prefix
 
 proc loop*(full: var FullImpl) =
   assertRef(full.impl16.get_emu())
   assertRef(full.impl16.get_emu())
-  dumpMem(full.emu.accs.mem)
+  dumpMem(full.emu.mem)
 
-  while not full.emu.accs.cpu.isHalt():
+  while not full.emu.cpu.isHalt():
     zeroMem(addr full.data[], sizeof(full.data[]))
     if full.emu.accs.chkIrq(full.emu.intr):
-      full.emu.accs.cpu.doHalt(false)
+      full.emu.cpu.doHalt(false)
 
-    if full.emu.accs.cpu.isHalt():
+    if full.emu.cpu.isHalt():
       {.warning: "[FIXME] 'std.thisThread.sleepFor(std.chrono.milliseconds(10))'".}
       continue
 
     full.emu.accs.hundleInterrupt(full.emu.intr)
     let prefix = fetch(full)
-    if full.emu.accs.cpu.isMode32() xor toBool(prefix and CHSZOP):
+    # pprinte full.data
+    # echov "executing"
+    if full.emu.cpu.isMode32() xor toBool(prefix and CHSZOP):
       discard exec(full.impl32)
 
     else:
       discard exec(full.impl16)
+
+    pprinte full.emu.cpu.halt
 
     # except:
     #   # emu.queueInterrupt(n, true)
@@ -94,7 +105,19 @@ proc loop*(full: var FullImpl) =
     #   emu.stop()
 
 proc initFull*(emuset: var EmuSetting): FullImpl =
-  var full = FullImpl(emu: initEmulator(emuset), data: InstrData())
+  let emu = initEmulator(emuset)
+  let data = InstrData()
+  proc echoHandler(ev: EmuEvent) =
+    echov ev.kind
+    if ev.kind in {eekStartInstructionFetch, eekEndInstructionFetch}:
+      echov emu.cpu.eip
+
+    if ev.kind == eekEndInstructionFetch:
+      pprinte data
+
+  var full = FullImpl(
+    emu: emu, data: data, logger: initEmuLogger(echoHandler))
+
   var instr = initInstruction(full.emu, full.data, false)
   assertRef(full.emu)
   full.impl16 = initInstrImpl16(instr)
@@ -142,7 +165,7 @@ proc main1() =
 
   # Initial value of the EIP is `0xFFF0` - to make testing simpler we are
   # setting it here to `0`.
-  full.emu.accs.cpu.setEip(0)
+  full.emu.cpu.setEip(0)
 
   full.emu.loadBlob(asVar @[
     # `inc al`

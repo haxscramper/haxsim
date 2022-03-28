@@ -6,7 +6,8 @@ import uihpp
 import std/with
 import hardware/[
   iohpp,
-  memoryhpp
+  memoryhpp,
+  processorhpp,
 ]
 import device/[
   deviceshpp,
@@ -25,11 +26,22 @@ type
     uiset*: UISetting
   
   Emulator* = ref object
+    log*: EmuLogger
     accs*: DataAccess
     intr*: Interrupt
     ui*: UI
     fdd*: FDD
-  
+
+func cpu*(emu: Emulator): Processor = emu.accs.cpu
+func cpu*(emu: var Emulator): var Processor = emu.accs.cpu
+func mem*(emu: Emulator): Memory = emu.accs.mem
+func mem*(emu: var Emulator): var Memory = emu.accs.mem
+
+
+
+template log*(emu: Emulator, event: EmuEvent): untyped =
+  emu.log.log(event, -2)
+
 proc ejectFloppy*(this: var Emulator, slot: uint8): bool =
   return (if not this.fdd.isNIl(): this.fdd.ejectDisk(slot) else: false)
 
