@@ -20,16 +20,16 @@ proc destroyIO*(this: var IO): void =
   this.memIoMap.clear()
 
 
-proc setPortio*(this: var IO, `addr`: uint16, len: csizeT, dev: PortIO): void =
-  let `addr` = (`addr` and not(1.uint16))
-  this.portIo[`addr`] = dev
-  this.portIoMap[`addr`] = len
+proc setPortio*(this: var IO, memAddr: uint16, len: csizeT, dev: PortIO): void =
+  let memAddr = (memAddr and not(1.uint16))
+  this.portIo[memAddr] = dev
+  this.portIoMap[memAddr] = len
 
-proc getPortioBase*(this: var IO, `addr`: uint16): uint16 =
+proc getPortioBase*(this: var IO, memAddr: uint16): uint16 =
   for i in 0 ..< 5:
-    var base: uint16 = (`addr` and (not(1.uint16))) - uint16(2 * i)
+    var base: uint16 = (memAddr and (not(1.uint16))) - uint16(2 * i)
     if base in this.portIoMap:
-      if `addr` < base + this.portIoMap[base]:
+      if memAddr < base + this.portIoMap[base]:
         return base
 
       else:
@@ -37,69 +37,69 @@ proc getPortioBase*(this: var IO, `addr`: uint16): uint16 =
 
   return 0
 
-proc inIo8*(this: var IO, `addr`: uint16): uint8 =
+proc inIo8*(this: var IO, memAddr: uint16): uint8 =
   var v: uint8 = 0
-  let base: uint16 = this.getPortioBase(`addr`)
+  let base: uint16 = this.getPortioBase(memAddr)
   if base != 0:
-    v = this.portIo[base].in8(`addr`)
+    v = this.portIo[base].in8(memAddr)
 
   else:
-    ERROR("no device connected at port : 0x%04x", `addr`)
+    ERROR("no device connected at port : 0x%04x", memAddr)
 
-  INFO(4, "in [0x%04x] (0x%04x)", `addr`, v)
+  INFO(4, "in [0x%04x] (0x%04x)", memAddr, v)
   return v
 
 
-proc inIo32*(this: var IO, `addr`: uint16): uint32 =
+proc inIo32*(this: var IO, memAddr: uint16): uint32 =
   var v: uint32 = 0
   for i in 0 ..< 4:
-    v = (v + this.inIo8(`addr` + uint16(i)) shl (8 * i))
+    v = (v + this.inIo8(memAddr + uint16(i)) shl (8 * i))
   return v
 
 
 
-proc inIo16*(this: var IO, `addr`: uint16): uint16 =
+proc inIo16*(this: var IO, memAddr: uint16): uint16 =
   var v: uint16 = 0
   for i in 0 ..< 2:
-    v = (v + this.inIo8(`addr` + uint16(i)) shl (8 * i))
+    v = (v + this.inIo8(memAddr + uint16(i)) shl (8 * i))
   return v
 
-proc outIo8*(this: var IO, `addr`: uint16, value: uint8): void =
-  var base: uint16 = this.getPortioBase(`addr`)
+proc outIo8*(this: var IO, memAddr: uint16, value: uint8): void =
+  var base: uint16 = this.getPortioBase(memAddr)
   if base != 0:
-    this.portIo[base].out8(`addr`, value)
+    this.portIo[base].out8(memAddr, value)
 
   else:
-    ERROR("no device connected at port : 0x%04x", `addr`)
+    ERROR("no device connected at port : 0x%04x", memAddr)
 
-  INFO(4, "out [0x%04x] (0x%04x)", `addr`, value)
+  INFO(4, "out [0x%04x] (0x%04x)", memAddr, value)
 
-proc outIo32*(this: var IO, `addr`: uint16, value: uint32): void =
+proc outIo32*(this: var IO, memAddr: uint16, value: uint32): void =
   for i in 0 ..< 4:
-    this.outIo8(`addr` + uint16(i), uint8((value shr (8 * i)) and 0xff))
+    this.outIo8(memAddr + uint16(i), uint8((value shr (8 * i)) and 0xff))
 
-proc outIo16*(this: var IO, `addr`: uint16, value: uint16): void =
+proc outIo16*(this: var IO, memAddr: uint16, value: uint16): void =
   for i in 0 ..< 2:
-    this.outIo8(`addr` + uint16(i), uint8((value shr (8 * i)) and 0xff))
+    this.outIo8(memAddr + uint16(i), uint8((value shr (8 * i)) and 0xff))
 
 proc setMemio*(this: var IO, base: uint32, len: csizeT, dev: ref MemoryIO): void =
   assertRef(this.memory)
   assertRef(dev)
-  var `addr`: uint32
+  var memAddr: uint32
   ASSERT(not((base != 0 and ((1 shl 12) - 1) != 0)))
   dev[].setMem(this.memory, base, len)
   this.memIo[base] = dev
   block:
-    `addr` = base
-    while `addr` < base + len:
-      this.memIoMap[`addr`] = base
-      `addr` = (`addr` + (1 shl 12))
+    memAddr = base
+    while memAddr < base + len:
+      this.memIoMap[memAddr] = base
+      memAddr = (memAddr + (1 shl 12))
 
 
-proc getMemioBase*(this: var IO, `addr`: uint32): uint32 =
-  let `addr` = (`addr` and (not(((1.uint32 shl 12) - 1))))
-  return (if `addr` in this.memIoMap:
-            this.memIoMap[`addr`]
+proc getMemioBase*(this: var IO, memAddr: uint32): uint32 =
+  let memAddr = (memAddr and (not(((1.uint32 shl 12) - 1))))
+  return (if memAddr in this.memIoMap:
+            this.memIoMap[memAddr]
 
           else:
             0
@@ -129,5 +129,5 @@ proc writeMemio8*(this: var IO, base: uint32, offset: uint32, value: uint8): voi
   ASSERT(base in this.memIo)
   this.memIo[base][].write8(offset, value)
 
-proc chkMemio*(this: var IO, `addr`: uint32): uint32 =
-  return this.getMemioBase(`addr`)
+proc chkMemio*(this: var IO, memAddr: uint32): uint32 =
+  return this.getMemioBase(memAddr)

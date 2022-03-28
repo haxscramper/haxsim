@@ -453,10 +453,10 @@ proc read*(this: var Sequencer, offset: uint32): uint8 =
 proc write*(this: var Sequencer, offset: uint32, v: uint8): void =
   discard
 
-proc in8*(this: var Sequencer, `addr`: uint16): uint8 =
+proc in8*(this: var Sequencer, memAddr: uint16): uint8 =
   discard
 
-proc out8*(this: var Sequencer, `addr`: uint16, v: uint8): void =
+proc out8*(this: var Sequencer, memAddr: uint16, v: uint8): void =
   discard
 
 proc initCRT*(v: ptr VGA): CRT =
@@ -472,10 +472,10 @@ proc get_windowsize*(this: var CRT, x: ptr uint16, y: ptr uint16): void =
 proc attr_index_text*(this: var CRT, n: uint32): uint8 =
   discard
 
-proc in8*(this: var CRT, `addr`: uint16): uint8 =
+proc in8*(this: var CRT, memAddr: uint16): uint8 =
   discard
 
-proc out8*(this: var CRT, `addr`: uint16, v: uint8): void =
+proc out8*(this: var CRT, memAddr: uint16, v: uint8): void =
   discard
 
 proc initGraphicController*(v: VGA): GraphicController =
@@ -499,10 +499,10 @@ proc graphic_mode*(this: var GraphicController): gmode_t =
 proc attr_index_graphic*(this: var GraphicController, n: uint32): uint8 =
   discard
 
-proc in8*(this: var GraphicController, `addr`: uint16): uint8 =
+proc in8*(this: var GraphicController, memAddr: uint16): uint8 =
   discard
 
-proc out8*(this: var GraphicController, `addr`: uint16, v: uint8): void =
+proc out8*(this: var GraphicController, memAddr: uint16, v: uint8): void =
   discard
 
 proc initAttribute*(v: VGA): Attribute =
@@ -515,10 +515,10 @@ proc initAttribute*(v: VGA): Attribute =
 proc dac_index*(this: var Attribute, index: uint8): uint8 =
   discard
 
-proc in8*(this: var Attribute, `addr`: uint16): uint8 =
+proc in8*(this: var Attribute, memAddr: uint16): uint8 =
   discard
 
-proc out8*(this: var Attribute, `addr`: uint16, v: uint8): void =
+proc out8*(this: var Attribute, memAddr: uint16, v: uint8): void =
   discard
 
 proc initDAC*(v: VGA): DAC =
@@ -527,10 +527,10 @@ proc initDAC*(v: VGA): DAC =
 proc translate_rgb*(this: var DAC, index: uint8): uint32 =
   discard
 
-proc in8*(this: var DAC, `addr`: uint16): uint8 =
+proc in8*(this: var DAC, memAddr: uint16): uint8 =
   discard
 
-proc out8*(this: var DAC, `addr`: uint16, v: uint8): void =
+proc out8*(this: var DAC, memAddr: uint16, v: uint8): void =
   discard
 
 proc IO*(this: VGA_mor): uint8 = this.field1.IO

@@ -1,15 +1,15 @@
 import
   device/keyboardhpp
-proc in8*(this: var Keyboard, `addr`: uint16): uint8 = 
-  case `addr`:
+proc in8*(this: var Keyboard, memAddr: uint16): uint8 =
+  case memAddr:
     of 0x60:
       return read_outbuf()
     of 0x64:
       return kcsr.raw
   return -1
 
-proc out8*(this: var Keyboard, `addr`: uint16, v: uint8): void = 
-  case `addr`:
+proc out8*(this: var Keyboard, memAddr: uint16, v: uint8): void =
+  case memAddr:
     of 0x60:
       kcsr.F1 = 0
     of 0x64:

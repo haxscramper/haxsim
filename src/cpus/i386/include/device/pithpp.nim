@@ -50,8 +50,8 @@ proc destroyPIT*(this: var PIT): void =
 
 
 var rl_fst: bool
-proc in8*(this: var PIT, `addr`: uint16): uint8 =
-  var rgn: uint8 = uint8(`addr` and 0x3)
+proc in8*(this: var PIT, memAddr: uint16): uint8 =
+  var rgn: uint8 = uint8(memAddr and 0x3)
   case rgn:
     of 0, 1, 2:
       case this.cwr.RL:
@@ -73,8 +73,8 @@ proc in8*(this: var PIT, `addr`: uint16): uint8 =
     else:
       return 0
 
-proc out8*(this: var PIT, `addr`: uint16, v: uint8): void =
-  var rgn: uint8 = uint8(`addr` and 0x3)
+proc out8*(this: var PIT, memAddr: uint16, v: uint8): void =
+  var rgn: uint8 = uint8(memAddr and 0x3)
   case rgn:
     of 0, 1, 2:
       case this.cwr.RL:

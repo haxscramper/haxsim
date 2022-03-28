@@ -211,8 +211,8 @@ proc chk_intreq*(this: var PIC): bool =
   return true
 
 
-proc in8*(this: var PIC, `addr`: uint16): uint8 =
-  case `addr`:
+proc in8*(this: var PIC, memAddr: uint16): uint8 =
+  case memAddr:
     of 0x21, 0xa1:
       return not(this.imr)
 
@@ -280,8 +280,8 @@ proc set_data*(this: var PIC, v: uint8): void =
   else:
     this.imr = not(v)
 
-proc out8*(this: var PIC, `addr`: uint16, v: uint8): void =
-  case `addr`:
+proc out8*(this: var PIC, memAddr: uint16, v: uint8): void =
+  case memAddr:
     of 0x20, 0xa0:
       set_command(this, v)
     of 0x21, 0xa1:

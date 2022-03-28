@@ -4,8 +4,8 @@ import std/lenientops
 
 type
   PortIO* = object
-    in8*: proc(`addr`: uint16): uint8
-    out8*: proc(`addr`: uint16, v: uint8): void
+    in8*: proc(memAddr: uint16): uint8
+    out8*: proc(memAddr: uint16, v: uint8): void
 
 proc initPortIO*(): PortIO = 
   discard 
@@ -20,10 +20,10 @@ type
 proc initMemoryIO*(): MemoryIO = 
   discard 
 
-proc setMem*(this: var MemoryIO, mem: Memory, `addr`: uint32, len: csizeT): void =
+proc setMem*(this: var MemoryIO, mem: Memory, memAddr: uint32, len: csizeT): void =
   assertRef(mem)
   this.memory = mem
-  this.paddr = `addr`
+  this.paddr = memAddr
   this.size = len
 
 proc read8*(this: var MemoryIO, offset: uint32): uint8 =

@@ -12,13 +12,13 @@ template bool*(): untyped {.dirty.} =
 
 const true* = 1
 const false* = 0
-proc write_esb*(`addr`: ptr uint8, v: uint8): void = 
+proc write_esb*(memAddr: ptr uint8, v: uint8): void =
   discard 
 
-proc write_esw*(`addr`: ptr uint16, v: uint16): void = 
+proc write_esw*(memAddr: ptr uint16, v: uint16): void =
   discard 
 
-proc write_esd*(`addr`: ptr uint32, v: uint32): void = 
+proc write_esd*(memAddr: ptr uint32, v: uint32): void =
   discard 
 
 proc copy_esw*(daddr: ptr uint16, saddr: ptr uint16): void = 

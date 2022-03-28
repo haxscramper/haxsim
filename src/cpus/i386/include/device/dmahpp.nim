@@ -17,10 +17,10 @@ type
     amr*: DMA_amr_Type        
     statr*: DMA_statr_Type        
   
-proc in8*(this: var DMA, `addr`: uint16): uint8 = 
+proc in8*(this: var DMA, memAddr: uint16): uint8 =
   discard 
 
-proc out8*(this: var DMA, `addr`: uint16, v: uint8): void = 
+proc out8*(this: var DMA, memAddr: uint16, v: uint8): void =
   discard 
 
 type

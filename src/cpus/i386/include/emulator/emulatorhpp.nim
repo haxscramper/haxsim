@@ -94,7 +94,7 @@ proc loadBlob*(this: var Emulator, blob: var MemData, pos: uint32 = 0) =
   assertRef(this.accs.mem)
   this.accs.mem.writeDataBlob(pos, blob)
 
-proc loadBinary*(this: var Emulator, fname: cstring, `addr`: uint32, offset: uint32, size: int64): void =
+proc loadBinary*(this: var Emulator, fname: cstring, memAddr: uint32, offset: uint32, size: int64): void =
   var fp: FILE
   var size = size
   fp = open($fname, fmRead)
@@ -110,4 +110,4 @@ proc loadBinary*(this: var Emulator, fname: cstring, `addr`: uint32, offset: uin
   discard readBuffer(fp, buf[0].addr, size)
   close(fp)
 
-  writeDataBlob(this.accs.mem, `addr`, buf)
+  writeDataBlob(this.accs.mem, memAddr, buf)

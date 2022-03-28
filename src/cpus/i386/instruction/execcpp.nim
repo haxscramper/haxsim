@@ -19,20 +19,20 @@ proc exec*(this: var InstrImpl): bool =
   return true
 
 proc calcModrm16*(this: var ExecInstr): uint32 =
-  var `addr`: uint32 = 0
+  var memAddr: uint32 = 0
   case MOD:
-    of 1: `addr` = (`addr` + DISP8.uint32)
-    of 2: `addr` = (`addr` + DISP16.uint32)
+    of 1: memAddr = (memAddr + DISP8.uint32)
+    of 2: memAddr = (memAddr + DISP16.uint32)
     else: assert false
   case RM:
     of 0, 1, 7:
-      `addr` = (`addr` + GETGPREG(BX))
+      memAddr = (memAddr + GETGPREG(BX))
     of 2, 3, 6:
       if MOD == 0 and RM == 6:
-        `addr` = (`addr` + DISP16.uint32)
+        memAddr = (memAddr + DISP16.uint32)
 
       else:
-        `addr` = (`addr` + GETGPREG(BP))
+        memAddr = (memAddr + GETGPREG(BP))
         SEGMENT = SS
 
     else:
@@ -40,13 +40,13 @@ proc calcModrm16*(this: var ExecInstr): uint32 =
 
   if RM < 6:
     if toBool(RM mod 2):
-      `addr` = (`addr` + GETGPREG(DI))
+      memAddr = (memAddr + GETGPREG(DI))
 
     else:
-      `addr` = (`addr` + GETGPREG(SI))
+      memAddr = (memAddr + GETGPREG(SI))
 
 
-  return `addr`
+  return memAddr
 
 proc calcSib*(this: var ExecInstr): uint32 =
   var base: uint32
@@ -77,23 +77,23 @@ proc calcSib*(this: var ExecInstr): uint32 =
 
 
 proc calcModrm32*(this: var ExecInstr): uint32 =
-  var `addr`: uint32 = 0
+  var memAddr: uint32 = 0
   case MOD:
-    of 1: `addr` = (`addr` + DISP8.uint32)
-    of 2: `addr` = (`addr` + DISP32.uint32)
+    of 1: memAddr = (memAddr + DISP8.uint32)
+    of 2: memAddr = (memAddr + DISP32.uint32)
     else: assert false
   case RM:
     of 4:
-      `addr` = (`addr` + this.calcSib())
+      memAddr = (memAddr + this.calcSib())
     of 5:
       if MOD == 0:
-        `addr` = (`addr` + DISP32.uint32)
+        memAddr = (memAddr + DISP32.uint32)
 
     else:
       SEGMENT = (if (RM == 5): SS else: DS)
-      `addr` = (`addr` + GETGPREG(cast[Reg32T](RM)))
+      memAddr = (memAddr + GETGPREG(cast[Reg32T](RM)))
 
-  return `addr`
+  return memAddr
 
 
 proc calcModrm*(this: var ExecInstr): uint32 =

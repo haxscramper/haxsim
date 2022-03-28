@@ -509,9 +509,9 @@ proc read_datareg*(this: var FDD): uint8 =
   return v
 
 
-proc in8*(this: var FDD, `addr`: uint16): uint8 =
+proc in8*(this: var FDD, memAddr: uint16): uint8 =
   var v: uint8
-  case `addr`:
+  case memAddr:
     of 0x3f0: v = this.sra.raw
     of 0x3f1: v = this.srb.raw
     of 0x3f3: v = this.tdr.raw
@@ -528,8 +528,8 @@ proc enqueue*(this: var FDD, q: ptr QUEUE, v: uint8): void =
   q.queue.addLast(v)
   q.mtx.release()
 
-proc out8*(this: var FDD, `addr`: uint16, v: uint8): void =
-  case `addr`:
+proc out8*(this: var FDD, memAddr: uint16, v: uint8): void =
+  case memAddr:
     of 0x3f2: this.dor.raw = v
     of 0x3f3: this.tdr.raw = v
     of 0x3f4: this.dsr.raw = v

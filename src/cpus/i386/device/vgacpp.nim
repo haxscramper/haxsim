@@ -37,8 +37,8 @@ proc rgb_image*(this: var VGA, buffer: ptr uint8, size: uint32): void =
     (postInc(buffer))[] = (rgb shr 8) and 0xff
     (postInc(buffer))[] = (rgb shr 16) and 0xff
 
-proc in8*(this: var VGA, `addr`: uint16): uint8 =
-  case `addr`:
+proc in8*(this: var VGA, memAddr: uint16): uint8 =
+  case memAddr:
     of 0x3c2:
       return 0
     of 0x3c3:
@@ -49,8 +49,8 @@ proc in8*(this: var VGA, `addr`: uint16): uint8 =
       return 0
   return -1
 
-proc out8*(this: var VGA, `addr`: uint16, v: uint8): void =
-  case `addr`:
+proc out8*(this: var VGA, memAddr: uint16, v: uint8): void =
+  case memAddr:
     of 0x3c2:
       mor.raw = v
     of 0x3c3:
@@ -138,16 +138,16 @@ proc VGA_Sequencer_get_font*(att: uint8): ptr uint8 =
 
   return vga.plane[2] + font_ofst
 
-proc VGA_Sequencer_in8*(`addr`: uint16): uint8 =
-  case `addr`:
+proc VGA_Sequencer_in8*(memAddr: uint16): uint8 =
+  case memAddr:
     of 0x3c4:
       return sar.raw
     of 0x3c5:
       return regs[sar.INDX][]
   return -1
 
-proc VGA_Sequencer_out8*(`addr`: uint16, v: uint8): void =
-  case `addr`:
+proc VGA_Sequencer_out8*(memAddr: uint16, v: uint8): void =
+  case memAddr:
     of 0x3c4:
       chk_regidx(v)
       sar.raw = v
@@ -178,16 +178,16 @@ proc VGA_CRT_attr_index_text*(n: uint32): uint8 =
             (att and 0xf0) shr 4
           )
 
-proc VGA_CRT_in8*(`addr`: uint16): uint8 =
-  case `addr`:
+proc VGA_CRT_in8*(memAddr: uint16): uint8 =
+  case memAddr:
     of 0x3b4, 0x3d4:
       return crtcar.raw
     of 0x3b5, 0x3d5:
       return regs[crtcar.INDX][]
   return -1
 
-proc VGA_CRT_out8*(`addr`: uint16, v: uint8): void =
-  case `addr`:
+proc VGA_CRT_out8*(memAddr: uint16, v: uint8): void =
+  case memAddr:
     of 0x3b4, 0x3d4:
       chk_regidx(v)
       crtcar.raw = v
@@ -262,16 +262,16 @@ proc VGA_GraphicController_graphic_mode*(): gmode_t =
 proc VGA_GraphicController_attr_index_graphic*(n: uint32): uint8 =
   return vga.read_plane(2, n)
 
-proc VGA_GraphicController_in8*(`addr`: uint16): uint8 =
-  case `addr`:
+proc VGA_GraphicController_in8*(memAddr: uint16): uint8 =
+  case memAddr:
     of 0x3ce:
       return gcar.raw
     of 0x3cf:
       return regs[gcar.INDX][]
   return -1
 
-proc VGA_GraphicController_out8*(`addr`: uint16, v: uint8): void =
-  case `addr`:
+proc VGA_GraphicController_out8*(memAddr: uint16, v: uint8): void =
+  case memAddr:
     of 0x3ce:
       chk_regidx(v)
       gcar.raw = v
@@ -320,16 +320,16 @@ proc VGA_Attribute_dac_index*(index: uint8): uint8 =
 
   return dac_idx
 
-proc VGA_Attribute_in8*(`addr`: uint16): uint8 =
-  case `addr`:
+proc VGA_Attribute_in8*(memAddr: uint16): uint8 =
+  case memAddr:
     of 0x3c0:
       return acar.raw
     of 0x3c1:
       return regs[acar.INDX][]
   return -1
 
-proc VGA_Attribute_out8*(`addr`: uint16, v: uint8): void =
-  case `addr`:
+proc VGA_Attribute_out8*(memAddr: uint16, v: uint8): void =
+  case memAddr:
     of 0x3c0:
       chk_regidx(v)
       acar.raw = v
@@ -345,9 +345,9 @@ proc VGA_DAC_translate_rgb*(index: uint8): uint32 =
   rgb = (rgb + clut[index].B shl 0x12)
   return rgb
 
-proc VGA_DAC_in8*(`addr`: uint16): uint8 =
+proc VGA_DAC_in8*(memAddr: uint16): uint8 =
   var v: uint8
-  case `addr`:
+  case memAddr:
     of 0x3c6:
       return pelmr.raw
     of 0x3c7:
@@ -361,8 +361,8 @@ proc VGA_DAC_in8*(`addr`: uint16): uint8 =
       return v
   return -1
 
-proc VGA_DAC_out8*(`addr`: uint16, v: uint8): void =
-  case `addr`:
+proc VGA_DAC_out8*(memAddr: uint16, v: uint8): void =
+  case memAddr:
     of 0x3c7:
       if v > 0xff:
         ERROR("")
