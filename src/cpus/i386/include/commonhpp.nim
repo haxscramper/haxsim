@@ -1,4 +1,6 @@
 import util/debughpp
+import std/strutils
+export strutils
 import hmisc/wrappers/wraphelp
 import hmisc/other/hpprint
 export pprint
@@ -33,8 +35,8 @@ type
     data*: ptr MemData
     pos*: EPointer
 
-func asMemPointer*(s: MemData, pos: EPointer): MemPointer =
-  MemPointer(pos: pos, data: unsafeAddr s)
+func asMemPointer*(s: var MemData, pos: EPointer): MemPointer =
+  MemPointer(pos: pos, data: addr s)
 
 func memBlob*(size: ESize): MemData = discard
 
@@ -60,8 +62,6 @@ func fromMemBlob*[T](it: var T, blob: MemBlob[sizeof(T)]) =
 func copymem*(dest: var MemPointer, source: MemPointer, size: ESize) =
   assertRef(dest.data)
   assertRef(source.data)
-  echov dest.data
-  echov source.data
   dest.data[][dest.pos ..< dest.pos + size] =
     source.data[][source.pos ..< source.pos + size]
 

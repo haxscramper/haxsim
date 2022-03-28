@@ -12,7 +12,7 @@ type
     mem*: Memory
     io*: IO
   
-proc initHardware*(size: uint32): Hardware =
+proc initHardware*(size: ESize): Hardware =
   result.cpu = initProcessor()
   result.mem = initMemory(size)
   result.io = initIO(result.mem)

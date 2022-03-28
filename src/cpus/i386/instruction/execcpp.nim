@@ -23,7 +23,7 @@ proc calc_modrm16*(this: var ExecInstr): uint32 =
   case MOD:
     of 1: `addr` = (`addr` + DISP8.uint32)
     of 2: `addr` = (`addr` + DISP16.uint32)
-    else: assert false
+    else: assert false, $MOD
   case RM:
     of 0, 1, 7:
       `addr` = (`addr` + GET_GPREG(BX))

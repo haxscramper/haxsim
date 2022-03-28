@@ -3,7 +3,7 @@ import instruction/execcpp
 
 import "commonhpp"
 import emulator/[emulatorhpp, interruptcpp]
-import hardware/[processorhpp]
+import hardware/[processorhpp, memoryhpp]
 import instruction/[
   instructionhpp,
   basehpp,
@@ -41,13 +41,35 @@ proc init*(): void =
     setbuf(stdout, nil)
     setbuf(stderr, nil)
 
+proc fetch*(full: var FullImpl): uint8 =
+  let isMode32 = full.emu.accs.cpu.isMode32()
+  let prefix =
+    if isMode32:
+      full.impl32.parsePrefix()
+
+    else:
+      full.impl16.parsePrefix()
+
+  echov prefix
+
+  let chszOp = toBool(prefix and CHSZOP)
+  let chszAd = toBool(prefix and CHSZAD)
+  if isMode32 xor chszOp:
+    full.impl32.setChszAd(not((isMode32 xor chszAd)))
+    parse(full.impl32)
+
+  else:
+    full.impl16.setChszAd(isMode32 xor chszAd)
+    parse(full.impl16)
+
+  return prefix
+
 proc loop*(full: var FullImpl) =
   assertRef(full.impl16.get_emu())
   assertRef(full.impl16.get_emu())
+  dumpMem(full.emu.accs.mem)
+
   while (full.emu.isRunning()):
-    var isMode32: bool
-    var prefix: uint8
-    var chszAd, chszOp: bool
     full.data = InstrData()
     # memset(addr instr, 0, sizeof((InstrData)))
     # try:
@@ -59,22 +81,12 @@ proc loop*(full: var FullImpl) =
       continue
 
     full.emu.accs.hundleInterrupt(full.emu.intr)
-    isMode32 = full.emu.accs.cpu.isMode32()
-    if isMode32:
-      prefix = full.impl32.parsePrefix()
-
-    else:
-      prefix = full.impl16.parsePrefix()
-    chszOp = toBool(prefix and CHSZOP)
-    chszAd = toBool(prefix and CHSZAD)
-    if isMode32 xor chszOp:
-      full.impl32.setChszAd(not((isMode32 xor chszAd)))
-      parse(full.impl32)
+    let prefix = fetch(full)
+    pprint full.data
+    if full.emu.accs.cpu.isMode32() xor toBool(prefix and CHSZOP):
       discard exec(full.impl32)
 
     else:
-      full.impl16.setChszAd(isMode32 xor chszAd)
-      parse(full.impl16)
       discard exec(full.impl16)
 
     # except:
@@ -130,9 +142,9 @@ proc main*(): cint =
 
 proc main1() =
   echo "Created settings"
-  var eset = EmuSetting(memSize: 128)
+  var eset = EmuSetting(memSize: 8)
   var full = initFull(eset)
-  full.emu.loadBlob(@[
+  full.emu.loadBlob(asVar @[
     # `inc al`
     0xFE'u8, 0xC0,
     # `hlt`

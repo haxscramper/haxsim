@@ -1,13 +1,22 @@
 import commonhpp
+import std/strformat
+import std/math
 
 template DEFAULTMEMORYSIZE*(): untyped {.dirty.} =
   (1 * KB)
 
-template ASSERTRANGE*(`addr`: untyped, memLen: untyped): untyped {.dirty.} =
-  ASSERT(int(`addr` + memLen - 1) < this.memory.len())
+template ASSERTRANGE*(memAddr: untyped, memLen: untyped): untyped {.dirty.} =
+  assert(
+    int(memAddr + memLen - 1) < this.memory.len(),
+    "Memory access not in range. addr: $#, size: $#, memory: $#" % [
+      $memAddr,
+      $memLen,
+      $this.memory.len()
+    ]
+  )
 
-template INRANGE*(`addr`: untyped, memLen: untyped): untyped {.dirty.} =
-  (int(`addr` + memLen - 1) < this.memory.len())
+template INRANGE*(memAddr: untyped, memLen: untyped): untyped {.dirty.} =
+  (int(memAddr + memLen - 1) < this.memory.len())
 
 type
   Memory* = ref object
@@ -20,57 +29,70 @@ proc setA20gate*(this: var Memory, ena: bool): void =
 proc isEnaA20gate*(this: Memory): bool =
   return this.a20gate
 
-proc writeMem8*(this: var Memory, `addr`: uint32, v: uint8): void =
-  if INRANGE(`addr`, 1):
-    this.memory[`addr`] = v
+proc writeMem8*(this: var Memory, memAddr: uint32, v: uint8): void =
+  if INRANGE(memAddr, 1):
+    this.memory[memAddr] = v
 
 
-proc writeMem16*(this: var Memory, `addr`: uint32, v: uint16): void =
-  if INRANGE(`addr`, 2):
-    (cast[ptr uint16](addr this.memory[`addr`]))[] = v
+proc writeMem16*(this: var Memory, memAddr: uint32, v: uint16): void =
+  if INRANGE(memAddr, 2):
+    (cast[ptr uint16](addr this.memory[memAddr]))[] = v
 
 
-proc writeMem32*(this: var Memory, `addr`: uint32, v: uint32): void =
-  if INRANGE(`addr`, 4):
-    (cast[ptr uint32](addr this.memory[`addr`]))[] = v
+proc writeMem32*(this: var Memory, memAddr: uint32, v: uint32): void =
+  if INRANGE(memAddr, 4):
+    (cast[ptr uint32](addr this.memory[memAddr]))[] = v
 
 
-proc readMem32*(this: var Memory, `addr`: uint32): uint32 =
-  if INRANGE(`addr`, 4):
-    return (cast[ptr uint32](addr this.memory[`addr`]))[]
-
-  else:
-    return 0
-
-proc readMem16*(this: var Memory, `addr`: uint32): uint16 =
-  if INRANGE(`addr`, 2):
-    return (cast[ptr uint16](addr this.memory[`addr`]))[]
+proc readMem32*(this: var Memory, memAddr: uint32): uint32 =
+  if INRANGE(memAddr, 4):
+    return (cast[ptr uint32](addr this.memory[memAddr]))[]
 
   else:
     return 0
 
-proc readMem8*(this: var Memory, `addr`: uint32): uint8 =
-  if INRANGE(`addr`, 1):
-    return this.memory[`addr`]
+proc readMem16*(this: var Memory, memAddr: uint32): uint16 =
+  if INRANGE(memAddr, 2):
+    return (cast[ptr uint16](addr this.memory[memAddr]))[]
 
   else:
     return 0
 
-proc initMemory*(size: uint32): Memory =
+proc readMem8*(this: var Memory, memAddr: uint32): uint8 =
+  if INRANGE(memAddr, 1):
+    return this.memory[memAddr]
+
+  else:
+    assert(false, "OOM - $# is not in 0..$#" % [$memAddr, $this.memory.high])
+
+proc initMemory*(size: ESize): Memory =
   Memory(memory: newSeq[uint8](size), a20gate: false)
 
 proc destroyMemory*(this: var Memory): void =
   discard
 
-proc dumpMem*(this: var Memory, `addr`: uint32, size: csizeT): void =
-  let `addr` = (`addr` and not((0x10 - 1)).uint32())
-  for idx in 0 ..< size:
-    MSG("0x%08x : ", `addr` + idx * 0x10)
-    for i in 0 ..< 4:
-      MSG("%08x ", (cast[ptr UncheckedArray[uint32]](this.memory))[
-        (`addr` + idx * 0x10) div 4 + uint64(i)])
+proc dumpMem*(
+    this: var Memory,
+    memAddr: EPointer = 0,
+    size: ESize = ESize(this.memory.len())
+  ): void =
 
-    MSG("\\n")
+  let memAddr = (memAddr and not((0x10 - 1)).uint32())
+  for line in ceil(memAddr.float / 8).int ..< ceil(float(memAddr + size) / 8).int:
+    var buf = toHex(line * 8)[^int(ceil(log10(float(memAddr + size)))) .. ^1] & ": "
+    for cell in (line * 8) ..< (line + 1) * 8:
+      buf.add toHex(this.memory[cell])
+      buf.add " "
+
+    echo buf
+
+  # for idx in 0 ..< size:
+  #   MSG("0x%08x : ", memAddr + idx * 0x10)
+  #   for i in 0 ..< 4:
+  #     MSG("%08x ", (cast[ptr UncheckedArray[uint32]](this.memory))[
+  #       (memAddr + idx * 0x10) div 4 + uint64(i)])
+
+  #   MSG("\\n")
 
 proc readData*(
   this: var Memory, dst: EPointer, srcAddr: EPointer, size: ESize): ESize =
@@ -112,9 +134,10 @@ proc writeDataBlob*[T](this: var Memory, dstAddr: EPointer, src: T) =
   copymem(dest = this.memory.asMemPointer(0).asVar(), source = srcBlob)
 
 
-proc writeDataBlob*(this: var Memory, srcAddr: EPointer, blob: MemData) =
+proc writeDataBlob*(this: var Memory, dstAddr: EPointer, blob: var MemData) =
+  ASSERTRANGE(dstAddr.int(), blob.len())
   copymem(
-    dest = this.memory.asMemPointer(srcAddr).asVar(),
+    dest = this.memory.asMemPointer(dstAddr).asVar(),
     source = blob.asMemPointer(0),
     size = ESize(len(blob))
   )

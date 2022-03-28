@@ -21,7 +21,7 @@ import device/[
 
 type
   EmuSetting* = object
-    memSize*: csizeT
+    memSize*: ESize
     uiset*: UISetting
   
   Emulator* = ref object
@@ -67,7 +67,7 @@ proc initEmulator*(set: EmuSetting): Emulator =
   picM.setIrq(2, picS)
   picM.setIrq(6, result.fdd)
   picS.setIrq(4, kb.getMouse())
-  result.accs = initDataAccess()
+  result.accs = initDataAccess(set.memSize)
 
   assertRef(result.accs.io.memory)
   result.accs.io.setPortio(0x020, 2, picM.portio)
@@ -90,7 +90,8 @@ proc initEmulator*(set: EmuSetting): Emulator =
   result.accs.io.setPortio(0x3f8, 1, com.portio)
   result.accs.io.setMemio(0xa0000, 0x20000, vga.memio)
 
-proc loadBlob*(this: var Emulator, blob: seq[uint8], pos: uint32 = 0) =
+proc loadBlob*(this: var Emulator, blob: var MemData, pos: uint32 = 0) =
+  assertRef(this.accs.mem)
   this.accs.mem.writeDataBlob(pos, blob)
 
 proc loadBinary*(this: var Emulator, fname: cstring, `addr`: uint32, offset: uint32, size: int64): void =
