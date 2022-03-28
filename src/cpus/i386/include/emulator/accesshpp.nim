@@ -49,7 +49,7 @@ import emulator/descriptorhpp
 proc setSegment*(this: var DataAccess, reg: sgregT, sel: uint16): void =
   var sg: SGRegister
   var cache: ptr SGRegCache = addr sg.cache
-  this.cpu.getSgreg(reg, addr sg)
+  this.cpu.getSgreg(reg, sg)
   sg.raw = sel
   if this.cpu.isProtected():
     var dtBase: uint32
@@ -84,11 +84,11 @@ proc setSegment*(this: var DataAccess, reg: sgregT, sel: uint16): void =
   else:
     cache.base = cast[uint32](sel) shl 4
 
-  this.cpu.setSgreg(reg, addr sg)
+  this.cpu.setSgreg(reg, sg)
 
 proc getSegment*(this: var DataAccess, reg: sgregT): uint16 =
   var sg: SGRegister
-  this.cpu.getSgreg(reg, addr sg)
+  this.cpu.getSgreg(reg, sg)
   return sg.raw
 
 proc transV2l*(this: var DataAccess, mode: acsmodeT, seg: sgregT, vaddr: uint32): uint32 =
@@ -96,7 +96,7 @@ proc transV2l*(this: var DataAccess, mode: acsmodeT, seg: sgregT, vaddr: uint32)
   var CPL: uint8
   var sg: SGRegister
   CPL = this.getSegment(CS).uint8 and 3
-  this.cpu.getSgreg(seg, addr sg)
+  this.cpu.getSgreg(seg, sg)
   if this.cpu.isProtected():
     var base, limit: uint32
     var cache: SGRegCache = sg.cache
