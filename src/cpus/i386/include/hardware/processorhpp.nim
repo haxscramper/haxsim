@@ -57,26 +57,19 @@ type
     DTREGSCOUNT
 
 type
-  GPRegister* {.bycopy, union.} = object
+  GPRegister* {.union.} = object
     reg32*: uint32
     reg16*: uint16
-    field2*: GPRegisterField2
+    regLH*: RegLH
 
-  GPRegisterField2* {.bycopy.} = object
+  RegLH* = object
     reg8L*: uint8
     reg8H*: uint8
 
-proc reg8L*(this: GPRegister): uint8 =
-  this.field2.reg8L
-
-proc `reg8L =`*(this: var GPRegister, value: uint8) =
-  this.field2.reg8L = value
-
-proc reg8H*(this: GPRegister): uint8 =
-  this.field2.reg8H
-
-proc `reg8H =`*(this: var GPRegister, value: uint8) =
-  this.field2.reg8H = value
+proc reg8L*(this: GPRegister): uint8 = this.regLH.reg8L
+proc `reg8L=`*(this: var GPRegister, value: uint8) = this.regLH.reg8L = value
+proc reg8H*(this: GPRegister): uint8 = this.regLH.reg8H
+proc `reg8H=`*(this: var GPRegister, value: uint8) = this.regLH.reg8H = value
 
 type
   SGRegCache* = object

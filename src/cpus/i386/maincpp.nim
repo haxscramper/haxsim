@@ -28,14 +28,13 @@ type
     uiVm*: bool
 
   FullImpl = ref object
-    logger: EmuLogger
     data: InstrData
     impl16: InstrImpl
     impl32: InstrImpl
     emu: Emulator
 
 template log*(full: FullImpl, ev: EmuEvent): untyped =
-  full.logger.log(ev, -2)
+  full.emu.logger.log(ev, -2)
 
 proc help*(name: cstring): void =
   discard 
@@ -85,15 +84,12 @@ proc loop*(full: var FullImpl) =
 
     full.emu.accs.hundleInterrupt(full.emu.intr)
     let prefix = fetch(full)
-    # pprinte full.data
-    # echov "executing"
     if full.emu.cpu.isMode32() xor toBool(prefix and CHSZOP):
       discard exec(full.impl32)
 
     else:
       discard exec(full.impl16)
 
-    pprinte full.emu.cpu.halt
 
     # except:
     #   # emu.queueInterrupt(n, true)
@@ -105,7 +101,7 @@ proc loop*(full: var FullImpl) =
     #   emu.stop()
 
 proc initFull*(emuset: var EmuSetting): FullImpl =
-  let emu = initEmulator(emuset)
+  var emu = initEmulator(emuset)
   let data = InstrData()
   proc echoHandler(ev: EmuEvent) =
     echov ev.kind
@@ -115,8 +111,11 @@ proc initFull*(emuset: var EmuSetting): FullImpl =
     if ev.kind == eekEndInstructionFetch:
       pprinte data
 
-  var full = FullImpl(
-    emu: emu, data: data, logger: initEmuLogger(echoHandler))
+    elif ev.kind == eekCallOpcodeEnd:
+      pprinte emu.cpu.gpregs
+
+  emu.logger = initEmuLogger(echoHandler)
+  var full = FullImpl(emu: emu, data: data)
 
   var instr = initInstruction(full.emu, full.data, false)
   assertRef(full.emu)
@@ -168,8 +167,10 @@ proc main1() =
   full.emu.cpu.setEip(0)
 
   full.emu.loadBlob(asVar @[
-    # `inc al`
-    0xFE'u8, 0xC0,
+    # # `inc al`
+    # 0xFE'u8, 0xC0,
+    # `mov 4`
+    0xB0'u8, 0x04,
     # `hlt`
     0xF4'u8
   ])

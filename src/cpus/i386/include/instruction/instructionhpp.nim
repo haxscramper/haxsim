@@ -254,13 +254,16 @@ type
   ExecInstr* {.bycopy.} = object of Instruction
     instrfuncs*: array[MAXOPCODE, instrfuncT]
 
-  InstrImpl* {.inheritable.} = object
+  InstrImpl* = object
+    logger*: EmuLogger
     exec*: ExecInstr
     parse*: ParseInstr
     emu*: EmuInstr
 
   instrfuncT* = proc(this: var InstrImpl)
 
+template log*(instr: InstrImpl, ev: EmuEvent): untyped =
+  instr.emu.emu.logger.log(ev, -2)
 
 proc toPPrintTree*(val: OpcodeData, conf: var PPrintConf, path: PPrintPath): PPrintTree =
   result = newPPrintConst(

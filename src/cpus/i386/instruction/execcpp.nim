@@ -12,10 +12,13 @@ proc exec*(this: var InstrImpl): bool =
   
   
   if this.exec.instrfuncs[opcode].isNil():
-    ERROR("not implemented OPCODE 0x%02x", OPCODE)
+    assert(false, "not implemented OPCODE " & pstring(INSTR.opcodeData))
     return false
 
+  this.log ev(eekCallOpcodeImpl)
   this.exec.instrfuncs[opcode](this)
+  this.log ev(eekCallOpcodeEnd)
+
   return true
 
 proc calcModrm16*(this: var ExecInstr): uint32 =

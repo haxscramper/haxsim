@@ -2,6 +2,8 @@ type
   EmuEventKind* = enum
     eekStartInstructionFetch
     eekEndInstructionFetch
+    eekCallOpcodeImpl
+    eekCallOpcodeEnd
 
   EmuEvent* = ref object of RootObj
     kind*: EmuEventKind
