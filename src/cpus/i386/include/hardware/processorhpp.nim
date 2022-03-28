@@ -8,10 +8,11 @@ type
     ECX
     EDX
     EBX
-    ESP
-    EBP
-    ESI
-    EDI
+    ESP ## Stack pointer register Holds the top address of the stack
+    EBP ## Stack Base pointer register. Holds the base address of the stack
+    ESI ## Source index register. Used for string and memory array copying
+    EDI ## Destination index register Used for string, memory array copying
+    ## and setting and for far pointer addressing with ES
     GPREGSCOUNT
 
 type
@@ -20,10 +21,10 @@ type
     CX
     DX
     BX
-    SP
-    BP
-    SI
-    DI
+    SP ## Part of ESP
+    BP ## Part of EBP
+    SI ## Part of ESI
+    DI ## Part of EDI
 
 type
   Reg8T* = enum
@@ -40,9 +41,9 @@ type
 type
   SgRegT* = enum
     ES
-    CS
-    SS
-    DS
+    CS ## 'Code Segment' Holds the Code segment in which your program runs.
+    SS ## 'Stack Segment' Holds the Stack segment your program uses.
+    DS ## 'Data Segment' Holds the Data segment that your program accesses.
     FS
     GS
     SGREGSCOUNT
@@ -78,60 +79,60 @@ proc `reg8H =`*(this: var GPRegister, value: uint8) =
   this.field2.reg8H = value
 
 type
-  SGRegCache* {.bycopy.} = object
+  SGRegCache* = object
     base*:        uint32
     limit* {.bitsize: 20.}: uint32
     flags*:        SGRegCacheFlags
 
-  data* {.bycopy.} = object
+  data* = object
     field0* {.bitsize: 1.}: uint8
-    w* {.bitsize: 1.}: uint8
-    exd* {.bitsize: 1.}: uint8
+    w*      {.bitsize: 1.}: uint8
+    exd*    {.bitsize: 1.}: uint8
     field3* {.bitsize: 1.}: uint8
 
-  code* {.bycopy.} = object
+  code* = object
     field0* {.bitsize: 1.}: uint8
-    r* {.bitsize: 1.}: uint8
-    cnf* {.bitsize: 1.}: uint8
+    r*      {.bitsize: 1.}: uint8
+    cnf*    {.bitsize: 1.}: uint8
     field3* {.bitsize: 1.}: uint8
 
   typeField2* {.bycopy.} = object
-    A* {.bitsize: 1.}: uint8
+    A*      {.bitsize: 1.}: uint8
     field1* {.bitsize: 2.}: uint8
-    segc* {.bitsize: 1.}: uint8
+    segc*   {.bitsize: 1.}: uint8
 
   SGRegCacheFlagsField2* {.bycopy.} = object
     field0* {.bitsize: 4.}: uint8
-    S* {.bitsize: 1.}: uint8
-    DPL* {.bitsize: 2.}: uint8
-    P* {.bitsize: 1.}: uint8
-    AVL* {.bitsize: 1.}: uint8
+    S*      {.bitsize: 1.}: uint8
+    DPL*    {.bitsize: 2.}: uint8
+    P*      {.bitsize: 1.}: uint8
+    AVL*    {.bitsize: 1.}: uint8
     field5* {.bitsize: 1.}: uint8
-    DB* {.bitsize: 1.}: uint8
-    G* {.bitsize: 1.}: uint8
+    DB*     {.bitsize: 1.}: uint8
+    G*      {.bitsize: 1.}: uint8
 
-  SGRegCacheFlags* {.bycopy, union.} = object
+  SGRegCacheFlags* {.union.} = object
     raw* {.bitsize: 12.}: uint16
     `type`*:        `type`
     field2*:        SGRegCacheFlagsField2
 
-  SGRegister* {.bycopy.} = object
+  SGRegister* = object
     field0*: SGRegisterField0
-    cache*: SGRegCache
+    cache*:  SGRegCache
 
-  SGRegisterField0* {.bycopy, union.} = object
-    raw*: uint16
+  SGRegisterField0* {.union.} = object
+    raw*:    uint16
     field1*: SGRegisterField0Field1
 
 
-  SGRegisterField0Field1* {.bycopy.} = object
-    RPL* {.bitsize: 2.}: uint16
-    TI* {.bitsize: 1.}: uint16
+  SGRegisterField0Field1* = object
+    RPL*   {.bitsize: 2.}: uint16
+    TI*    {.bitsize: 1.}: uint16
     index* {.bitsize: 13.}: uint16
 
-  `type`* {.bycopy, union.} = object
-    data*: data
-    code*: code
+  `type`* {.union.} = object
+    data*:   data
+    code*:   code
     field2*: typeField2
 
 
@@ -174,7 +175,12 @@ type
     limit*: uint16
 
 type
-  ProcessorField0* {.bycopy, union.} = object
+  ProcessorField0* {.union.} = object
+    ## The instruction pointer register (EIP) contains the offset address,
+    ## relative to the start of the current code segment, of the next
+    ## sequential instruction to be executed. The instruction pointer is
+    ## not directly visible to the programmer; it is controlled implicitly
+    ## by control-transfer instructions, interrupts, and exceptions.
     eip*: uint32
     ip*: uint16
 
@@ -182,7 +188,10 @@ type
     eflags*: Eflags
     field0*: ProcessorField0
     gpregs*: array[GPREGSCOUNT, GPRegister]
-    sgregs*: array[SGREGSCOUNT, SGRegister]
+    sgregs*: array[SGREGSCOUNT, SGRegister] ## Segment registers hold the
+    ## segment address of various items. They are only available in 16
+    ## values. They can only be set by a general register or special
+    ## instructions.
     dtregs*: array[DTREGSCOUNT, DTRegister]
     halt*: bool
 

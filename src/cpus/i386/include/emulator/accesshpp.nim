@@ -149,6 +149,8 @@ proc cacheTlb*(this: var DataAccess, vpn: uint32, pte: PTE): void =
 
 
 proc transV2p*(this: var DataAccess, mode: acsmodeT, seg: SgRegT, vaddr: uint32): uint32 =
+  # pprint this.cpu
+
   var laddr, paddr: uint32
   laddr = this.transV2l(mode, seg, vaddr)
   if this.cpu.isEnaPaging():
@@ -289,6 +291,8 @@ proc putData32*(this: var DataAccess, seg: SgRegT, memAddr: uint32, v: uint32): 
   this.writeMem32Seg(seg, memAddr, v)
 
 proc getCode8*(this: var DataAccess, index: cint): uint8 =
+  ## Get single Byte from executable memory. Use CS register to compute
+  ## base.
   result = this.execMem8Seg(CS, this.cpu.getEip() + index.uint32)
 
 proc getCode16*(this: var DataAccess, index: cint): uint16 =

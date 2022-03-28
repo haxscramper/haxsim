@@ -1,5 +1,6 @@
 import hardware/processorhpp
 import std/tables
+import ../instruction/opcodes
 import commonhpp
 import emulator/emulatorhpp
 template EMU*(): untyped =
@@ -192,12 +193,16 @@ type
     REPZ
     REPNZ
 
-  InstrData* {.bycopy.} = object
+  OpcodeData* {.union.} = object
+    name*: ICode
+    code*: uint16
+
+  InstrData* = object
     prefix*: uint16
     preSegment*: SgRegT
     preRepeat*: repT
     segment*: SgRegT
-    opcode*: uint16
+    opcodeData*: OpcodeData
     field5*: InstrDataField5
     field6*: InstrDataField6
     field7*: InstrDataField7
@@ -236,16 +241,17 @@ type
     field1*: InstrFlagsField1
 
   InstrFlagsField1* {.bycopy.} = object
-    modrm* {.bitsize: 1.}: uint8
-    imm32* {.bitsize: 1.}: uint8
-    imm16* {.bitsize: 1.}: uint8
-    imm8* {.bitsize: 1.}: uint8
-    ptr16* {.bitsize: 1.}: uint8
-    moffs* {.bitsize: 1.}: uint8
-    moffs8* {.bitsize: 1.}: uint8
+    modrm* {.bitsize: 1.}: uint8 ## Instruction contains modrm flag
+    imm32* {.bitsize: 1.}: uint8 ## Parse 32 bit immediate
+    imm16* {.bitsize: 1.}: uint8 ## Parse 16 bit immediate
+    imm8* {.bitsize: 1.}: uint8 ## Parse 8 bit immediate
+    ptr16* {.bitsize: 1.}: uint8 ## Parse pointer
+    moffs* {.bitsize: 1.}: uint8 ## Parse offset
+    moffs8* {.bitsize: 1.}: uint8 ## Parse 8-bit offset
 
-  ParseInstr* {.bycopy.} = object
-    chk*: array[MAXOPCODE, InstrFlags]
+  ParseInstr* = object
+    chk*: array[MAXOPCODE, InstrFlags] ## Configuration for parsing
+    ## different opcodes.
 
   EmuInstr* {.bycopy.} = object of Instruction
 
@@ -261,66 +267,30 @@ type
   instrfuncT* = proc(this: var InstrImpl)
 
 
-proc dmodrm*(this: InstrData): uint8 =
-  this.field5.dmodrm
+proc opcode*(this: InstrData): uint16 = this.opcodeData.code
+proc opcode*(this: var InstrData): var uint16 = this.opcodeData.code
+proc `opcode=`*(this: var InstrData, code: uint16) = this.opcodeData.code = code
 
-proc `dmodrm=`*(this: var InstrData, value: uint8) =
-  this.field5.dmodrm = value
-
-proc modrm*(this: InstrData): ModRM =
-  this.field5.modrm
-
-proc `modrm=`*(this: var InstrData, value: ModRM) =
-  this.field5.modrm = value
-
-proc dsib*(this: InstrData): uint8 =
-  this.field6.dsib
-
-proc `dsib=`*(this: var InstrData, value: uint8) =
-  this.field6.dsib = value
-
-proc sib*(this: InstrData): SIB =
-  this.field6.sib
-
-proc `sib=`*(this: var InstrData, value: SIB) =
-  this.field6.sib = value
-
-proc disp8*(this: InstrData): int8 =
-  this.field7.disp8
-
-proc `disp8=`*(this: var InstrData, value: int8) =
-  this.field7.disp8 = value
-
-proc disp16*(this: InstrData): int16 =
-  this.field7.disp16
-
-proc `disp16=`*(this: var InstrData, value: int16) =
-  this.field7.disp16 = value
-
-proc disp32*(this: InstrData): int32 =
-  this.field7.disp32
-
-proc `disp32=`*(this: var InstrData, value: int32) =
-  this.field7.disp32 = value
-
-proc imm8*(this: InstrData): int8 =
-  this.field8.imm8
-
-proc `imm8=`*(this: var InstrData, value: int8) =
-  this.field8.imm8 = value
-
-proc imm16*(this: InstrData): int16 =
-  this.field8.imm16
-
-proc `imm16=`*(this: var InstrData, value: int16) =
-  this.field8.imm16 = value
-
-proc imm32*(this: InstrData): int32 =
-  this.field8.imm32
-
-proc `imm32=`*(this: var InstrData, value: int32) =
-  this.field8.imm32 = value
-
+proc dmodrm*(this: InstrData): uint8 = this.field5.dmodrm
+proc `dmodrm=`*(this: var InstrData, value: uint8) = this.field5.dmodrm = value
+proc modrm*(this: InstrData): ModRM = this.field5.modrm
+proc `modrm=`*(this: var InstrData, value: ModRM) = this.field5.modrm = value
+proc dsib*(this: InstrData): uint8 = this.field6.dsib
+proc `dsib=`*(this: var InstrData, value: uint8) = this.field6.dsib = value
+proc sib*(this: InstrData): SIB = this.field6.sib
+proc `sib=`*(this: var InstrData, value: SIB) = this.field6.sib = value
+proc disp8*(this: InstrData): int8 = this.field7.disp8
+proc `disp8=`*(this: var InstrData, value: int8) = this.field7.disp8 = value
+proc disp16*(this: InstrData): int16 = this.field7.disp16
+proc `disp16=`*(this: var InstrData, value: int16) = this.field7.disp16 = value
+proc disp32*(this: InstrData): int32 = this.field7.disp32
+proc `disp32=`*(this: var InstrData, value: int32) = this.field7.disp32 = value
+proc imm8*(this: InstrData): int8 = this.field8.imm8
+proc `imm8=`*(this: var InstrData, value: int8) = this.field8.imm8 = value
+proc imm16*(this: InstrData): int16 = this.field8.imm16
+proc `imm16=`*(this: var InstrData, value: int16) = this.field8.imm16 = value
+proc imm32*(this: InstrData): int32 = this.field8.imm32
+proc `imm32=`*(this: var InstrData, value: int32) = this.field8.imm32 = value
 
 proc initInstruction*(): Instruction =
   discard

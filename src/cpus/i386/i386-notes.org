@@ -6,3 +6,8 @@
 
 - ~ror ah, 1~ is encoded differently from ~ror ah, 2~ - first one is a ~d0
   cc~, and second one is ~c0 cc 03~
+
+[[reg-EIP][EIP]]
+
+- <<reg-EIP>>EIP :: Test
+- <<reg-EUP>>ZZZ :: Test

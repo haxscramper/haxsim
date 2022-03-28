@@ -70,6 +70,7 @@ proc loop*(full: var FullImpl) =
   dumpMem(full.emu.accs.mem)
 
   while (full.emu.isRunning()):
+    # pprint full.emu.accs.cpu.gpregs
     full.data = InstrData()
     # memset(addr instr, 0, sizeof((InstrData)))
     # try:
@@ -144,6 +145,11 @@ proc main1() =
   echo "Created settings"
   var eset = EmuSetting(memSize: 8)
   var full = initFull(eset)
+
+  # Initial value of the EIP is `0xFFF0` - to make testing simpler we are
+  # setting it here to `0`.
+  full.emu.accs.cpu.setEip(0)
+
   full.emu.loadBlob(asVar @[
     # `inc al`
     0xFE'u8, 0xC0,
