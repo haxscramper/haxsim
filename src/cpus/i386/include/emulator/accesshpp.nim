@@ -46,7 +46,7 @@ proc initDataAccess*(size: ESize): DataAccess =
 import emulator/exceptionhpp
 import emulator/descriptorhpp
 
-proc setSegment*(this: var DataAccess, reg: sgregT, sel: uint16): void =
+proc setSegment*(this: var DataAccess, reg: SgRegT, sel: uint16): void =
   var sg: SGRegister
   var cache: ptr SGRegCache = addr sg.cache
   this.cpu.getSgreg(reg, sg)
@@ -86,12 +86,12 @@ proc setSegment*(this: var DataAccess, reg: sgregT, sel: uint16): void =
 
   this.cpu.setSgreg(reg, sg)
 
-proc getSegment*(this: var DataAccess, reg: sgregT): uint16 =
+proc getSegment*(this: var DataAccess, reg: SgRegT): uint16 =
   var sg: SGRegister
   this.cpu.getSgreg(reg, sg)
   return sg.raw
 
-proc transV2l*(this: var DataAccess, mode: acsmodeT, seg: sgregT, vaddr: uint32): uint32 =
+proc transV2l*(this: var DataAccess, mode: acsmodeT, seg: SgRegT, vaddr: uint32): uint32 =
   var laddr: uint32
   var CPL: uint8
   var sg: SGRegister
@@ -148,7 +148,7 @@ proc cacheTlb*(this: var DataAccess, vpn: uint32, pte: PTE): void =
   this.tlb[vpn][] = pte
 
 
-proc transV2p*(this: var DataAccess, mode: acsmodeT, seg: sgregT, vaddr: uint32): uint32 =
+proc transV2p*(this: var DataAccess, mode: acsmodeT, seg: SgRegT, vaddr: uint32): uint32 =
   var laddr, paddr: uint32
   laddr = this.transV2l(mode, seg, vaddr)
   if this.cpu.isEnaPaging():
@@ -196,7 +196,7 @@ proc transV2p*(this: var DataAccess, mode: acsmodeT, seg: sgregT, vaddr: uint32)
 
   return paddr
 
-proc readMem32Seg*(this: var DataAccess, seg: sgregT, memAddr: uint32): uint32 =
+proc readMem32Seg*(this: var DataAccess, seg: SgRegT, memAddr: uint32): uint32 =
   var paddr, ioBase: uint32
   paddr = this.transV2p(MODEREAD, seg, memAddr)
   ioBase = this.io.chkMemio(paddr)
@@ -206,7 +206,7 @@ proc readMem32Seg*(this: var DataAccess, seg: sgregT, memAddr: uint32): uint32 =
   else:
     return this.mem.readMem32(paddr)
 
-proc readMem16Seg*(this: var DataAccess, seg: sgregT, memAddr: uint32): uint16 =
+proc readMem16Seg*(this: var DataAccess, seg: SgRegT, memAddr: uint32): uint16 =
   var paddr, ioBase: uint32
   paddr = this.transV2p(MODEREAD, seg, memAddr)
   ioBase = this.io.chkMemio(paddr)
@@ -217,7 +217,7 @@ proc readMem16Seg*(this: var DataAccess, seg: sgregT, memAddr: uint32): uint16 =
             this.mem.readMem16(paddr)
           )
 
-proc readMem8Seg*(this: var DataAccess, seg: sgregT, memAddr: uint32): uint8 =
+proc readMem8Seg*(this: var DataAccess, seg: SgRegT, memAddr: uint32): uint8 =
   var paddr, ioBase: uint32
   paddr = this.transV2p(MODEREAD, seg, memAddr)
   ioBase = this.io.chkMemio(paddr)
@@ -228,7 +228,7 @@ proc readMem8Seg*(this: var DataAccess, seg: sgregT, memAddr: uint32): uint8 =
             this.mem.readMem8(paddr)
           )
 
-proc writeMem32Seg*(this: var DataAccess, seg: sgregT, memAddr: uint32, v: uint32): void =
+proc writeMem32Seg*(this: var DataAccess, seg: SgRegT, memAddr: uint32, v: uint32): void =
   var paddr, ioBase: uint32
   paddr = this.transV2p(MODEWRITE, seg, memAddr)
   ioBase = this.io.chkMemio(paddr)
@@ -239,7 +239,7 @@ proc writeMem32Seg*(this: var DataAccess, seg: sgregT, memAddr: uint32, v: uint3
     this.mem.writeMem32(paddr, v)
 
 
-proc writeMem16Seg*(this: var DataAccess, seg: sgregT, memAddr: uint32, v: uint16): void =
+proc writeMem16Seg*(this: var DataAccess, seg: SgRegT, memAddr: uint32, v: uint16): void =
   var paddr, ioBase: uint32
   paddr = this.transV2p(MODEWRITE, seg, memAddr)
   ioBase = this.io.chkMemio(paddr)
@@ -250,7 +250,7 @@ proc writeMem16Seg*(this: var DataAccess, seg: sgregT, memAddr: uint32, v: uint1
     this.mem.writeMem16(paddr, v)
 
 
-proc writeMem8Seg*(this: var DataAccess, seg: sgregT, memAddr: uint32, v: uint8): void =
+proc writeMem8Seg*(this: var DataAccess, seg: SgRegT, memAddr: uint32, v: uint8): void =
   var paddr, ioBase: uint32
   paddr = this.transV2p(MODEWRITE, seg, memAddr)
   ioBase = this.io.chkMemio(paddr)
@@ -262,30 +262,30 @@ proc writeMem8Seg*(this: var DataAccess, seg: sgregT, memAddr: uint32, v: uint8)
 
 
 
-proc execMem8Seg*(this: var DataAccess, seg: sgregT, memAddr: uint32): uint8 =
+proc execMem8Seg*(this: var DataAccess, seg: SgRegT, memAddr: uint32): uint8 =
   let pos = this.transV2p(MODEEXEC, seg, memAddr)
   echov pos
   return this.mem.readMem8(pos)
 
-proc execMem16Seg*(this: var DataAccess, seg: sgregT, memAddr: uint32): uint16 =
+proc execMem16Seg*(this: var DataAccess, seg: SgRegT, memAddr: uint32): uint16 =
   return this.mem.readMem16(this.transV2p(MODEEXEC, seg, memAddr))
 
-proc getData8*(this: var DataAccess, seg: sgregT, memAddr: uint32): uint8 =
+proc getData8*(this: var DataAccess, seg: SgRegT, memAddr: uint32): uint8 =
   return this.readMem8Seg(seg, memAddr)
 
-proc getData16*(this: var DataAccess, seg: sgregT, memAddr: uint32): uint16 =
+proc getData16*(this: var DataAccess, seg: SgRegT, memAddr: uint32): uint16 =
   return this.readMem16Seg(seg, memAddr)
 
-proc getData32*(this: var DataAccess, seg: sgregT, memAddr: uint32): uint32 =
+proc getData32*(this: var DataAccess, seg: SgRegT, memAddr: uint32): uint32 =
   return this.readMem32Seg(seg, memAddr)
 
-proc putData8*(this: var DataAccess, seg: sgregT, memAddr: uint32, v: uint8): void =
+proc putData8*(this: var DataAccess, seg: SgRegT, memAddr: uint32, v: uint8): void =
   this.writeMem8Seg(seg, memAddr, v)
 
-proc putData16*(this: var DataAccess, seg: sgregT, memAddr: uint32, v: uint16): void =
+proc putData16*(this: var DataAccess, seg: SgRegT, memAddr: uint32, v: uint16): void =
   this.writeMem16Seg(seg, memAddr, v)
 
-proc putData32*(this: var DataAccess, seg: sgregT, memAddr: uint32, v: uint32): void =
+proc putData32*(this: var DataAccess, seg: SgRegT, memAddr: uint32, v: uint32): void =
   this.writeMem32Seg(seg, memAddr, v)
 
 proc getCode8*(this: var DataAccess, index: cint): uint8 =
@@ -294,7 +294,7 @@ proc getCode8*(this: var DataAccess, index: cint): uint8 =
 proc getCode16*(this: var DataAccess, index: cint): uint16 =
   return this.execMem16Seg(CS, this.cpu.getEip() + index.uint32)
 
-proc execMem32Seg*(this: var DataAccess, seg: sgregT, memAddr: uint32): uint32 =
+proc execMem32Seg*(this: var DataAccess, seg: SgRegT, memAddr: uint32): uint32 =
   return this.mem.readMem32(this.transV2p(MODEEXEC, seg, memAddr))
 
 proc getCode32*(this: var DataAccess, index: cint): uint32 =

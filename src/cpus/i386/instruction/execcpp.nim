@@ -199,10 +199,10 @@ proc getM*(this: var ExecInstr): uint32 =
   return this.calcModrm()
 
 proc setSreg*(this: var ExecInstr, value: uint16): void =
-  EMU.accs.setSegment(cast[sgregT](REG), value)
+  EMU.accs.setSegment(cast[SgRegT](REG), value)
 
 proc getSreg*(this: var ExecInstr): uint16 =
-  return EMU.accs.getSegment(cast[sgregT](REG))
+  return EMU.accs.getSegment(cast[SgRegT](REG))
 
 proc setCrn*(this: var ExecInstr, value: uint32): void =
   INFO(2, "set CR%d = %x", REG, value)

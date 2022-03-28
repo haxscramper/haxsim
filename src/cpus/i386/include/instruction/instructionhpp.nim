@@ -3,7 +3,7 @@ import std/tables
 import commonhpp
 import emulator/emulatorhpp
 template EMU*(): untyped =
-  let tmp = this.get_emu()
+  let tmp = this.getEmu()
   assertRef(tmp)
   tmp
 
@@ -13,92 +13,92 @@ template ACS*(): untyped {.dirty.} = EMU.accs
 template INT*(): untyped {.dirty.} = EMU.intr
 template EIO*(): untyped {.dirty.} = EMU.accs.io
 
-template GET_EIP*(): untyped {.dirty.} =
-  CPU.get_eip()
+template GETEIP*(): untyped {.dirty.} =
+  CPU.getEip()
 
-template GET_IP*(): untyped {.dirty.} =
-  CPU.get_ip()
+template GETIP*(): untyped {.dirty.} =
+  CPU.getIp()
 
-template SET_EIP*(v: untyped): untyped {.dirty.} =
-  CPU.set_eip(v)
+template SETEIP*(v: untyped): untyped {.dirty.} =
+  CPU.setEip(v)
 
-template SET_IP*(v: untyped): untyped {.dirty.} =
-  CPU.set_ip(v)
+template SETIP*(v: untyped): untyped {.dirty.} =
+  CPU.setIp(v)
 
-template UPDATE_EIP*(v: untyped): untyped {.dirty.} =
-  CPU.update_eip(v)
+template UPDATEEIP*(v: untyped): untyped {.dirty.} =
+  CPU.updateEip(v)
 
-template UPDATE_IP*(v: untyped): untyped {.dirty.} =
-  CPU.update_ip(v)
+template UPDATEIP*(v: untyped): untyped {.dirty.} =
+  CPU.updateIp(v)
 
-template GET_GPREG*(reg: untyped): untyped {.dirty.} =
-  CPU.get_gpreg(reg)
+template GETGPREG*(reg: untyped): untyped {.dirty.} =
+  CPU.getGpreg(reg)
 
-template SET_GPREG*(reg: untyped, v: untyped): untyped {.dirty.} =
-  CPU.set_gpreg(reg, v)
+template SETGPREG*(reg: untyped, v: untyped): untyped {.dirty.} =
+  CPU.setGpreg(reg, v)
 
-template UPDATE_GPREG*(reg: untyped, v: untyped): untyped {.dirty.} =
-  CPU.update_gpreg(reg, v)
+template UPDATEGPREG*(reg: untyped, v: untyped): untyped {.dirty.} =
+  CPU.updateGpreg(reg, v)
 
-template EFLAGS_UPDATE_ADD*(v1: untyped, v2: untyped): untyped {.dirty.} =
-  CPU.eflags.update_eflags_add(v1, v2)
+template EFLAGSUPDATEADD*(v1: untyped, v2: untyped): untyped {.dirty.} =
+  CPU.eflags.updateEflagsAdd(v1, v2)
 
-template EFLAGS_UPDATE_OR*(v1: untyped, v2: untyped): untyped {.dirty.} =
-  CPU.eflags.update_eflags_or(v1, v2)
+template EFLAGSUPDATEOR*(v1: untyped, v2: untyped): untyped {.dirty.} =
+  CPU.eflags.updateEflagsOr(v1, v2)
 
-template EFLAGS_UPDATE_AND*(v1: untyped, v2: untyped): untyped {.dirty.} =
-  CPU.eflags.update_eflags_and(v1, v2)
+template EFLAGSUPDATEAND*(v1: untyped, v2: untyped): untyped {.dirty.} =
+  CPU.eflags.updateEflagsAnd(v1, v2)
 
-template EFLAGS_UPDATE_SUB*(v1: untyped, v2: untyped): untyped {.dirty.} =
-  CPU.eflags.update_eflags_sub(v1, v2)
+template EFLAGSUPDATESUB*(v1: untyped, v2: untyped): untyped {.dirty.} =
+  CPU.eflags.updateEflagsSub(v1, v2)
 
-template EFLAGS_UPDATE_MUL*(v1: untyped, v2: untyped): untyped {.dirty.} =
-  CPU.eflags.update_eflags_mul(v1, v2)
+template EFLAGSUPDATEMUL*(v1: untyped, v2: untyped): untyped {.dirty.} =
+  CPU.eflags.updateEflagsMul(v1, v2)
 
-template EFLAGS_UPDATE_IMUL*(v1: untyped, v2: untyped): untyped {.dirty.} =
-  CPU.eflags.update_eflags_imul(v1, v2)
+template EFLAGSUPDATEIMUL*(v1: untyped, v2: untyped): untyped {.dirty.} =
+  CPU.eflags.updateEflagsImul(v1, v2)
 
-template EFLAGS_UPDATE_SHL*(v1: untyped, v2: untyped): untyped {.dirty.} =
-  CPU.eflags.update_eflags_shl(v1, v2)
+template EFLAGSUPDATESHL*(v1: untyped, v2: untyped): untyped {.dirty.} =
+  CPU.eflags.updateEflagsShl(v1, v2)
 
-template EFLAGS_UPDATE_SHR*(v1: untyped, v2: untyped): untyped {.dirty.} =
-  CPU.eflags.update_eflags_shr(v1, v2)
+template EFLAGSUPDATESHR*(v1: untyped, v2: untyped): untyped {.dirty.} =
+  CPU.eflags.updateEflagsShr(v1, v2)
 
-template EFLAGS_CF*(): untyped {.dirty.} =
-  CPU.eflags.is_carry()
+template EFLAGSCF*(): untyped {.dirty.} =
+  CPU.eflags.isCarry()
 
-template EFLAGS_PF*(): untyped {.dirty.} =
-  CPU.eflags.is_parity()
+template EFLAGSPF*(): untyped {.dirty.} =
+  CPU.eflags.isParity()
 
-template EFLAGS_ZF*(): untyped {.dirty.} =
-  CPU.eflags.is_zero()
+template EFLAGSZF*(): untyped {.dirty.} =
+  CPU.eflags.isZero()
 
-template EFLAGS_SF*(): untyped {.dirty.} =
-  CPU.eflags.is_sign()
+template EFLAGSSF*(): untyped {.dirty.} =
+  CPU.eflags.isSign()
 
-template EFLAGS_OF*(): untyped {.dirty.} =
-  CPU.eflags.is_overflow()
+template EFLAGSOF*(): untyped {.dirty.} =
+  CPU.eflags.isOverflow()
 
-template EFLAGS_DF*(): untyped {.dirty.} =
-  CPU.eflags.is_direction()
+template EFLAGSDF*(): untyped {.dirty.} =
+  CPU.eflags.isDirection()
 
-template READ_MEM32*(addr_d: untyped): untyped {.dirty.} =
-  EMU.accs.get_data32(this.select_segment(), addr_d)
+template READMEM32*(addrD: untyped): untyped {.dirty.} =
+  EMU.accs.getData32(this.selectSegment(), addrD)
 
-template READ_MEM16*(addr_d: untyped): untyped {.dirty.} =
-  EMU.accs.get_data16(this.select_segment(), addr_d)
+template READMEM16*(addrD: untyped): untyped {.dirty.} =
+  EMU.accs.getData16(this.selectSegment(), addrD)
 
-template READ_MEM8*(addr_d: untyped): untyped {.dirty.} =
-  EMU.accs.get_data8(this.select_segment(), addr_d)
+template READMEM8*(addrD: untyped): untyped {.dirty.} =
+  EMU.accs.getData8(this.selectSegment(), addrD)
 
-template WRITE_MEM32*(addr_d: untyped, v: untyped): untyped {.dirty.} =
-  EMU.accs.put_data32(this.select_segment(), addr_d, v)
+template WRITEMEM32*(addrD: untyped, v: untyped): untyped {.dirty.} =
+  EMU.accs.putData32(this.selectSegment(), addrD, v)
 
-template WRITE_MEM16*(addr_d: untyped, v: untyped): untyped {.dirty.} =
-  EMU.accs.put_data16(this.select_segment(), addr_d, v)
+template WRITEMEM16*(addrD: untyped, v: untyped): untyped {.dirty.} =
+  EMU.accs.putData16(this.selectSegment(), addrD, v)
 
-template WRITE_MEM8*(addr_d: untyped, v: untyped): untyped {.dirty.} =
-  EMU.accs.put_data8(this.select_segment(), addr_d, v)
+template WRITEMEM8*(addrD: untyped, v: untyped): untyped {.dirty.} =
+  EMU.accs.putData8(this.selectSegment(), addrD, v)
 
 template PUSH32*(v: untyped): untyped {.dirty.} =
   ACS.push32(v)
@@ -166,16 +166,16 @@ template PTR16*(): untyped {.dirty.} =
 template MOFFS*(): untyped {.dirty.} =
   (this.instr.moffs)
 
-template PRE_SEGMENT*(): untyped {.dirty.} =
-  (this.instr.pre_segment)
+template PRESEGMENT*(): untyped {.dirty.} =
+  (this.instr.preSegment)
 
-template PRE_REPEAT*(): untyped {.dirty.} =
-  (this.instr.pre_repeat)
+template PREREPEAT*(): untyped {.dirty.} =
+  (this.instr.preRepeat)
 
 template SEGMENT*(): untyped {.dirty.} =
   (this.instr.segment)
 
-const MAX_OPCODE* = 0x200
+const MAXOPCODE* = 0x200
 type
   ModRM* {.bycopy.} = object
     rm* {.bitsize: 3.}: uint8
@@ -187,55 +187,55 @@ type
     index* {.bitsize: 3.}: uint8
     scale* {.bitsize: 2.}: uint8
 
-  rep_t* {.size: sizeof(cint).} = enum
+  repT* {.size: sizeof(cint).} = enum
     NONE
     REPZ
     REPNZ
 
   InstrData* {.bycopy.} = object
     prefix*: uint16
-    pre_segment*: sgreg_t
-    pre_repeat*: rep_t
-    segment*: sgreg_t
+    preSegment*: SgRegT
+    preRepeat*: repT
+    segment*: SgRegT
     opcode*: uint16
-    field5*: InstrData_field5
-    field6*: InstrData_field6
-    field7*: InstrData_field7
-    field8*: InstrData_field8
+    field5*: InstrDataField5
+    field6*: InstrDataField6
+    field7*: InstrDataField7
+    field8*: InstrDataField8
     ptr16*: int16
     moffs*: uint32
 
-  InstrData_field5* {.bycopy, union.} = object
+  InstrDataField5* {.bycopy, union.} = object
     ## Parsed ModRM instruction byte. Controls execution of the several
     ## commands.
     dmodrm*: uint8
     modrm*: ModRM
 
-  InstrData_field6* {.bycopy, union.} = object
+  InstrDataField6* {.bycopy, union.} = object
     dsib*: uint8
     sib*: SIB
 
-  InstrData_field7* {.bycopy, union.} = object
+  InstrDataField7* {.bycopy, union.} = object
     disp8*: int8
     disp16*: int16
     disp32*: int32
 
-  InstrData_field8* {.bycopy, union.} = object
+  InstrDataField8* {.bycopy, union.} = object
     imm8*: int8
     imm16*: int16
     imm32*: int32
 
   Instruction* {.bycopy, inheritable.} = object
     instr*: InstrData
-    chsz_ad*: bool
+    chszAd*: bool
     emu*: Emulator
     mode32*: bool
 
   InstrFlags* {.bycopy, union.} = object
     flags*: uint8
-    field1*: InstrFlags_field1
+    field1*: InstrFlagsField1
 
-  InstrFlags_field1* {.bycopy.} = object
+  InstrFlagsField1* {.bycopy.} = object
     modrm* {.bitsize: 1.}: uint8
     imm32* {.bitsize: 1.}: uint8
     imm16* {.bitsize: 1.}: uint8
@@ -245,20 +245,20 @@ type
     moffs8* {.bitsize: 1.}: uint8
 
   ParseInstr* {.bycopy.} = object
-    chk*: array[MAX_OPCODE, InstrFlags]
+    chk*: array[MAXOPCODE, InstrFlags]
 
   EmuInstr* {.bycopy.} = object of Instruction
 
 
   ExecInstr* {.bycopy.} = object of Instruction
-    instrfuncs*: array[MAX_OPCODE, instrfunc_t]
+    instrfuncs*: array[MAXOPCODE, instrfuncT]
 
   InstrImpl* {.bycopy, inheritable.} = object
     exec*: ExecInstr
     parse*: ParseInstr
     emu*: EmuInstr
 
-  instrfunc_t* = proc(this: var InstrImpl)
+  instrfuncT* = proc(this: var InstrImpl)
 
 
 proc dmodrm*(this: InstrData): uint8 =
@@ -330,88 +330,55 @@ proc initInstruction*(e: Emulator, i: InstrData, m: bool): Instruction =
   result.instr = i
   result.mode32 = m
 
-proc get_emu*(this: var Instruction): Emulator =
+proc getEmu*(this: var Instruction): Emulator =
   result = this.emu
   assertRef(result)
 
-proc is_mode32*(this: var Instruction): bool =
+proc isMode32*(this: var Instruction): bool =
   return this.mode32
 
-proc select_segment*(this: var Instruction): sgreg_t =
-  return (if this.instr.prefix.toBool(): PRE_SEGMENT else: SEGMENT)
+proc selectSegment*(this: var Instruction): SgRegT =
+  return (if this.instr.prefix.toBool(): PRESEGMENT else: SEGMENT)
 
 proc initExecInstr*(): ExecInstr =
-  for i in 0 ..< MAX_OPCODE:
+  for i in 0 ..< MAXOPCODE:
     result.instrfuncs[i] = nil
 
 
 const
-  CHK_MODRM* = (1 shl 0)
-  CHK_IMM32* = (1 shl 1)
-  CHK_IMM16* = (1 shl 2)
-  CHK_IMM8* = (1 shl 3)
-  CHK_PTR16* = (1 shl 4)
-  CHK_MOFFS* = (1 shl 5)
-  CHSZ_NONE* = 0
-  CHSZ_OP* = 1
-  CHSZ_AD* = 2
+  CHKMODRM* = (1 shl 0)
+  CHKIMM32* = (1 shl 1)
+  CHKIMM16* = (1 shl 2)
+  CHKIMM8*  = (1 shl 3)
+  CHKPTR16* = (1 shl 4)
+  CHKMOFFS* = (1 shl 5)
+  CHSZNONE* = 0
+  CHSZOP*   = 1
+  CHSZAD*   = 2
 
+proc modrm*(this: InstrFlags): uint8 = this.field1.modrm
+proc `modrm=`*(this: var InstrFlags, value: uint8) = this.field1.modrm = value
+proc imm32*(this: InstrFlags): uint8 = this.field1.imm32
+proc `imm32=`*(this: var InstrFlags, value: uint8) = this.field1.imm32 = value
+proc imm16*(this: InstrFlags): uint8 = this.field1.imm16
+proc `imm16=`*(this: var InstrFlags, value: uint8) = this.field1.imm16 = value
+proc imm8*(this: InstrFlags): uint8 = this.field1.imm8
+proc `imm8=`*(this: var InstrFlags, value: uint8) = this.field1.imm8 = value
+proc ptr16*(this: InstrFlags): uint8 = this.field1.ptr16
+proc `ptr16=`*(this: var InstrFlags, value: uint8) = this.field1.ptr16 = value
+proc moffs*(this: InstrFlags): uint8 = this.field1.moffs
+proc `moffs=`*(this: var InstrFlags, value: uint8) = this.field1.moffs = value
+proc moffs8*(this: InstrFlags): uint8 = this.field1.moffs8
+proc `moffs8=`*(this: var InstrFlags, value: uint8) = this.field1.moffs8 = value
 
+proc setGdtr*(this: var EmuInstr, base: uint32, limit: uint16): void =
+  CPU.setDtreg(GDTR, 0, base, limit)
 
-proc modrm*(this: InstrFlags): uint8 =
-  this.field1.modrm
+proc setIdtr*(this: var EmuInstr, base: uint32, limit: uint16): void =
+  CPU.setDtreg(IDTR, 0, base, limit)
 
-proc `modrm=`*(this: var InstrFlags, value: uint8) =
-  this.field1.modrm = value
+proc getTr*(this: var EmuInstr): uint16 =
+  return CPU.getDtregSelector(TR).uint16()
 
-proc imm32*(this: InstrFlags): uint8 =
-  this.field1.imm32
-
-proc `imm32=`*(this: var InstrFlags, value: uint8) =
-  this.field1.imm32 = value
-
-proc imm16*(this: InstrFlags): uint8 =
-  this.field1.imm16
-
-proc `imm16=`*(this: var InstrFlags, value: uint8) =
-  this.field1.imm16 = value
-
-proc imm8*(this: InstrFlags): uint8 =
-  this.field1.imm8
-
-proc `imm8=`*(this: var InstrFlags, value: uint8) =
-  this.field1.imm8 = value
-
-proc ptr16*(this: InstrFlags): uint8 =
-  this.field1.ptr16
-
-proc `ptr16=`*(this: var InstrFlags, value: uint8) =
-  this.field1.ptr16 = value
-
-proc moffs*(this: InstrFlags): uint8 =
-  this.field1.moffs
-
-proc `moffs=`*(this: var InstrFlags, value: uint8) =
-  this.field1.moffs = value
-
-proc moffs8*(this: InstrFlags): uint8 =
-  this.field1.moffs8
-
-proc `moffs8=`*(this: var InstrFlags, value: uint8) =
-  this.field1.moffs8 = value
-
-
-
-proc set_gdtr*(this: var EmuInstr, base: uint32, limit: uint16): void =
-  CPU.set_dtreg(GDTR, 0, base, limit)
-
-proc set_idtr*(this: var EmuInstr, base: uint32, limit: uint16): void =
-  CPU.set_dtreg(IDTR, 0, base, limit)
-
-proc get_tr*(this: var EmuInstr): uint16 =
-  return CPU.get_dtreg_selector(TR).uint16()
-
-proc get_ldtr*(this: var EmuInstr): uint16 =
-  return CPU.get_dtreg_selector(LDTR).uint16()
-
-
+proc getLdtr*(this: var EmuInstr): uint16 =
+  return CPU.getDtregSelector(LDTR).uint16()

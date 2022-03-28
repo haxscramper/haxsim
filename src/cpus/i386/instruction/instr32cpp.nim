@@ -11,7 +11,7 @@ import emulator/[exceptionhpp, emulatorhpp, accesshpp]
 template instr32*(f: untyped): untyped {.dirty.} = 
   instrfuncT(f)
 
-proc selectSegment*(this: var InstrImpl): sgregT =
+proc selectSegment*(this: var InstrImpl): SgRegT =
   this.exec.selectSegment()
 
 proc addRm32R32*(this: var InstrImpl): void =

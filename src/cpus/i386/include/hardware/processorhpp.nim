@@ -38,7 +38,7 @@ type
 
 
 type
-  sgregT* = enum
+  SgRegT* = enum
     ES
     CS
     SS
@@ -226,7 +226,7 @@ proc getGpreg*(this: var Processor, n: Reg8T): uint8 =
             this.gpregs[Reg32T(n.int - AH.int)].reg8H
           )
 
-proc getSgreg*(this: Processor, n: sgregT, reg: var SGRegister): void =
+proc getSgreg*(this: Processor, n: SgRegT, reg: var SGRegister): void =
   ASSERT(n < SGREGSCOUNT)
   reg = this.sgregs[n]
 
@@ -264,7 +264,7 @@ proc setGpreg*(this: var Processor, n: Reg8T, v: uint8): void =
   else:
     this.gpregs[Reg32T(n.int - AH.int)].reg8H = v
 
-proc setSgreg*(this: var Processor, n: sgregT, reg: SGRegister): void =
+proc setSgreg*(this: var Processor, n: SgRegT, reg: SGRegister): void =
   ASSERT(n < SGREGSCOUNT)
   this.sgregs[n] = reg
 
