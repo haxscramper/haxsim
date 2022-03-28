@@ -160,35 +160,26 @@ proc parse*(this: var InstrImpl): void =
   if opcode shr 8 == 0x0f:
     opcode = (opcode and 0xff) or 0x0100
 
-
-  if this.parse.chk[opcode].modrm.toBool():
+  if iParseModrm in this.parse.chk[opcode]:
     this.parseModrmSibDisp()
 
-  if this.parse.chk[opcode].imm32.toBool():
+  if iParseImm32 in this.parse.chk[opcode]:
     INSTR.imm32 = ACS.getCode32(0).int32()
-    DEBUGMSG(5, "imm32:0x%08x ", IMM32)
     discard UPDATEEIP(4)
 
-  else:
-    if this.parse.chk[opcode].imm16.toBool():
-      INSTR.imm16 = ACS.getCode16(0).int16()
-      DEBUGMSG(5, "imm16:0x%04x ", IMM16)
-      discard UPDATEEIP(2)
-
-    else:
-      if this.parse.chk[opcode].imm8.toBool():
-        INSTR.imm8 = cast[int8](ACS.getCode8(0))
-        DEBUGMSG(5, "imm8:0x%02x ", IMM8)
-        discard UPDATEEIP(1)
-
-
-
-  if this.parse.chk[opcode].ptr16.toBool():
-    PTR16 = ACS.getCode16(0).int8()
-    DEBUGMSG(5, "ptr16:0x%04x", PTR16)
+  elif iParseImm16 in this.parse.chk[opcode]:
+    INSTR.imm16 = ACS.getCode16(0).int16()
     discard UPDATEEIP(2)
 
-  if this.parse.chk[opcode].moffs.toBool():
+  elif iParseImm8 in this.parse.chk[opcode]:
+    INSTR.imm8 = cast[int8](ACS.getCode8(0))
+    discard UPDATEEIP(1)
+
+  if iParsePtr16 in this.parse.chk[opcode]:
+    PTR16 = ACS.getCode16(0).int8()
+    discard UPDATEEIP(2)
+
+  if iParseMoffs in this.parse.chk[opcode]:
     this.parseMoffs()
 
   DEBUGMSG(5, "\\n")

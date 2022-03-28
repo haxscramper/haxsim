@@ -236,21 +236,17 @@ type
     emu*: Emulator
     mode32*: bool
 
-  InstrFlags* {.bycopy, union.} = object
-    flags*: uint8
-    field1*: InstrFlagsField1
-
-  InstrFlagsField1* {.bycopy.} = object
-    modrm* {.bitsize: 1.}: uint8 ## Instruction contains modrm flag
-    imm32* {.bitsize: 1.}: uint8 ## Parse 32 bit immediate
-    imm16* {.bitsize: 1.}: uint8 ## Parse 16 bit immediate
-    imm8* {.bitsize: 1.}: uint8 ## Parse 8 bit immediate
-    ptr16* {.bitsize: 1.}: uint8 ## Parse pointer
-    moffs* {.bitsize: 1.}: uint8 ## Parse offset
-    moffs8* {.bitsize: 1.}: uint8 ## Parse 8-bit offset
+  InstrParseFlag* = enum
+    iParseModrm ## Instruction contains modrm flag
+    iParseImm32 ## Parse 32 bit immediate
+    iParseImm16 ## Parse 16 bit immediate
+    iParseImm8 ## Parse 8 bit immediate
+    iParsePtr16 ## Parse pointer
+    iParseMoffs ## Parse offset
+    iParseMoffs8 ## Parse 8-bit offset
 
   ParseInstr* = object
-    chk*: array[MAXOPCODE, InstrFlags] ## Configuration for parsing
+    chk*: array[MAXOPCODE, set[InstrParseFlag]] ## Configuration for parsing
     ## different opcodes.
 
   EmuInstr* {.bycopy.} = object of Instruction
@@ -316,30 +312,30 @@ proc initExecInstr*(): ExecInstr =
 
 
 const
-  CHKMODRM* = (1 shl 0)
-  CHKIMM32* = (1 shl 1)
-  CHKIMM16* = (1 shl 2)
-  CHKIMM8*  = (1 shl 3)
-  CHKPTR16* = (1 shl 4)
-  CHKMOFFS* = (1 shl 5)
+  CHKMODRM* = {iParseModrm} # (1 shl 0)
+  CHKIMM32* = {iParseImm32} # (1 shl 1)
+  CHKIMM16* = {iParseImm16} # (1 shl 2)
+  CHKIMM8*  = {iParseImm8} # (1 shl 3)
+  CHKPTR16* = {iParsePtr16} # (1 shl 4)
+  CHKMOFFS* = {iParseMoffs} # (1 shl 5)
   CHSZNONE* = 0
   CHSZOP*   = 1
   CHSZAD*   = 2
 
-proc modrm*(this: InstrFlags): uint8 = this.field1.modrm
-proc `modrm=`*(this: var InstrFlags, value: uint8) = this.field1.modrm = value
-proc imm32*(this: InstrFlags): uint8 = this.field1.imm32
-proc `imm32=`*(this: var InstrFlags, value: uint8) = this.field1.imm32 = value
-proc imm16*(this: InstrFlags): uint8 = this.field1.imm16
-proc `imm16=`*(this: var InstrFlags, value: uint8) = this.field1.imm16 = value
-proc imm8*(this: InstrFlags): uint8 = this.field1.imm8
-proc `imm8=`*(this: var InstrFlags, value: uint8) = this.field1.imm8 = value
-proc ptr16*(this: InstrFlags): uint8 = this.field1.ptr16
-proc `ptr16=`*(this: var InstrFlags, value: uint8) = this.field1.ptr16 = value
-proc moffs*(this: InstrFlags): uint8 = this.field1.moffs
-proc `moffs=`*(this: var InstrFlags, value: uint8) = this.field1.moffs = value
-proc moffs8*(this: InstrFlags): uint8 = this.field1.moffs8
-proc `moffs8=`*(this: var InstrFlags, value: uint8) = this.field1.moffs8 = value
+# proc modrm*(this: InstrFlags): uint8 = this.field1.modrm
+# proc `modrm=`*(this: var InstrFlags, value: uint8) = this.field1.modrm = value
+# proc imm32*(this: InstrFlags): uint8 = this.field1.imm32
+# proc `imm32=`*(this: var InstrFlags, value: uint8) = this.field1.imm32 = value
+# proc imm16*(this: InstrFlags): uint8 = this.field1.imm16
+# proc `imm16=`*(this: var InstrFlags, value: uint8) = this.field1.imm16 = value
+# proc imm8*(this: InstrFlags): uint8 = this.field1.imm8
+# proc `imm8=`*(this: var InstrFlags, value: uint8) = this.field1.imm8 = value
+# proc ptr16*(this: InstrFlags): uint8 = this.field1.ptr16
+# proc `ptr16=`*(this: var InstrFlags, value: uint8) = this.field1.ptr16 = value
+# proc moffs*(this: InstrFlags): uint8 = this.field1.moffs
+# proc `moffs=`*(this: var InstrFlags, value: uint8) = this.field1.moffs = value
+# proc moffs8*(this: InstrFlags): uint8 = this.field1.moffs8
+# proc `moffs8=`*(this: var InstrFlags, value: uint8) = this.field1.moffs8 = value
 
 proc setGdtr*(this: var EmuInstr, base: uint32, limit: uint16): void =
   CPU.setDtreg(GDTR, 0, base, limit)

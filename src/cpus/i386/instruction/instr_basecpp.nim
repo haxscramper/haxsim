@@ -9,14 +9,20 @@ import ./opcodes
 template instrbase*(f: untyped): untyped {.dirty.} =
  instrfuncT(f)
 
-proc setFuncflag*(this: var InstrImpl, opcode: ICode, implF: instrfuncT, flags: uint8): void =
+proc setFuncflag*(
+    this: var InstrImpl,
+    opcode: ICode,
+    implF: instrfuncT,
+    flags: set[InstrParseFlag]
+  ): void =
+
   var opcode = opcode.uint16
   if opcode shr 8 == 0x0f:
     opcode = (opcode and 0xff) or 0x0100
 
   ASSERT(opcode < MAXOPCODE)
   this.exec.instrfuncs[opcode] = implF
-  this.parse.chk[opcode].flags = flags
+  this.parse.chk[opcode] = flags
   
 proc getEmu*(this: var InstrImpl): Emulator =
   result = this.exec.getEmu()
@@ -507,50 +513,50 @@ proc initInstrImpl*(r: var InstrImpl, instr: Instruction) =
   r.setFuncflag(ICode(0x88), instrbase(movRm8R8),    CHKMODRM)
   r.setFuncflag(ICode(0x8a), instrbase(movR8Rm8),    CHKMODRM)
   r.setFuncflag(ICode(0x8e), instrbase(movSregRm16), CHKMODRM)
-  r.setFuncflag(ICode(0x90), instrbase(nop),         0)
+  r.setFuncflag(ICode(0x90), instrbase(nop),         {})
   r.setFuncflag(ICode(0xa0), instrbase(movAlMoffs8), CHKMOFFS)
   r.setFuncflag(ICode(0xa2), instrbase(movMoffs8Al), CHKMOFFS)
   r.setFuncflag(ICode(0xa8), instrbase(testAlImm8),  CHKIMM8)
 
   r.setFuncflag(ICode(0xb0), instrbase(movR8Imm8), CHKIMM8)
 
-  r.setFuncflag(ICode(0xc6), instrbase(movRm8Imm8), CHKMODRM or CHKIMM8)
-  r.setFuncflag(ICode(0xcb), instrbase(retf), 0)
-  r.setFuncflag(ICode(0xcc), instrbase(int3), 0)
-  r.setFuncflag(ICode(0xcd), instrbase(intImm8), CHKIMM8)
-  r.setFuncflag(ICode(0xcf), instrbase(iret), 0)
-  r.setFuncflag(ICode(0xe4), instrbase(inAlImm8), CHKIMM8)
-  r.setFuncflag(ICode(0xe6), instrbase(outImm8Al), CHKIMM8)
-  r.setFuncflag(ICode(0xeb), instrbase(jmp), CHKIMM8)
-  r.setFuncflag(ICode(0xec), instrbase(inAlDx), 0)
-  r.setFuncflag(ICode(0xee), instrbase(outDxAl), 0)
-  r.setFuncflag(ICode(0xfa), instrbase(cli), 0)
-  r.setFuncflag(ICode(0xfb), instrbase(sti), 0)
-  r.setFuncflag(ICode(0xfc), instrbase(cld), 0)
-  r.setFuncflag(ICode(0xfd), instrbase(std), 0)
-  r.setFuncflag(ICode(0xf4), instrbase(hlt), 0)
-  r.setFuncflag(ICode(0x0f20), instrbase(movR32Crn), CHKMODRM)
-  r.setFuncflag(ICode(0x0f22), instrbase(movCrnR32), CHKMODRM)
-  r.setFuncflag(ICode(0x0f90), instrbase(setoRm8), CHKMODRM)
-  r.setFuncflag(ICode(0x0f91), instrbase(setnoRm8), CHKMODRM)
-  r.setFuncflag(ICode(0x0f92), instrbase(setbRm8), CHKMODRM)
-  r.setFuncflag(ICode(0x0f93), instrbase(setnbRm8), CHKMODRM)
-  r.setFuncflag(ICode(0x0f94), instrbase(setzRm8), CHKMODRM)
-  r.setFuncflag(ICode(0x0f95), instrbase(setnzRm8), CHKMODRM)
-  r.setFuncflag(ICode(0x0f96), instrbase(setbeRm8), CHKMODRM)
-  r.setFuncflag(ICode(0x0f97), instrbase(setaRm8), CHKMODRM)
-  r.setFuncflag(ICode(0x0f98), instrbase(setsRm8), CHKMODRM)
-  r.setFuncflag(ICode(0x0f99), instrbase(setnsRm8), CHKMODRM)
-  r.setFuncflag(ICode(0x0f9a), instrbase(setpRm8), CHKMODRM)
-  r.setFuncflag(ICode(0x0f9b), instrbase(setnpRm8), CHKMODRM)
-  r.setFuncflag(ICode(0x0f9c), instrbase(setlRm8), CHKMODRM)
-  r.setFuncflag(ICode(0x0f9d), instrbase(setnlRm8), CHKMODRM)
-  r.setFuncflag(ICode(0x0f9e), instrbase(setleRm8), CHKMODRM)
-  r.setFuncflag(ICode(0x0f9f), instrbase(setnleRm8), CHKMODRM)
-  r.setFuncflag(ICode(0x80), instrbase(code_80), CHKMODRM or CHKIMM8)
-  r.setFuncflag(ICode(0x82), instrbase(code_82), CHKMODRM or CHKIMM8)
-  r.setFuncflag(ICode(0xc0), instrbase(codeC0), CHKMODRM or CHKIMM8)
-  r.setFuncflag(ICode(0xf6), instrbase(codeF6), CHKMODRM)
+  r.setFuncflag(ICode(0xc6),   instrbase(movRm8Imm8), CHKMODRM + CHKIMM8)
+  r.setFuncflag(ICode(0xcb),   instrbase(retf),       {})
+  r.setFuncflag(ICode(0xcc),   instrbase(int3),       {})
+  r.setFuncflag(ICode(0xcd),   instrbase(intImm8),    CHKIMM8)
+  r.setFuncflag(ICode(0xcf),   instrbase(iret),       {})
+  r.setFuncflag(ICode(0xe4),   instrbase(inAlImm8),   CHKIMM8)
+  r.setFuncflag(ICode(0xe6),   instrbase(outImm8Al),  CHKIMM8)
+  r.setFuncflag(ICode(0xeb),   instrbase(jmp),        CHKIMM8)
+  r.setFuncflag(ICode(0xec),   instrbase(inAlDx),     {})
+  r.setFuncflag(ICode(0xee),   instrbase(outDxAl),    {})
+  r.setFuncflag(ICode(0xfa),   instrbase(cli),        {})
+  r.setFuncflag(ICode(0xfb),   instrbase(sti),        {})
+  r.setFuncflag(ICode(0xfc),   instrbase(cld),        {})
+  r.setFuncflag(ICode(0xfd),   instrbase(std),        {})
+  r.setFuncflag(ICode(0xf4),   instrbase(hlt),        {})
+  r.setFuncflag(ICode(0x0f20), instrbase(movR32Crn),  CHKMODRM)
+  r.setFuncflag(ICode(0x0f22), instrbase(movCrnR32),  CHKMODRM)
+  r.setFuncflag(ICode(0x0f90), instrbase(setoRm8),    CHKMODRM)
+  r.setFuncflag(ICode(0x0f91), instrbase(setnoRm8),   CHKMODRM)
+  r.setFuncflag(ICode(0x0f92), instrbase(setbRm8),    CHKMODRM)
+  r.setFuncflag(ICode(0x0f93), instrbase(setnbRm8),   CHKMODRM)
+  r.setFuncflag(ICode(0x0f94), instrbase(setzRm8),    CHKMODRM)
+  r.setFuncflag(ICode(0x0f95), instrbase(setnzRm8),   CHKMODRM)
+  r.setFuncflag(ICode(0x0f96), instrbase(setbeRm8),   CHKMODRM)
+  r.setFuncflag(ICode(0x0f97), instrbase(setaRm8),    CHKMODRM)
+  r.setFuncflag(ICode(0x0f98), instrbase(setsRm8),    CHKMODRM)
+  r.setFuncflag(ICode(0x0f99), instrbase(setnsRm8),   CHKMODRM)
+  r.setFuncflag(ICode(0x0f9a), instrbase(setpRm8),    CHKMODRM)
+  r.setFuncflag(ICode(0x0f9b), instrbase(setnpRm8),   CHKMODRM)
+  r.setFuncflag(ICode(0x0f9c), instrbase(setlRm8),    CHKMODRM)
+  r.setFuncflag(ICode(0x0f9d), instrbase(setnlRm8),   CHKMODRM)
+  r.setFuncflag(ICode(0x0f9e), instrbase(setleRm8),   CHKMODRM)
+  r.setFuncflag(ICode(0x0f9f), instrbase(setnleRm8),  CHKMODRM)
+  r.setFuncflag(ICode(0x80),   instrbase(code_80),    CHKMODRM + CHKIMM8)
+  r.setFuncflag(ICode(0x82),   instrbase(code_82),    CHKMODRM + CHKIMM8)
+  r.setFuncflag(ICode(0xc0),   instrbase(codeC0),     CHKMODRM + CHKIMM8)
+  r.setFuncflag(ICode(0xf6),   instrbase(codeF6),     CHKMODRM)
 
 proc initInstrImpl*(instr: Instruction): InstrImpl =
   initInstrImpl(result, instr)
