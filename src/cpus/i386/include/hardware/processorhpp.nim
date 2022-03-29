@@ -6,7 +6,8 @@ type
   Reg32T* = enum
     EAX
     ECX
-    EDX
+    EDX ## Called the Data register It is used for I/O port access,
+    ## arithmetic, some interrupt calls.
     EBX
     ESP ## Stack pointer register Holds the top address of the stack
     EBP ## Stack Base pointer register. Holds the base address of the stack
