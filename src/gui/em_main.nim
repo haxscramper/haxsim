@@ -44,6 +44,9 @@ proc loopImpl*() {.cdecl.} =
     igSetNextWindowPos(ImVec2(x: 10, y: 10), ImGuiCond.Once, ImVec2(x: 0, y: 0))
     igSetNextWindowSize(ImVec2(x: 400, y: 100), ImGuiCond.Once)
     igBegin("Test ??", nil, ImGuiWindowFlags.None)
+    if igButton("Test button"):
+      echo "button was clicked"
+
     igEnd()
 
 
