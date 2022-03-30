@@ -1,4 +1,5 @@
 import nimgl/imgui
+import std/strformat
 import hmisc/core/all
 import em_sokol
 
@@ -28,8 +29,23 @@ proc initImpl*(): void {.cdecl.} =
     state.pass_action = SgPassAction()
     state.pass_action.colors[0] = SgColorAttachmentAction(
       action: SG_ACTION_CLEAR,
-      val: [0.0, 0.5, 1.0, 1.0]
+      val: [0.0, 0.5, 0.5, 1.0]
     )
+
+template igMainMenuBar*(body: untyped): untyped =
+  if igBeginMainMenuBar():
+    body
+    igEndMainMenuBar()
+
+template igMenu*(name: string, body: untyped): untyped =
+  if igBeginMenu(name):
+    body
+    igEndMenu()
+
+proc igVec*(x, y: float): ImVec2 = ImVec2(x: x, y: y)
+
+proc igCol32*(r, g, b: uint8, a: uint8 = 255): uint32 =
+  (a.uint32 shl 24) or (b.uint32 shl 16) or (g.uint32 shl 8) or (r.uint32)
 
 proc loopImpl*() {.cdecl.} =
   printedTrace():
@@ -40,15 +56,32 @@ proc loopImpl*() {.cdecl.} =
 
     simgui_new_frame(width, height, delta_time)
 
+    igMainMenuBar():
+      igMenu("Test menu"):
+        if igMenuItem("Test item"):
+          echo "Selected test menu item"
 
-    igSetNextWindowPos(ImVec2(x: 10, y: 10), ImGuiCond.Once, ImVec2(x: 0, y: 0))
-    igSetNextWindowSize(ImVec2(x: 400, y: 100), ImGuiCond.Once)
+        if igMenuItem("Other item"):
+          echo "Selected other test item"
+
+    igSetNextWindowPos(igVec(40, 40), ImGuiCond.Once, igVec(0, 0))
+    igSetNextWindowSize(igVec(400, 400), ImGuiCond.Once)
+
+    var list = igGetWindowDrawList()
+    list.addLine(igVec(0, 0), igVec(300, 300), igCol32(255, 0, 0, 255), 20)
+
     igBegin("Test ??", nil, ImGuiWindowFlags.None)
-    if igButton("Test button"):
-      echo "button was clicked"
+
+    for i in 0 .. 10:
+      if igButton(&"Test button {i}"):
+        echo "button {i} was clicked"
+
 
     igEnd()
 
+    state.passAction.colors[0].val = [1.0, 0.5, 0.5, 0.5]
+    if igButton("Print state"):
+      echo state.passAction.colors[0].val
 
     sg_begin_default_pass(addr state.pass_action, width, height)
     simgui_render()
