@@ -2,7 +2,9 @@
 set -o errexit
 set -x
 
-nim c em_drive.nim
+# nim c em_drive.nim
+
+rm -rf nimcache
 
 nim c \
     -d=asm \
@@ -18,36 +20,45 @@ nim c \
     --clang.linkerexe=emcc \
     --nimcache=nimcache \
     --noMain \
-    --noLinking \
+    --compileOnly \
     --header=em_main.h \
     --gc=orc \
+    --define=cimguiStaticLinking \
     --out=em_main.o \
-    em_main.nim
+    em_main.nim # --hints=on \
+# --hint=all:off \
+# --hint=Processing:on \
+# --processing=filenames \
 
 nimdir=$HOME/.choosenim/toolchains/nim-$(
     nim --version | grep Version | cut -d' ' -f4 | tr -d '\n'
 )
 
-emcc em_main.c \
-    nimcache/*.c \
-    -O2 \
-    -Oz \
-    -I$nimdir/lib \
-    -DCIMGUI_DEFINE_ENUMS_AND_STRUCTS \
-    -I../../../deps/pkgs/imgui-1.84.2/imgui/private/cimgui \
-    -s USE_GLFW=3 \
-    -s LLD_REPORT_UNDEFINED \
-    -s EXTRA_EXPORTED_RUNTIME_METHODS="['cwrap']" \
-    -s ALLOW_MEMORY_GROWTH=1 \
-    -s SAFE_HEAP \
-    -s DEMANGLE_SUPPORT=1 \
-    --source-map-base '/' \
-    -g4 \
-    -s NO_EXIT_RUNTIME=1 \
-    --shell-file base.html \
-    -flto \
-    -o em_main.js
+IMDIR=../../../deps/pkgs/imgui-1.84.2/
 
+# rm -rf build
+# mkdir -p build
+cd build
+
+emcmake cmake \
+    -DCMAKE_BUILD_TYPE=MinSizeRel \
+    -DCIMGUI_DIR=$IMDIR/imgui/private/cimgui \
+    ..
+
+make -j10
 clang-format -i em_main.js
-nim c -r httpserve.nim
-echo compiled done
+# cmake --build .
+
+# emcc em_main.c \
+#     nimcache/*.c \
+#     -O2 \
+#     -Oz \
+#     -I$nimdir/lib \
+#     -DCIMGUI_DEFINE_ENUMS_AND_STRUCTS \
+#     -I$IMDIR/imgui/private/cimgui \
+#     -s USE_GLFW=3 \
+#     --shell-file base.html \
+#     -o em_main.js
+
+# nim c -r httpserve.nim
+# echo compiled done

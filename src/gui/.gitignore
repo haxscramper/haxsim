@@ -4,3 +4,5 @@ em_main.js
 em_main.wasm*
 imgui.ini
 httpserve
+build
+sokol
