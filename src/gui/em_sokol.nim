@@ -17,6 +17,9 @@ type
 
   SappEvent* {.importc: "sapp_event", st.} = object
 
+  # SgBindings* {.importc: "sg_bindings", st.} = object
+
+
   SgDesc* {.importc: "sg_desc", st.} = object
     context*: SgContextDesc
 
