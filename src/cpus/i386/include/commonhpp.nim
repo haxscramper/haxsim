@@ -1,4 +1,6 @@
 import util/debughpp
+import std/strformat
+export strformat
 import std/strutils
 export strutils
 import hmisc/wrappers/wraphelp
@@ -9,6 +11,18 @@ import hmisc/core/all
 export all
 import eventer
 export eventer
+
+type
+  EmuCpuException* = object of CatchableError
+    ## CPU exception - part of the CPU operation
+
+  EmuImplError* = object of CatchableError
+    ## Error in the CPU implementation
+
+  EmuIoError* = object of EmuImplError
+    ## IO-related errors
+    port*: uint16
+
 
 const KB* = 1024
 template MB*(): untyped {.dirty.} = (KB * 1024)

@@ -6,11 +6,16 @@ import std/tables
 type
   IO* {.requiresinit.} = object
     memory*: Memory
-    portIo*: Table[uint16, PortIO]
-    portIoMap*: Table[uint16, csizeT]
+    portIo*: Table[uint16, PortIO] ## Memory address to the specific IO
+    ## port.
+    portIoMap*: Table[uint16, csizeT] ## Memory address to the size of the
+    ## associated IO port.
     memIo*: Table[uint32, ref MemoryIO]
     memIoMap*: Table[uint32, uint32]
-  
+
+template log*(io: IO, ev: EmuEvent): untyped =
+  io.memory.logger.log(ev, -2)
+
 proc initIO*(mem: Memory): IO =
   result.memory = mem
 
@@ -28,6 +33,7 @@ proc setPortio*(this: var IO, memAddr: uint16, len: csizeT, dev: PortIO): void =
 proc getPortioBase*(this: var IO, memAddr: uint16): uint16 =
   for i in 0 ..< 5:
     var base: uint16 = (memAddr and (not(1.uint16))) - uint16(2 * i)
+    echov memAddr, base
     if base in this.portIoMap:
       if memAddr < base + this.portIoMap[base]:
         return base
@@ -37,50 +43,58 @@ proc getPortioBase*(this: var IO, memAddr: uint16): uint16 =
 
   return 0
 
-proc inIo8*(this: var IO, memAddr: uint16): uint8 =
+proc inIo8*(this: var IO, port: uint16): uint8 =
+  this.log ev(eekInIO).withIt do:
+    it.memAddr = port
+    it.size = 8
+
   var v: uint8 = 0
-  let base: uint16 = this.getPortioBase(memAddr)
+  let base: uint16 = this.getPortioBase(port)
   if base != 0:
-    v = this.portIo[base].in8(memAddr)
+    v = this.portIo[base].in8(port)
 
   else:
-    ERROR("no device connected at port : 0x%04x", memAddr)
+    raise EmuIoError.withNewIt:
+      it.msg = &"No device connected at port {port}"
+      it.port = port
 
-  INFO(4, "in [0x%04x] (0x%04x)", memAddr, v)
+    # ERROR("no device connected at port : 0x%04x", port) #
+
+  this.log evEnd()
   return v
 
 
-proc inIo32*(this: var IO, memAddr: uint16): uint32 =
+proc inIo32*(this: var IO, port: uint16): uint32 =
   var v: uint32 = 0
   for i in 0 ..< 4:
-    v = (v + this.inIo8(memAddr + uint16(i)) shl (8 * i))
+    v = (v + this.inIo8(port + uint16(i)) shl (8 * i))
   return v
 
 
 
-proc inIo16*(this: var IO, memAddr: uint16): uint16 =
+proc inIo16*(this: var IO, port: uint16): uint16 =
   var v: uint16 = 0
   for i in 0 ..< 2:
-    v = (v + this.inIo8(memAddr + uint16(i)) shl (8 * i))
+    v = (v + this.inIo8(port + uint16(i)) shl (8 * i))
   return v
 
-proc outIo8*(this: var IO, memAddr: uint16, value: uint8): void =
-  var base: uint16 = this.getPortioBase(memAddr)
+proc outIo8*(this: var IO, port: uint16, value: uint8): void =
+  var base: uint16 = this.getPortioBase(port)
   if base != 0:
-    this.portIo[base].out8(memAddr, value)
+    this.portIo[base].out8(port, value)
 
   else:
-    ERROR("no device connected at port : 0x%04x", memAddr)
+    ERROR("no device connected at port : 0x%04x", port)
 
-  INFO(4, "out [0x%04x] (0x%04x)", memAddr, value)
+  INFO(4, "out [0x%04x] (0x%04x)", port, value)
 
-proc outIo32*(this: var IO, memAddr: uint16, value: uint32): void =
+proc outIo32*(this: var IO, port: uint16, value: uint32): void =
   for i in 0 ..< 4:
-    this.outIo8(memAddr + uint16(i), uint8((value shr (8 * i)) and 0xff))
+    this.outIo8(port + uint16(i), uint8((value shr (8 * i)) and 0xff))
 
-proc outIo16*(this: var IO, memAddr: uint16, value: uint16): void =
+proc outIo16*(this: var IO, port: uint16, value: uint16): void =
   for i in 0 ..< 2:
-    this.outIo8(memAddr + uint16(i), uint8((value shr (8 * i)) and 0xff))
+    this.outIo8(port + uint16(i), uint8((value shr (8 * i)) and 0xff))
 
 proc setMemio*(this: var IO, base: uint32, len: csizeT, dev: ref MemoryIO): void =
   assertRef(this.memory)

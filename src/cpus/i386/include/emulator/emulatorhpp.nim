@@ -32,6 +32,9 @@ type
     ui*: UI
     fdd*: FDD
 
+
+func io*(emu: Emulator): IO = emu.accs.io
+func io*(emu: var Emulator): var IO = emu.accs.io
 func cpu*(emu: Emulator): Processor = emu.accs.cpu
 func cpu*(emu: var Emulator): var Processor = emu.accs.cpu
 func mem*(emu: Emulator): Memory = emu.accs.mem
@@ -53,7 +56,7 @@ proc stop*(this: var Emulator): void =
 proc insertFloppy*(this: var Emulator, slot: uint8, disk: cstring, write: bool): bool =
   return (if not this.fdd.isNil(): this.fdd.insertDisk(slot, disk, write) else: false)
 
-proc initEmulator*(set: EmuSetting): Emulator =
+proc initEmulator*(set: EmuSetting, logger: EmuLogger): Emulator =
   new(result)
   var picM, picS: PIC
   var pit: ref PIT
@@ -77,7 +80,8 @@ proc initEmulator*(set: EmuSetting): Emulator =
   picM.setIrq(2, picS)
   picM.setIrq(6, result.fdd)
   picS.setIrq(4, kb.getMouse())
-  result.accs = initDataAccess(set.memSize)
+  result.logger = logger
+  result.accs = initDataAccess(set.memSize, logger)
 
   assertRef(result.accs.io.memory)
   result.accs.io.setPortio(0x020, 2, picM.portio)

@@ -1,4 +1,5 @@
 import commonhpp
+import eventer
 import std/strformat
 import std/math
 
@@ -20,6 +21,7 @@ template INRANGE*(memAddr: untyped, memLen: untyped): untyped {.dirty.} =
 
 type
   Memory* = ref object
+    logger*: EmuLogger
     memory*: seq[uint8]
     a20gate*: bool
 
@@ -65,8 +67,11 @@ proc readMem8*(this: var Memory, memAddr: uint32): uint8 =
   else:
     assert(false, "OOM - $# is not in 0..$#" % [$memAddr, $this.memory.high])
 
-proc initMemory*(size: ESize): Memory =
-  Memory(memory: newSeq[uint8](size), a20gate: false)
+proc initMemory*(size: ESize, logger: EmuLogger): Memory =
+  Memory(memory: newSeq[uint8](size), a20gate: false, logger: logger)
+
+template log*(mem: Memory, ev: EmuEvent) =
+  mem.logger.log(ev, -2)
 
 proc destroyMemory*(this: var Memory): void =
   discard

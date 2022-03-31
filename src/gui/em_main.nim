@@ -64,11 +64,19 @@ proc loopImpl*() {.cdecl.} =
         if igMenuItem("Other item"):
           echo "Selected other test item"
 
-    igSetNextWindowPos(igVec(40, 40), ImGuiCond.Once, igVec(0, 0))
-    igSetNextWindowSize(igVec(400, 400), ImGuiCond.Once)
+
+    igSetNextWindowPos(igVec(0, 0), ImGuiCond.Once, igVec(0, 0))
+    igSetNextWindowSize(igVec(1920, 1080), ImGuiCond.Once)
+    igBegin("", nil, ImGuiWindowFlags(
+      ImGuiWindowFlags.NoTitleBar.int or ImGuiWindowFlags.NoBackground.int))
 
     var list = igGetWindowDrawList()
     list.addLine(igVec(0, 0), igVec(300, 300), igCol32(255, 0, 0, 255), 20)
+
+    igEnd()
+
+    igSetNextWindowPos(igVec(40, 40), ImGuiCond.Once, igVec(0, 0))
+    igSetNextWindowSize(igVec(400, 400), ImGuiCond.Once)
 
     igBegin("Test ??", nil, ImGuiWindowFlags.None)
 
@@ -80,9 +88,6 @@ proc loopImpl*() {.cdecl.} =
     igEnd()
 
     state.passAction.colors[0].val = [1.0, 0.5, 0.5, 0.5]
-    if igButton("Print state"):
-      echo state.passAction.colors[0].val
-
     sg_begin_default_pass(addr state.pass_action, width, height)
     simgui_render()
     sg_end_pass()

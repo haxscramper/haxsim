@@ -17,7 +17,7 @@ template ASSERT*(cond: untyped): untyped {.dirty.} =
 
 template ERROR*(
     fmt: untyped, args: varargs[untyped]): untyped {.dirty.} =
-  discard
+  assert false, fmt
 
 template WARN*(
     fmt: untyped, args: varargs[untyped]): untyped {.dirty.} =

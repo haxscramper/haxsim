@@ -12,7 +12,7 @@ type
     mem*: Memory
     io*: IO
   
-proc initHardware*(size: ESize): Hardware =
+proc initHardware*(size: ESize, logger: EmuLogger): Hardware =
   result.cpu = initProcessor()
-  result.mem = initMemory(size)
+  result.mem = initMemory(size, logger)
   result.io = initIO(result.mem)

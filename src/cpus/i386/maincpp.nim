@@ -3,7 +3,8 @@ import instruction/execcpp
 
 import "commonhpp"
 import emulator/[emulatorhpp, interruptcpp]
-import hardware/[processorhpp, memoryhpp]
+import hardware/[processorhpp, memoryhpp, iohpp]
+import device/[dev_iohpp]
 import instruction/[
   instructionhpp,
   basehpp,
@@ -101,13 +102,15 @@ proc loop*(full: var FullImpl) =
     #   emu.stop()
 
 proc initFull*(emuset: var EmuSetting): FullImpl =
-  var emu = initEmulator(emuset)
+  var logger = initEmuLogger()
+  var emu = initEmulator(emuset, logger)
   let data = InstrData()
   proc echoHandler(ev: EmuEvent) =
     if ev.kind == eekCallOpcodeEnd:
       pprinte emu.cpu.gpregs[EAX]
 
-  emu.logger = initEmuLogger(echoHandler)
+  emu.logger.setHook(echoHandler)
+
   var full = FullImpl(emu: emu, data: data)
 
   var instr = initInstruction(full.emu, full.data, false)
@@ -150,6 +153,15 @@ proc main*(): cint =
   var opt: char
   runEmulator(eset)
 
+let basic = @[
+  # `mov al, 4`
+  0xB0'u8, 0x04,
+  # `inc al`
+  0xFE'u8, 0xC0,
+  # `hlt`
+  0xF4'u8
+]
+
 proc main1() =
   echo "Created settings"
   var eset = EmuSetting(memSize: 8)
@@ -159,17 +171,21 @@ proc main1() =
   # setting it here to `0`.
   full.emu.cpu.setEip(0)
 
+  full.emu.io.setPortIO(8, 1, PortIO(
+    in8: proc(mem: uint16): uint8 = 1,
+    out8: proc(mem: uint16, val: uint8) = discard
+  ))
+
   full.emu.loadBlob(asVar @[
-    # `mov al, 4`
-    0xB0'u8, 0x04,
-    # `inc al`
-    0xFE'u8, 0xC0,
+    # `in al, 8`
+    0xE4'u8, 0x08,
     # `hlt`
-    0xF4'u8
+    0xF4
   ])
 
-  # assertRef(full.emu.cpu)
   full.loop()
+  assert full.emu.cpu.getGPreg(AL) == 1
+
 
 startHax()
 main1()

@@ -38,8 +38,8 @@ type
   DataAccess* = object of Hardware
     tlb*: seq[ptr PTE]
 
-proc initDataAccess*(size: ESize): DataAccess =
-  asgnAux[Hardware](result, initHardware(size))
+proc initDataAccess*(size: ESize, logger: EmuLogger): DataAccess =
+  asgnAux[Hardware](result, initHardware(size, logger))
   assertRef(result.mem)
   assertRef(result.io.memory)
 
