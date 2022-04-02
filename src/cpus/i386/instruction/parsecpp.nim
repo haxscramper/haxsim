@@ -116,7 +116,7 @@ proc parseModrm16*(this: var InstrImpl): void =
       CPU.updateEIp(1)
 
 proc parseModrmSibDisp*(this: var InstrImpl): void =
-  INSTR.dmodrm = ACS.getCode8(0)
+  INSTR.modrm = cast[ModRM](ACS.getCode8(0))
   CPU.updateEIp(1)
   if CPU.isMode32() xor this.exec.chszAd:
     this.parseModrm32()

@@ -3,28 +3,39 @@ import hmisc/core/all
 
 type
   EmuEventKind* = enum
+    # starter kind start
     eekInitEmulator = "init emulator"
     eekInitCPU = "init cpu"
 
-
     eekStartInstructionFetch = "fetch instruction"
-    # eekEndInstructionFetch
     eekCallOpcodeImpl = "call opcode"
+
+    eekGetCode = "get code"
+    # starter kind end
 
     # value kind start
     eekGetModrmReg = "get modrm.reg"
     eekGetModrmMod = "get modrm.mod"
     eekGetModrmRM = "get modrm.rm"
-    eekSetReg8 = "set reg 8"
-    eekSetReg16 = "set reg 16"
-    eekSetReg32 = "set reg 32"
 
+    eekGetIP = "get IP"
+    eekGetEIP = "get EIP"
     eekSetIP = "set IP"
     eekSetEIP = "set EIP"
 
+    eekSetReg8 = "set reg 8"
+    eekSetReg16 = "set reg 16"
+    eekSetReg32 = "set reg 32"
     eekGetReg8 = "get reg 8"
     eekGetReg16 = "get reg 16"
     eekGetReg32 = "get reg 32"
+
+    eekSetMem8 = "set mem 8"
+    eekSetMem16 = "set mem 16"
+    eekSetMem32 = "set mem 32"
+    eekGetMem8 = "get mem 8"
+    eekGetMem16 = "get mem 16"
+    eekGetMem32 = "get mem 32"
 
     eekInIO = "io in"
     eekOutIO = "io out"
@@ -76,10 +87,7 @@ func evalue*(
 
 const
   eekStartKinds* = {
-    eekStartInstructionFetch,
-    eekCallOpcodeImpl,
-    eekInitCPU,
-    eekInitEmulator
+    eekInitEmulator .. eekGetCode
   }
 
   eekValueKinds* = {
@@ -96,6 +104,13 @@ const
 
 proc ev*(kind: EmuEventKind): EmuEvent =
   EmuEvent(kind: kind)
+
+func ev*(kind: EmuEventKind, value: EmuValue): EmuEvent =
+  EmuEvent(kind: kind, value: value)
+
+func ev*(kind: EmuEventKind, value: EmuValue, memAddr: uint): EmuEvent =
+  EmuEvent(kind: kind, value: value, memAddr: memaddr)
+
 
 proc ev*[T](der: typedesc[T], kind: EmuEventKind): T =
   T(kind: kind)

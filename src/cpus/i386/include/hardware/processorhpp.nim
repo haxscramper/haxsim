@@ -155,13 +155,14 @@ proc isProtected*(this: var Processor): bool =
   return CR(this).isProtected()
 
 proc getEip*(this: var Processor): uint32 =
-  # echov this.halt
-  # pprint this
   result = this.eip
-  # echov "end"
+  this.log ev(eekGetEIP).withIt do:
+    it.value = evalue(result, 32)
 
 proc getIp*(this: var Processor): uint32 =
-  return this.ip
+  result = this.ip
+  this.log ev(eekGetIP).withIt do:
+    it.value = evalue(result, 32)
 
 proc getGpreg*(this: var Processor, n: Reg32T): uint32 =
   ASSERT(n < GPREGSCOUNT)

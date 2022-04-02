@@ -172,18 +172,12 @@ type
     preRepeat*: repT
     segment*: SgRegT
     opcodeData*: OpcodeData
-    fieldModRM*: InstrDataModRM
+    modrm*: ModRM
     fieldDSib*: InstrDataDSib
     fieldDisp*: InstrDataDisp
     fieldImm*: InstrDataImm
     ptr16*: int16
     moffs*: uint32
-
-  InstrDataModRM* {.union.} = object
-    ## Parsed ModRM instruction byte. Controls execution of the several
-    ## commands.
-    dmodrm*: uint8
-    modrm*: ModRM
 
   InstrDataDSib* {.union.} = object
     dsib*: uint8
@@ -248,10 +242,6 @@ proc opcode*(this: InstrData): uint16 = this.opcodeData.code
 proc opcode*(this: var InstrData): var uint16 = this.opcodeData.code
 proc `opcode=`*(this: var InstrData, code: uint16) = this.opcodeData.code = code
 
-proc dmodrm*(this: InstrData): uint8 = this.fieldModRM.dmodrm
-proc `dmodrm=`*(this: var InstrData, value: uint8) = this.fieldModRM.dmodrm = value
-proc modrm*(this: InstrData): ModRM = this.fieldModRM.modrm
-proc `modrm=`*(this: var InstrData, value: ModRM) = this.fieldModRM.modrm = value
 proc dsib*(this: InstrData): uint8 = this.fieldDSib.dsib
 proc `dsib=`*(this: var InstrData, value: uint8) = this.fieldDSib.dsib = value
 proc sib*(this: InstrData): SIB = this.fieldDSib.sib

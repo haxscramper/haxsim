@@ -25,6 +25,11 @@ type
     memory*: seq[uint8]
     a20gate*: bool
 
+template log*(mem: Memory, ev: EmuEvent) =
+  mem.logger.log(ev, -2)
+
+
+
 proc setA20gate*(this: var Memory, ena: bool): void =
   this.a20gate = ena
 
@@ -62,7 +67,8 @@ proc readMem16*(this: var Memory, memAddr: uint32): uint16 =
 
 proc readMem8*(this: var Memory, memAddr: uint32): uint8 =
   if INRANGE(memAddr, 1):
-    return this.memory[memAddr]
+    result = this.memory[memAddr]
+    this.log ev(eekGetMem8, evalue(result, 8), memAddr)
 
   else:
     assert(false, "OOM - $# is not in 0..$#" % [$memAddr, $this.memory.high])
@@ -70,16 +76,15 @@ proc readMem8*(this: var Memory, memAddr: uint32): uint8 =
 proc initMemory*(size: ESize, logger: EmuLogger): Memory =
   Memory(memory: newSeq[uint8](size), a20gate: false, logger: logger)
 
-template log*(mem: Memory, ev: EmuEvent) =
-  mem.logger.log(ev, -2)
-
 proc destroyMemory*(this: var Memory): void =
   discard
+
+func len*(mem: Memory): int = mem.memory.len()
 
 proc dumpMem*(
     this: var Memory,
     memAddr: EPointer = 0,
-    size: ESize = ESize(this.memory.len())
+    size: ESize = ESize(this.len())
   ): void =
 
   let memAddr = (memAddr and not((0x10 - 1)).uint32())
@@ -90,14 +95,6 @@ proc dumpMem*(
       buf.add " "
 
     echo buf
-
-  # for idx in 0 ..< size:
-  #   MSG("0x%08x : ", memAddr + idx * 0x10)
-  #   for i in 0 ..< 4:
-  #     MSG("%08x ", (cast[ptr UncheckedArray[uint32]](this.memory))[
-  #       (memAddr + idx * 0x10) div 4 + uint64(i)])
-
-  #   MSG("\\n")
 
 proc readData*(
   this: var Memory, dst: EPointer, srcAddr: EPointer, size: ESize): ESize =

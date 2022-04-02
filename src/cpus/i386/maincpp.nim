@@ -1,4 +1,5 @@
 import instruction/execcpp
+import std/math
 import hmisc/algo/[clformat, clformat_interpolate]
 
 import "commonhpp"
@@ -72,7 +73,6 @@ proc fetch*(full: var FullImpl): uint8 =
 proc loop*(full: var FullImpl) =
   assertRef(full.impl16.get_emu())
   assertRef(full.impl16.get_emu())
-  dumpMem(full.emu.mem)
 
   while not full.emu.cpu.isHalt():
     zeroMem(addr full.data[], sizeof(full.data[]))
@@ -130,7 +130,12 @@ proc initFull*(emuset: var EmuSetting): FullImpl =
         of eekGetReg8, eekSetReg8: res.add " " & $Reg8T(ev.memAddr)
         of eekGetReg16, eekSetReg16: res.add " " & $Reg16T(ev.memAddr)
         of eekGetReg32, eekSetReg32: res.add " " & $Reg32T(ev.memAddr)
-        else: discard
+        of eekSetMem8 .. eekGetMem32:
+          let s = log2(emu.mem.len().float()).int()
+          res.add " 0x" & toHex(ev.memAddr)[^s .. ^1]
+
+        else:
+          discard
 
       res.add " = "
       res.add $ev.value + fgCyan

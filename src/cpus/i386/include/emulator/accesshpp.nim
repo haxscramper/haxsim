@@ -38,6 +38,9 @@ type
   DataAccess* = object of Hardware
     tlb*: seq[ptr PTE]
 
+func logger*(ac: DataAccess): EmuLogger =
+  ac.mem.logger
+
 proc initDataAccess*(size: ESize, logger: EmuLogger): DataAccess =
   asgnAux[Hardware](result, initHardware(size, logger))
   assertRef(result.mem)
@@ -292,15 +295,18 @@ proc putData32*(this: var DataAccess, seg: SgRegT, memAddr: uint32, v: uint32): 
 proc getCode8*(this: var DataAccess, index: cint): uint8 =
   ## Get single Byte from executable memory. Use CS register to compute
   ## base.
+  this.logger.logScope ev(eekGetCode)
   result = this.execMem8Seg(CS, this.cpu.getEip() + index.uint32)
 
 proc getCode16*(this: var DataAccess, index: cint): uint16 =
+  this.logger.logScope ev(eekGetCode)
   return this.execMem16Seg(CS, this.cpu.getEip() + index.uint32)
 
 proc execMem32Seg*(this: var DataAccess, seg: SgRegT, memAddr: uint32): uint32 =
   return this.mem.readMem32(this.transV2p(MODEEXEC, seg, memAddr))
 
 proc getCode32*(this: var DataAccess, index: cint): uint32 =
+  this.logger.logScope ev(eekGetCode)
   return this.execMem32Seg(CS, this.cpu.getEip() + index.uint32)
 
 
