@@ -7,18 +7,6 @@ proc getEmu*(this: var InstrImpl): Emulator =
   result = this.exec.getEmu()
   assertRef(result)
 
-template PRESEGMENT*(): untyped {.dirty.} =
-  (this.exec.instr.preSegment)
-
-template PREREPEAT*(): untyped {.dirty.} =
-  (this.exec.instr.preRepeat)
-
-template MOD*(): untyped {.dirty.} = (this.idata.modrm.`mod`)
-template RM*(): untyped {.dirty.} = (this.idata.modrm.rm)
-template BASE*(): untyped {.dirty.} = (this.idata.sib.base)
-template DISP32*(): untyped {.dirty.} = (this.idata.disp32)
-template INSTR(): untyped = this.idata
-
 proc parsePrefix*(this: var InstrImpl): uint8 =
   var chsz, code: uint8 = 0
   while (true):
@@ -80,32 +68,41 @@ proc parseOpcode*(this: var InstrImpl): void =
 
 
 proc parseModrm32*(this: var InstrImpl): void =
-  if MOD != 3 and RM == 4:
-    INSTR.dSIB = ACS.getCode8(0)
+  if this.idata.modrm.mod != 3 and
+     this.idata.modrm.rm == 4:
+    this.idata.dSIB = ACS.getCode8(0)
     CPU.updateEIp(1)
 
-  if MOD == 2 or (MOD == 0 and RM == 5) or (MOD == 0 and BASE == 5):
-    INSTR.disp32 = ACS.getCode32(0).int32()
+  if this.idata.modrm.mod == 2 or
+    (this.idata.modrm.mod == 0 and
+     this.idata.modrm.rm == 5) or
+    (this.idata.modrm.mod == 0 and this.base == 5):
+
+    this.idata.disp32 = ACS.getCode32(0).int32()
     CPU.updateEIp(4)
 
   else:
-    if MOD == 1:
-      INSTR.disp8 = cast[int8](ACS.getCode8(0))
+    if this.idata.modrm.mod == 1:
+      this.idata.disp8 = cast[int8](ACS.getCode8(0))
       CPU.updateEIp(1)
 
 
 proc parseModrm16*(this: var InstrImpl): void =
-  if (MOD == 0 and RM == 6) or MOD == 2:
-    INSTR.disp16 = ACS.getCode32(0).int16()
+  if (this.idata.modrm.mod == 0 and
+      this.idata.modrm.rm == 6) or
+
+     this.idata.modrm.mod == 2:
+
+    this.idata.disp16 = ACS.getCode32(0).int16()
     CPU.updateEIp(2)
 
   else:
-    if MOD == 1:
-      INSTR.disp8 = cast[int8](ACS.getCode8(0))
+    if this.idata.modrm.mod == 1:
+      this.idata.disp8 = cast[int8](ACS.getCode8(0))
       CPU.updateEIp(1)
 
 proc parseModrmSibDisp*(this: var InstrImpl): void =
-  INSTR.modrm = cast[ModRM](ACS.getCode8(0))
+  this.idata.modrm = cast[ModRM](ACS.getCode8(0))
   CPU.updateEIp(1)
   if CPU.isMode32() xor this.exec.chszAd:
     this.parseModrm32()
@@ -117,11 +114,11 @@ proc parseModrmSibDisp*(this: var InstrImpl): void =
 
 proc parseMoffs*(this: var InstrImpl): void =
   if CPU.isMode32() xor this.exec.chszAd:
-    INSTR.moffs = ACS.getCode32(0)
+    this.idata.moffs = ACS.getCode32(0)
     CPU.updateEIp(4)
   
   else:
-    INSTR.moffs = ACS.getCode16(0)
+    this.idata.moffs = ACS.getCode16(0)
     CPU.updateEIp(2)
 
 proc parse*(this: var InstrImpl): void =
@@ -137,19 +134,19 @@ proc parse*(this: var InstrImpl): void =
     this.parseModrmSibDisp()
 
   if iParseImm32 in this.chk[op]:
-    INSTR.imm32 = ACS.getCode32(0).int32()
+    this.idata.imm32 = ACS.getCode32(0).int32()
     CPU.updateEIp(4)
 
   elif iParseImm16 in this.chk[op]:
-    INSTR.imm16 = ACS.getCode16(0).int16()
+    this.idata.imm16 = ACS.getCode16(0).int16()
     CPU.updateEIp(2)
 
   elif iParseImm8 in this.chk[op]:
-    INSTR.imm8 = cast[int8](ACS.getCode8(0))
+    this.idata.imm8 = cast[int8](ACS.getCode8(0))
     CPU.updateEIp(1)
 
   if iParsePtr16 in this.chk[op]:
-    PTR16 = ACS.getCode16(0).int8()
+    ptr16(this) = ACS.getCode16(0).int8()
     CPU.updateEIp(2)
 
   if iParseMoffs in this.chk[op]:

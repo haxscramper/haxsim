@@ -2,7 +2,7 @@ import hardware/processorhpp
 import std/tables
 import ../instruction/opcodes
 import commonhpp
-import emulator/emulatorhpp
+import emulator/[emulatorhpp, accesshpp]
 
 template EMU*(): untyped =
   let tmp = this.getEmu()
@@ -47,24 +47,6 @@ template WRITEMEM16*(addrD: untyped, v: untyped): untyped {.dirty.} =
 
 template WRITEMEM8*(addrD: untyped, v: untyped): untyped {.dirty.} =
   EMU.accs.putData8(this.selectSegment(), addrD, v)
-
-template PUSH32*(v: untyped): untyped {.dirty.} = ACS.push32(v)
-template PUSH16*(v: untyped): untyped {.dirty.} = ACS.push16(v)
-template POP32*(): untyped {.dirty.} = ACS.pop32()
-template POP16*(): untyped {.dirty.} = ACS.pop16()
-template PREFIX*():     untyped {.dirty.} = (this.exec.idata.prefix)
-template dSIB*():       untyped {.dirty.} = (this.exec.idata.dsib)
-template SCALE*():      untyped {.dirty.} = (this.idata.sib.scale)
-template INDEX*():      untyped {.dirty.} = (this.idata.sib.index)
-template BASE*():       untyped {.dirty.} = (this.idata.sib.base)
-template DISP32*():     untyped {.dirty.} = (this.idata.disp32)
-template DISP16*():     untyped {.dirty.} = (this.idata.disp16)
-template DISP8*():      untyped {.dirty.} = (this.idata.disp8)
-template IMM32*():      untyped {.dirty.} = (this.exec.idata.imm32)
-template IMM16*():      untyped {.dirty.} = (this.exec.idata.imm16)
-template IMM8*():       untyped {.dirty.} = (this.exec.idata.imm8)
-template PTR16*():      untyped {.dirty.} = (this.exec.idata.ptr16)
-template MOFFS*():      untyped {.dirty.} = (this.idata.moffs)
 
 const MAXOPCODE* = 0x200
 type
@@ -205,6 +187,32 @@ proc initExecInstr*(): ExecInstr =
 
 func idata*(impl: InstrImpl): InstrData = impl.exec.idata
 func idata*(impl: var InstrImpl): var InstrData = impl.exec.idata
+func emu*(impl: InstrImpl): Emulator = impl.exec.emu
+
+
+proc push32*(this: InstrImpl, v: EDWord) = this.emu.accs.push32(v)
+proc push16*(this: InstrImpl, v: EWord)  = this.emu.accs.push16(v)
+proc pop32*(this: InstrImpl): EDWord  = this.emu.accs.pop32()
+proc pop16*(this: InstrImpl): EWord  = this.emu.accs.pop16()
+
+template prefix*(this: InstrImpl | ExecInstr) : untyped = this.idata.prefix
+template Dsib*(this: InstrImpl | ExecInstr)   : untyped = this.idata.dsib
+template scale*(this: InstrImpl | ExecInstr)  : untyped = this.idata.sib.scale
+template index*(this: InstrImpl | ExecInstr)  : untyped = this.idata.sib.index
+template base*(this: InstrImpl | ExecInstr)   : untyped = this.idata.sib.base
+template disp32*(this: InstrImpl | ExecInstr) : untyped = this.idata.disp32
+template disp16*(this: InstrImpl | ExecInstr) : untyped = this.idata.disp16
+template disp8*(this: InstrImpl | ExecInstr)  : untyped = this.idata.disp8
+template imm32*(this: InstrImpl | ExecInstr)  : untyped = this.idata.imm32
+template imm16*(this: InstrImpl | ExecInstr)  : untyped = this.idata.imm16
+template imm8*(this: InstrImpl | ExecInstr)   : untyped = this.idata.imm8
+template ptr16*(this: InstrImpl | ExecInstr)  : untyped = this.idata.ptr16
+template moffs*(this: InstrImpl | ExecInstr)  : untyped = this.idata.moffs
+
+
+
+
+# func mod*(idata: InstrData): NBits[3] =
 
 proc getPreRepeat*(this: InstrImpl): repT = this.exec.idata.prerepeat
 

@@ -31,14 +31,14 @@ proc addR16Rm16*(this: var InstrImpl): void =
 proc addAxImm16*(this: var InstrImpl): void =
   var ax: uint16
   ax = CPU.getGPreg(AX)
-  CPU.setGPreg(AX, ax + IMM16.uint16)
-  CPU.eflags.updateADD(ax, IMM16.uint16)
+  CPU.setGPreg(AX, ax + this.imm16.uint16)
+  CPU.eflags.updateADD(ax, this.imm16.uint16)
 
 proc pushEs*(this: var InstrImpl): void =
-  PUSH16(ACS.getSegment(ES))
+  this.push16(ACS.getSegment(ES))
 
 proc popEs*(this: var InstrImpl): void =
-  ACS.setSegment(ES, POP16())
+  ACS.setSegment(ES, this.pop16())
 
 proc orRm16R16*(this: var InstrImpl): void =
   var r16, rm16: uint16
@@ -57,20 +57,20 @@ proc orR16Rm16*(this: var InstrImpl): void =
 proc orAxImm16*(this: var InstrImpl): void =
   var ax: uint16
   ax = CPU.getGPreg(AX)
-  CPU.setGPreg(AX, ax or IMM16.uint16)
-  CPU.eflags.updateOR(ax, IMM16.uint16)
+  CPU.setGPreg(AX, ax or this.imm16.uint16)
+  CPU.eflags.updateOR(ax, this.imm16.uint16)
 
 proc pushSs*(this: var InstrImpl): void =
-  PUSH16(ACS.getSegment(SS))
+  this.push16(ACS.getSegment(SS))
 
 proc popSs*(this: var InstrImpl): void =
-  ACS.setSegment(SS, POP16())
+  ACS.setSegment(SS, this.pop16())
 
 proc pushDs*(this: var InstrImpl): void =
-  PUSH16(ACS.getSegment(DS))
+  this.push16(ACS.getSegment(DS))
 
 proc popDs*(this: var InstrImpl): void =
-  ACS.setSegment(DS, POP16())
+  ACS.setSegment(DS, this.pop16())
 
 proc andRm16R16*(this: var InstrImpl): void =
   var r16, rm16: uint16
@@ -89,8 +89,8 @@ proc andR16Rm16*(this: var InstrImpl): void =
 proc andAxImm16*(this: var InstrImpl): void =
   var ax: uint16
   ax = CPU.getGPreg(AX)
-  CPU.setGPreg(AX, ax and IMM16.uint16)
-  CPU.eflags.updateAND(ax, IMM16.uint16)
+  CPU.setGPreg(AX, ax and this.imm16.uint16)
+  CPU.eflags.updateAND(ax, this.imm16.uint16)
 
 proc subRm16R16*(this: var InstrImpl): void =
   var r16, rm16: uint16
@@ -109,8 +109,8 @@ proc subR16Rm16*(this: var InstrImpl): void =
 proc subAxImm16*(this: var InstrImpl): void =
   var ax: uint16
   ax = CPU.getGPreg(AX)
-  CPU.setGPreg(AX, ax - IMM16.uint16)
-  CPU.eflags.updateSUB(ax, IMM16.uint16)
+  CPU.setGPreg(AX, ax - this.imm16.uint16)
+  CPU.eflags.updateSUB(ax, this.imm16.uint16)
 
 proc xorRm16R16*(this: var InstrImpl): void =
   var r16, rm16: uint16
@@ -127,7 +127,7 @@ proc xorR16Rm16*(this: var InstrImpl): void =
 proc xorAxImm16*(this: var InstrImpl): void =
   var ax: uint16
   ax = CPU.getGPreg(AX)
-  CPU.setGPreg(AX, ax xor IMM16.uint16)
+  CPU.setGPreg(AX, ax xor this.imm16.uint16)
 
 proc cmpRm16R16*(this: var InstrImpl): void =
   var r16, rm16: uint16
@@ -144,7 +144,7 @@ proc cmpR16Rm16*(this: var InstrImpl): void =
 proc cmpAxImm16*(this: var InstrImpl): void =
   var ax: uint16
   ax = CPU.getGPreg(AX)
-  CPU.eflags.updateSUB(ax, IMM16.uint16)
+  CPU.eflags.updateSUB(ax, this.imm16.uint16)
 
 proc incR16*(this: var InstrImpl): void =
   var reg: uint8
@@ -162,52 +162,52 @@ proc decR16*(this: var InstrImpl): void =
 
 proc pushR16*(this: var InstrImpl): void =
   let reg: uint8 = uint8(this.idata.opcode and ((1 shl 3) - 1))
-  PUSH16(CPU.getGPreg(Reg16T(reg)))
+  this.push16(CPU.getGPreg(Reg16T(reg)))
 
 proc popR16*(this: var InstrImpl): void =
   let reg: uint8 = uint8(this.idata.opcode and ((1 shl 3) - 1))
-  CPU.setGPreg(Reg16T(reg), POP16())
+  CPU.setGPreg(Reg16T(reg), this.pop16())
 
 proc pusha*(this: var InstrImpl): void =
   let sp: uint16 = CPU.getGPreg(SP)
-  PUSH16(CPU.getGPreg(AX))
-  PUSH16(CPU.getGPreg(CX))
-  PUSH16(CPU.getGPreg(DX))
-  PUSH16(CPU.getGPreg(BX))
-  PUSH16(sp)
-  PUSH16(CPU.getGPreg(BP))
-  PUSH16(CPU.getGPreg(SI))
-  PUSH16(CPU.getGPreg(DI))
+  this.push16(CPU.getGPreg(AX))
+  this.push16(CPU.getGPreg(CX))
+  this.push16(CPU.getGPreg(DX))
+  this.push16(CPU.getGPreg(BX))
+  this.push16(sp)
+  this.push16(CPU.getGPreg(BP))
+  this.push16(CPU.getGPreg(SI))
+  this.push16(CPU.getGPreg(DI))
 
 proc popa*(this: var InstrImpl): void =
   var sp: uint16
-  CPU.setGPreg(DI, POP16())
-  CPU.setGPreg(SI, POP16())
-  CPU.setGPreg(BP, POP16())
-  sp = POP16()
-  CPU.setGPreg(BX, POP16())
-  CPU.setGPreg(DX, POP16())
-  CPU.setGPreg(CX, POP16())
-  CPU.setGPreg(AX, POP16())
+  CPU.setGPreg(DI, this.pop16())
+  CPU.setGPreg(SI, this.pop16())
+  CPU.setGPreg(BP, this.pop16())
+  sp = this.pop16()
+  CPU.setGPreg(BX, this.pop16())
+  CPU.setGPreg(DX, this.pop16())
+  CPU.setGPreg(CX, this.pop16())
+  CPU.setGPreg(AX, this.pop16())
   CPU.setGPreg(SP, sp)
 
 proc pushImm16*(this: var InstrImpl): void =
-  PUSH16(IMM16.uint16)
+  this.push16(this.imm16.uint16)
 
 proc imulR16Rm16Imm16*(this: var InstrImpl): void =
   var rm16S: int16
   rm16S = this.exec.getRm16().int16
-  this.exec.setR16(uint16(rm16S * IMM16))
-  CPU.eflags.updateIMUL(rm16S, IMM16)
+  this.exec.setR16(uint16(rm16S * this.imm16()))
+  CPU.eflags.updateIMUL(rm16S, this.imm16())
 
 proc pushImm8*(this: var InstrImpl): void =
-  PUSH16(IMM8.uint8)
+  this.push16(this.imm8.uint8)
 
 proc imulR16Rm16Imm8*(this: var InstrImpl): void =
   var rm16S: int16
   rm16S = this.exec.getRm16().int16
-  this.exec.setR16(uint16(rm16S * IMM8))
-  CPU.eflags.updateIMUL(rm16S, IMM8)
+  this.exec.setR16(uint16(rm16S * this.imm8))
+  CPU.eflags.updateIMUL(rm16S, this.imm8)
 
 proc testRm16R16*(this: var InstrImpl): void =
   var r16, rm16: uint16
@@ -260,13 +260,13 @@ proc cwd*(this: var InstrImpl): void =
   CPU.setGPreg(DX, uint16(if toBool(ax and (1 shl 15)): -1 else: 0))
 
 proc callfPtr1616*(this: var InstrImpl): void =
-  this.exec.callf(PTR16.uint16, IMM16.uint32)
+  this.exec.callf(this.ptr16.uint16, this.imm16.uint32)
 
 proc pushf*(this: var InstrImpl): void =
-  PUSH16(CPU.eflags.getFlags())
+  this.push16(CPU.eflags.getFlags())
 
 proc popf*(this: var InstrImpl): void =
-  CPU.eflags.setFlags(POP16())
+  CPU.eflags.setFlags(this.pop16())
 
 proc movAxMoffs16*(this: var InstrImpl): void =
   CPU.setGPreg(AX, this.exec.getMoffs16())
@@ -326,41 +326,41 @@ proc cmpsM16M16*(this: var InstrImpl): void =
 proc testAxImm16*(this: var InstrImpl): void =
   var ax: uint16
   ax = CPU.getGPreg(AX)
-  CPU.eflags.updateAND(ax, IMM16.uint16)
+  CPU.eflags.updateAND(ax, this.imm16.uint16)
 
 proc movR16Imm16*(this: var InstrImpl): void =
   let reg: uint8 = uint8(this.idata.opcode and ((1 shl 3) - 1))
-  CPU.setGPreg(Reg16T(reg), IMM16.uint16)
+  CPU.setGPreg(Reg16T(reg), this.imm16.uint16)
 
 proc ret*(this: var InstrImpl): void =
-  SETIP(POP16())
+  SETIP(this.pop16())
 
 proc movRm16Imm16*(this: var InstrImpl): void =
-  this.exec.setRm16(IMM16.uint16)
+  this.exec.setRm16(this.imm16.uint16)
 
 proc leave*(this: var InstrImpl): void =
   var ebp: uint16
   ebp = CPU.getGPreg(EBP).uint16()
   CPU.setGPreg(ESP, ebp)
-  CPU.setGPreg(EBP, POP16())
+  CPU.setGPreg(EBP, this.pop16())
 
 proc inAxImm8*(this: var InstrImpl): void =
-  CPU.setGPreg(AX, EIO.inIo16(IMM8.uint16))
+  CPU.setGPreg(AX, EIO.inIo16(this.imm8.uint16))
 
 proc outImm8Ax*(this: var InstrImpl): void =
   var ax: uint16
   ax = CPU.getGPreg(AX).uint16()
-  EIO.outIo16(IMM8.uint16, ax)
+  EIO.outIo16(this.imm8.uint16, ax)
 
 proc callRel16*(this: var InstrImpl): void =
-  PUSH16(GETIP().uint16)
-  CPU.updateIp(IMM16.int32)
+  this.push16(GETIP().uint16)
+  CPU.updateIp(this.imm16.int32)
 
 proc jmpRel16*(this: var InstrImpl): void =
-  CPU.updateIp(IMM16.int32)
+  CPU.updateIp(this.imm16.int32)
 
 proc jmpfPtr1616*(this: var InstrImpl): void =
-  this.exec.jmpf(PTR16.uint16, IMM16.uint32)
+  this.exec.jmpf(this.ptr16.uint16, this.imm16.uint32)
 
 proc inAxDx*(this: var InstrImpl): void =
   var dx: uint16
@@ -376,7 +376,7 @@ proc outDxAx*(this: var InstrImpl): void =
 template JCCREL16*(cc: untyped, isFlag: untyped): untyped {.dirty.} =
   proc `j cc rel16`*(this: var InstrImpl): void =
     if isFlag:
-      CPU.updateEIp(IMM16.int32)
+      CPU.updateEIp(this.imm16.int32)
 
 JCCREL16(o, EFLAGSOF)
 JCCREL16(no, not(EFLAGSOF))
@@ -428,127 +428,127 @@ proc movsxR16Rm16*(this: var InstrImpl): void =
 proc addRm16Imm16*(this: var InstrImpl): void =
   var rm16: uint16
   rm16 = this.exec.getRm16()
-  this.exec.setRm16(rm16 + IMM16.uint16)
-  CPU.eflags.updateADD(rm16, IMM16.uint16)
+  this.exec.setRm16(rm16 + this.imm16.uint16)
+  CPU.eflags.updateADD(rm16, this.imm16.uint16)
 
 proc orRm16Imm16*(this: var InstrImpl): void =
   var rm16: uint16
   rm16 = this.exec.getRm16()
-  this.exec.setRm16(rm16 or IMM16.uint16)
-  CPU.eflags.updateOR(rm16, IMM16.uint16)
+  this.exec.setRm16(rm16 or this.imm16.uint16)
+  CPU.eflags.updateOR(rm16, this.imm16.uint16)
 
 proc adcRm16Imm16*(this: var InstrImpl): void =
   var rm16: uint16
   var cf: uint8
   rm16 = this.exec.getRm16()
   cf = EFLAGSCF.uint8
-  this.exec.setRm16(rm16 + IMM16.uint16 + cf)
-  CPU.eflags.updateADD(rm16, IMM16.uint16 + cf)
+  this.exec.setRm16(rm16 + this.imm16.uint16 + cf)
+  CPU.eflags.updateADD(rm16, this.imm16.uint16 + cf)
 
 proc sbbRm16Imm16*(this: var InstrImpl): void =
   var rm16: uint16
   var cf: uint8
   rm16 = this.exec.getRm16()
   cf = EFLAGSCF.uint8
-  this.exec.setRm16(rm16 - IMM16.uint16 - cf)
-  CPU.eflags.updateSUB(rm16, IMM16.uint16 + cf)
+  this.exec.setRm16(rm16 - this.imm16.uint16 - cf)
+  CPU.eflags.updateSUB(rm16, this.imm16.uint16 + cf)
 
 proc andRm16Imm16*(this: var InstrImpl): void =
   var rm16: uint16
   rm16 = this.exec.getRm16()
-  this.exec.setRm16(rm16 and IMM16.uint16)
-  CPU.eflags.updateAND(rm16, IMM16.uint16)
+  this.exec.setRm16(rm16 and this.imm16.uint16)
+  CPU.eflags.updateAND(rm16, this.imm16.uint16)
 
 proc subRm16Imm16*(this: var InstrImpl): void =
   var rm16: uint16
   rm16 = this.exec.getRm16()
-  this.exec.setRm16(rm16 - IMM16.uint16)
-  CPU.eflags.updateSUB(rm16, IMM16.uint16)
+  this.exec.setRm16(rm16 - this.imm16.uint16)
+  CPU.eflags.updateSUB(rm16, this.imm16.uint16)
 
 proc xorRm16Imm16*(this: var InstrImpl): void =
   var rm16: uint16
   rm16 = this.exec.getRm16()
-  this.exec.setRm16(rm16 xor IMM16.uint16)
+  this.exec.setRm16(rm16 xor this.imm16.uint16)
 
 proc cmpRm16Imm16*(this: var InstrImpl): void =
   var rm16: uint16
   rm16 = this.exec.getRm16()
-  CPU.eflags.updateSUB(rm16, IMM16.uint16)
+  CPU.eflags.updateSUB(rm16, this.imm16.uint16)
 
 
 proc addRm16Imm8*(this: var InstrImpl): void =
   var rm16: uint16
   rm16 = this.exec.getRm16()
-  this.exec.setRm16(rm16 + IMM8.uint16)
-  CPU.eflags.updateADD(rm16, IMM8.uint16)
+  this.exec.setRm16(rm16 + this.imm8.uint16)
+  CPU.eflags.updateADD(rm16, this.imm8.uint16)
 
 proc orRm16Imm8*(this: var InstrImpl): void =
   var rm16: uint16
   rm16 = this.exec.getRm16()
-  this.exec.setRm16(rm16 or IMM8.uint16)
-  CPU.eflags.updateOR(rm16, IMM8.uint16)
+  this.exec.setRm16(rm16 or this.imm8.uint16)
+  CPU.eflags.updateOR(rm16, this.imm8.uint16)
 
 proc adcRm16Imm8*(this: var InstrImpl): void =
   var rm16: uint16
   var cf: uint8
   rm16 = this.exec.getRm16()
   cf = EFLAGSCF.uint8
-  this.exec.setRm16(rm16 + IMM8.uint16 + cf)
-  CPU.eflags.updateADD(rm16, IMM8.uint8 + cf)
+  this.exec.setRm16(rm16 + this.imm8.uint16 + cf)
+  CPU.eflags.updateADD(rm16, this.imm8.uint8 + cf)
 
 proc sbbRm16Imm8*(this: var InstrImpl): void =
   var rm16: uint16
   var cf: uint8
   rm16 = this.exec.getRm16()
   cf = EFLAGSCF.uint8
-  this.exec.setRm16(rm16 - IMM8.uint8 - cf)
-  CPU.eflags.updateSUB(rm16, IMM8.uint8 + cf)
+  this.exec.setRm16(rm16 - this.imm8.uint8 - cf)
+  CPU.eflags.updateSUB(rm16, this.imm8.uint8 + cf)
 
 proc andRm16Imm8*(this: var InstrImpl): void =
   var rm16: uint16
   rm16 = this.exec.getRm16()
-  this.exec.setRm16(rm16 and IMM8.uint16)
-  CPU.eflags.updateAND(rm16, IMM8.uint16)
+  this.exec.setRm16(rm16 and this.imm8.uint16)
+  CPU.eflags.updateAND(rm16, this.imm8.uint16)
 
 proc subRm16Imm8*(this: var InstrImpl): void =
   var rm16: uint16
   rm16 = this.exec.getRm16()
-  this.exec.setRm16(rm16 - IMM8.uint8)
-  CPU.eflags.updateSUB(rm16, IMM8.uint16)
+  this.exec.setRm16(rm16 - this.imm8.uint8)
+  CPU.eflags.updateSUB(rm16, this.imm8.uint16)
 
 proc xorRm16Imm8*(this: var InstrImpl): void =
   var rm16: uint16
   rm16 = this.exec.getRm16()
-  this.exec.setRm16(rm16 xor IMM8.uint16)
+  this.exec.setRm16(rm16 xor this.imm8.uint16)
 
 proc cmpRm16Imm8*(this: var InstrImpl): void =
   var rm16: uint16
   rm16 = this.exec.getRm16()
-  CPU.eflags.updateSUB(rm16, IMM8.uint16)
+  CPU.eflags.updateSUB(rm16, this.imm8.uint16)
 
 
 proc shlRm16Imm8*(this: var InstrImpl): void =
   var rm16: uint16
   rm16 = this.exec.getRm16()
-  this.exec.setRm16(rm16 shl IMM8)
-  CPU.eflags.updateSHL(rm16, IMM8.uint8)
+  this.exec.setRm16(rm16 shl this.imm8)
+  CPU.eflags.updateSHL(rm16, this.imm8.uint8)
 
 proc shrRm16Imm8*(this: var InstrImpl): void =
   var rm16: uint16
   rm16 = this.exec.getRm16()
-  this.exec.setRm16(rm16 shr IMM8)
-  CPU.eflags.updateSHR(rm16, IMM8.uint8)
+  this.exec.setRm16(rm16 shr this.imm8)
+  CPU.eflags.updateSHR(rm16, this.imm8.uint8)
 
 proc salRm16Imm8*(this: var InstrImpl): void =
   var rm16S: int16
   rm16S = this.exec.getRm16().int16
-  this.exec.setRm16(uint16(rm16S shl IMM8))
+  this.exec.setRm16(uint16(rm16S shl this.imm8))
 
 
 proc sarRm16Imm8*(this: var InstrImpl): void =
   var rm16S: int16
   rm16S = this.exec.getRm16().int16
-  this.exec.setRm16(uint16(rm16S shr IMM8))
+  this.exec.setRm16(uint16(rm16S shr this.imm8))
 
 
 
@@ -590,7 +590,7 @@ proc testRm16Imm16*(this: var InstrImpl): void =
   rm16 = this.exec.getRm16()
   imm16 = ACS.getCode16(0)
   CPU.updateEIp(2)
-  CPU.eflags.updateAND(rm16, imm16)
+  CPU.eflags.updateAND(rm16, this.imm16().uint16)
 
 proc notRm16*(this: var InstrImpl): void =
   var rm16: uint16
@@ -657,7 +657,7 @@ proc decRm16*(this: var InstrImpl): void =
 proc callRm16*(this: var InstrImpl): void =
   var rm16: uint16
   rm16 = this.exec.getRm16()
-  PUSH16(GETIP().uint16)
+  this.push16(GETIP().uint16)
   SETIP(rm16)
 
 proc callfM1616*(this: var InstrImpl): void =
@@ -682,7 +682,7 @@ proc jmpfM1616*(this: var InstrImpl): void =
 proc pushRm16*(this: var InstrImpl): void =
   var rm16: uint16
   rm16 = this.exec.getRm16()
-  PUSH16(rm16)
+  this.push16(rm16)
 
 
 proc lgdtM24*(this: var InstrImpl): void =

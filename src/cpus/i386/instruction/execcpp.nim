@@ -29,15 +29,15 @@ proc exec*(this: var InstrImpl): bool =
 proc calcModrm16*(this: var ExecInstr): uint32 =
   var memAddr: uint32 = 0
   case this.getModRmMod():
-    of 1: memAddr = (memAddr + DISP8.uint32)
-    of 2: memAddr = (memAddr + DISP16.uint32)
+    of 1: memAddr = (memAddr + this.disp8.uint32)
+    of 2: memAddr = (memAddr + this.disp16.uint32)
     else: assert false
   case this.getModRmRM():
     of 0, 1, 7:
       memAddr = (memAddr + CPU.getGPreg(BX))
     of 2, 3, 6:
       if this.getModRmMod() == 0 and this.getModRmRM() == 6:
-        memAddr = (memAddr + DISP16.uint32)
+        memAddr = (memAddr + this.disp16.uint32)
 
       else:
         memAddr = (memAddr + CPU.getGPreg(BP))
@@ -58,12 +58,12 @@ proc calcModrm16*(this: var ExecInstr): uint32 =
 
 proc calcSib*(this: var ExecInstr): uint32 =
   var base: uint32
-  if BASE == 5 and this.getModRmMod() == 0:
-    base = DISP32.uint32
+  if this.base == 5 and this.getModRmMod() == 0:
+    base = this.disp32.uint32
 
   else:
-    if BASE == 4:
-      if SCALE == 0:
+    if this.base == 4:
+      if this.base == 0:
         this.idata.segment = SS
         base = 0
 
@@ -72,30 +72,24 @@ proc calcSib*(this: var ExecInstr): uint32 =
 
 
     else:
-      this.idata.segment = (if (this.getModRmRM() == 5):
-            SS
+      this.idata.segment = tern(this.getModRmRM() == 5, SS, DS)
+      base = CPU.getGPreg(Reg32T(this.base))
 
-          else:
-            DS
-          )
-      base = CPU.getGPreg(Reg32T(BASE))
-
-
-  return base + CPU.getGPreg(Reg32T(INDEX)) * (1 shl SCALE).uint32
+  return base + CPU.getGPreg(Reg32T(this.base)) * (1 shl this.base).uint32
 
 
 proc calcModrm32*(this: var ExecInstr): uint32 =
   var memAddr: uint32 = 0
   case this.getModRmMod():
-    of 1: memAddr = (memAddr + DISP8.uint32)
-    of 2: memAddr = (memAddr + DISP32.uint32)
+    of 1: memAddr = (memAddr + this.disp8.uint32)
+    of 2: memAddr = (memAddr + this.disp32.uint32)
     else: assert false
   case this.getModRmRM():
     of 4:
       memAddr = (memAddr + this.calcSib())
     of 5:
       if this.getModRmMod() == 0:
-        memAddr = (memAddr + DISP32.uint32)
+        memAddr = (memAddr + this.disp32.uint32)
 
     else:
       this.idata.segment = (if (this.getModRmRM() == 5): SS else: DS)
@@ -137,11 +131,11 @@ proc getR32*(this: var ExecInstr): uint32 =
 
 proc setMoffs32*(this: var ExecInstr, value: uint32): void =
   this.idata.segment = DS
-  WRITEMEM32(MOFFS, value)
+  WRITEMEM32(this.moffs, value)
 
 proc getMoffs32*(this: var ExecInstr): uint32 =
   this.idata.segment = DS
-  return READMEM32(MOFFS)
+  return READMEM32(this.moffs)
 
 proc setRm16*(this: var ExecInstr, value: uint16): void =
   if this.getModRmMod() == 3:
@@ -167,11 +161,11 @@ proc getR16*(this: var ExecInstr): uint16 =
 
 proc setMoffs16*(this: var ExecInstr, value: uint16): void =
   this.idata.segment = DS
-  WRITEMEM16(MOFFS, value)
+  WRITEMEM16(this.moffs, value)
 
 proc getMoffs16*(this: var ExecInstr): uint16 =
   this.idata.segment = DS
-  return READMEM16(MOFFS)
+  return READMEM16(this.moffs)
 
 proc setRm8*(this: var ExecInstr, value: uint8): void =
   if this.getModRmMod() == 3:
@@ -194,11 +188,11 @@ proc setR8*(this: var ExecInstr, value: uint8): void =
 
 proc setMoffs8*(this: var ExecInstr, value: uint8): void =
   this.idata.segment = DS
-  WRITEMEM8(MOFFS, value)
+  WRITEMEM8(this.moffs, value)
 
 proc getMoffs8*(this: var ExecInstr): uint8 =
   this.idata.segment = DS
-  return READMEM8(MOFFS)
+  return READMEM8(this.moffs)
 
 proc getR8*(this: var ExecInstr): uint8 =
   return CPU.getGPreg(Reg8T(this.getModrmReg()))
