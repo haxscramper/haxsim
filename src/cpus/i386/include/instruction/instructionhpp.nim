@@ -197,6 +197,9 @@ proc pop16*(this: InstrImpl): EWord  = this.emu.accs.pop16()
 
 template prefix*(this: InstrImpl | ExecInstr) : untyped = this.idata.prefix
 template Dsib*(this: InstrImpl | ExecInstr)   : untyped = this.idata.dsib
+template `mod`*(this: InstrImpl | ExecInstr)  : untyped = this.idata.modrm.`mod`
+template rm*(this: InstrImpl | ExecInstr)  : untyped = this.idata.modrm.rm
+template reg*(this: InstrImpl | ExecInstr)   : untyped = this.idata.modrm.reg
 template scale*(this: InstrImpl | ExecInstr)  : untyped = this.idata.sib.scale
 template index*(this: InstrImpl | ExecInstr)  : untyped = this.idata.sib.index
 template base*(this: InstrImpl | ExecInstr)   : untyped = this.idata.sib.base

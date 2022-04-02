@@ -13,44 +13,17 @@ proc parsePrefix*(this: var InstrImpl): uint8 =
     code = this.getEmu().accs.getCode8(0)
     var setPre = false
     case code:
-      of 0x26:
-        this.idata.preSegment = ES
-        setPre = true
-
-      of 0x2e:
-        this.idata.preSegment = CS
-        setPre = true
-
-      of 0x36:
-        this.idata.preSegment = SS
-        setPre = true
-
-      of 0x3e:
-        this.idata.preSegment = DS
-        setPre = true
-
-      of 0x64:
-        this.idata.preSegment = FS
-        setPre = true
-
-      of 0x65:
-        this.idata.preSegment = GS
-        setPre = true
-
-      of 0x66:
-        chsz = (chsz or CHSZOP)
-
-      of 0x67:
-        chsz = (chsz or CHSZAD)
-
-      of 0xf2:
-        this.idata.preRepeat = REPNZ
-
-      of 0xf3:
-        this.idata.preRepeat = REPZ
-
-      else:
-        return chsz
+      of 0x26: this.idata.preSegment = ES ; setPre = true
+      of 0x2e: this.idata.preSegment = CS ; setPre = true
+      of 0x36: this.idata.preSegment = SS ; setPre = true
+      of 0x3e: this.idata.preSegment = DS ; setPre = true
+      of 0x64: this.idata.preSegment = FS ; setPre = true
+      of 0x65: this.idata.preSegment = GS ; setPre = true
+      of 0x66: chsz = (chsz or CHSZOP)
+      of 0x67: chsz = (chsz or CHSZAD)
+      of 0xf2: this.idata.preRepeat = REPNZ
+      of 0xf3: this.idata.preRepeat = REPZ
+      else: return chsz
 
     if setPre:
       this.idata.prefix = code
@@ -68,36 +41,32 @@ proc parseOpcode*(this: var InstrImpl): void =
 
 
 proc parseModrm32*(this: var InstrImpl): void =
-  if this.idata.modrm.mod != 3 and
-     this.idata.modrm.rm == 4:
+  if this.mod != 3 and this.rm == 4:
     this.idata.dSIB = ACS.getCode8(0)
     CPU.updateEIp(1)
 
-  if this.idata.modrm.mod == 2 or
-    (this.idata.modrm.mod == 0 and
-     this.idata.modrm.rm == 5) or
-    (this.idata.modrm.mod == 0 and this.base == 5):
+  if this.mod == 2 or
+    (this.mod == 0 and this.rm == 5) or
+    (this.mod == 0 and this.base == 5):
 
     this.idata.disp32 = ACS.getCode32(0).int32()
     CPU.updateEIp(4)
 
   else:
-    if this.idata.modrm.mod == 1:
+    if this.mod == 1:
       this.idata.disp8 = cast[int8](ACS.getCode8(0))
       CPU.updateEIp(1)
 
 
 proc parseModrm16*(this: var InstrImpl): void =
-  if (this.idata.modrm.mod == 0 and
-      this.idata.modrm.rm == 6) or
-
-     this.idata.modrm.mod == 2:
+  if (this.mod == 0 and this.rm == 6) or
+     this.mod == 2:
 
     this.idata.disp16 = ACS.getCode32(0).int16()
     CPU.updateEIp(2)
 
   else:
-    if this.idata.modrm.mod == 1:
+    if this.mod == 1:
       this.idata.disp8 = cast[int8](ACS.getCode8(0))
       CPU.updateEIp(1)
 
