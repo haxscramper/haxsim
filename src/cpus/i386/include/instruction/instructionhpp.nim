@@ -17,13 +17,6 @@ template ACS*(): untyped {.dirty.} = EMU.accs
 template INT*(): untyped {.dirty.} = EMU.intr
 template EIO*(): untyped {.dirty.} = EMU.accs.io
 
-template GETEIP*(): untyped {.dirty.} = CPU.getEip()
-template GETIP*(): untyped {.dirty.} = CPU.getIp()
-template SETEIP*(v: untyped): untyped {.dirty.} = CPU.setEip(v)
-template SETIP*(v: untyped): untyped {.dirty.} = CPU.setIp(v)
-template UPDATEGPREG*(reg: untyped, v: untyped): untyped {.dirty.} =
-  CPU.updateGpreg(reg, v)
-
 template READMEM32*(addrD: untyped): untyped {.dirty.} =
   EMU.accs.getData32(this.selectSegment(), addrD)
 
@@ -182,7 +175,7 @@ proc initExecInstr*(): ExecInstr =
 func idata*(impl: InstrImpl): InstrData = impl.exec.idata
 func idata*(impl: var InstrImpl): var InstrData = impl.exec.idata
 func emu*(impl: InstrImpl): Emulator = impl.exec.emu
-func cpu*(impl: InstrImpl): Processor = impl.exec.emu.cpu
+template cpu*(impl: InstrImpl): Processor = impl.exec.emu.cpu
 func eflags*(impl: InstrImpl): Eflags = impl.exec.emu.cpu.eflags
 
 proc push32*(this: InstrImpl, v: EDWord) = this.emu.accs.push32(v)

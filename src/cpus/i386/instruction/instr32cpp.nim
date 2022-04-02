@@ -284,10 +284,10 @@ proc cmpsM8M8*(this: var InstrImpl): void =
     m8S = ACS.getData8(this.exec.selectSegment(), CPU.getGPreg(ESI))
   m8D = ACS.getData8(ES, CPU.getGPreg(EDI))
   CPU.eflags.updateSUB(m8S, m8D)
-  discard UPDATEGPREG(ESI, int32(if this.eflags.isDirection(): -1 else: 1))
-  discard UPDATEGPREG(EDI, int32(if this.eflags.isDirection(): -1 else: 1))
+  this.cpu.updateGPreg(ESI, int32(if this.eflags.isDirection(): -1 else: 1))
+  this.cpu.updateGPreg(EDI, int32(if this.eflags.isDirection(): -1 else: 1))
   if this.getPreRepeat() != NONE:
-    discard UPDATEGPREG(ECX, -1)
+    this.cpu.updateGPreg(ECX, -1)
     case this.getPreRepeat():
       of REPZ:
         if not(CPU.getGPreg(ECX)).toBool() or not(this.eflags.isZero()):
@@ -309,10 +309,10 @@ proc cmpsM32M32*(this: var InstrImpl): void =
     m32S = ACS.getData32(this.exec.selectSegment(), CPU.getGPreg(ESI))
   m32D = ACS.getData32(ES, CPU.getGPreg(EDI))
   CPU.eflags.updateSUB(m32S, m32D)
-  discard UPDATEGPREG(ESI, int32(if this.eflags.isDirection(): -1 else: 1))
-  discard UPDATEGPREG(EDI, int32(if this.eflags.isDirection(): -1 else: 1))
+  this.cpu.updateGPreg(ESI, int32(if this.eflags.isDirection(): -1 else: 1))
+  this.cpu.updateGPreg(EDI, int32(if this.eflags.isDirection(): -1 else: 1))
   if this.getPreRepeat() != NONE:
-    discard UPDATEGPREG(ECX, -1)
+    this.cpu.updateGPreg(ECX, -1)
     case this.getPreRepeat():
       of REPZ:
         if not(CPU.getGPreg(ECX)).toBool() or not(this.eflags.isZero()):
@@ -338,14 +338,13 @@ proc movR32Imm32*(this: var InstrImpl): void =
   CPU.setGPreg(Reg32T(reg), this.imm32.uint32)
 
 proc ret*(this: var InstrImpl): void =
-  SETEIP(this.pop32())
+  this.cpu.setEIP(this.pop32())
 
 proc movRm32Imm32*(this: var InstrImpl): void =
   this.exec.setRm32(this.imm32.uint32)
 
 proc leave*(this: var InstrImpl): void =
-  var ebp: uint32
-  ebp = CPU.getGPreg(EBP)
+  var ebp: uint32 = CPU.getGPreg(EBP)
   CPU.setGPreg(ESP, ebp)
   CPU.setGPreg(EBP, this.pop32())
 
@@ -358,7 +357,7 @@ proc outImm8Eax*(this: var InstrImpl): void =
   EIO.outIo32(this.imm8.uint16, eax)
 
 proc callRel32*(this: var InstrImpl): void =
-  this.push32(GETEIP())
+  this.push32(this.cpu.getEIP())
   CPU.updateEIp(this.imm32)
 
 proc jmpRel32*(this: var InstrImpl): void =
@@ -368,15 +367,12 @@ proc jmpfPtr16_32*(this: var InstrImpl): void =
   this.exec.jmpf(this.ptr16.uint16, this.imm32.uint32)
 
 proc inEaxDx*(this: var InstrImpl): void =
-  var dx: uint16
-  dx = CPU.getGPreg(DX)
+  var dx: uint16 = CPU.getGPreg(DX)
   CPU.setGPreg(EAX, EIO.inIo32(dx))
 
 proc outDxEax*(this: var InstrImpl): void =
-  var dx: uint16
-  var eax: uint32
-  dx = CPU.getGPreg(DX)
-  eax = CPU.getGPreg(EAX)
+  var dx: uint16 = CPU.getGPreg(DX)
+  var eax: uint32 = CPU.getGPreg(EAX)
   EIO.outIo32(dx, eax)
 
 template JCCREL32*(cc: untyped, isFlag: untyped): untyped {.dirty.} =
@@ -649,8 +645,8 @@ proc decRm32*(this: var InstrImpl): void =
 proc callRm32*(this: var InstrImpl): void =
   var rm32: uint32
   rm32 = this.exec.getRm32().uint32()
-  this.push32(GETEIP())
-  SETEIP(rm32)
+  this.push32(this.cpu.getEIP())
+  this.cpu.setEIP(rm32)
 
 proc callfM16_32*(this: var InstrImpl): void =
   var eip, m48: uint32
@@ -664,7 +660,7 @@ proc callfM16_32*(this: var InstrImpl): void =
 proc jmpRm32*(this: var InstrImpl): void =
   var rm32: uint32
   rm32 = this.exec.getRm32().uint32()
-  SETEIP(rm32)
+  this.cpu.setEIP(rm32)
 
 proc jmpfM16_32*(this: var InstrImpl): void =
   var eip, m48: uint32

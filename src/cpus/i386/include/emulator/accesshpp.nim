@@ -312,7 +312,7 @@ proc getCode32*(this: var DataAccess, index: cint): uint32 =
 
 proc push32*(this: var DataAccess, value: uint32): void =
   var esp: uint32
-  discard this.cpu.updateGpreg(ESP, -4)
+  this.cpu.updateGpreg(ESP, -4)
   esp = this.cpu.getGpreg(ESP)
   this.writeMem32Seg(SS, esp, value)
 
@@ -320,12 +320,12 @@ proc pop32*(this: var DataAccess): uint32 =
   var esp, value: uint32
   esp = this.cpu.getGpreg(ESP)
   value = this.readMem32Seg(SS, esp)
-  discard this.cpu.updateGpreg(ESP, 4)
+  this.cpu.updateGpreg(ESP, 4)
   return value
 
 proc push16*(this: var DataAccess, value: uint16): void =
   var sp: uint16
-  discard this.cpu.updateGpreg(SP, -2)
+  this.cpu.updateGpreg(SP, -2)
   sp = this.cpu.getGpreg(SP)
   this.writeMem16Seg(SS, sp, value)
 
@@ -333,6 +333,6 @@ proc pop16*(this: var DataAccess): uint16 =
   var sp, value: uint16
   sp = this.cpu.getGpreg(SP)
   value = this.readMem16Seg(SS, sp)
-  discard this.cpu.updateGpreg(SP, 2)
+  this.cpu.updateGpreg(SP, 2)
   return value
 

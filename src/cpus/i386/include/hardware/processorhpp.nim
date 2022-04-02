@@ -235,15 +235,13 @@ proc updateEip*(this: var Processor, v: int32) =
 proc updateIp*(this: var Processor, v: int32) =
   this.setIP(this.ip + v.uint16)
 
-proc updateGpreg*(this: var Processor, n: Reg32T, v: int32): uint32 =
+proc updateGpreg*(this: var Processor, n: Reg32T, v: int32) =
   this.gpregs[n].reg32 = (this.gpregs[n].reg32 + v.uint32)
-  return this.gpregs[n].reg32
 
-proc updateGpreg*(this: var Processor, n: Reg16T, v: int16): uint16 =
+proc updateGpreg*(this: var Processor, n: Reg16T, v: int16) =
   this.gpregs[Reg32T(n)].reg16 = (this.gpregs[Reg32T(n)].reg16 + v.uint16)
-  return this.gpregs[Reg32T(n)].reg16
 
-proc updateGpreg*(this: var Processor, n: Reg8T, v: int8): uint8 =
+proc updateGpreg*(this: var Processor, n: Reg8T, v: int8) =
   let rhs = if n < AH:
               this.gpregs[Reg32T(n)].reg8L + v.uint8
             else:
@@ -254,8 +252,6 @@ proc updateGpreg*(this: var Processor, n: Reg8T, v: int8): uint8 =
 
   else:
     this.gpregs[Reg32T(n.int - AH.int)].reg8H = rhs
-
-  return rhs
 
 proc isHalt*(this: Processor): bool =
   return this.halt

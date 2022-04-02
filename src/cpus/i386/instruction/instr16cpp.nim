@@ -281,10 +281,10 @@ proc cmpsM8M8*(this: var InstrImpl): void =
     m8S = ACS.getData8(this.exec.selectSegment(), CPU.getGPreg(SI))
     m8D = ACS.getData8(ES, CPU.getGPreg(DI))
     CPU.eflags.updateSUB(m8S, m8D)
-    discard UPDATEGPREG(SI, int16(if this.eflags.isDirection(): -1 else: 1))
-    discard UPDATEGPREG(DI, int16(if this.eflags.isDirection(): -1 else: 1))
+    CPU.updateGPreg(SI, int16(if this.eflags.isDirection(): -1 else: 1))
+    CPU.updateGPreg(DI, int16(if this.eflags.isDirection(): -1 else: 1))
     if this.getPreRepeat() != NONE:
-      discard UPDATEGPREG(CX, -1)
+      CPU.updateGPreg(CX, -1)
       case this.getPreRepeat():
         of REPZ:
           if not(CPU.getGPreg(CX)).toBool() or not(this.eflags.isZero()):
@@ -304,10 +304,10 @@ proc cmpsM16M16*(this: var InstrImpl): void =
     m16S = ACS.getData16(this.exec.selectSegment(), CPU.getGPreg(SI))
   m16D = ACS.getData16(ES, CPU.getGPreg(DI))
   CPU.eflags.updateSUB(m16S, m16D)
-  discard UPDATEGPREG(SI, (if this.eflags.isDirection(): -1 else: 1))
-  discard UPDATEGPREG(DI, (if this.eflags.isDirection(): -1 else: 1))
+  CPU.updateGPreg(SI, (if this.eflags.isDirection(): -1 else: 1))
+  CPU.updateGPreg(DI, (if this.eflags.isDirection(): -1 else: 1))
   if this.getPreRepeat() != NONE:
-    discard UPDATEGPREG(CX, -1)
+    CPU.updateGPreg(CX, -1)
     case this.getPreRepeat():
       of REPZ:
         if not(CPU.getGPreg(CX)).toBool() or not(this.eflags.isZero()):
@@ -333,7 +333,7 @@ proc movR16Imm16*(this: var InstrImpl): void =
   CPU.setGPreg(Reg16T(reg), this.imm16.uint16)
 
 proc ret*(this: var InstrImpl): void =
-  SETIP(this.pop16())
+  this.cpu.setIp(this.pop16())
 
 proc movRm16Imm16*(this: var InstrImpl): void =
   this.exec.setRm16(this.imm16.uint16)
@@ -353,7 +353,7 @@ proc outImm8Ax*(this: var InstrImpl): void =
   EIO.outIo16(this.imm8.uint16, ax)
 
 proc callRel16*(this: var InstrImpl): void =
-  this.push16(GETIP().uint16)
+  this.push16(this.cpu.getIP().uint16)
   CPU.updateIp(this.imm16.int32)
 
 proc jmpRel16*(this: var InstrImpl): void =
@@ -657,8 +657,8 @@ proc decRm16*(this: var InstrImpl): void =
 proc callRm16*(this: var InstrImpl): void =
   var rm16: uint16
   rm16 = this.exec.getRm16()
-  this.push16(GETIP().uint16)
-  SETIP(rm16)
+  this.push16(this.cpu.getIP().uint16)
+  this.cpu.setIp(rm16)
 
 proc callfM1616*(this: var InstrImpl): void =
   var ip, m32, cs: uint16
@@ -670,7 +670,7 @@ proc callfM1616*(this: var InstrImpl): void =
 proc jmpRm16*(this: var InstrImpl): void =
   var rm16: uint16
   rm16 = this.exec.getRm16()
-  SETIP(rm16)
+  this.cpu.setIp(rm16)
 
 proc jmpfM1616*(this: var InstrImpl): void =
   var ip, m32, sel: uint16
