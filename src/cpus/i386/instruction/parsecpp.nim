@@ -13,22 +13,11 @@ template PRESEGMENT*(): untyped {.dirty.} =
 template PREREPEAT*(): untyped {.dirty.} =
   (this.exec.instr.preRepeat)
 
-template OPCODE*(): untyped {.dirty.} =
-  (this.exec.instr.opcode)
-
-template MOD*(): untyped {.dirty.} =
-  (this.exec.instr.modrm.`mod`)
-
-template RM*(): untyped {.dirty.} =
-  (this.exec.instr.modrm.rm)
-
-template BASE*(): untyped {.dirty.} =
-  (this.exec.instr.sib.base)
-
-template DISP32*(): untyped {.dirty.} =
-  (this.exec.instr.disp32)
-
-template INSTR(): untyped = this.exec.instr
+template MOD*(): untyped {.dirty.} = (this.idata.modrm.`mod`)
+template RM*(): untyped {.dirty.} = (this.idata.modrm.rm)
+template BASE*(): untyped {.dirty.} = (this.idata.sib.base)
+template DISP32*(): untyped {.dirty.} = (this.idata.disp32)
+template INSTR(): untyped = this.idata
 
 proc parsePrefix*(this: var InstrImpl): uint8 =
   var chsz, code: uint8 = 0
@@ -37,27 +26,27 @@ proc parsePrefix*(this: var InstrImpl): uint8 =
     var setPre = false
     case code:
       of 0x26:
-        PRESEGMENT = ES
+        this.idata.preSegment = ES
         setPre = true
 
       of 0x2e:
-        PRESEGMENT = CS
+        this.idata.preSegment = CS
         setPre = true
 
       of 0x36:
-        PRESEGMENT = SS
+        this.idata.preSegment = SS
         setPre = true
 
       of 0x3e:
-        PRESEGMENT = DS
+        this.idata.preSegment = DS
         setPre = true
 
       of 0x64:
-        PRESEGMENT = FS
+        this.idata.preSegment = FS
         setPre = true
 
       of 0x65:
-        PRESEGMENT = GS
+        this.idata.preSegment = GS
         setPre = true
 
       of 0x66:
@@ -67,25 +56,25 @@ proc parsePrefix*(this: var InstrImpl): uint8 =
         chsz = (chsz or CHSZAD)
 
       of 0xf2:
-        PREREPEAT = REPNZ
+        this.idata.preRepeat = REPNZ
 
       of 0xf3:
-        PREREPEAT = REPZ
+        this.idata.preRepeat = REPZ
 
       else:
         return chsz
 
     if setPre:
-      PREFIX = code
+      this.idata.prefix = code
 
     CPU.updateEIp(1)
 
 proc parseOpcode*(this: var InstrImpl): void =
-  OPCODE = ACS.getCode8(0)
+  this.idata.opcode = ACS.getCode8(0)
   CPU.updateEIp(1)
   
-  if OPCODE == 0x0f:
-    OPCODE = (OPCODE shl 8) + ACS.getCode8(0)
+  if this.idata.opcode == 0x0f:
+    this.idata.opcode = (this.idata.opcode shl 8) + ACS.getCode8(0)
     CPU.updateEIp(1)
   
 
@@ -137,31 +126,31 @@ proc parseMoffs*(this: var InstrImpl): void =
 
 proc parse*(this: var InstrImpl): void =
   this.parseOpcode()
-  var op = OPCODE
+  var op = this.idata.opcode
   # REVIEW not sure if this bithack is really necessary - implementation
   # uses values like `0x0F81` explicitly, so I doubt this is really
   # necessary.
   if op shr 8 == 0x0f:
     op = (op and 0xff) or 0x0100
 
-  if iParseModrm in this.parse.chk[op]:
+  if iParseModrm in this.chk[op]:
     this.parseModrmSibDisp()
 
-  if iParseImm32 in this.parse.chk[op]:
+  if iParseImm32 in this.chk[op]:
     INSTR.imm32 = ACS.getCode32(0).int32()
     CPU.updateEIp(4)
 
-  elif iParseImm16 in this.parse.chk[op]:
+  elif iParseImm16 in this.chk[op]:
     INSTR.imm16 = ACS.getCode16(0).int16()
     CPU.updateEIp(2)
 
-  elif iParseImm8 in this.parse.chk[op]:
+  elif iParseImm8 in this.chk[op]:
     INSTR.imm8 = cast[int8](ACS.getCode8(0))
     CPU.updateEIp(1)
 
-  if iParsePtr16 in this.parse.chk[op]:
+  if iParsePtr16 in this.chk[op]:
     PTR16 = ACS.getCode16(0).int8()
     CPU.updateEIp(2)
 
-  if iParseMoffs in this.parse.chk[op]:
+  if iParseMoffs in this.chk[op]:
     this.parseMoffs()

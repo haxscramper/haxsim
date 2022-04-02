@@ -149,32 +149,27 @@ proc cmpAxImm16*(this: var InstrImpl): void =
 proc incR16*(this: var InstrImpl): void =
   var reg: uint8
   var r16: uint16
-  reg = uint8(OPCODE and ((1 shl 3) - 1))
-  r16 = CPU.getGPreg(cast[Reg16T](reg))
-  CPU.setGPreg(cast[Reg16T](reg), r16 + 1)
+  reg = uint8(this.idata.opcode and ((1 shl 3) - 1))
+  r16 = CPU.getGPreg(Reg16T(reg))
+  CPU.setGPreg(Reg16T(reg), r16 + 1)
   CPU.eflags.updateADD(r16, 1)
 
 proc decR16*(this: var InstrImpl): void =
-  var reg: uint8
-  var r16: uint16
-  reg = uint8(OPCODE and ((1 shl 3) - 1))
-  r16 = CPU.getGPreg(cast[Reg16T](reg))
-  CPU.setGPreg(cast[Reg16T](reg), r16 - 1)
+  let reg: uint8 = uint8(this.idata.opcode and ((1 shl 3) - 1))
+  let r16: uint16 = CPU.getGPreg(Reg16T(reg))
+  CPU.setGPreg(Reg16T(reg), r16 - 1)
   CPU.eflags.updateSUB(r16, 1)
 
 proc pushR16*(this: var InstrImpl): void =
-  var reg: uint8
-  reg = uint8(OPCODE and ((1 shl 3) - 1))
-  PUSH16(CPU.getGPreg(cast[Reg16T](reg)))
+  let reg: uint8 = uint8(this.idata.opcode and ((1 shl 3) - 1))
+  PUSH16(CPU.getGPreg(Reg16T(reg)))
 
 proc popR16*(this: var InstrImpl): void =
-  var reg: uint8
-  reg = uint8(OPCODE and ((1 shl 3) - 1))
-  CPU.setGPreg(cast[Reg16T](reg), POP16())
+  let reg: uint8 = uint8(this.idata.opcode and ((1 shl 3) - 1))
+  CPU.setGPreg(Reg16T(reg), POP16())
 
 proc pusha*(this: var InstrImpl): void =
-  var sp: uint16
-  sp = CPU.getGPreg(SP)
+  let sp: uint16 = CPU.getGPreg(SP)
   PUSH16(CPU.getGPreg(AX))
   PUSH16(CPU.getGPreg(CX))
   PUSH16(CPU.getGPreg(DX))
@@ -288,9 +283,9 @@ proc cmpsM8M8*(this: var InstrImpl): void =
     CPU.eflags.updateSUB(m8S, m8D)
     discard UPDATEGPREG(SI, int16(if EFLAGSDF: -1 else: 1))
     discard UPDATEGPREG(DI, int16(if EFLAGSDF: -1 else: 1))
-    if PREREPEAT.int.toBool():
+    if this.getPreRepeat() != NONE:
       discard UPDATEGPREG(CX, -1)
-      case PREREPEAT:
+      case this.getPreRepeat():
         of REPZ:
           if not(CPU.getGPreg(CX)).toBool() or not(EFLAGSZF):
             repeat = false
@@ -311,9 +306,9 @@ proc cmpsM16M16*(this: var InstrImpl): void =
   CPU.eflags.updateSUB(m16S, m16D)
   discard UPDATEGPREG(SI, (if EFLAGSDF: -1 else: 1))
   discard UPDATEGPREG(DI, (if EFLAGSDF: -1 else: 1))
-  if PREREPEAT.int.toBool():
+  if this.getPreRepeat() != NONE:
     discard UPDATEGPREG(CX, -1)
-    case PREREPEAT:
+    case this.getPreRepeat():
       of REPZ:
         if not(CPU.getGPreg(CX)).toBool() or not(EFLAGSZF):
           {.warning: "[FIXME] break".}
@@ -334,9 +329,8 @@ proc testAxImm16*(this: var InstrImpl): void =
   CPU.eflags.updateAND(ax, IMM16.uint16)
 
 proc movR16Imm16*(this: var InstrImpl): void =
-  var reg: uint8
-  reg = uint8(OPCODE and ((1 shl 3) - 1))
-  CPU.setGPreg(cast[Reg16T](reg), IMM16.uint16)
+  let reg: uint8 = uint8(this.idata.opcode and ((1 shl 3) - 1))
+  CPU.setGPreg(Reg16T(reg), IMM16.uint16)
 
 proc ret*(this: var InstrImpl): void =
   SETIP(POP16())
@@ -788,7 +782,7 @@ proc code0f01*(this: var InstrImpl): void =
       ERROR("not implemented: 0x0f01 /%d\\n", this.getModrmReg())
 
 
-proc initInstrImpl16*(r: var InstrImpl, instr: Instruction) =
+proc initInstrImpl16*(r: var InstrImpl, instr: ExecInstr) =
   initInstrImpl(r, instr)
   assertRef(r.exec.get_emu())
 
@@ -925,6 +919,6 @@ proc initInstrImpl16*(r: var InstrImpl, instr: Instruction) =
   r.setFuncflag(ICode(0x0f01), instr16(code0f01), CHKMODRM)
 
 
-proc initInstrImpl16*(instr: Instruction): InstrImpl =
+proc initInstrImpl16*(instr: ExecInstr): InstrImpl =
   initInstrImpl16(result, instr)
   assertRef(result.exec.get_emu())

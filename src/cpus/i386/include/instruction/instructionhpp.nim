@@ -17,39 +17,19 @@ template ACS*(): untyped {.dirty.} = EMU.accs
 template INT*(): untyped {.dirty.} = EMU.intr
 template EIO*(): untyped {.dirty.} = EMU.accs.io
 
-template GETEIP*(): untyped {.dirty.} =
-  CPU.getEip()
-
-template GETIP*(): untyped {.dirty.} =
-  CPU.getIp()
-
-template SETEIP*(v: untyped): untyped {.dirty.} =
-  CPU.setEip(v)
-
-template SETIP*(v: untyped): untyped {.dirty.} =
-  CPU.setIp(v)
-
+template GETEIP*(): untyped {.dirty.} = CPU.getEip()
+template GETIP*(): untyped {.dirty.} = CPU.getIp()
+template SETEIP*(v: untyped): untyped {.dirty.} = CPU.setEip(v)
+template SETIP*(v: untyped): untyped {.dirty.} = CPU.setIp(v)
 template UPDATEGPREG*(reg: untyped, v: untyped): untyped {.dirty.} =
   CPU.updateGpreg(reg, v)
 
-template EFLAGSCF*(): untyped {.dirty.} =
-  CPU.eflags.isCarry()
-
-template EFLAGSPF*(): untyped {.dirty.} =
-  CPU.eflags.isParity()
-
-template EFLAGSZF*(): untyped {.dirty.} =
-  CPU.eflags.isZero()
-
-template EFLAGSSF*(): untyped {.dirty.} =
-  CPU.eflags.isSign()
-
-template EFLAGSOF*(): untyped {.dirty.} =
-  CPU.eflags.isOverflow()
-
-template EFLAGSDF*(): untyped {.dirty.} =
-  CPU.eflags.isDirection()
-
+template EFLAGSCF*(): untyped {.dirty.} = CPU.eflags.isCarry()
+template EFLAGSPF*(): untyped {.dirty.} = CPU.eflags.isParity()
+template EFLAGSZF*(): untyped {.dirty.} = CPU.eflags.isZero()
+template EFLAGSSF*(): untyped {.dirty.} = CPU.eflags.isSign()
+template EFLAGSOF*(): untyped {.dirty.} = CPU.eflags.isOverflow()
+template EFLAGSDF*(): untyped {.dirty.} = CPU.eflags.isDirection()
 template READMEM32*(addrD: untyped): untyped {.dirty.} =
   EMU.accs.getData32(this.selectSegment(), addrD)
 
@@ -68,80 +48,23 @@ template WRITEMEM16*(addrD: untyped, v: untyped): untyped {.dirty.} =
 template WRITEMEM8*(addrD: untyped, v: untyped): untyped {.dirty.} =
   EMU.accs.putData8(this.selectSegment(), addrD, v)
 
-template PUSH32*(v: untyped): untyped {.dirty.} =
-  ACS.push32(v)
-
-template PUSH16*(v: untyped): untyped {.dirty.} =
-  ACS.push16(v)
-
-template POP32*(): untyped {.dirty.} =
-  ACS.pop32()
-
-template POP16*(): untyped {.dirty.} =
-  ACS.pop16()
-
-template PREFIX*(): untyped {.dirty.} =
-  (this.exec.instr.prefix)
-
-template OPCODE*(): untyped {.dirty.} =
-  (this.instr.opcode)
-
-template dMODRM*(): untyped {.dirty.} =
-  (this.exec.instr.dmodrm)
-
-# template MOD*(): untyped {.dirty.} =
-#   (this.instr.modrm.`mod`)
-
-# template REG*(): untyped {.dirty.} =
-#   (this.getModrmReg())
-
-# template RM*(): untyped {.dirty.} =
-#   (this.instr.modrm.rm)
-
-template dSIB*(): untyped {.dirty.} =
-  (this.exec.instr.dsib)
-
-template SCALE*(): untyped {.dirty.} =
-  (this.instr.sib.scale)
-
-template INDEX*(): untyped {.dirty.} =
-  (this.instr.sib.index)
-
-template BASE*(): untyped {.dirty.} =
-  (this.instr.sib.base)
-
-template DISP32*(): untyped {.dirty.} =
-  (this.instr.disp32)
-
-template DISP16*(): untyped {.dirty.} =
-  (this.instr.disp16)
-
-template DISP8*(): untyped {.dirty.} =
-  (this.instr.disp8)
-
-template IMM32*(): untyped {.dirty.} =
-  (this.exec.instr.imm32)
-
-template IMM16*(): untyped {.dirty.} =
-  (this.exec.instr.imm16)
-
-template IMM8*(): untyped {.dirty.} =
-  (this.exec.instr.imm8)
-
-template PTR16*(): untyped {.dirty.} =
-  (this.exec.instr.ptr16)
-
-template MOFFS*(): untyped {.dirty.} =
-  (this.instr.moffs)
-
-template PRESEGMENT*(): untyped {.dirty.} =
-  (this.instr.preSegment)
-
-template PREREPEAT*(): untyped {.dirty.} =
-  (this.instr.preRepeat)
-
-template SEGMENT*(): untyped {.dirty.} =
-  (this.instr.segment)
+template PUSH32*(v: untyped): untyped {.dirty.} = ACS.push32(v)
+template PUSH16*(v: untyped): untyped {.dirty.} = ACS.push16(v)
+template POP32*(): untyped {.dirty.} = ACS.pop32()
+template POP16*(): untyped {.dirty.} = ACS.pop16()
+template PREFIX*():     untyped {.dirty.} = (this.exec.idata.prefix)
+template dSIB*():       untyped {.dirty.} = (this.exec.idata.dsib)
+template SCALE*():      untyped {.dirty.} = (this.idata.sib.scale)
+template INDEX*():      untyped {.dirty.} = (this.idata.sib.index)
+template BASE*():       untyped {.dirty.} = (this.idata.sib.base)
+template DISP32*():     untyped {.dirty.} = (this.idata.disp32)
+template DISP16*():     untyped {.dirty.} = (this.idata.disp16)
+template DISP8*():      untyped {.dirty.} = (this.idata.disp8)
+template IMM32*():      untyped {.dirty.} = (this.exec.idata.imm32)
+template IMM16*():      untyped {.dirty.} = (this.exec.idata.imm16)
+template IMM8*():       untyped {.dirty.} = (this.exec.idata.imm8)
+template PTR16*():      untyped {.dirty.} = (this.exec.idata.ptr16)
+template MOFFS*():      untyped {.dirty.} = (this.idata.moffs)
 
 const MAXOPCODE* = 0x200
 type
@@ -193,12 +116,6 @@ type
     imm16*: int16
     imm32*: int32
 
-  Instruction* {.inheritable.} = object
-    instr*: InstrData
-    chszAd*: bool
-    emu*: Emulator
-    mode32*: bool
-
   InstrParseFlag* = enum
     iParseModrm ## Instruction contains modrm flag
     iParseImm32 ## Parse 32 bit immediate
@@ -208,16 +125,19 @@ type
     iParseMoffs ## Parse offset
     iParseMoffs8 ## Parse 8-bit offset
 
-  ParseInstr* = object
-    chk*: array[MAXOPCODE, set[InstrParseFlag]] ## Configuration for parsing
-    ## different opcodes.
-  ExecInstr* = object of Instruction
+  ExecInstr* = object
+    idata*: InstrData
+    chszAd*: bool
+    emu*: Emulator
+    mode32*: bool
     instrfuncs*: array[MAXOPCODE, instrfuncT]
 
   InstrImpl* = object
-    logger*: EmuLogger
-    exec*: ExecInstr
-    parse*: ParseInstr
+    ## Instruction caller implementation.
+    exec*: ExecInstr ## Executed instruction
+    chk*: array[MAXOPCODE, set[InstrParseFlag]] ## Configuration for parsing
+    ## different opcodes.
+
 
   EmuInstrEvent* = ref object of EmuEvent
     instr*: InstrData
@@ -259,31 +179,34 @@ proc `imm16=`*(this: var InstrData, value: int16) = this.fieldImm.imm16 = value
 proc imm32*(this: InstrData): int32 = this.fieldImm.imm32
 proc `imm32=`*(this: var InstrData, value: int32) = this.fieldImm.imm32 = value
 
-proc initInstruction*(): Instruction =
-  discard
-
-proc initInstruction*(e: Emulator, i: InstrData, m: bool): Instruction =
+proc initExecInstr*(e: Emulator, i: InstrData, m: bool): ExecInstr =
   assertRef(i)
   assertRef(e)
-  let t = globalTick()
-
   result.emu = e
-  result.instr = i
+  result.idata = i
   result.mode32 = m
 
-proc getEmu*(this: var Instruction): Emulator =
+proc getEmu*(this: ExecInstr): Emulator =
   result = this.emu
   assertRef(result)
 
-proc isMode32*(this: var Instruction): bool =
+proc isMode32*(this: ExecInstr): bool =
   return this.mode32
 
-proc selectSegment*(this: var Instruction): SgRegT =
-  return (if this.instr.prefix.toBool(): PRESEGMENT else: SEGMENT)
+proc selectSegment*(this: var ExecInstr): SgRegT =
+  if this.idata.prefix.toBool():
+    this.idata.preSegment
+  else:
+    this.idata.segment
 
 proc initExecInstr*(): ExecInstr =
   for i in 0 ..< MAXOPCODE:
     result.instrfuncs[i] = nil
+
+func idata*(impl: InstrImpl): InstrData = impl.exec.idata
+func idata*(impl: var InstrImpl): var InstrData = impl.exec.idata
+
+proc getPreRepeat*(this: InstrImpl): repT = this.exec.idata.prerepeat
 
 template declareGetPart*(name, size, expr, system: untyped): untyped =
   template name*(this {.inject.}: ExecInstr): NBits[size] =
@@ -297,9 +220,9 @@ template declareGetPart*(name, size, expr, system: untyped): untyped =
   template name*(this {.inject.}: InstrImpl): NBits[size] =
     this.exec.name()
 
-declareGetPart(getModrmMod, 2, this.instr.modrm.mod, evs2)
-declareGetPart(getModrmRm, 3, this.instr.modrm.rm, evs2)
-declareGetPart(getModrmReg, 3, this.instr.modrm.reg, evs2)
+declareGetPart(getModrmMod, 2, this.idata.modrm.mod, evs2)
+declareGetPart(getModrmRm, 3, this.idata.modrm.rm, evs2)
+declareGetPart(getModrmReg, 3, this.idata.modrm.reg, evs2)
 
 # proc getModrmRM*(this: ExecInstr): NBits[3] =
 #   result = this.instr.modrm.rm

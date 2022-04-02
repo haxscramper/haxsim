@@ -149,28 +149,27 @@ proc cmpEaxImm32*(this: var InstrImpl): void =
 proc incR32*(this: var InstrImpl): void =
   var reg: uint8
   var r32: uint32
-  reg = uint8(OPCODE and ((1 shl 3) - 1))
-  r32 = CPU.getGPreg(cast[Reg32T](reg))
-  CPU.setGPreg(cast[Reg32T](reg), r32 + 1)
+  reg = uint8(this.idata.opcode and ((1 shl 3) - 1))
+  r32 = CPU.getGPreg(Reg32T(reg))
+  CPU.setGPreg(Reg32T(reg), r32 + 1)
   CPU.eflags.updateADD(r32, 1)
 
 proc decR32*(this: var InstrImpl): void =
   var reg: uint8
   var r32: uint32
-  reg = uint8(OPCODE and ((1 shl 3) - 1))
-  r32 = CPU.getGPreg(cast[Reg32T](reg))
-  CPU.setGPreg(cast[Reg32T](reg), r32 - 1)
+  reg = uint8(this.idata.opcode and ((1 shl 3) - 1))
+  r32 = CPU.getGPreg(Reg32T(reg))
+  CPU.setGPreg(Reg32T(reg), r32 - 1)
   CPU.eflags.updateSUB(r32, 1)
 
 proc pushR32*(this: var InstrImpl): void =
   var reg: uint8
-  reg = uint8(OPCODE and ((1 shl 3) - 1))
-  PUSH32(CPU.getGPreg(cast[Reg32T](reg)))
+  reg = uint8(this.idata.opcode and ((1 shl 3) - 1))
+  PUSH32(CPU.getGPreg(Reg32T(reg)))
 
 proc popR32*(this: var InstrImpl): void =
-  var reg: uint8
-  reg = uint8(OPCODE and ((1 shl 3) - 1))
-  CPU.setGPreg(cast[Reg32T](reg), POP32())
+  var reg: uint8 = uint8(this.idata.opcode and ((1 shl 3) - 1))
+  CPU.setGPreg(Reg32T(reg), POP32())
 
 proc pushad*(this: var InstrImpl): void =
   var esp: uint32
@@ -287,9 +286,9 @@ proc cmpsM8M8*(this: var InstrImpl): void =
   CPU.eflags.updateSUB(m8S, m8D)
   discard UPDATEGPREG(ESI, int32(if EFLAGSDF: -1 else: 1))
   discard UPDATEGPREG(EDI, int32(if EFLAGSDF: -1 else: 1))
-  if PREREPEAT.int.toBool():
+  if this.getPreRepeat() != NONE:
     discard UPDATEGPREG(ECX, -1)
-    case PREREPEAT:
+    case this.getPreRepeat():
       of REPZ:
         if not(CPU.getGPreg(ECX)).toBool() or not(EFLAGSZF):
           {.warning: "[FIXME] break".}
@@ -312,9 +311,9 @@ proc cmpsM32M32*(this: var InstrImpl): void =
   CPU.eflags.updateSUB(m32S, m32D)
   discard UPDATEGPREG(ESI, int32(if EFLAGSDF: -1 else: 1))
   discard UPDATEGPREG(EDI, int32(if EFLAGSDF: -1 else: 1))
-  if PREREPEAT.int.toBool():
+  if this.getPreRepeat() != NONE:
     discard UPDATEGPREG(ECX, -1)
-    case PREREPEAT:
+    case this.getPreRepeat():
       of REPZ:
         if not(CPU.getGPreg(ECX)).toBool() or not(EFLAGSZF):
           {.warning: "[FIXME] break".}
@@ -335,9 +334,8 @@ proc testEaxImm32*(this: var InstrImpl): void =
   CPU.eflags.updateAND(eax, IMM32.uint32)
 
 proc movR32Imm32*(this: var InstrImpl): void =
-  var reg: uint8
-  reg = uint8(OPCODE and ((1 shl 3) - 1))
-  CPU.setGPreg(cast[Reg32T](reg), IMM32.uint32)
+  var reg: uint8 = uint8(this.idata.opcode and ((1 shl 3) - 1))
+  CPU.setGPreg(Reg32T(reg), IMM32.uint32)
 
 proc ret*(this: var InstrImpl): void =
   SETEIP(POP32())
@@ -786,7 +784,7 @@ proc code_0f01*(this: var InstrImpl): void =
 
 
 
-proc initInstrImpl32*(r: var InstrImpl, instr: Instruction) =
+proc initInstrImpl32*(r: var InstrImpl, instr: ExecInstr) =
   initInstrImpl(r, instr)
 
   r.setFuncflag(ICode(0x01), instr32(addRm32R32), CHKMODRM)
@@ -831,10 +829,10 @@ proc initInstrImpl32*(r: var InstrImpl, instr: Instruction) =
 
   r.setFuncflag(ICode(0x3d), instr32(cmpEaxImm32), CHKIMM32)
 
-  r.setFuncflag(ICode(0x40), instr32(incR32), {})
-  r.setFuncflag(ICode(0x48), instr32(decR32), {})
-  r.setFuncflag(ICode(0x50), instr32(pushR32), {})
-  r.setFuncflag(ICode(0x58), instr32(popR32), {})
+  for i in 0 .. 7: r.setFuncflag(ICode(0x40 + i), instr32(incR32), {})
+  for i in 0 .. 7: r.setFuncflag(ICode(0x48 + i), instr32(decR32), {})
+  for i in 0 .. 7: r.setFuncflag(ICode(0x50 + i), instr32(pushR32), {})
+  for i in 0 .. 7: r.setFuncflag(ICode(0x58 + i), instr32(popR32), {})
 
   r.setFuncflag(ICode(0x60), instr32(pushad), {})
   r.setFuncflag(ICode(0x61), instr32(popad), {})
@@ -854,7 +852,7 @@ proc initInstrImpl32*(r: var InstrImpl, instr: Instruction) =
   r.setFuncflag(ICode(0x8c), instr32(movRm32Sreg), CHKMODRM)
   r.setFuncflag(ICode(0x8d), instr32(leaR32M32), CHKMODRM)
 
-  r.setFuncflag(ICode(0x90), instr32(xchgR32Eax), CHKIMM32)
+  for i in 0 .. 8: r.setFuncflag(ICode(0x90 + i), instr32(xchgR32Eax), CHKIMM32)
 
   r.setFuncflag(ICode(0x98), instr32(cwde), {})
   r.setFuncflag(ICode(0x99), instr32(cdq), {})
@@ -925,5 +923,5 @@ proc initInstrImpl32*(r: var InstrImpl, instr: Instruction) =
   r.setFuncflag(ICode(0x0f01), instr32(code_0f01), CHKMODRM)
 
 
-proc initInstrImpl32*(instr: Instruction): InstrImpl =
+proc initInstrImpl32*(instr: ExecInstr): InstrImpl =
   initInstrImpl32(result, instr)

@@ -150,7 +150,7 @@ proc initFull*(emuset: var EmuSetting): FullImpl =
 
   var full = FullImpl(emu: emu, data: data)
 
-  var instr = initInstruction(full.emu, full.data, false)
+  var instr = initExecInstr(full.emu, full.data, false)
   assertRef(full.emu)
   full.impl16 = initInstrImpl16(instr)
   full.impl32 = initInstrImpl32(instr)

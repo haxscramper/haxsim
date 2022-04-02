@@ -3,7 +3,7 @@ import hardware/[processorhpp, crhpp]
 import emulator/accesshpp
 import commonhpp
 
-template INSTR(): untyped = this.exec.instr
+template INSTR(): untyped = this.exec.idata
 
 proc exec*(this: var InstrImpl): bool =
   var opcode: uint16 = INSTR.opcode
@@ -41,7 +41,7 @@ proc calcModrm16*(this: var ExecInstr): uint32 =
 
       else:
         memAddr = (memAddr + CPU.getGPreg(BP))
-        SEGMENT = SS
+        this.idata.segment = SS
 
     else:
       assert false
@@ -64,7 +64,7 @@ proc calcSib*(this: var ExecInstr): uint32 =
   else:
     if BASE == 4:
       if SCALE == 0:
-        SEGMENT = SS
+        this.idata.segment = SS
         base = 0
 
       else:
@@ -72,7 +72,7 @@ proc calcSib*(this: var ExecInstr): uint32 =
 
 
     else:
-      SEGMENT = (if (this.getModRmRM() == 5):
+      this.idata.segment = (if (this.getModRmRM() == 5):
             SS
 
           else:
@@ -98,7 +98,7 @@ proc calcModrm32*(this: var ExecInstr): uint32 =
         memAddr = (memAddr + DISP32.uint32)
 
     else:
-      SEGMENT = (if (this.getModRmRM() == 5): SS else: DS)
+      this.idata.segment = (if (this.getModRmRM() == 5): SS else: DS)
       memAddr = (memAddr + CPU.getGPreg(Reg32T(this.getModRmRM())))
 
   return memAddr
@@ -106,7 +106,7 @@ proc calcModrm32*(this: var ExecInstr): uint32 =
 
 proc calcModrm*(this: var ExecInstr): uint32 =
   ASSERT(this.getModRmMod() != 3)
-  SEGMENT = DS
+  this.idata.segment = DS
   if this.isMode32() xor this.chszAd:
     return this.calcModrm32()
 
@@ -136,11 +136,11 @@ proc getR32*(this: var ExecInstr): uint32 =
   return CPU.getGPreg(Reg32T(this.getModrmReg()))
 
 proc setMoffs32*(this: var ExecInstr, value: uint32): void =
-  SEGMENT = DS
+  this.idata.segment = DS
   WRITEMEM32(MOFFS, value)
 
 proc getMoffs32*(this: var ExecInstr): uint32 =
-  SEGMENT = DS
+  this.idata.segment = DS
   return READMEM32(MOFFS)
 
 proc setRm16*(this: var ExecInstr, value: uint16): void =
@@ -166,11 +166,11 @@ proc getR16*(this: var ExecInstr): uint16 =
   return CPU.getGPreg(Reg16T(this.getModrmReg()))
 
 proc setMoffs16*(this: var ExecInstr, value: uint16): void =
-  SEGMENT = DS
+  this.idata.segment = DS
   WRITEMEM16(MOFFS, value)
 
 proc getMoffs16*(this: var ExecInstr): uint16 =
-  SEGMENT = DS
+  this.idata.segment = DS
   return READMEM16(MOFFS)
 
 proc setRm8*(this: var ExecInstr, value: uint8): void =
@@ -193,11 +193,11 @@ proc setR8*(this: var ExecInstr, value: uint8): void =
   CPU.setGPreg(Reg8T(this.getModrmReg()), value)
 
 proc setMoffs8*(this: var ExecInstr, value: uint8): void =
-  SEGMENT = DS
+  this.idata.segment = DS
   WRITEMEM8(MOFFS, value)
 
 proc getMoffs8*(this: var ExecInstr): uint8 =
-  SEGMENT = DS
+  this.idata.segment = DS
   return READMEM8(MOFFS)
 
 proc getR8*(this: var ExecInstr): uint8 =
@@ -207,10 +207,10 @@ proc getM*(this: var ExecInstr): uint32 =
   return this.calcModrm()
 
 proc setSreg*(this: var ExecInstr, value: uint16): void =
-  EMU.accs.setSegment(cast[SgRegT](this.getModrmReg()), value)
+  EMU.accs.setSegment(SgRegT(this.getModrmReg()), value)
 
 proc getSreg*(this: var ExecInstr): uint16 =
-  return EMU.accs.getSegment(cast[SgRegT](this.getModrmReg()))
+  return EMU.accs.getSegment(SgRegT(this.getModrmReg()))
 
 proc setCrn*(this: var ExecInstr, value: uint32): void =
   INFO(2, "set CR%d = %x", REG, value)

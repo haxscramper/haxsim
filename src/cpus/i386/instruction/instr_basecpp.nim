@@ -22,7 +22,7 @@ proc setFuncflag*(
 
   ASSERT(opcode < MAXOPCODE)
   this.exec.instrfuncs[opcode] = implF
-  this.parse.chk[opcode] = flags
+  this.chk[opcode] = flags
   
 proc getEmu*(this: var InstrImpl): Emulator =
   result = this.exec.getEmu()
@@ -191,7 +191,7 @@ proc testAlImm8*(this: var InstrImpl): void =
 
 proc movR8Imm8*(this: var InstrImpl): void =
   var reg: uint8
-  reg = uint8(OPCODE and ((1 shl 3) - 1))
+  reg = uint8(this.idata.opcode and ((1 shl 3) - 1))
   CPU.setGPreg(Reg8T(reg), IMM8.uint8)
 
 proc movRm8Imm8*(this: var InstrImpl): void =
@@ -464,8 +464,8 @@ proc codeFE*(this: var InstrImpl) =
     else:
       assert false, $this.getModrmReg()
 
-proc initInstrImpl*(r: var InstrImpl, instr: Instruction) =
-  asgnAux[Instruction](r.exec, instr)
+proc initInstrImpl*(r: var InstrImpl, instr: ExecInstr) =
+  r.exec = instr
   assertRef(r.exec.get_emu())
   r.exec.emu = instr.emu
 
@@ -555,5 +555,5 @@ proc initInstrImpl*(r: var InstrImpl, instr: Instruction) =
   r.setFuncFlag(ICode(0xfe),   instrbase(codeFE),     CHKMODRM)
 
 
-proc initInstrImpl*(instr: Instruction): InstrImpl =
+proc initInstrImpl*(instr: ExecInstr): InstrImpl =
   initInstrImpl(result, instr)
