@@ -9,7 +9,7 @@ proc chk_parity*(this: var Eflags, v: uint8): bool =
   return p
 
 
-proc update_eflags_add*[T](this: var Eflags, v1: T, v2: uint32): uint32 = 
+proc updateAdd*[T](this: var Eflags, v1: T, v2: uint32) =
   var sr, s1, s2: bool
   var result: uint64
   var size: uint8
@@ -25,12 +25,11 @@ proc update_eflags_add*[T](this: var Eflags, v1: T, v2: uint32): uint32 =
   this.set_zero(not(result.toBool()))
   this.set_sign(sr)
   this.set_overflow(not((s1 xor s2)) and s1 xor sr)
-  return this.eflags.reg32
 
 
 
 
-proc update_eflags_or*[T](this: var Eflags, v1: T, v2: uint32): uint32 = 
+proc updateOr*[T](this: var Eflags, v1: T, v2: uint32) =
   var result: T
   var size: uint8
   var v2 = v2
@@ -42,12 +41,11 @@ proc update_eflags_or*[T](this: var Eflags, v1: T, v2: uint32): uint32 =
   this.set_zero(not(result.toBool()))
   this.set_sign(toBool((result shr (size - 1)) and 1))
   this.set_overflow(false)
-  return this.eflags.reg32
 
 
 
 
-proc update_eflags_and*[T](this: var Eflags, v1: T, v2: uint32): uint32 = 
+proc updateAnd*[T](this: var Eflags, v1: T, v2: uint32) =
   var result: T
   var size: uint8
   var v2 = v2
@@ -59,12 +57,11 @@ proc update_eflags_and*[T](this: var Eflags, v1: T, v2: uint32): uint32 =
   this.set_zero(not(result.toBool()))
   this.set_sign(toBool((result shr (size - 1)) and 1))
   this.set_overflow(false)
-  return this.eflags.reg32
 
 
 
 
-proc update_eflags_sub*[T](this: var Eflags, v1: T, v2: uint32): uint32 = 
+proc updateSub*[T](this: var Eflags, v1: T, v2: uint32) =
   var sr, s1, s2: bool
   var result: uint64
   var size: uint8
@@ -80,12 +77,11 @@ proc update_eflags_sub*[T](this: var Eflags, v1: T, v2: uint32): uint32 =
   this.set_zero(not(result.toBool()))
   this.set_sign(sr)
   this.set_overflow(s1 xor s2 and s1 xor sr)
-  return this.eflags.reg32
 
 
 
 
-proc update_eflags_mul*[T](this: var Eflags, v1: T, v2: uint32): uint32 = 
+proc updateMul*[T](this: var Eflags, v1: T, v2: uint32) =
   var result: uint64
   var size: uint8
   var v2 = cast[T](v2)
@@ -93,12 +89,11 @@ proc update_eflags_mul*[T](this: var Eflags, v1: T, v2: uint32): uint32 =
   size = sizeof(T) * 8
   this.set_carry(toBool(result shr size))
   this.set_overflow(toBool(result shr size))
-  return this.eflags.reg32
 
 
 
 
-proc update_eflags_imul*[T](this: var Eflags, v1: T, v2: int32): uint32 = 
+proc updateImul*[T](this: var Eflags, v1: T, v2: int32) =
   var result: int64
   var size: uint8
   let v2 = cast[T](v2)
@@ -106,12 +101,11 @@ proc update_eflags_imul*[T](this: var Eflags, v1: T, v2: int32): uint32 =
   size = sizeof(T) * 8
   this.set_carry((result shr size) != -1)
   this.set_overflow((result shr size) != -1)
-  return this.eflags.reg32
 
 
 
 
-proc update_eflags_shl*[T](this: var Eflags, v: T, c: uint8): uint32 = 
+proc updateShl*[T](this: var Eflags, v: T, c: uint8) =
   var result: T
   var size: uint8
   result = v shl c
@@ -124,13 +118,11 @@ proc update_eflags_shl*[T](this: var Eflags, v: T, c: uint8): uint32 =
     this.set_overflow(toBool(
       ((v shr (size - 1)) and 1) xor
       ((v shr (size - 2)) and 1)))
-  
-  return this.eflags.reg32
 
 
 
 
-proc update_eflags_shr*[T](this: var Eflags, v: T, c: uint8): uint32 = 
+proc updateShr*[T](this: var Eflags, v: T, c: uint8) =
   var result: T
   var size: uint8
   result = v shr c
@@ -141,5 +133,3 @@ proc update_eflags_shr*[T](this: var Eflags, v: T, c: uint8): uint32 =
   this.set_sign(toBool((result shr (size - 1)) and 1))
   if c == 1:
     this.set_overflow(toBool((v shr (size - 1)) and 1))
-  
-  return this.eflags.reg32

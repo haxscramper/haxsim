@@ -9,7 +9,9 @@ template EMU*(): untyped =
   assertRef(tmp)
   tmp
 
+
 template CPU*(): untyped {.dirty.} = EMU.accs.cpu
+template EFLAGS*(): untyped = CPU.eflags
 template MEM*(): untyped {.dirty.} = EMU.accs.mem
 template ACS*(): untyped {.dirty.} = EMU.accs
 template INT*(): untyped {.dirty.} = EMU.intr
@@ -27,46 +29,8 @@ template SETEIP*(v: untyped): untyped {.dirty.} =
 template SETIP*(v: untyped): untyped {.dirty.} =
   CPU.setIp(v)
 
-# template UPDATEEIP*(v: untyped): untyped {.dirty.} =
-#   CPU.updateEip(v)
-
-# template UPDATEIP*(v: untyped): untyped {.dirty.} =
-#   CPU.updateIp(v)
-
-# template GETGPREG*(reg: untyped): untyped {.dirty.} =
-#   CPU.getGpreg(reg)
-
-# template SETGPREG*(reg: untyped, v: untyped): untyped {.dirty.} =
-#   CPU.setGpreg(reg, v)
-
-
-
 template UPDATEGPREG*(reg: untyped, v: untyped): untyped {.dirty.} =
   CPU.updateGpreg(reg, v)
-
-template EFLAGSUPDATEADD*(v1: untyped, v2: untyped): untyped {.dirty.} =
-  CPU.eflags.updateEflagsAdd(v1, v2)
-
-template EFLAGSUPDATEOR*(v1: untyped, v2: untyped): untyped {.dirty.} =
-  CPU.eflags.updateEflagsOr(v1, v2)
-
-template EFLAGSUPDATEAND*(v1: untyped, v2: untyped): untyped {.dirty.} =
-  CPU.eflags.updateEflagsAnd(v1, v2)
-
-template EFLAGSUPDATESUB*(v1: untyped, v2: untyped): untyped {.dirty.} =
-  CPU.eflags.updateEflagsSub(v1, v2)
-
-template EFLAGSUPDATEMUL*(v1: untyped, v2: untyped): untyped {.dirty.} =
-  CPU.eflags.updateEflagsMul(v1, v2)
-
-template EFLAGSUPDATEIMUL*(v1: untyped, v2: untyped): untyped {.dirty.} =
-  CPU.eflags.updateEflagsImul(v1, v2)
-
-template EFLAGSUPDATESHL*(v1: untyped, v2: untyped): untyped {.dirty.} =
-  CPU.eflags.updateEflagsShl(v1, v2)
-
-template EFLAGSUPDATESHR*(v1: untyped, v2: untyped): untyped {.dirty.} =
-  CPU.eflags.updateEflagsShr(v1, v2)
 
 template EFLAGSCF*(): untyped {.dirty.} =
   CPU.eflags.isCarry()
