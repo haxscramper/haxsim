@@ -129,22 +129,22 @@ template JCCREL8*(cc: untyped, isFlag: untyped): untyped {.dirty.} =
     if isFlag:
       CPU.updateIp(this.imm8)
 
-JCCREL8(o, EFLAGSOF)
-JCCREL8(no, not(EFLAGSOF))
-JCCREL8(b, EFLAGSCF)
-JCCREL8(nb, not(EFLAGSCF))
-JCCREL8(z, EFLAGSZF)
-JCCREL8(nz, not(EFLAGSZF))
-JCCREL8(be, EFLAGSCF or EFLAGSZF)
-JCCREL8(a, not((EFLAGSCF or EFLAGSZF)))
-JCCREL8(s, EFLAGSSF)
-JCCREL8(ns, not(EFLAGSSF))
-JCCREL8(p, EFLAGSPF)
-JCCREL8(np, not(EFLAGSPF))
-JCCREL8(l, EFLAGSSF != EFLAGSOF)
-JCCREL8(nl, EFLAGSSF == EFLAGSOF)
-JCCREL8(le, EFLAGSZF or (EFLAGSSF != EFLAGSOF))
-JCCREL8(nle, not(EFLAGSZF) and (EFLAGSSF == EFLAGSOF))
+JCCREL8(o, this.eflags.isOverflow())
+JCCREL8(no, not(this.eflags.isOverflow()))
+JCCREL8(b, this.eflags.isCarry())
+JCCREL8(nb, not(this.eflags.isCarry()))
+JCCREL8(z, this.eflags.isZero())
+JCCREL8(nz, not(this.eflags.isZero()))
+JCCREL8(be, this.eflags.isCarry() or this.eflags.isZero())
+JCCREL8(a, not((this.eflags.isCarry() or this.eflags.isZero())))
+JCCREL8(s, this.eflags.isSign())
+JCCREL8(ns, not(this.eflags.isSign()))
+JCCREL8(p, this.eflags.isParity())
+JCCREL8(np, not(this.eflags.isParity()))
+JCCREL8(l, this.eflags.isSign() != this.eflags.isOverflow())
+JCCREL8(nl, this.eflags.isSign() == this.eflags.isOverflow())
+JCCREL8(le, this.eflags.isZero() or (this.eflags.isSign() != this.eflags.isOverflow()))
+JCCREL8(nle, not(this.eflags.isZero()) and (this.eflags.isSign() == this.eflags.isOverflow()))
 
 proc testRm8R8*(this: var InstrImpl): void =
   var r8, rm8: uint8
@@ -190,8 +190,7 @@ proc testAlImm8*(this: var InstrImpl): void =
   CPU.eflags.updateAND(al, this.imm8.uint8)
 
 proc movR8Imm8*(this: var InstrImpl): void =
-  var reg: uint8
-  reg = uint8(this.idata.opcode and ((1 shl 3) - 1))
+  var reg: uint8 = uint8(this.idata.opcode and ((1 shl 3) - 1))
   CPU.setGPreg(Reg8T(reg), this.imm8.uint8)
 
 proc movRm8Imm8*(this: var InstrImpl): void =
@@ -272,22 +271,22 @@ template SETCCRM8*(cc: untyped, isFlag: untyped): untyped {.dirty.} =
     CPU.setGPreg(Reg32T(this.getModRmRM()), uint32(isFlag))
   
 
-SETCCRM8(o, EFLAGSOF)
-SETCCRM8(no, not(EFLAGSOF))
-SETCCRM8(b, EFLAGSCF)
-SETCCRM8(nb, not(EFLAGSCF))
-SETCCRM8(z, EFLAGSZF)
-SETCCRM8(nz, not(EFLAGSZF))
-SETCCRM8(be, EFLAGSCF or EFLAGSZF)
-SETCCRM8(a, not((EFLAGSCF or EFLAGSZF)))
-SETCCRM8(s, EFLAGSSF)
-SETCCRM8(ns, not(EFLAGSSF))
-SETCCRM8(p, EFLAGSPF)
-SETCCRM8(np, not(EFLAGSPF))
-SETCCRM8(l, EFLAGSSF != EFLAGSOF)
-SETCCRM8(nl, EFLAGSSF == EFLAGSOF)
-SETCCRM8(le, EFLAGSZF or (EFLAGSSF != EFLAGSOF))
-SETCCRM8(nle, not(EFLAGSZF) and (EFLAGSSF == EFLAGSOF))
+SETCCRM8(o, this.eflags.isOverflow())
+SETCCRM8(no, not(this.eflags.isOverflow()))
+SETCCRM8(b, this.eflags.isCarry())
+SETCCRM8(nb, not(this.eflags.isCarry()))
+SETCCRM8(z, this.eflags.isZero())
+SETCCRM8(nz, not(this.eflags.isZero()))
+SETCCRM8(be, this.eflags.isCarry() or this.eflags.isZero())
+SETCCRM8(a, not((this.eflags.isCarry() or this.eflags.isZero())))
+SETCCRM8(s, this.eflags.isSign())
+SETCCRM8(ns, not(this.eflags.isSign()))
+SETCCRM8(p, this.eflags.isParity())
+SETCCRM8(np, not(this.eflags.isParity()))
+SETCCRM8(l, this.eflags.isSign() != this.eflags.isOverflow())
+SETCCRM8(nl, this.eflags.isSign() == this.eflags.isOverflow())
+SETCCRM8(le, this.eflags.isZero() or (this.eflags.isSign() != this.eflags.isOverflow()))
+SETCCRM8(nle, not(this.eflags.isZero()) and (this.eflags.isSign() == this.eflags.isOverflow()))
 
 proc addRm8Imm8*(this: var InstrImpl): void =
   var rm8: uint8
@@ -304,14 +303,14 @@ proc orRm8Imm8*(this: var InstrImpl): void =
 proc adcRm8Imm8*(this: var InstrImpl): void =
   var cf, rm8: uint8
   rm8 = this.exec.getRm8()
-  cf = EFLAGSCF.uint8
+  cf = this.eflags.isCarry().uint8
   this.exec.setRm8(rm8 + this.imm8.uint8 + cf)
   CPU.eflags.updateADD(rm8, this.imm8.uint8 + cf)
 
 proc sbbRm8Imm8*(this: var InstrImpl): void =
   var cf, rm8: uint8
   rm8 = this.exec.getRm8()
-  cf = EFLAGSCF.uint8
+  cf = this.eflags.isCarry().uint8
   this.exec.setRm8(rm8 - this.imm8.uint8 - cf)
   CPU.eflags.updateSUB(rm8, this.imm8.uint8 + cf)
 

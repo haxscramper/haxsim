@@ -284,18 +284,18 @@ proc cmpsM8M8*(this: var InstrImpl): void =
     m8S = ACS.getData8(this.exec.selectSegment(), CPU.getGPreg(ESI))
   m8D = ACS.getData8(ES, CPU.getGPreg(EDI))
   CPU.eflags.updateSUB(m8S, m8D)
-  discard UPDATEGPREG(ESI, int32(if EFLAGSDF: -1 else: 1))
-  discard UPDATEGPREG(EDI, int32(if EFLAGSDF: -1 else: 1))
+  discard UPDATEGPREG(ESI, int32(if this.eflags.isDirection(): -1 else: 1))
+  discard UPDATEGPREG(EDI, int32(if this.eflags.isDirection(): -1 else: 1))
   if this.getPreRepeat() != NONE:
     discard UPDATEGPREG(ECX, -1)
     case this.getPreRepeat():
       of REPZ:
-        if not(CPU.getGPreg(ECX)).toBool() or not(EFLAGSZF):
+        if not(CPU.getGPreg(ECX)).toBool() or not(this.eflags.isZero()):
           {.warning: "[FIXME] break".}
         
         {.warning: "[FIXME] cxxGoto repeat".}
       of REPNZ:
-        if not(CPU.getGPreg(ECX)).toBool() or EFLAGSZF:
+        if not(CPU.getGPreg(ECX)).toBool() or this.eflags.isZero():
           {.warning: "[FIXME] break".}
         
         {.warning: "[FIXME] cxxGoto repeat".}
@@ -309,18 +309,18 @@ proc cmpsM32M32*(this: var InstrImpl): void =
     m32S = ACS.getData32(this.exec.selectSegment(), CPU.getGPreg(ESI))
   m32D = ACS.getData32(ES, CPU.getGPreg(EDI))
   CPU.eflags.updateSUB(m32S, m32D)
-  discard UPDATEGPREG(ESI, int32(if EFLAGSDF: -1 else: 1))
-  discard UPDATEGPREG(EDI, int32(if EFLAGSDF: -1 else: 1))
+  discard UPDATEGPREG(ESI, int32(if this.eflags.isDirection(): -1 else: 1))
+  discard UPDATEGPREG(EDI, int32(if this.eflags.isDirection(): -1 else: 1))
   if this.getPreRepeat() != NONE:
     discard UPDATEGPREG(ECX, -1)
     case this.getPreRepeat():
       of REPZ:
-        if not(CPU.getGPreg(ECX)).toBool() or not(EFLAGSZF):
+        if not(CPU.getGPreg(ECX)).toBool() or not(this.eflags.isZero()):
           {.warning: "[FIXME] break".}
         
         {.warning: "[FIXME] cxxGoto repeat".}
       of REPNZ:
-        if not(CPU.getGPreg(ECX)).toBool() or EFLAGSZF:
+        if not(CPU.getGPreg(ECX)).toBool() or this.eflags.isZero():
           {.warning: "[FIXME] break".}
         
         {.warning: "[FIXME] cxxGoto repeat".}
@@ -386,22 +386,23 @@ template JCCREL32*(cc: untyped, isFlag: untyped): untyped {.dirty.} =
     
   
 
-JCCREL32(o, EFLAGSOF)
-JCCREL32(no, not(EFLAGSOF))
-JCCREL32(b, EFLAGSCF)
-JCCREL32(nb, not(EFLAGSCF))
-JCCREL32(z, EFLAGSZF)
-JCCREL32(nz, not(EFLAGSZF))
-JCCREL32(be, EFLAGSCF or EFLAGSZF)
-JCCREL32(a, not((EFLAGSCF or EFLAGSZF)))
-JCCREL32(s, EFLAGSSF)
-JCCREL32(ns, not(EFLAGSSF))
-JCCREL32(p, EFLAGSPF)
-JCCREL32(np, not(EFLAGSPF))
-JCCREL32(l, EFLAGSSF != EFLAGSOF)
-JCCREL32(nl, EFLAGSSF == EFLAGSOF)
-JCCREL32(le, EFLAGSZF or (EFLAGSSF != EFLAGSOF))
-JCCREL32(nle, not(EFLAGSZF) and (EFLAGSSF == EFLAGSOF))
+JCCREL32(o, this.eflags.isOverflow())
+JCCREL32(no, not(this.eflags.isOverflow()))
+JCCREL32(b, this.eflags.isCarry())
+JCCREL32(nb, not(this.eflags.isCarry()))
+JCCREL32(z, this.eflags.isZero())
+JCCREL32(nz, not(this.eflags.isZero()))
+JCCREL32(be, this.eflags.isCarry() or this.eflags.isZero())
+JCCREL32(a, not((this.eflags.isCarry() or this.eflags.isZero())))
+JCCREL32(s, this.eflags.isSign())
+JCCREL32(ns, not(this.eflags.isSign()))
+JCCREL32(p, this.eflags.isParity())
+JCCREL32(np, not(this.eflags.isParity()))
+JCCREL32(l, this.eflags.isSign() != this.eflags.isOverflow())
+JCCREL32(nl, this.eflags.isSign() == this.eflags.isOverflow())
+JCCREL32(le, this.eflags.isZero() or (this.eflags.isSign() != this.eflags.isOverflow()))
+JCCREL32(nle, not(this.eflags.isZero()) and (this.eflags.isSign() == this.eflags.isOverflow()))
+
 proc imulR32Rm32*(this: var InstrImpl): void =
   var rm32S, r32S: int16
   r32S = this.exec.getR32().int16()
@@ -441,7 +442,7 @@ proc adcRm32Imm32*(this: var InstrImpl): void =
   var rm32: uint32
   var cf: uint8
   rm32 = this.exec.getRm32().uint32()
-  cf = EFLAGSCF.uint8
+  cf = this.eflags.isCarry().uint8
   this.exec.setRm32(rm32 + this.imm32.uint32 + cf)
   CPU.eflags.updateADD(rm32, this.imm32.uint32 + cf)
 
@@ -449,7 +450,7 @@ proc sbbRm32Imm32*(this: var InstrImpl): void =
   var rm32: uint32
   var cf: uint8
   rm32 = this.exec.getRm32().uint32()
-  cf = EFLAGSCF.uint8
+  cf = this.eflags.isCarry().uint8
   this.exec.setRm32(rm32 - this.imm32.uint32 - cf)
   CPU.eflags.updateSUB(rm32, this.imm32.uint32 + cf)
 
@@ -488,7 +489,7 @@ proc adcRm32Imm8*(this: var InstrImpl): void =
   var rm32: uint32
   var cf: uint8
   rm32 = this.exec.getRm32().uint32()
-  cf = EFLAGSCF.uint8
+  cf = this.eflags.isCarry().uint8
   this.exec.setRm32(rm32 + this.imm8.uint32 + cf)
   CPU.eflags.updateADD(rm32, this.imm8.uint32 + cf)
 
@@ -496,7 +497,7 @@ proc sbbRm32Imm8*(this: var InstrImpl): void =
   var rm32: uint32
   var cf: uint8
   rm32 = this.exec.getRm32().uint32()
-  cf = EFLAGSCF.uint8
+  cf = this.eflags.isCarry().uint8
   this.exec.setRm32(rm32 - this.imm8.uint32 - cf)
   CPU.eflags.updateSUB(rm32, this.imm8.uint32 + cf)
 

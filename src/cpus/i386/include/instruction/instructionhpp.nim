@@ -1,4 +1,4 @@
-import hardware/processorhpp
+import hardware/[processorhpp, eflagshpp]
 import std/tables
 import ../instruction/opcodes
 import commonhpp
@@ -24,12 +24,6 @@ template SETIP*(v: untyped): untyped {.dirty.} = CPU.setIp(v)
 template UPDATEGPREG*(reg: untyped, v: untyped): untyped {.dirty.} =
   CPU.updateGpreg(reg, v)
 
-template EFLAGSCF*(): untyped {.dirty.} = CPU.eflags.isCarry()
-template EFLAGSPF*(): untyped {.dirty.} = CPU.eflags.isParity()
-template EFLAGSZF*(): untyped {.dirty.} = CPU.eflags.isZero()
-template EFLAGSSF*(): untyped {.dirty.} = CPU.eflags.isSign()
-template EFLAGSOF*(): untyped {.dirty.} = CPU.eflags.isOverflow()
-template EFLAGSDF*(): untyped {.dirty.} = CPU.eflags.isDirection()
 template READMEM32*(addrD: untyped): untyped {.dirty.} =
   EMU.accs.getData32(this.selectSegment(), addrD)
 
@@ -188,7 +182,8 @@ proc initExecInstr*(): ExecInstr =
 func idata*(impl: InstrImpl): InstrData = impl.exec.idata
 func idata*(impl: var InstrImpl): var InstrData = impl.exec.idata
 func emu*(impl: InstrImpl): Emulator = impl.exec.emu
-
+func cpu*(impl: InstrImpl): Processor = impl.exec.emu.cpu
+func eflags*(impl: InstrImpl): Eflags = impl.exec.emu.cpu.eflags
 
 proc push32*(this: InstrImpl, v: EDWord) = this.emu.accs.push32(v)
 proc push16*(this: InstrImpl, v: EWord)  = this.emu.accs.push16(v)

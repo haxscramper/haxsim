@@ -281,17 +281,17 @@ proc cmpsM8M8*(this: var InstrImpl): void =
     m8S = ACS.getData8(this.exec.selectSegment(), CPU.getGPreg(SI))
     m8D = ACS.getData8(ES, CPU.getGPreg(DI))
     CPU.eflags.updateSUB(m8S, m8D)
-    discard UPDATEGPREG(SI, int16(if EFLAGSDF: -1 else: 1))
-    discard UPDATEGPREG(DI, int16(if EFLAGSDF: -1 else: 1))
+    discard UPDATEGPREG(SI, int16(if this.eflags.isDirection(): -1 else: 1))
+    discard UPDATEGPREG(DI, int16(if this.eflags.isDirection(): -1 else: 1))
     if this.getPreRepeat() != NONE:
       discard UPDATEGPREG(CX, -1)
       case this.getPreRepeat():
         of REPZ:
-          if not(CPU.getGPreg(CX)).toBool() or not(EFLAGSZF):
+          if not(CPU.getGPreg(CX)).toBool() or not(this.eflags.isZero()):
             repeat = false
 
         of REPNZ:
-          if not(CPU.getGPreg(CX)).toBool() or EFLAGSZF:
+          if not(CPU.getGPreg(CX)).toBool() or this.eflags.isZero():
             repeat = false
 
         else:
@@ -304,18 +304,18 @@ proc cmpsM16M16*(this: var InstrImpl): void =
     m16S = ACS.getData16(this.exec.selectSegment(), CPU.getGPreg(SI))
   m16D = ACS.getData16(ES, CPU.getGPreg(DI))
   CPU.eflags.updateSUB(m16S, m16D)
-  discard UPDATEGPREG(SI, (if EFLAGSDF: -1 else: 1))
-  discard UPDATEGPREG(DI, (if EFLAGSDF: -1 else: 1))
+  discard UPDATEGPREG(SI, (if this.eflags.isDirection(): -1 else: 1))
+  discard UPDATEGPREG(DI, (if this.eflags.isDirection(): -1 else: 1))
   if this.getPreRepeat() != NONE:
     discard UPDATEGPREG(CX, -1)
     case this.getPreRepeat():
       of REPZ:
-        if not(CPU.getGPreg(CX)).toBool() or not(EFLAGSZF):
+        if not(CPU.getGPreg(CX)).toBool() or not(this.eflags.isZero()):
           {.warning: "[FIXME] break".}
 
         {.warning: "[FIXME] cxxGoto repeat".}
       of REPNZ:
-        if not(CPU.getGPreg(CX)).toBool() or EFLAGSZF:
+        if not(CPU.getGPreg(CX)).toBool() or this.eflags.isZero():
           {.warning: "[FIXME] break".}
 
         {.warning: "[FIXME] cxxGoto repeat".}
@@ -378,22 +378,22 @@ template JCCREL16*(cc: untyped, isFlag: untyped): untyped {.dirty.} =
     if isFlag:
       CPU.updateEIp(this.imm16.int32)
 
-JCCREL16(o, EFLAGSOF)
-JCCREL16(no, not(EFLAGSOF))
-JCCREL16(b, EFLAGSCF)
-JCCREL16(nb, not(EFLAGSCF))
-JCCREL16(z, EFLAGSZF)
-JCCREL16(nz, not(EFLAGSZF))
-JCCREL16(be, EFLAGSCF or EFLAGSZF)
-JCCREL16(a, not((EFLAGSCF or EFLAGSZF)))
-JCCREL16(s, EFLAGSSF)
-JCCREL16(ns, not(EFLAGSSF))
-JCCREL16(p, EFLAGSPF)
-JCCREL16(np, not(EFLAGSPF))
-JCCREL16(l, EFLAGSSF != EFLAGSOF)
-JCCREL16(nl, EFLAGSSF == EFLAGSOF)
-JCCREL16(le, EFLAGSZF or (EFLAGSSF != EFLAGSOF))
-JCCREL16(nle, not(EFLAGSZF) and (EFLAGSSF == EFLAGSOF))
+JCCREL16(o, this.eflags.isOverflow())
+JCCREL16(no, not(this.eflags.isOverflow()))
+JCCREL16(b, this.eflags.isCarry())
+JCCREL16(nb, not(this.eflags.isCarry()))
+JCCREL16(z, this.eflags.isZero())
+JCCREL16(nz, not(this.eflags.isZero()))
+JCCREL16(be, this.eflags.isCarry() or this.eflags.isZero())
+JCCREL16(a, not((this.eflags.isCarry() or this.eflags.isZero())))
+JCCREL16(s, this.eflags.isSign())
+JCCREL16(ns, not(this.eflags.isSign()))
+JCCREL16(p, this.eflags.isParity())
+JCCREL16(np, not(this.eflags.isParity()))
+JCCREL16(l, this.eflags.isSign() != this.eflags.isOverflow())
+JCCREL16(nl, this.eflags.isSign() == this.eflags.isOverflow())
+JCCREL16(le, this.eflags.isZero() or (this.eflags.isSign() != this.eflags.isOverflow()))
+JCCREL16(nle, not(this.eflags.isZero()) and (this.eflags.isSign() == this.eflags.isOverflow()))
 
 proc imulR16Rm16*(this: var InstrImpl): void =
   var rm16S, r16S: int16
@@ -441,7 +441,7 @@ proc adcRm16Imm16*(this: var InstrImpl): void =
   var rm16: uint16
   var cf: uint8
   rm16 = this.exec.getRm16()
-  cf = EFLAGSCF.uint8
+  cf = this.eflags.isCarry().uint8
   this.exec.setRm16(rm16 + this.imm16.uint16 + cf)
   CPU.eflags.updateADD(rm16, this.imm16.uint16 + cf)
 
@@ -449,7 +449,7 @@ proc sbbRm16Imm16*(this: var InstrImpl): void =
   var rm16: uint16
   var cf: uint8
   rm16 = this.exec.getRm16()
-  cf = EFLAGSCF.uint8
+  cf = this.eflags.isCarry().uint8
   this.exec.setRm16(rm16 - this.imm16.uint16 - cf)
   CPU.eflags.updateSUB(rm16, this.imm16.uint16 + cf)
 
@@ -492,7 +492,7 @@ proc adcRm16Imm8*(this: var InstrImpl): void =
   var rm16: uint16
   var cf: uint8
   rm16 = this.exec.getRm16()
-  cf = EFLAGSCF.uint8
+  cf = this.eflags.isCarry().uint8
   this.exec.setRm16(rm16 + this.imm8.uint16 + cf)
   CPU.eflags.updateADD(rm16, this.imm8.uint8 + cf)
 
@@ -500,7 +500,7 @@ proc sbbRm16Imm8*(this: var InstrImpl): void =
   var rm16: uint16
   var cf: uint8
   rm16 = this.exec.getRm16()
-  cf = EFLAGSCF.uint8
+  cf = this.eflags.isCarry().uint8
   this.exec.setRm16(rm16 - this.imm8.uint8 - cf)
   CPU.eflags.updateSUB(rm16, this.imm8.uint8 + cf)
 
