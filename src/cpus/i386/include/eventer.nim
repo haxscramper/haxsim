@@ -25,8 +25,8 @@ type
 
   EmuEvent* = ref object of RootObj
     kind*: EmuEventKind
-    memAddr*: uint16
-    size*: uint16
+    memAddr*: uint64
+    size*: uint64
     value*: EmuValue
     info*: typeof(instantiationInfo())
 
@@ -42,6 +42,7 @@ type
   EmuLogger* = ref object
     eventHandler*: EmuEventHandler
 
+func `$`*(id: BackwardsIndex): string = "^" & $id.int
 
 func toString*(value: EmuValue): string =
   # echov value.value.toHex(), value.system
@@ -50,7 +51,9 @@ func toString*(value: EmuValue): string =
     of evs8: result = toHex(value.value, 8)[^((value.size div 3) + 2) .. ^1]
     of evs10: result = ($value.value)[
       ^(log10(float(2 ^ value.size)).int + 2) .. ^1]
-    of evs16: result = toHex(value.value)[^((value.size div 4) + 2) .. ^1]
+    of evs16:
+      let slice = ^((value.size div 4) + 2) .. ^1
+      result = toHex(value.value)[slice]
 
 func `$`*(va: EmuValue): string = toString(va)
 
@@ -71,7 +74,13 @@ const
     eekCallOpcodeImpl,
     eekGetModrmMod,
     eekGetModrmRm,
-    eekGetModrmReg
+    eekGetModrmReg,
+    eekSetReg8,
+    eekSetReg16,
+    eekSetReg32,
+    eekGetReg8,
+    eekGetReg16,
+    eekGetReg32
   }
 
   eekEndKinds* = {
@@ -83,6 +92,9 @@ const
 
 proc ev*(kind: EmuEventKind): EmuEvent =
   EmuEvent(kind: kind)
+
+proc ev*[T](der: typedesc[T], kind: EmuEventKind): T =
+  T(kind: kind)
 
 func evEnd*(): EmuEvent = EmuEvent(kind: eekEnd)
 

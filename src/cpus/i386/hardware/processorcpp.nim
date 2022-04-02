@@ -1,10 +1,10 @@
 import hardware/[processorhpp, crhpp, eflagshpp]
 import commonhpp
 
-proc initProcessor*(): Processor =
+proc initProcessor*(logger: EmuLogger): Processor =
   # memset(gpregs, 0, sizeof(gpregs))
   # memset(sgregs, 0, sizeof(sgregs))
-  result = Processor()
+  result = Processor(logger: logger)
   initCR(result)
   # asgnAux[CR](result, initCR())
 
@@ -14,7 +14,7 @@ proc initProcessor*(): Processor =
   result.sgregs[CS].raw = 0xf000
   result.sgregs[CS].cache.base = 0xffff0000u32
   result.sgregs[CS].cache.flags.`type`.segc = 1
-  for i in ES ..< SGREGS_COUNT:
+  for i in ES .. GS:
     result.sgregs[i].cache.limit = 0xffff
     result.sgregs[i].cache.flags.P = 1
     result.sgregs[i].cache.flags.`type`.A = 1

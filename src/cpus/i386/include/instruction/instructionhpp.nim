@@ -266,6 +266,9 @@ type
     parse*: ParseInstr
     emu*: EmuInstr
 
+  EmuInstrEvent* = ref object of EmuEvent
+    instr*: InstrData
+
   instrfuncT* = proc(this: var InstrImpl)
 
 template log*(instr: InstrImpl, ev: EmuEvent): untyped =

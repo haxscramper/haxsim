@@ -108,12 +108,14 @@ func copymem*[R](
     dest: var MemBlob[R], source: MemPointer, size: ESize = R) =
   dest[0 ..< size] = source.data[][source.pos ..< source.pos + size]
 
-
+func toBin*(u: uint, size: int): string =
+  toBin(u.BiggestInt, size)
 
 func formatOpcode*(code: uint16): string =
+  let is2 = toBool(code and 0x0F00)
   "0x$# ($#)" % [
-    toHex(code)[^4 .. ^1],
-    tern(toBool(code and 0x0F00),
+    toHex(code)[^tern(is2, 4, 2) .. ^1],
+    tern(is2,
          $ICode(code.uint64 shl 12),
          $ICode(code.uint64 shl 16))
   ]

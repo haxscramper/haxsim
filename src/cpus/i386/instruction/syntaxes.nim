@@ -1,6 +1,56 @@
 import std/enumutils
 
 type
+  Reg32T* = enum
+    EAX
+    ECX
+    EDX ## Called the Data register It is used for I/O port access,
+    ## arithmetic, some interrupt calls.
+    EBX
+    ESP ## Stack pointer register Holds the top address of the stack
+    EBP ## Stack Base pointer register. Holds the base address of the stack
+    ESI ## Source index register. Used for string and memory array copying
+    EDI ## Destination index register Used for string, memory array copying
+    ## and setting and for far pointer addressing with ES
+    GPREGSCOUNT
+
+  Reg16T* = enum
+    AX
+    CX
+    DX
+    BX
+    SP ## Part of ESP
+    BP ## Part of EBP
+    SI ## Part of ESI
+    DI ## Part of EDI
+
+  Reg8T* = enum
+    AL
+    CL
+    DL
+    BL
+    AH
+    CH
+    DH
+    BH
+
+
+  SgRegT* = enum
+    ES
+    CS ## 'Code Segment' Holds the Code segment in which your program runs.
+    SS ## 'Stack Segment' Holds the Stack segment your program uses.
+    DS ## 'Data Segment' Holds the Data segment that your program accesses.
+    FS
+    GS
+
+  DTregT* = enum
+    GDTR
+    IDTR
+    LDTR
+    TR
+
+
+type
   OpAddrKind* = enum
     opAddrImm1 = "One"
     opAddrImm3 = "Three"

@@ -1,61 +1,8 @@
 import commonhpp
 import eflagshpp
 import crhpp
-
-type
-  Reg32T* = enum
-    EAX
-    ECX
-    EDX ## Called the Data register It is used for I/O port access,
-    ## arithmetic, some interrupt calls.
-    EBX
-    ESP ## Stack pointer register Holds the top address of the stack
-    EBP ## Stack Base pointer register. Holds the base address of the stack
-    ESI ## Source index register. Used for string and memory array copying
-    EDI ## Destination index register Used for string, memory array copying
-    ## and setting and for far pointer addressing with ES
-    GPREGSCOUNT
-
-type
-  Reg16T* = enum
-    AX
-    CX
-    DX
-    BX
-    SP ## Part of ESP
-    BP ## Part of EBP
-    SI ## Part of ESI
-    DI ## Part of EDI
-
-type
-  Reg8T* = enum
-    AL
-    CL
-    DL
-    BL
-    AH
-    CH
-    DH
-    BH
-
-
-type
-  SgRegT* = enum
-    ES
-    CS ## 'Code Segment' Holds the Code segment in which your program runs.
-    SS ## 'Stack Segment' Holds the Stack segment your program uses.
-    DS ## 'Data Segment' Holds the Data segment that your program accesses.
-    FS
-    GS
-    SGREGSCOUNT
-
-type
-  dtregT* = enum
-    GDTR
-    IDTR
-    LDTR
-    TR
-    DTREGSCOUNT
+import ../../instruction/syntaxes
+export Reg32T, Reg16T, Reg8T, SgRegT, DTregT
 
 type
   GPRegister* {.union.} = object
@@ -179,15 +126,19 @@ type
     ip*: uint16
 
   Processor* = ref object of CR
+    logger*: EmuLogger
     eflags*: Eflags
     field0*: ProcessorField0
-    gpregs*: array[GPREGSCOUNT, GPRegister]
-    sgregs*: array[SGREGSCOUNT, SGRegister] ## Segment registers hold the
+    gpregs*: array[Reg32T, GPRegister]
+    sgregs*: array[SgRegT, SGRegister] ## Segment registers hold the
     ## segment address of various items. They are only available in 16
     ## values. They can only be set by a general register or special
     ## instructions.
-    dtregs*: array[DTREGSCOUNT, DTRegister]
+    dtregs*: array[DTregT, DTRegister]
     halt*: bool
+
+template log*(p: Processor, ev: EmuEvent, depth: int = -2): untyped =
+  p.logger.log(ev, depth)
 
 proc eip*(this: Processor): uint32 = this.field0.eip
 proc `eip=`*(this: var Processor, value: uint32) = this.field0.eip = value
@@ -217,32 +168,31 @@ proc getGpreg*(this: var Processor, n: Reg32T): uint32 =
   return this.gpregs[n].reg32
 
 proc getGpreg*(this: var Processor, n: Reg16T): uint16 =
-  ASSERT(cast[Reg32T](n) < GPREGSCOUNT)
+  ASSERT(Reg32T(n) < GPREGSCOUNT)
   return this.gpregs[Reg32T(n)].reg16
 
 proc getGpreg*(this: var Processor, n: Reg8T): uint8 =
-  ASSERT(cast[Reg32T](n) < GPREGSCOUNT)
-  return (if n < AH:
-            this.gpregs[Reg32T(n)].reg8L
+  if n < AH:
+    result = this.gpregs[Reg32T(n)].reg8L
 
-          else:
-            this.gpregs[Reg32T(n.int - AH.int)].reg8H
-          )
+  else:
+    result = this.gpregs[Reg32T(n.int - AH.int)].reg8H
+
+  this.log ev(eekGetReg8).withIt do:
+    it.memAddr = n.uint64
+    it.value = evalue(result, sizeof(result))
+
 
 proc getSgreg*(this: Processor, n: SgRegT, reg: var SGRegister): void =
-  ASSERT(n < SGREGSCOUNT)
   reg = this.sgregs[n]
 
-proc getDtregSelector*(this: Processor, n: dtregT): uint32 =
-  ASSERT(n < DTREGSCOUNT)
+proc getDtregSelector*(this: Processor, n: DTregT): uint32 =
   return this.dtregs[n].selector
 
-proc getDtregBase*(this: Processor, n: dtregT): uint32 =
-  ASSERT(n < DTREGSCOUNT)
+proc getDtregBase*(this: Processor, n: DTregT): uint32 =
   return this.dtregs[n].base
 
-proc getDtregLimit*(this: Processor, n: dtregT): uint16 =
-  ASSERT(n < DTREGSCOUNT)
+proc getDtregLimit*(this: Processor, n: DTregT): uint16 =
   return this.dtregs[n].limit
 
 proc setEip*(this: var Processor, v: uint32): void =
@@ -252,15 +202,12 @@ proc setIp*(this: var Processor, v: uint16): void =
   this.ip = v
 
 proc setGpreg*(this: var Processor, n: Reg32T, v: uint32): void =
-  ASSERT(n < GPREGSCOUNT)
   this.gpregs[n].reg32 = v
 
 proc setGpreg*(this: var Processor, n: Reg16T, v: uint16): void =
-  ASSERT(cast[Reg32T](n) < GPREGSCOUNT)
   this.gpregs[Reg32T(n)].reg16 = v
 
 proc setGpreg*(this: var Processor, n: Reg8T, v: uint8): void =
-  ASSERT(cast[Reg32T](n) < GPREGSCOUNT)
   if n < AH:
     this.gpregs[Reg32T(n)].reg8L = v
 
@@ -268,11 +215,9 @@ proc setGpreg*(this: var Processor, n: Reg8T, v: uint8): void =
     this.gpregs[Reg32T(n.int - AH.int)].reg8H = v
 
 proc setSgreg*(this: var Processor, n: SgRegT, reg: SGRegister): void =
-  ASSERT(n < SGREGSCOUNT)
   this.sgregs[n] = reg
 
-proc setDtreg*(this: var Processor, n: dtregT, sel: uint16, base: uint32, limit: uint16): void =
-  ASSERT(n < DTREGSCOUNT)
+proc setDtreg*(this: var Processor, n: DTregT, sel: uint16, base: uint32, limit: uint16): void =
   this.dtregs[n].selector = sel
   this.dtregs[n].base = base
   this.dtregs[n].limit = limit
@@ -286,17 +231,14 @@ proc updateIp*(this: var Processor, v: int32): uint32 =
   return this.ip
 
 proc updateGpreg*(this: var Processor, n: Reg32T, v: int32): uint32 =
-  ASSERT(n < GPREGSCOUNT)
   this.gpregs[n].reg32 = (this.gpregs[n].reg32 + v.uint32)
   return this.gpregs[n].reg32
 
 proc updateGpreg*(this: var Processor, n: Reg16T, v: int16): uint16 =
-  ASSERT(cast[Reg32T](n) < GPREGSCOUNT)
   this.gpregs[Reg32T(n)].reg16 = (this.gpregs[Reg32T(n)].reg16 + v.uint16)
   return this.gpregs[Reg32T(n)].reg16
 
 proc updateGpreg*(this: var Processor, n: Reg8T, v: int8): uint8 =
-  ASSERT(cast[Reg32T](n) < GPREGSCOUNT)
   let rhs = if n < AH:
               this.gpregs[Reg32T(n)].reg8L + v.uint8
             else:

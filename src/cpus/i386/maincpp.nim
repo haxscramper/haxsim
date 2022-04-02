@@ -113,10 +113,22 @@ proc initFull*(emuset: var EmuSetting): FullImpl =
 
     var res = repeat("  ", ind) & ($ev.kind + fgBlue |<< 16)
     if ev.kind == eekCallOpcodeImpl:
+      let ev = EmuInstrEvent(ev)
       res.add " "
       res.add formatOpcode(ev.value.value.uint16) + fgGreen
+      res.add " mod:$# reg:$# rm:$#" % [
+        toBin(ev.instr.modrm.mod.uint, 2),
+        toBin(ev.instr.modrm.reg.uint, 3),
+        toBin(ev.instr.modrm.rm.uint, 3)
+      ]
 
     elif ev.kind in eekValueKinds:
+      case ev.kind:
+        of eekGetReg8, eekSetReg8: res.add " " & $Reg8T(ev.memAddr)
+        of eekGetReg16, eekSetReg16: res.add " " & $Reg16T(ev.memAddr)
+        of eekGetReg32, eekSetReg32: res.add " " & $Reg32T(ev.memAddr)
+        else: discard
+
       res.add " = "
       res.add $ev.value + fgCyan
 

@@ -7,18 +7,19 @@ template INSTR(): untyped = this.exec.instr
 
 proc exec*(this: var InstrImpl): bool =
   var opcode: uint16 = INSTR.opcode
-  var size = 2
+  var size = 8
   if opcode shr 8 == 0x0f:
-    size += 2
     opcode = (opcode and 0xff) or 0x0100
+    size += 8
   
   
   if this.exec.instrfuncs[opcode].isNil():
     assert(false, "not implemented OPCODE " & pstring(INSTR.opcodeData))
     return false
 
-  this.log ev(eekCallOpcodeImpl).withIt do:
+  this.log ev(EmuInstrEvent, eekCallOpcodeImpl).withIt do:
     it.value = evalue(INSTR.opcode, size)
+    it.instr = INSTR
 
   this.exec.instrfuncs[opcode](this)
   this.log evEnd()

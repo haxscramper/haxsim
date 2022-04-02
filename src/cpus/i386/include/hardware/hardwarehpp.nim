@@ -13,6 +13,6 @@ type
     io*: IO
   
 proc initHardware*(size: ESize, logger: EmuLogger): Hardware =
-  result.cpu = initProcessor()
+  result.cpu = initProcessor(logger)
   result.mem = initMemory(size, logger)
   result.io = initIO(result.mem)
