@@ -361,10 +361,10 @@ proc outImm8Eax*(this: var InstrImpl): void =
 
 proc callRel32*(this: var InstrImpl): void =
   PUSH32(GETEIP())
-  discard UPDATEEIP(IMM32)
+  CPU.updateEIp(IMM32)
 
 proc jmpRel32*(this: var InstrImpl): void =
-  discard UPDATEEIP(IMM32)
+  CPU.updateEIp(IMM32)
 
 proc jmpfPtr16_32*(this: var InstrImpl): void =
   this.exec.jmpf(PTR16.uint16, IMM32.uint32)
@@ -384,7 +384,7 @@ proc outDxEax*(this: var InstrImpl): void =
 template JCCREL32*(cc: untyped, isFlag: untyped): untyped {.dirty.} =
   proc `j cc rel32`*(this: var InstrImpl): void =
     if isFlag:
-      discard UPDATEEIP(IMM32)
+      CPU.updateEIp(IMM32)
     
   
 
@@ -412,23 +412,19 @@ proc imulR32Rm32*(this: var InstrImpl): void =
   discard EFLAGSUPDATEIMUL(r32S, rm32S)
 
 proc movzxR32Rm8*(this: var InstrImpl): void =
-  var rm8: uint8
-  rm8 = this.exec.getRm8()
+  var rm8: uint8 = this.exec.getRm8()
   this.exec.setR32(rm8)
 
 proc movzxR32Rm16*(this: var InstrImpl): void =
-  var rm16: uint16
-  rm16 = this.exec.getRm16()
+  var rm16: uint16 = this.exec.getRm16()
   this.exec.setR32(rm16)
 
 proc movsxR32Rm8*(this: var InstrImpl): void =
-  var rm8S: int8
-  rm8S = this.exec.getRm8().int8()
+  var rm8S: int8 = this.exec.getRm8().int8()
   this.exec.setR32(uint32(rm8S))
 
 proc movsxR32Rm16*(this: var InstrImpl): void =
-  var rm16S: int16
-  rm16S = this.exec.getRm16().int16()
+  var rm16S: int16 = this.exec.getRm16().int16()
   this.exec.setR32(uint32(rm16S))
 
 
@@ -439,8 +435,7 @@ proc addRm32Imm32*(this: var InstrImpl): void =
   discard EFLAGSUPDATEADD(rm32, IMM32.uint32)
 
 proc orRm32Imm32*(this: var InstrImpl): void =
-  var rm32: uint32
-  rm32 = this.exec.getRm32().uint32()
+  var rm32: uint32 = this.exec.getRm32().uint32()
   this.exec.setRm32(rm32 or IMM32.uint32)
   discard EFLAGSUPDATEOR(rm32, IMM32.uint32)
 
@@ -461,8 +456,7 @@ proc sbbRm32Imm32*(this: var InstrImpl): void =
   discard EFLAGSUPDATESUB(rm32, IMM32.uint32 + cf)
 
 proc andRm32Imm32*(this: var InstrImpl): void =
-  var rm32: uint32
-  rm32 = this.exec.getRm32().uint32()
+  var rm32: uint32 = this.exec.getRm32().uint32()
   this.exec.setRm32(rm32 and IMM32.uint32)
   discard EFLAGSUPDATEAND(rm32, IMM32.uint32)
 
@@ -473,8 +467,7 @@ proc subRm32Imm32*(this: var InstrImpl): void =
   discard EFLAGSUPDATESUB(rm32, IMM32.uint32)
 
 proc xorRm32Imm32*(this: var InstrImpl): void =
-  var rm32: uint32
-  rm32 = this.exec.getRm32().uint32()
+  var rm32: uint32 = this.exec.getRm32().uint32()
   this.exec.setRm32(rm32 xor IMM32.uint32)
 
 proc cmpRm32Imm32*(this: var InstrImpl): void =
@@ -484,14 +477,12 @@ proc cmpRm32Imm32*(this: var InstrImpl): void =
 
 
 proc addRm32Imm8*(this: var InstrImpl): void =
-  var rm32: uint32
-  rm32 = this.exec.getRm32().uint32()
+  var rm32: uint32 = this.exec.getRm32().uint32()
   this.exec.setRm32(rm32 + IMM8.uint32)
   discard EFLAGSUPDATEADD(rm32, IMM8.uint32)
 
 proc orRm32Imm8*(this: var InstrImpl): void =
-  var rm32: uint32
-  rm32 = this.exec.getRm32().uint32()
+  var rm32: uint32 = this.exec.getRm32().uint32()
   this.exec.setRm32(rm32 or IMM8.uint32)
   discard EFLAGSUPDATEOR(rm32, IMM8.uint32)
 
@@ -518,8 +509,7 @@ proc andRm32Imm8*(this: var InstrImpl): void =
   discard EFLAGSUPDATEAND(rm32, IMM8.uint32)
 
 proc subRm32Imm8*(this: var InstrImpl): void =
-  var rm32: uint32
-  rm32 = this.exec.getRm32().uint32()
+  var rm32: uint32 = this.exec.getRm32().uint32()
   this.exec.setRm32(rm32 - IMM8.uint32)
   discard EFLAGSUPDATESUB(rm32, IMM8.uint32)
 
@@ -529,20 +519,17 @@ proc xorRm32Imm8*(this: var InstrImpl): void =
   this.exec.setRm32(rm32 xor IMM8.uint32)
 
 proc cmpRm32Imm8*(this: var InstrImpl): void =
-  var rm32: uint32
-  rm32 = this.exec.getRm32().uint32()
+  var rm32: uint32 = this.exec.getRm32().uint32()
   discard EFLAGSUPDATESUB(rm32, IMM8.uint32)
 
 
 proc shlRm32Imm8*(this: var InstrImpl): void =
-  var rm32: uint32
-  rm32 = this.exec.getRm32().uint32()
+  var rm32: uint32 = this.exec.getRm32().uint32()
   this.exec.setRm32(rm32 shl IMM8.uint32)
   discard EFLAGSUPDATESHL(rm32, IMM8.uint8)
 
 proc shrRm32Imm8*(this: var InstrImpl): void =
-  var rm32: uint32
-  rm32 = this.exec.getRm32().uint32()
+  var rm32: uint32 = this.exec.getRm32().uint32()
   this.exec.setRm32(rm32 shr IMM8.uint32)
   discard EFLAGSUPDATESHR(rm32, IMM8.uint8)
 
@@ -584,10 +571,8 @@ proc salRm32Cl*(this: var InstrImpl): void =
   
 
 proc sarRm32Cl*(this: var InstrImpl): void =
-  var rm32S: int32
-  var cl: uint8
-  rm32S = this.exec.getRm32().int32()
-  cl = CPU.getGPreg(CL)
+  var rm32S: int32 = this.exec.getRm32().int32()
+  var cl: uint8 = CPU.getGPreg(CL)
   this.exec.setRm32(uint32(rm32S shr cl))
   
 
@@ -596,7 +581,7 @@ proc testRm32Imm32*(this: var InstrImpl): void =
   var imm32, rm32: uint32
   rm32 = this.exec.getRm32().uint32()
   imm32 = ACS.getCode32(0)
-  discard UPDATEEIP(4)
+  CPU.updateEIp(4)
   discard EFLAGSUPDATEAND(rm32, imm32)
 
 proc notRm32*(this: var InstrImpl): void =
@@ -605,8 +590,7 @@ proc notRm32*(this: var InstrImpl): void =
   this.exec.setRm32(not(rm32))
 
 proc negRm32*(this: var InstrImpl): void =
-  var rm32S: int32
-  rm32S = this.exec.getRm32().int32()
+  var rm32S: int32 = this.exec.getRm32().int32()
   this.exec.setRm32(uint32(-(rm32S)))
   discard EFLAGSUPDATESUB(cast[uint32](0), rm32S.uint32)
 
@@ -642,11 +626,9 @@ proc divEdxEaxRm32*(this: var InstrImpl): void =
   CPU.setGPreg(EDX, uint32(val mod rm32))
 
 proc idivEdxEaxRm32*(this: var InstrImpl): void =
-  var rm32S: int32
-  var valS: int64
-  rm32S = this.exec.getRm32().int32()
+  var rm32S: int32 = this.exec.getRm32().int32()
   EXCEPTION(EXPDE, not(rm32S.toBool()))
-  valS = CPU.getGPreg(EDX).int64
+  var valS: int64 = CPU.getGPreg(EDX).int64
   valS = (valS shl 32)
   valS = (valS or CPU.getGPreg(EAX).int64)
   CPU.setGPreg(EAX, uint32(valS div rm32S))

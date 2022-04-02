@@ -3,10 +3,15 @@ import hmisc/core/all
 
 type
   EmuEventKind* = enum
+    eekInitEmulator = "init emulator"
+    eekInitCPU = "init cpu"
+
+
     eekStartInstructionFetch = "fetch instruction"
     # eekEndInstructionFetch
     eekCallOpcodeImpl = "call opcode"
-    # eekCallOpcodeEnd
+
+    # value kind start
     eekGetModrmReg = "get modrm.reg"
     eekGetModrmMod = "get modrm.mod"
     eekGetModrmRM = "get modrm.rm"
@@ -14,12 +19,16 @@ type
     eekSetReg16 = "set reg 16"
     eekSetReg32 = "set reg 32"
 
+    eekSetIP = "set IP"
+    eekSetEIP = "set EIP"
+
     eekGetReg8 = "get reg 8"
     eekGetReg16 = "get reg 16"
     eekGetReg32 = "get reg 32"
 
     eekInIO = "io in"
     eekOutIO = "io out"
+    # value kind end
 
     eekEnd = "end"
 
@@ -41,6 +50,7 @@ type
 
   EmuLogger* = ref object
     eventHandler*: EmuEventHandler
+    buffer*: seq[EmuEvent]
 
 func `$`*(id: BackwardsIndex): string = "^" & $id.int
 
@@ -67,20 +77,14 @@ func evalue*(
 const
   eekStartKinds* = {
     eekStartInstructionFetch,
-    eekCallOpcodeImpl
+    eekCallOpcodeImpl,
+    eekInitCPU,
+    eekInitEmulator
   }
 
   eekValueKinds* = {
     eekCallOpcodeImpl,
-    eekGetModrmMod,
-    eekGetModrmRm,
-    eekGetModrmReg,
-    eekSetReg8,
-    eekSetReg16,
-    eekSetReg32,
-    eekGetReg8,
-    eekGetReg16,
-    eekGetReg32
+    eekGetModrmReg .. eekOutIO
   }
 
   eekEndKinds* = {
@@ -98,13 +102,33 @@ proc ev*[T](der: typedesc[T], kind: EmuEventKind): T =
 
 func evEnd*(): EmuEvent = EmuEvent(kind: eekEnd)
 
+proc writeEvent(logger: EmuLogger, event: EmuEvent) =
+  if logger.eventHandler.isNil():
+    logger.buffer.add event
+
+  else:
+    var idx = 0
+    while idx < logger.buffer.high:
+      logger.eventHandler(logger.buffer[idx])
+      inc idx
+
+    logger.buffer.clear()
+    logger.eventHandler(event)
+
 
 template log*(
     logger: EmuLogger, event: EmuEvent, instDepth: int = -1): untyped =
-
+  bind writeEvent
   var tmp = event
   tmp.info = instantiationInfo(instDepth, true)
-  logger.eventHandler(event)
+  writeEvent(logger, tmp)
+
+
+template logScope*(
+  logger: EmuLogger, event: EmuEvent, instDepth: int = -2): untyped =
+  logger.log(event, instDepth)
+  defer:
+    logger.log(evEnd(), instDepth)
 
 func setHook*(emu: var EmuLogger, handler: EmuEventHandler) =
   emu.eventHandler = handler

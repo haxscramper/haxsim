@@ -27,11 +27,11 @@ template SETEIP*(v: untyped): untyped {.dirty.} =
 template SETIP*(v: untyped): untyped {.dirty.} =
   CPU.setIp(v)
 
-template UPDATEEIP*(v: untyped): untyped {.dirty.} =
-  CPU.updateEip(v)
+# template UPDATEEIP*(v: untyped): untyped {.dirty.} =
+#   CPU.updateEip(v)
 
-template UPDATEIP*(v: untyped): untyped {.dirty.} =
-  CPU.updateIp(v)
+# template UPDATEIP*(v: untyped): untyped {.dirty.} =
+#   CPU.updateIp(v)
 
 # template GETGPREG*(reg: untyped): untyped {.dirty.} =
 #   CPU.getGpreg(reg)

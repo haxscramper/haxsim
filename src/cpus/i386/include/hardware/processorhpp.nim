@@ -197,9 +197,15 @@ proc getDtregLimit*(this: Processor, n: DTregT): uint16 =
 
 proc setEip*(this: var Processor, v: uint32): void =
   this.eip = v
+  assertRef(this.logger)
+  this.log ev(eekSetEIP).withIt do:
+    it.value = evalue(v, 32)
 
 proc setIp*(this: var Processor, v: uint16): void =
   this.ip = v
+  assertRef(this.logger)
+  this.log ev(eekSetIP).withIt do:
+    it.value = evalue(v, 16)
 
 proc setGpreg*(this: var Processor, n: Reg32T, v: uint32): void =
   this.gpregs[n].reg32 = v
@@ -222,13 +228,11 @@ proc setDtreg*(this: var Processor, n: DTregT, sel: uint16, base: uint32, limit:
   this.dtregs[n].base = base
   this.dtregs[n].limit = limit
 
-proc updateEip*(this: var Processor, v: int32): uint32 =
-  this.eip = (this.eip + v.uint32)
-  return this.eip
+proc updateEip*(this: var Processor, v: int32) =
+  this.setEIp(this.eip + v.uint32)
 
-proc updateIp*(this: var Processor, v: int32): uint32 =
-  this.ip = (this.ip + v.uint16)
-  return this.ip
+proc updateIp*(this: var Processor, v: int32) =
+  this.setIP(this.ip + v.uint16)
 
 proc updateGpreg*(this: var Processor, n: Reg32T, v: int32): uint32 =
   this.gpregs[n].reg32 = (this.gpregs[n].reg32 + v.uint32)

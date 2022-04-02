@@ -127,7 +127,7 @@ proc cmpAlImm8*(this: var InstrImpl): void =
 template JCCREL8*(cc: untyped, isFlag: untyped): untyped {.dirty.} =
   proc `j cc rel8`*(this: var InstrImpl): void =
     if isFlag:
-      discard UPDATEIP(IMM8)
+      CPU.updateIp(IMM8)
 
 JCCREL8(o, EFLAGSOF)
 JCCREL8(no, not(EFLAGSOF))
@@ -219,7 +219,7 @@ proc outImm8Al*(this: var InstrImpl): void =
   EIO.outIo8(cast[uint8](IMM8), al)
 
 proc jmp*(this: var InstrImpl): void =
-  discard UPDATEIP(IMM8)
+  CPU.updateIp(IMM8)
 
 proc inAlDx*(this: var InstrImpl): void =
   var dx: uint16
@@ -367,7 +367,7 @@ proc testRm8Imm8*(this: var InstrImpl): void =
   var imm8, rm8: uint8
   rm8 = this.exec.getRm8()
   imm8 = ACS.getCode8(0)
-  discard UPDATEEIP(1)
+  CPU.updateEIp(1)
   discard EFLAGSUPDATEAND(rm8, imm8)
 
 proc notRm8*(this: var InstrImpl): void =

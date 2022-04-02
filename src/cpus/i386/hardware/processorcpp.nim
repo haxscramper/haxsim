@@ -2,12 +2,14 @@ import hardware/[processorhpp, crhpp, eflagshpp]
 import commonhpp
 
 proc initProcessor*(logger: EmuLogger): Processor =
+  assertRef(logger)
+  logger.logScope ev(eekInitCPU)
   # memset(gpregs, 0, sizeof(gpregs))
   # memset(sgregs, 0, sizeof(sgregs))
   result = Processor(logger: logger)
   initCR(result)
   # asgnAux[CR](result, initCR())
-
+  assertRef(logger)
   result.set_eip(0x0000fff0)
   result.set_crn(0, 0x60000010)
   result.eflags.set_eflags(0x00000002)

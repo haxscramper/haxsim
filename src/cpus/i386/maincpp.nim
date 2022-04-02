@@ -103,6 +103,7 @@ proc loop*(full: var FullImpl) =
 
 proc initFull*(emuset: var EmuSetting): FullImpl =
   var logger = initEmuLogger()
+  logger.logScope ev(eekInitEmulator)
   var emu = initEmulator(emuset, logger)
   let data = InstrData()
   var ind = 0
@@ -111,7 +112,9 @@ proc initFull*(emuset: var EmuSetting): FullImpl =
       dec ind
       return
 
-    var res = repeat("  ", ind) & ($ev.kind + fgBlue |<< 16)
+    var res = clt(repeat("  ", ind))
+    res.add ($ev.kind + fgBlue |<< 16)
+
     if ev.kind == eekCallOpcodeImpl:
       let ev = EmuInstrEvent(ev)
       res.add " "

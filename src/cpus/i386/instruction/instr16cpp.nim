@@ -360,10 +360,10 @@ proc outImm8Ax*(this: var InstrImpl): void =
 
 proc callRel16*(this: var InstrImpl): void =
   PUSH16(GETIP().uint16)
-  discard UPDATEIP(IMM16.int32)
+  CPU.updateIp(IMM16.int32)
 
 proc jmpRel16*(this: var InstrImpl): void =
-  discard UPDATEIP(IMM16.int32)
+  CPU.updateIp(IMM16.int32)
 
 proc jmpfPtr1616*(this: var InstrImpl): void =
   this.exec.jmpf(PTR16.uint16, IMM16.uint32)
@@ -382,7 +382,7 @@ proc outDxAx*(this: var InstrImpl): void =
 template JCCREL16*(cc: untyped, isFlag: untyped): untyped {.dirty.} =
   proc `j cc rel16`*(this: var InstrImpl): void =
     if isFlag:
-      discard UPDATEEIP(IMM16.int32)
+      CPU.updateEIp(IMM16.int32)
 
 JCCREL16(o, EFLAGSOF)
 JCCREL16(no, not(EFLAGSOF))
@@ -595,7 +595,7 @@ proc testRm16Imm16*(this: var InstrImpl): void =
   var imm16, rm16: uint16
   rm16 = this.exec.getRm16()
   imm16 = ACS.getCode16(0)
-  discard UPDATEEIP(2)
+  CPU.updateEIp(2)
   discard EFLAGSUPDATEAND(rm16, imm16)
 
 proc notRm16*(this: var InstrImpl): void =

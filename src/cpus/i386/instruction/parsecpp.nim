@@ -78,54 +78,46 @@ proc parsePrefix*(this: var InstrImpl): uint8 =
     if setPre:
       PREFIX = code
 
-    discard UPDATEEIP(1)
+    CPU.updateEIp(1)
 
 proc parseOpcode*(this: var InstrImpl): void =
   OPCODE = ACS.getCode8(0)
-  discard UPDATEEIP(1)
+  CPU.updateEIp(1)
   
   if OPCODE == 0x0f:
     OPCODE = (OPCODE shl 8) + ACS.getCode8(0)
-    discard UPDATEEIP(1)
+    CPU.updateEIp(1)
   
 
 
 proc parseModrm32*(this: var InstrImpl): void =
   if MOD != 3 and RM == 4:
     INSTR.dSIB = ACS.getCode8(0)
-    discard UPDATEEIP(1)
-    DEBUGMSG(5, "[scale:0x%02x index:0x%02x base:0x%02x] ", SCALE, INDEX, BASE)
-  
+    CPU.updateEIp(1)
+
   if MOD == 2 or (MOD == 0 and RM == 5) or (MOD == 0 and BASE == 5):
     INSTR.disp32 = ACS.getCode32(0).int32()
-    discard UPDATEEIP(4)
-    DEBUGMSG(5, "disp32:0x%08x ", DISP32)
-  
+    CPU.updateEIp(4)
+
   else:
     if MOD == 1:
       INSTR.disp8 = cast[int8](ACS.getCode8(0))
-      discard UPDATEEIP(1)
-      DEBUGMSG(5, "disp8:0x%02x ", DISP8)
-    
-  
+      CPU.updateEIp(1)
+
 
 proc parseModrm16*(this: var InstrImpl): void =
   if (MOD == 0 and RM == 6) or MOD == 2:
     INSTR.disp16 = ACS.getCode32(0).int16()
-    discard UPDATEEIP(2)
-    DEBUGMSG(5, "disp16:0x%04x ", DISP16)
-  
+    CPU.updateEIp(2)
+
   else:
     if MOD == 1:
       INSTR.disp8 = cast[int8](ACS.getCode8(0))
-      discard UPDATEEIP(1)
-      DEBUGMSG(5, "disp8:0x%02x ", DISP8)
-    
+      CPU.updateEIp(1)
 
 proc parseModrmSibDisp*(this: var InstrImpl): void =
   INSTR.dmodrm = ACS.getCode8(0)
-  discard UPDATEEIP(1)
-  DEBUGMSG(5, "[mod:0x%02x reg:0x%02x rm:0x%02x] ", MOD, REG, RM)
+  CPU.updateEIp(1)
   if CPU.isMode32() xor this.exec.chszAd:
     this.parseModrm32()
 
@@ -137,13 +129,11 @@ proc parseModrmSibDisp*(this: var InstrImpl): void =
 proc parseMoffs*(this: var InstrImpl): void =
   if CPU.isMode32() xor this.exec.chszAd:
     INSTR.moffs = ACS.getCode32(0)
-    discard UPDATEEIP(4)
+    CPU.updateEIp(4)
   
   else:
     INSTR.moffs = ACS.getCode16(0)
-    discard UPDATEEIP(2)
-  
-  DEBUGMSG(5, "moffs:0x%04x ", MOFFS)
+    CPU.updateEIp(2)
 
 proc parse*(this: var InstrImpl): void =
   this.parseOpcode()
@@ -159,19 +149,19 @@ proc parse*(this: var InstrImpl): void =
 
   if iParseImm32 in this.parse.chk[op]:
     INSTR.imm32 = ACS.getCode32(0).int32()
-    discard UPDATEEIP(4)
+    CPU.updateEIp(4)
 
   elif iParseImm16 in this.parse.chk[op]:
     INSTR.imm16 = ACS.getCode16(0).int16()
-    discard UPDATEEIP(2)
+    CPU.updateEIp(2)
 
   elif iParseImm8 in this.parse.chk[op]:
     INSTR.imm8 = cast[int8](ACS.getCode8(0))
-    discard UPDATEEIP(1)
+    CPU.updateEIp(1)
 
   if iParsePtr16 in this.parse.chk[op]:
     PTR16 = ACS.getCode16(0).int8()
-    discard UPDATEEIP(2)
+    CPU.updateEIp(2)
 
   if iParseMoffs in this.parse.chk[op]:
     this.parseMoffs()
