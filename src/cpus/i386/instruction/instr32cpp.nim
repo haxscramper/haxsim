@@ -31,7 +31,7 @@ proc addR32Rm32*(this: var InstrImpl): void =
 proc addEaxImm32*(this: var InstrImpl): void =
   var eax: uint32
   eax = GETGPREG(EAX)
-  SETGPREG(EAX, eax + IMM32.uint32)
+  CPU.setGPreg(EAX, eax + IMM32.uint32)
   discard EFLAGSUPDATEADD(eax, IMM32.uint32)
 
 proc pushEs*(this: var InstrImpl): void =
@@ -57,7 +57,7 @@ proc orR32Rm32*(this: var InstrImpl): void =
 proc orEaxImm32*(this: var InstrImpl): void =
   var eax: uint32
   eax = GETGPREG(EAX)
-  SETGPREG(EAX, eax or IMM32.uint32)
+  CPU.setGPreg(EAX, eax or IMM32.uint32)
   discard EFLAGSUPDATEOR(eax, IMM32.uint32)
 
 proc pushSs*(this: var InstrImpl): void =
@@ -89,7 +89,7 @@ proc andR32Rm32*(this: var InstrImpl): void =
 proc andEaxImm32*(this: var InstrImpl): void =
   var eax: uint32
   eax = GETGPREG(EAX)
-  SETGPREG(EAX, eax and IMM32.uint32)
+  CPU.setGPreg(EAX, eax and IMM32.uint32)
   discard EFLAGSUPDATEAND(eax, IMM32.uint32)
 
 proc subRm32R32*(this: var InstrImpl): void =
@@ -109,7 +109,7 @@ proc subR32Rm32*(this: var InstrImpl): void =
 proc subEaxImm32*(this: var InstrImpl): void =
   var eax: uint32
   eax = GETGPREG(EAX)
-  SETGPREG(EAX, eax - IMM32.uint32)
+  CPU.setGPreg(EAX, eax - IMM32.uint32)
   discard EFLAGSUPDATESUB(eax, IMM32.uint32)
 
 proc xorRm32R32*(this: var InstrImpl): void =
@@ -127,7 +127,7 @@ proc xorR32Rm32*(this: var InstrImpl): void =
 proc xorEaxImm32*(this: var InstrImpl): void =
   var eax: uint32
   eax = GETGPREG(EAX)
-  SETGPREG(EAX, eax xor IMM32.uint32)
+  CPU.setGPreg(EAX, eax xor IMM32.uint32)
 
 proc cmpRm32R32*(this: var InstrImpl): void =
   var r32, rm32: uint32
@@ -151,7 +151,7 @@ proc incR32*(this: var InstrImpl): void =
   var r32: uint32
   reg = uint8(OPCODE and ((1 shl 3) - 1))
   r32 = GETGPREG(cast[Reg32T](reg))
-  SETGPREG(cast[Reg32T](reg), r32 + 1)
+  CPU.setGPreg(cast[Reg32T](reg), r32 + 1)
   discard EFLAGSUPDATEADD(r32, 1)
 
 proc decR32*(this: var InstrImpl): void =
@@ -159,7 +159,7 @@ proc decR32*(this: var InstrImpl): void =
   var r32: uint32
   reg = uint8(OPCODE and ((1 shl 3) - 1))
   r32 = GETGPREG(cast[Reg32T](reg))
-  SETGPREG(cast[Reg32T](reg), r32 - 1)
+  CPU.setGPreg(cast[Reg32T](reg), r32 - 1)
   discard EFLAGSUPDATESUB(r32, 1)
 
 proc pushR32*(this: var InstrImpl): void =
@@ -170,7 +170,7 @@ proc pushR32*(this: var InstrImpl): void =
 proc popR32*(this: var InstrImpl): void =
   var reg: uint8
   reg = uint8(OPCODE and ((1 shl 3) - 1))
-  SETGPREG(cast[Reg32T](reg), POP32())
+  CPU.setGPreg(cast[Reg32T](reg), POP32())
 
 proc pushad*(this: var InstrImpl): void =
   var esp: uint32
@@ -186,15 +186,15 @@ proc pushad*(this: var InstrImpl): void =
 
 proc popad*(this: var InstrImpl): void =
   var esp: uint32
-  SETGPREG(EDI, POP32())
-  SETGPREG(ESI, POP32())
-  SETGPREG(EBP, POP32())
+  CPU.setGPreg(EDI, POP32())
+  CPU.setGPreg(ESI, POP32())
+  CPU.setGPreg(EBP, POP32())
   esp = POP32()
-  SETGPREG(EBX, POP32())
-  SETGPREG(EDX, POP32())
-  SETGPREG(ECX, POP32())
-  SETGPREG(EAX, POP32())
-  SETGPREG(ESP, esp)
+  CPU.setGPreg(EBX, POP32())
+  CPU.setGPreg(EDX, POP32())
+  CPU.setGPreg(ECX, POP32())
+  CPU.setGPreg(EAX, POP32())
+  CPU.setGPreg(ESP, esp)
 
 proc pushImm32*(this: var InstrImpl): void =
   PUSH32(IMM32.uint32)
@@ -252,17 +252,17 @@ proc xchgR32Eax*(this: var InstrImpl): void =
   r32 = this.exec.getR32()
   eax = GETGPREG(EAX)
   this.exec.setR32(eax)
-  SETGPREG(EAX, r32)
+  CPU.setGPreg(EAX, r32)
 
 proc cwde*(this: var InstrImpl): void =
   var axS: int16
   axS = GETGPREG(AX).int16()
-  SETGPREG(EAX, axS.uint32)
+  CPU.setGPreg(EAX, axS.uint32)
 
 proc cdq*(this: var InstrImpl): void =
   var eax: uint32
   eax = GETGPREG(EAX)
-  SETGPREG(EDX, uint32(if toBool(eax and (1 shl 31)): -1 else: 0))
+  CPU.setGPreg(EDX, uint32(if toBool(eax and (1 shl 31)): -1 else: 0))
 
 proc callfPtr16_32*(this: var InstrImpl): void =
   this.emu.callf(PTR16.uint16, IMM32.uint32)
@@ -274,7 +274,7 @@ proc popf*(this: var InstrImpl): void =
   CPU.eflags.setEflags(POP32())
 
 proc movEaxMoffs32*(this: var InstrImpl): void =
-  SETGPREG(EAX, this.exec.getMoffs32())
+  CPU.setGPreg(EAX, this.exec.getMoffs32())
 
 proc movMoffs32Eax*(this: var InstrImpl): void =
   this.exec.setMoffs32(GETGPREG(EAX))
@@ -337,7 +337,7 @@ proc testEaxImm32*(this: var InstrImpl): void =
 proc movR32Imm32*(this: var InstrImpl): void =
   var reg: uint8
   reg = uint8(OPCODE and ((1 shl 3) - 1))
-  SETGPREG(cast[Reg32T](reg), IMM32.uint32)
+  CPU.setGPreg(cast[Reg32T](reg), IMM32.uint32)
 
 proc ret*(this: var InstrImpl): void =
   SETEIP(POP32())
@@ -348,11 +348,11 @@ proc movRm32Imm32*(this: var InstrImpl): void =
 proc leave*(this: var InstrImpl): void =
   var ebp: uint32
   ebp = GETGPREG(EBP)
-  SETGPREG(ESP, ebp)
-  SETGPREG(EBP, POP32())
+  CPU.setGPreg(ESP, ebp)
+  CPU.setGPreg(EBP, POP32())
 
 proc inEaxImm8*(this: var InstrImpl): void =
-  SETGPREG(EAX, EIO.inIo32(IMM8.uint16))
+  CPU.setGPreg(EAX, EIO.inIo32(IMM8.uint16))
 
 proc outImm8Eax*(this: var InstrImpl): void =
   var eax: uint32
@@ -372,7 +372,7 @@ proc jmpfPtr16_32*(this: var InstrImpl): void =
 proc inEaxDx*(this: var InstrImpl): void =
   var dx: uint16
   dx = GETGPREG(DX)
-  SETGPREG(EAX, EIO.inIo32(dx))
+  CPU.setGPreg(EAX, EIO.inIo32(dx))
 
 proc outDxEax*(this: var InstrImpl): void =
   var dx: uint16
@@ -616,8 +616,8 @@ proc mulEdxEaxRm32*(this: var InstrImpl): void =
   rm32 = this.exec.getRm32().uint32()
   eax = GETGPREG(EAX)
   val = eax * rm32
-  SETGPREG(EAX, uint32(val))
-  SETGPREG(EDX, uint32(val shr 32))
+  CPU.setGPreg(EAX, uint32(val))
+  CPU.setGPreg(EDX, uint32(val shr 32))
   discard EFLAGSUPDATEMUL(eax, rm32)
 
 proc imulEdxEaxRm32*(this: var InstrImpl): void =
@@ -626,8 +626,8 @@ proc imulEdxEaxRm32*(this: var InstrImpl): void =
   rm32S = this.exec.getRm32().int32()
   eaxS = GETGPREG(EAX).int32()
   valS = eaxS * rm32S
-  SETGPREG(EAX, uint32(valS))
-  SETGPREG(EDX, uint32(valS shr 32))
+  CPU.setGPreg(EAX, uint32(valS))
+  CPU.setGPreg(EDX, uint32(valS shr 32))
   discard EFLAGSUPDATEIMUL(eaxS, rm32S)
 
 proc divEdxEaxRm32*(this: var InstrImpl): void =
@@ -638,8 +638,8 @@ proc divEdxEaxRm32*(this: var InstrImpl): void =
   val = GETGPREG(EDX)
   val = (val shl 32)
   val = (val or GETGPREG(EAX))
-  SETGPREG(EAX, uint32(val div rm32))
-  SETGPREG(EDX, uint32(val mod rm32))
+  CPU.setGPreg(EAX, uint32(val div rm32))
+  CPU.setGPreg(EDX, uint32(val mod rm32))
 
 proc idivEdxEaxRm32*(this: var InstrImpl): void =
   var rm32S: int32
@@ -649,8 +649,8 @@ proc idivEdxEaxRm32*(this: var InstrImpl): void =
   valS = GETGPREG(EDX).int64
   valS = (valS shl 32)
   valS = (valS or GETGPREG(EAX).int64)
-  SETGPREG(EAX, uint32(valS div rm32S))
-  SETGPREG(EDX, uint32(valS mod rm32S))
+  CPU.setGPreg(EAX, uint32(valS div rm32S))
+  CPU.setGPreg(EDX, uint32(valS mod rm32S))
 
 
 proc incRm32*(this: var InstrImpl): void =
@@ -721,7 +721,7 @@ proc lidtM32*(this: var InstrImpl): void =
 
 
 proc code_81*(this: var InstrImpl): void =
-  case REG:
+  case this.getModrmReg():
     of 0: this.addRm32Imm32()
     of 1: this.orRm32Imm32()
     of 2: this.adcRm32Imm32()
@@ -731,10 +731,10 @@ proc code_81*(this: var InstrImpl): void =
     of 6: this.xorRm32Imm32()
     of 7: this.cmpRm32Imm32()
     else:
-      ERROR("not implemented: 0x81 /%d\\n", REG)
+      ERROR("not implemented: 0x81 /%d\\n", this.getModrmReg())
 
 proc code_83*(this: var InstrImpl): void =
-  case REG:
+  case this.getModrmReg():
     of 0: this.addRm32Imm8()
     of 1: this.orRm32Imm8()
     of 2: this.adcRm32Imm8()
@@ -744,28 +744,28 @@ proc code_83*(this: var InstrImpl): void =
     of 6: this.xorRm32Imm8()
     of 7: this.cmpRm32Imm8()
     else:
-      ERROR("not implemented: 0x83 /%d\\n", REG)
+      ERROR("not implemented: 0x83 /%d\\n", this.getModrmReg())
 
 proc codeC1*(this: var InstrImpl): void =
-  case REG:
+  case this.getModrmReg():
     of 4: this.shlRm32Imm8()
     of 5: this.shrRm32Imm8()
     of 6: this.salRm32Imm8()
     of 7: this.sarRm32Imm8()
     else:
-      ERROR("not implemented: 0xc1 /%d\\n", REG)
+      ERROR("not implemented: 0xc1 /%d\\n", this.getModrmReg())
 
 proc codeD3*(this: var InstrImpl): void =
-  case REG:
+  case this.getModrmReg():
     of 4: this.shlRm32Cl()
     of 5: this.shrRm32Cl()
     of 6: this.salRm32Cl()
     of 7: this.sarRm32Cl()
     else:
-      ERROR("not implemented: 0xd3 /%d\\n", REG)
+      ERROR("not implemented: 0xd3 /%d\\n", this.getModrmReg())
 
 proc codeF7*(this: var InstrImpl): void =
-  case REG:
+  case this.getModrmReg():
     of 0: this.testRm32Imm32()
     of 2: this.notRm32()
     of 3: this.negRm32()
@@ -774,10 +774,10 @@ proc codeF7*(this: var InstrImpl): void =
     of 6: this.divEdxEaxRm32()
     of 7: this.idivEdxEaxRm32()
     else:
-      ERROR("not implemented: 0xf7 /%d\\n", REG)
+      ERROR("not implemented: 0xf7 /%d\\n", this.getModrmReg())
 
 proc codeFf*(this: var InstrImpl): void =
-  case REG:
+  case this.getModrmReg():
     of 0: this.incRm32()
     of 1: this.decRm32()
     of 2: this.callRm32()
@@ -786,20 +786,20 @@ proc codeFf*(this: var InstrImpl): void =
     of 5: this.jmpfM16_32()
     of 6: this.pushRm32()
     else:
-      ERROR("not implemented: 0xff /%d\\n", REG)
+      ERROR("not implemented: 0xff /%d\\n", this.getModrmReg())
 
 proc code_0f00*(this: var InstrImpl): void =
-  case REG:
+  case this.getModrmReg():
     of 3: this.ltrRm16()
     else:
-      ERROR("not implemented: 0x0f00 /%d\\n", REG)
+      ERROR("not implemented: 0x0f00 /%d\\n", this.getModrmReg())
 
 proc code_0f01*(this: var InstrImpl): void =
-  case REG:
+  case this.getModrmReg():
     of 2: this.lgdtM32()
     of 3: this.lidtM32()
     else:
-      ERROR("not implemented: 0x0f01 /%d\\n", REG)
+      ERROR("not implemented: 0x0f01 /%d\\n", this.getModrmReg())
 
 
 

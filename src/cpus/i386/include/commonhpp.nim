@@ -1,4 +1,5 @@
 import util/debughpp
+import ../instruction/[syntaxes, opcodes]
 import std/strformat
 export strformat
 import std/strutils
@@ -11,6 +12,16 @@ import hmisc/core/all
 export all
 import eventer
 export eventer
+import std/math
+
+
+func pow2*(pow: int): uint =
+  result = 2
+  for _ in 0 ..< pow:
+    result = result * 2
+
+type
+  NBits*[Count: static[int]] = range[0'u .. pow2(Count) - 1]
 
 type
   EmuCpuException* = object of CatchableError
@@ -96,3 +107,13 @@ func copymem*[R](
 func copymem*[R](
     dest: var MemBlob[R], source: MemPointer, size: ESize = R) =
   dest[0 ..< size] = source.data[][source.pos ..< source.pos + size]
+
+
+
+func formatOpcode*(code: uint16): string =
+  "0x$# ($#)" % [
+    toHex(code)[^4 .. ^1],
+    tern(toBool(code and 0x0F00),
+         $ICode(code.uint64 shl 12),
+         $ICode(code.uint64 shl 16))
+  ]

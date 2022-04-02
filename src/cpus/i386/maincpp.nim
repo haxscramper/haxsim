@@ -1,5 +1,5 @@
 import instruction/execcpp
-
+import hmisc/algo/[clformat, clformat_interpolate]
 
 import "commonhpp"
 import emulator/[emulatorhpp, interruptcpp]
@@ -66,7 +66,7 @@ proc fetch*(full: var FullImpl): uint8 =
     full.impl16.setChszAd(isMode32 xor chszAd)
     parse(full.impl16)
 
-  full.log ev(eekEndInstructionFetch)
+  full.log evEnd()
   return prefix
 
 proc loop*(full: var FullImpl) =
@@ -105,9 +105,26 @@ proc initFull*(emuset: var EmuSetting): FullImpl =
   var logger = initEmuLogger()
   var emu = initEmulator(emuset, logger)
   let data = InstrData()
+  var ind = 0
   proc echoHandler(ev: EmuEvent) =
-    if ev.kind == eekCallOpcodeEnd:
-      pprinte emu.cpu.gpregs[EAX]
+    if ev.kind in eekEndKinds:
+      dec ind
+      return
+
+    var res = repeat("  ", ind) & ($ev.kind + fgBlue |<< 16)
+    if ev.kind == eekCallOpcodeImpl:
+      res.add " "
+      res.add formatOpcode(ev.value.value.uint16) + fgGreen
+
+    elif ev.kind in eekValueKinds:
+      res.add " = "
+      res.add $ev.value + fgCyan
+
+    echo res
+    if ev.kind in eekStartKinds:
+      inc ind
+
+
 
   emu.logger.setHook(echoHandler)
 
@@ -171,20 +188,33 @@ proc main1() =
   # setting it here to `0`.
   full.emu.cpu.setEip(0)
 
-  full.emu.io.setPortIO(8, 1, PortIO(
-    in8: proc(mem: uint16): uint8 = 1,
-    out8: proc(mem: uint16, val: uint8) = discard
-  ))
-
   full.emu.loadBlob(asVar @[
-    # `in al, 8`
-    0xE4'u8, 0x08,
+    # `mov al, 4`
+    0xB0'u8, 0x04,
+    # `add al, al`
+    0x00, 0xC0,
     # `hlt`
     0xF4
   ])
 
+
+  if false:
+    full.emu.io.setPortIO(8, 1, PortIO(
+      in8: proc(mem: uint16): uint8 = 1,
+      out8: proc(mem: uint16, val: uint8) = discard
+    ))
+
+    full.emu.loadBlob(asVar @[
+      # `in al, 8`
+      0xE4'u8, 0x08,
+      # `hlt`
+      0xF4
+    ])
+
+    full.loop()
+    assert full.emu.cpu.getGPreg(AL) == 1
+
   full.loop()
-  assert full.emu.cpu.getGPreg(AL) == 1
 
 
 startHax()

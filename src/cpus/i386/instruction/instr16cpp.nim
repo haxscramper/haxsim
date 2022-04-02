@@ -31,7 +31,7 @@ proc addR16Rm16*(this: var InstrImpl): void =
 proc addAxImm16*(this: var InstrImpl): void =
   var ax: uint16
   ax = GETGPREG(AX)
-  SETGPREG(AX, ax + IMM16.uint16)
+  CPU.setGPreg(AX, ax + IMM16.uint16)
   discard EFLAGSUPDATEADD(ax, IMM16.uint16)
 
 proc pushEs*(this: var InstrImpl): void =
@@ -57,7 +57,7 @@ proc orR16Rm16*(this: var InstrImpl): void =
 proc orAxImm16*(this: var InstrImpl): void =
   var ax: uint16
   ax = GETGPREG(AX)
-  SETGPREG(AX, ax or IMM16.uint16)
+  CPU.setGPreg(AX, ax or IMM16.uint16)
   discard EFLAGSUPDATEOR(ax, IMM16.uint16)
 
 proc pushSs*(this: var InstrImpl): void =
@@ -89,7 +89,7 @@ proc andR16Rm16*(this: var InstrImpl): void =
 proc andAxImm16*(this: var InstrImpl): void =
   var ax: uint16
   ax = GETGPREG(AX)
-  SETGPREG(AX, ax and IMM16.uint16)
+  CPU.setGPreg(AX, ax and IMM16.uint16)
   discard EFLAGSUPDATEAND(ax, IMM16.uint16)
 
 proc subRm16R16*(this: var InstrImpl): void =
@@ -109,7 +109,7 @@ proc subR16Rm16*(this: var InstrImpl): void =
 proc subAxImm16*(this: var InstrImpl): void =
   var ax: uint16
   ax = GETGPREG(AX)
-  SETGPREG(AX, ax - IMM16.uint16)
+  CPU.setGPreg(AX, ax - IMM16.uint16)
   discard EFLAGSUPDATESUB(ax, IMM16.uint16)
 
 proc xorRm16R16*(this: var InstrImpl): void =
@@ -127,7 +127,7 @@ proc xorR16Rm16*(this: var InstrImpl): void =
 proc xorAxImm16*(this: var InstrImpl): void =
   var ax: uint16
   ax = GETGPREG(AX)
-  SETGPREG(AX, ax xor IMM16.uint16)
+  CPU.setGPreg(AX, ax xor IMM16.uint16)
 
 proc cmpRm16R16*(this: var InstrImpl): void =
   var r16, rm16: uint16
@@ -151,7 +151,7 @@ proc incR16*(this: var InstrImpl): void =
   var r16: uint16
   reg = uint8(OPCODE and ((1 shl 3) - 1))
   r16 = GETGPREG(cast[Reg16T](reg))
-  SETGPREG(cast[Reg16T](reg), r16 + 1)
+  CPU.setGPreg(cast[Reg16T](reg), r16 + 1)
   discard EFLAGSUPDATEADD(r16, 1)
 
 proc decR16*(this: var InstrImpl): void =
@@ -159,7 +159,7 @@ proc decR16*(this: var InstrImpl): void =
   var r16: uint16
   reg = uint8(OPCODE and ((1 shl 3) - 1))
   r16 = GETGPREG(cast[Reg16T](reg))
-  SETGPREG(cast[Reg16T](reg), r16 - 1)
+  CPU.setGPreg(cast[Reg16T](reg), r16 - 1)
   discard EFLAGSUPDATESUB(r16, 1)
 
 proc pushR16*(this: var InstrImpl): void =
@@ -170,7 +170,7 @@ proc pushR16*(this: var InstrImpl): void =
 proc popR16*(this: var InstrImpl): void =
   var reg: uint8
   reg = uint8(OPCODE and ((1 shl 3) - 1))
-  SETGPREG(cast[Reg16T](reg), POP16())
+  CPU.setGPreg(cast[Reg16T](reg), POP16())
 
 proc pusha*(this: var InstrImpl): void =
   var sp: uint16
@@ -186,15 +186,15 @@ proc pusha*(this: var InstrImpl): void =
 
 proc popa*(this: var InstrImpl): void =
   var sp: uint16
-  SETGPREG(DI, POP16())
-  SETGPREG(SI, POP16())
-  SETGPREG(BP, POP16())
+  CPU.setGPreg(DI, POP16())
+  CPU.setGPreg(SI, POP16())
+  CPU.setGPreg(BP, POP16())
   sp = POP16()
-  SETGPREG(BX, POP16())
-  SETGPREG(DX, POP16())
-  SETGPREG(CX, POP16())
-  SETGPREG(AX, POP16())
-  SETGPREG(SP, sp)
+  CPU.setGPreg(BX, POP16())
+  CPU.setGPreg(DX, POP16())
+  CPU.setGPreg(CX, POP16())
+  CPU.setGPreg(AX, POP16())
+  CPU.setGPreg(SP, sp)
 
 proc pushImm16*(this: var InstrImpl): void =
   PUSH16(IMM16.uint16)
@@ -252,17 +252,17 @@ proc xchgR16Ax*(this: var InstrImpl): void =
   r16 = this.exec.getR16()
   ax = GETGPREG(AX)
   this.exec.setR16(ax)
-  SETGPREG(AX, r16)
+  CPU.setGPreg(AX, r16)
 
 proc cbw*(this: var InstrImpl): void =
   var alS: int8
   alS = GETGPREG(AL).int8
-  SETGPREG(AX, alS.uint16)
+  CPU.setGPreg(AX, alS.uint16)
 
 proc cwd*(this: var InstrImpl): void =
   var ax: uint16
   ax = GETGPREG(AX)
-  SETGPREG(DX, uint16(if toBool(ax and (1 shl 15)): -1 else: 0))
+  CPU.setGPreg(DX, uint16(if toBool(ax and (1 shl 15)): -1 else: 0))
 
 proc callfPtr1616*(this: var InstrImpl): void =
   this.emu.callf(PTR16.uint16, IMM16.uint32)
@@ -274,7 +274,7 @@ proc popf*(this: var InstrImpl): void =
   CPU.eflags.setFlags(POP16())
 
 proc movAxMoffs16*(this: var InstrImpl): void =
-  SETGPREG(AX, this.exec.getMoffs16())
+  CPU.setGPreg(AX, this.exec.getMoffs16())
 
 proc movMoffs16Ax*(this: var InstrImpl): void =
   this.exec.setMoffs16(GETGPREG(AX))
@@ -336,7 +336,7 @@ proc testAxImm16*(this: var InstrImpl): void =
 proc movR16Imm16*(this: var InstrImpl): void =
   var reg: uint8
   reg = uint8(OPCODE and ((1 shl 3) - 1))
-  SETGPREG(cast[Reg16T](reg), IMM16.uint16)
+  CPU.setGPreg(cast[Reg16T](reg), IMM16.uint16)
 
 proc ret*(this: var InstrImpl): void =
   SETIP(POP16())
@@ -347,11 +347,11 @@ proc movRm16Imm16*(this: var InstrImpl): void =
 proc leave*(this: var InstrImpl): void =
   var ebp: uint16
   ebp = GETGPREG(EBP).uint16()
-  SETGPREG(ESP, ebp)
-  SETGPREG(EBP, POP16())
+  CPU.setGPreg(ESP, ebp)
+  CPU.setGPreg(EBP, POP16())
 
 proc inAxImm8*(this: var InstrImpl): void =
-  SETGPREG(AX, EIO.inIo16(IMM8.uint16))
+  CPU.setGPreg(AX, EIO.inIo16(IMM8.uint16))
 
 proc outImm8Ax*(this: var InstrImpl): void =
   var ax: uint16
@@ -371,7 +371,7 @@ proc jmpfPtr1616*(this: var InstrImpl): void =
 proc inAxDx*(this: var InstrImpl): void =
   var dx: uint16
   dx = GETGPREG(DX).uint16()
-  SETGPREG(AX, EIO.inIo16(dx))
+  CPU.setGPreg(AX, EIO.inIo16(dx))
 
 proc outDxAx*(this: var InstrImpl): void =
   var ax, dx: uint16
@@ -615,8 +615,8 @@ proc mulDxAxRm16*(this: var InstrImpl): void =
   rm16 = this.exec.getRm16()
   ax = GETGPREG(AX)
   val = ax * rm16
-  SETGPREG(AX, uint16(val and ((1 shl 16) - 1)))
-  SETGPREG(DX, uint16((val shr 16) and ((1 shl 16) - 1)))
+  CPU.setGPreg(AX, uint16(val and ((1 shl 16) - 1)))
+  CPU.setGPreg(DX, uint16((val shr 16) and ((1 shl 16) - 1)))
   discard EFLAGSUPDATEMUL(ax, rm16)
 
 proc imulDxAxRm16*(this: var InstrImpl): void =
@@ -625,8 +625,8 @@ proc imulDxAxRm16*(this: var InstrImpl): void =
   rm16S = this.exec.getRm16().int16
   axS = GETGPREG(AX).int16
   valS = axS * rm16S
-  SETGPREG(AX, uint16(valS and ((1 shl 16) - 1)))
-  SETGPREG(DX, uint16((valS shr 16) and ((1 shl 16) - 1)))
+  CPU.setGPreg(AX, uint16(valS and ((1 shl 16) - 1)))
+  CPU.setGPreg(DX, uint16((valS shr 16) and ((1 shl 16) - 1)))
   discard EFLAGSUPDATEIMUL(axS, rm16S)
 
 proc divDxAxRm16*(this: var InstrImpl): void =
@@ -635,8 +635,8 @@ proc divDxAxRm16*(this: var InstrImpl): void =
   rm16 = this.exec.getRm16()
   EXCEPTION(EXPDE, not(rm16.toBool()))
   val = (GETGPREG(DX) shl 16) or GETGPREG(AX)
-  SETGPREG(AX, uint16(val div rm16))
-  SETGPREG(DX, uint16(val mod rm16))
+  CPU.setGPreg(AX, uint16(val div rm16))
+  CPU.setGPreg(DX, uint16(val mod rm16))
 
 proc idivDxAxRm16*(this: var InstrImpl): void =
   var rm16S: int16
@@ -644,8 +644,8 @@ proc idivDxAxRm16*(this: var InstrImpl): void =
   rm16S = this.exec.getRm16().int16
   EXCEPTION(EXPDE, not(rm16S.toBool()))
   valS = int32((GETGPREG(DX) shl 16) or GETGPREG(AX))
-  SETGPREG(AX, uint16(valS div rm16S))
-  SETGPREG(DX, uint16(valS mod rm16S))
+  CPU.setGPreg(AX, uint16(valS div rm16S))
+  CPU.setGPreg(DX, uint16(valS mod rm16S))
 
 
 proc incRm16*(this: var InstrImpl): void =
@@ -708,7 +708,7 @@ proc lidtM24*(this: var InstrImpl): void =
   this.emu.setIdtr(base.uint32, limit)
 
 proc code81*(this: var InstrImpl): void =
-  case REG:
+  case this.getModrmReg():
     of 0: this.addRm16Imm16()
     of 1: this.orRm16Imm16()
     of 2: this.adcRm16Imm16()
@@ -718,10 +718,10 @@ proc code81*(this: var InstrImpl): void =
     of 6: this.xorRm16Imm16()
     of 7: this.cmpRm16Imm16()
     else:
-      ERROR("not implemented: 0x81 /%d\\n", REG)
+      ERROR("not implemented: 0x81 /%d\\n", this.getModrmReg())
 
 proc code83*(this: var InstrImpl): void =
-  case REG:
+  case this.getModrmReg():
     of 0: this.addRm16Imm8()
     of 1: this.orRm16Imm8()
     of 2: this.adcRm16Imm8()
@@ -731,28 +731,28 @@ proc code83*(this: var InstrImpl): void =
     of 6: this.xorRm16Imm8()
     of 7: this.cmpRm16Imm8()
     else:
-      ERROR("not implemented: 0x83 /%d\\n", REG)
+      ERROR("not implemented: 0x83 /%d\\n", this.getModrmReg())
 
 proc codeC1*(this: var InstrImpl): void =
-  case REG:
+  case this.getModrmReg():
     of 4: this.shlRm16Imm8()
     of 5: this.shrRm16Imm8()
     of 6: this.salRm16Imm8()
     of 7: this.sarRm16Imm8()
     else:
-      ERROR("not implemented: 0xc1 /%d\\n", REG)
+      ERROR("not implemented: 0xc1 /%d\\n", this.getModrmReg())
 
 proc codeD3*(this: var InstrImpl): void =
-  case REG:
+  case this.getModrmReg():
     of 4: this.shlRm16Cl()
     of 5: this.shrRm16Cl()
     of 6: this.salRm16Cl()
     of 7: this.sarRm16Cl()
     else:
-      ERROR("not implemented: 0xd3 /%d\\n", REG)
+      ERROR("not implemented: 0xd3 /%d\\n", this.getModrmReg())
 
 proc codeF7*(this: var InstrImpl): void =
-  case REG:
+  case this.getModrmReg():
     of 0: this.testRm16Imm16()
     of 2: this.notRm16()
     of 3: this.negRm16()
@@ -761,10 +761,10 @@ proc codeF7*(this: var InstrImpl): void =
     of 6: this.divDxAxRm16()
     of 7: this.idivDxAxRm16()
     else:
-      ERROR("not implemented: 0xf7 /%d\\n", REG)
+      ERROR("not implemented: 0xf7 /%d\\n", this.getModrmReg())
 
 proc codeFf*(this: var InstrImpl): void =
-  case REG:
+  case this.getModrmReg():
     of 0: this.incRm16()
     of 1: this.decRm16()
     of 2: this.callRm16()
@@ -773,19 +773,19 @@ proc codeFf*(this: var InstrImpl): void =
     of 5: this.jmpfM1616()
     of 6: this.pushRm16()
     else:
-      ERROR("not implemented: 0xff /%d\\n", REG)
+      ERROR("not implemented: 0xff /%d\\n", this.getModrmReg())
 
 proc code0f00*(this: var InstrImpl): void =
-  case REG:
+  case this.getModrmReg():
     of 3: this.ltrRm16()
-    else: ERROR("not implemented: 0x0f00 /%d\\n", REG)
+    else: ERROR("not implemented: 0x0f00 /%d\\n", this.getModrmReg())
 
 proc code0f01*(this: var InstrImpl): void =
-  case REG:
+  case this.getModrmReg():
     of 2: this.lgdtM24()
     of 3: this.lidtM24()
     else:
-      ERROR("not implemented: 0x0f01 /%d\\n", REG)
+      ERROR("not implemented: 0x0f01 /%d\\n", this.getModrmReg())
 
 
 proc initInstrImpl16*(r: var InstrImpl, instr: Instruction) =

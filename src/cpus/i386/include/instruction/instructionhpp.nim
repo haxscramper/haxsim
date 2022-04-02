@@ -3,6 +3,7 @@ import std/tables
 import ../instruction/opcodes
 import commonhpp
 import emulator/emulatorhpp
+
 template EMU*(): untyped =
   let tmp = this.getEmu()
   assertRef(tmp)
@@ -35,8 +36,10 @@ template UPDATEIP*(v: untyped): untyped {.dirty.} =
 template GETGPREG*(reg: untyped): untyped {.dirty.} =
   CPU.getGpreg(reg)
 
-template SETGPREG*(reg: untyped, v: untyped): untyped {.dirty.} =
-  CPU.setGpreg(reg, v)
+# template SETGPREG*(reg: untyped, v: untyped): untyped {.dirty.} =
+#   CPU.setGpreg(reg, v)
+
+
 
 template UPDATEGPREG*(reg: untyped, v: untyped): untyped {.dirty.} =
   CPU.updateGpreg(reg, v)
@@ -122,14 +125,14 @@ template OPCODE*(): untyped {.dirty.} =
 template dMODRM*(): untyped {.dirty.} =
   (this.exec.instr.dmodrm)
 
-template MOD*(): untyped {.dirty.} =
-  (this.instr.modrm.`mod`)
+# template MOD*(): untyped {.dirty.} =
+#   (this.instr.modrm.`mod`)
 
-template REG*(): untyped {.dirty.} =
-  (this.instr.modrm.reg)
+# template REG*(): untyped {.dirty.} =
+#   (this.getModrmReg())
 
-template RM*(): untyped {.dirty.} =
-  (this.instr.modrm.rm)
+# template RM*(): untyped {.dirty.} =
+#   (this.instr.modrm.rm)
 
 template dSIB*(): untyped {.dirty.} =
   (this.exec.instr.dsib)
@@ -182,9 +185,9 @@ type
     ## The ModR/M byte encodes a register or an opcode extension, and a
     ## register or a memory address.
     ## https://wiki.osdev.org/X86-64_Instruction_Encoding#ModR.2FM
-    rm* {.bitsize: 3.}: uint8
-    reg* {.bitsize: 3.}: uint8
-    `mod`* {.bitsize: 2.}: uint8
+    rm* {.bitsize: 3.}: NBits[3]
+    reg* {.bitsize: 3.}: NBits[3]
+    `mod`* {.bitsize: 2.}: NBits[2]
 
   SIB* {.bycopy.} = object
     base* {.bitsize: 3.}: uint8
@@ -254,7 +257,7 @@ type
   EmuInstr* {.bycopy.} = object of Instruction
 
 
-  ExecInstr* {.bycopy.} = object of Instruction
+  ExecInstr* = object of Instruction
     instrfuncs*: array[MAXOPCODE, instrfuncT]
 
   InstrImpl* = object
@@ -268,16 +271,13 @@ type
 template log*(instr: InstrImpl, ev: EmuEvent): untyped =
   instr.emu.emu.logger.log(ev, -2)
 
-proc toPPrintTree*(val: OpcodeData, conf: var PPrintConf, path: PPrintPath): PPrintTree =
+template log*(instr: ExecInstr, ev: EmuEvent, depth: int = -2): untyped =
+  instr.emu.logger.log(ev, depth)
+
+proc toPPrintTree*(
+    val: OpcodeData, conf: var PPrintConf, path: PPrintPath): PPrintTree =
   result = newPPrintConst(
-    "0x$# ($#)" % [
-      toHex(val.code)[^4 .. ^1],
-      # toHex(val.code.uint64 shl 16),
-      # $ICode(val.code.uint64 shl 16)
-      tern(toBool(val.code and 0x0F00),
-           $ICode(val.code.uint64 shl 12),
-           $ICode(val.code.uint64 shl 16))
-    ],
+    formatOpcode(val.code),
     "int", conf.getId(val), fgCyan, path)
 
   result.updateCounts(conf.sortBySize)
@@ -332,6 +332,40 @@ proc selectSegment*(this: var Instruction): SgRegT =
 proc initExecInstr*(): ExecInstr =
   for i in 0 ..< MAXOPCODE:
     result.instrfuncs[i] = nil
+
+template declareGetPart*(name, size, expr, system: untyped): untyped =
+  template name*(this {.inject.}: ExecInstr): NBits[size] =
+    block:
+      let result = expr
+      let e = ev(`eek name`).withIt do:
+        it.value = evalue(result.uint8, size, system)
+      this.log(e, -3)
+      result
+
+  template name*(this {.inject.}: InstrImpl): NBits[size] =
+    this.exec.name()
+
+declareGetPart(getModrmMod, 2, this.instr.modrm.mod, evs2)
+declareGetPart(getModrmRm, 3, this.instr.modrm.rm, evs2)
+declareGetPart(getModrmReg, 3, this.instr.modrm.reg, evs2)
+
+# proc getModrmRM*(this: ExecInstr): NBits[3] =
+#   result = this.instr.modrm.rm
+#   this.log ev(eekGetModrmRM).withIt do:
+#     it.value = evalue(result.uint8, 3, evs2)
+
+# proc getModrmRM*(this: InstrImpl): NBits[3] =
+#   result = this.exec.getModrmRM()
+
+# proc getModrmReg*(this: ExecInstr): NBits[3] =
+#   result = this.instr.modrm.reg
+#   this.log ev(eekGetModrmReg).withIt do:
+#     it.value = evalue(result.uint8, 3, evs2)
+
+# proc getModrmReg*(this: InstrImpl): NBits[3] =
+#   result = this.exec.getModrmReg()
+
+
 
 
 const

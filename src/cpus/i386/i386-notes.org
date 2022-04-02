@@ -7,7 +7,12 @@
 - ~ror ah, 1~ is encoded differently from ~ror ah, 2~ - first one is a ~d0
   cc~, and second one is ~c0 cc 03~
 
-[[reg-EIP][EIP]]
 
-- <<reg-EIP>>EIP :: Test
-- <<reg-EUP>>ZZZ :: Test
+** Table description
+
+- encoding :: description of the instruction encoding. contains
+  comma-separated list of bytes that describe final arrangement in the
+  binary encoding.
+  - po :: Primary opcode
+  - o :: Opcode extension, part of the =modrm= byte
+  - op1/op2/op3/op4 :: Operands
