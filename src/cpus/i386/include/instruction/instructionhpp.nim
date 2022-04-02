@@ -33,8 +33,8 @@ template UPDATEEIP*(v: untyped): untyped {.dirty.} =
 template UPDATEIP*(v: untyped): untyped {.dirty.} =
   CPU.updateIp(v)
 
-template GETGPREG*(reg: untyped): untyped {.dirty.} =
-  CPU.getGpreg(reg)
+# template GETGPREG*(reg: untyped): untyped {.dirty.} =
+#   CPU.getGpreg(reg)
 
 # template SETGPREG*(reg: untyped, v: untyped): untyped {.dirty.} =
 #   CPU.setGpreg(reg, v)

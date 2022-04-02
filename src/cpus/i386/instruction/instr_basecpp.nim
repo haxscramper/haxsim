@@ -41,7 +41,7 @@ proc addR8Rm8*(this: var InstrImpl): void =
   discard EFLAGSUPDATEADD(r8, rm8)
 
 proc addAlImm8*(this: var InstrImpl): void =
-  let al = GETGPREG(AL)
+  let al = CPU.getGPreg(AL)
   CPU.setGPreg(AL, al + IMM8.uint8)
   discard EFLAGSUPDATEADD(al, IMM8.uint32)
 
@@ -52,7 +52,7 @@ proc orRm8R8*(this: var InstrImpl): void =
   discard EFLAGSUPDATEOR(rm8, r8)
 
 proc orAlImm8*(this: var InstrImpl): void =
-  let al = GETGPREG(AL)
+  let al = CPU.getGPreg(AL)
   CPU.setGPreg(AL, al or IMM8.uint8)
   discard EFLAGSUPDATEOR(al, IMM8.uint8)
 
@@ -75,7 +75,7 @@ proc andR8Rm8*(this: var InstrImpl): void =
   discard EFLAGSUPDATEAND(r8, rm8)
 
 proc andAlImm8*(this: var InstrImpl): void =
-  let al = GETGPREG(AL)
+  let al = CPU.getGPreg(AL)
   CPU.setGPreg(AL, al and IMM8.uint8)
   discard EFLAGSUPDATEAND(al, IMM8.uint8)
 
@@ -92,7 +92,7 @@ proc subR8Rm8*(this: var InstrImpl): void =
   discard EFLAGSUPDATESUB(r8, rm8)
 
 proc subAlImm8*(this: var InstrImpl): void =
-  let al = GETGPREG(AL)
+  let al = CPU.getGPreg(AL)
   CPU.setGPreg(AL, al - IMM8.uint8)
   discard EFLAGSUPDATESUB(al, IMM8.uint8)
 
@@ -107,7 +107,7 @@ proc xorR8Rm8*(this: var InstrImpl): void =
   this.exec.setR8(r8 xor rm8)
 
 proc xorAlImm8*(this: var InstrImpl): void =
-  let al = GETGPREG(AL)
+  let al = CPU.getGPreg(AL)
   CPU.setGPreg(AL, al xor IMM8.uint8)
 
 proc cmpRm8R8*(this: var InstrImpl): void =
@@ -121,7 +121,7 @@ proc cmpR8Rm8*(this: var InstrImpl): void =
   discard EFLAGSUPDATESUB(r8, rm8)
 
 proc cmpAlImm8*(this: var InstrImpl): void =
-  let al = GETGPREG(AL)
+  let al = CPU.getGPreg(AL)
   discard EFLAGSUPDATESUB(al, IMM8.uint8)
 
 template JCCREL8*(cc: untyped, isFlag: untyped): untyped {.dirty.} =
@@ -182,11 +182,11 @@ proc movAlMoffs8*(this: var InstrImpl): void =
   CPU.setGPreg(AL, this.exec.getMoffs8())
 
 proc movMoffs8Al*(this: var InstrImpl): void =
-  this.exec.setMoffs8(GETGPREG(AL))
+  this.exec.setMoffs8(CPU.getGPreg(AL))
 
 proc testAlImm8*(this: var InstrImpl): void =
   var al: uint8
-  al = GETGPREG(AL)
+  al = CPU.getGPreg(AL)
   discard EFLAGSUPDATEAND(al, IMM8.uint8)
 
 proc movR8Imm8*(this: var InstrImpl): void =
@@ -215,7 +215,7 @@ proc inAlImm8*(this: var InstrImpl): void =
 
 proc outImm8Al*(this: var InstrImpl): void =
   var al: uint8
-  al = GETGPREG(AL)
+  al = CPU.getGPreg(AL)
   EIO.outIo8(cast[uint8](IMM8), al)
 
 proc jmp*(this: var InstrImpl): void =
@@ -223,14 +223,14 @@ proc jmp*(this: var InstrImpl): void =
 
 proc inAlDx*(this: var InstrImpl): void =
   var dx: uint16
-  dx = GETGPREG(DX)
+  dx = CPU.getGPreg(DX)
   CPU.setGPreg(AL, EIO.inIo8(dx))
 
 proc outDxAl*(this: var InstrImpl): void =
   var dx: uint16
   var al: uint8
-  dx = GETGPREG(DX)
-  al = GETGPREG(AL)
+  dx = CPU.getGPreg(DX)
+  al = CPU.getGPreg(AL)
   EIO.outIo8(dx, al)
 
 proc cli*(this: var InstrImpl): void =
@@ -264,7 +264,7 @@ proc movR32Crn*(this: var InstrImpl): void =
 proc movCrnR32*(this: var InstrImpl): void =
   var r32: uint32
   EXCEPTION(EXPGP, not(this.exec.chkRing(0)))
-  r32 = GETGPREG(Reg32T(this.getModRmRM()))
+  r32 = CPU.getGPreg(Reg32T(this.getModRmRM()))
   this.exec.setCrn(r32)
 
 template SETCCRM8*(cc: untyped, isFlag: untyped): untyped {.dirty.} =
@@ -385,7 +385,7 @@ proc mulAxAlRm8*(this: var InstrImpl): void =
   var al, rm8: uint8
   var val: uint16
   rm8 = this.exec.getRm8()
-  al = GETGPREG(AL)
+  al = CPU.getGPreg(AL)
   val = al * rm8
   CPU.setGPreg(AX, val)
   discard EFLAGSUPDATEMUL(al, rm8)
@@ -394,7 +394,7 @@ proc imulAxAlRm8*(this: var InstrImpl): void =
   var alS, rm8S: int8
   var valS: int16
   rm8S = this.exec.getRm8().int8
-  alS = GETGPREG(AL).int8
+  alS = CPU.getGPreg(AL).int8
   valS = alS * rm8S
   CPU.setGPreg(AX, valS.uint8)
   discard EFLAGSUPDATEIMUL(alS, rm8S)
@@ -403,7 +403,7 @@ proc divAlAhRm8*(this: var InstrImpl): void =
   var rm8: uint8
   var ax: uint16
   rm8 = this.exec.getRm8()
-  ax = GETGPREG(AX)
+  ax = CPU.getGPreg(AX)
   CPU.setGPreg(AL, uint8(ax div rm8))
   CPU.setGPreg(AH, uint8(ax mod rm8))
 
@@ -411,7 +411,7 @@ proc idivAlAhRm8*(this: var InstrImpl): void =
   var rm8S: int8
   var axS: int16
   rm8S = this.exec.getRm8().int8
-  axS = GETGPREG(AX).int16
+  axS = CPU.getGPreg(AX).int16
   CPU.setGPreg(AL, uint8(axS div rm8S))
   CPU.setGPreg(AH, uint8(axS mod rm8S))
 

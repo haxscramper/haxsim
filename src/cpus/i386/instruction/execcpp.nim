@@ -34,13 +34,13 @@ proc calcModrm16*(this: var ExecInstr): uint32 =
     else: assert false
   case this.getModRmRM():
     of 0, 1, 7:
-      memAddr = (memAddr + GETGPREG(BX))
+      memAddr = (memAddr + CPU.getGPreg(BX))
     of 2, 3, 6:
       if this.getModRmMod() == 0 and this.getModRmRM() == 6:
         memAddr = (memAddr + DISP16.uint32)
 
       else:
-        memAddr = (memAddr + GETGPREG(BP))
+        memAddr = (memAddr + CPU.getGPreg(BP))
         SEGMENT = SS
 
     else:
@@ -48,10 +48,10 @@ proc calcModrm16*(this: var ExecInstr): uint32 =
 
   if this.getModRmRM() < 6:
     if toBool(this.getModRmRM() mod 2):
-      memAddr = (memAddr + GETGPREG(DI))
+      memAddr = (memAddr + CPU.getGPreg(DI))
 
     else:
-      memAddr = (memAddr + GETGPREG(SI))
+      memAddr = (memAddr + CPU.getGPreg(SI))
 
 
   return memAddr
@@ -78,10 +78,10 @@ proc calcSib*(this: var ExecInstr): uint32 =
           else:
             DS
           )
-      base = GETGPREG(cast[Reg32T](BASE))
+      base = CPU.getGPreg(Reg32T(BASE))
 
 
-  return base + GETGPREG(cast[Reg32T](INDEX)) * (1 shl SCALE).uint32
+  return base + CPU.getGPreg(Reg32T(INDEX)) * (1 shl SCALE).uint32
 
 
 proc calcModrm32*(this: var ExecInstr): uint32 =
@@ -99,7 +99,7 @@ proc calcModrm32*(this: var ExecInstr): uint32 =
 
     else:
       SEGMENT = (if (this.getModRmRM() == 5): SS else: DS)
-      memAddr = (memAddr + GETGPREG(cast[Reg32T](this.getModRmRM())))
+      memAddr = (memAddr + CPU.getGPreg(Reg32T(this.getModRmRM())))
 
   return memAddr
 
@@ -115,7 +115,7 @@ proc calcModrm*(this: var ExecInstr): uint32 =
   
 proc setRm32*(this: var ExecInstr, value: uint32): void =
   if this.getModRmMod() == 3:
-    CPU.setGPreg(cast[Reg32T](this.getModRmRM()), value)
+    CPU.setGPreg(Reg32T(this.getModRmRM()), value)
   
   else:
     WRITEMEM32(this.calcModrm(), value)
@@ -123,17 +123,17 @@ proc setRm32*(this: var ExecInstr, value: uint32): void =
 
 proc getRm32*(this: var ExecInstr): uint32 =
   if this.getModRmMod() == 3:
-    return GETGPREG(cast[Reg32T](this.getModRmRM()))
+    return CPU.getGPreg(Reg32T(this.getModRmRM()))
   
   else:
     return READMEM32(this.calcModrm())
 
 
 proc setR32*(this: var ExecInstr, value: uint32): void =
-  CPU.setGPreg(cast[Reg32T](this.getModrmReg()), value)
+  CPU.setGPreg(Reg32T(this.getModrmReg()), value)
 
 proc getR32*(this: var ExecInstr): uint32 =
-  return GETGPREG(cast[Reg32T](this.getModrmReg()))
+  return CPU.getGPreg(Reg32T(this.getModrmReg()))
 
 proc setMoffs32*(this: var ExecInstr, value: uint32): void =
   SEGMENT = DS
@@ -145,7 +145,7 @@ proc getMoffs32*(this: var ExecInstr): uint32 =
 
 proc setRm16*(this: var ExecInstr, value: uint16): void =
   if this.getModRmMod() == 3:
-    CPU.setGPreg(cast[Reg16T](this.getModRmRM()), value)
+    CPU.setGPreg(Reg16T(this.getModRmRM()), value)
   
   else:
     WRITEMEM16(this.calcModrm(), value)
@@ -153,17 +153,17 @@ proc setRm16*(this: var ExecInstr, value: uint16): void =
 
 proc getRm16*(this: var ExecInstr): uint16 =
   if this.getModRmMod() == 3:
-    return GETGPREG(cast[Reg16T](this.getModRmRM()))
+    return CPU.getGPreg(Reg16T(this.getModRmRM()))
   
   else:
     return READMEM16(this.calcModrm())
   
 
 proc setR16*(this: var ExecInstr, value: uint16): void =
-  CPU.setGPreg(cast[Reg16T](this.getModrmReg()), value)
+  CPU.setGPreg(Reg16T(this.getModrmReg()), value)
 
 proc getR16*(this: var ExecInstr): uint16 =
-  return GETGPREG(cast[Reg16T](this.getModrmReg()))
+  return CPU.getGPreg(Reg16T(this.getModrmReg()))
 
 proc setMoffs16*(this: var ExecInstr, value: uint16): void =
   SEGMENT = DS
@@ -175,7 +175,7 @@ proc getMoffs16*(this: var ExecInstr): uint16 =
 
 proc setRm8*(this: var ExecInstr, value: uint8): void =
   if this.getModRmMod() == 3:
-    CPU.setGPreg(cast[Reg8T](this.getModRmRM()), value)
+    CPU.setGPreg(Reg8T(this.getModRmRM()), value)
   
   else:
     WRITEMEM8(this.calcModrm(), value)
@@ -183,14 +183,14 @@ proc setRm8*(this: var ExecInstr, value: uint8): void =
 
 proc getRm8*(this: var ExecInstr): uint8 =
   if this.getModRmMod() == 3:
-    return GETGPREG(cast[Reg8T](this.getModRmRM()))
+    return CPU.getGPreg(Reg8T(this.getModRmRM()))
   
   else:
     return READMEM8(this.calcModrm())
   
 
 proc setR8*(this: var ExecInstr, value: uint8): void =
-  CPU.setGPreg(cast[Reg8T](this.getModrmReg()), value)
+  CPU.setGPreg(Reg8T(this.getModrmReg()), value)
 
 proc setMoffs8*(this: var ExecInstr, value: uint8): void =
   SEGMENT = DS
@@ -201,7 +201,7 @@ proc getMoffs8*(this: var ExecInstr): uint8 =
   return READMEM8(MOFFS)
 
 proc getR8*(this: var ExecInstr): uint8 =
-  return GETGPREG(cast[Reg8T](this.getModrmReg()))
+  return CPU.getGPreg(Reg8T(this.getModrmReg()))
 
 proc getM*(this: var ExecInstr): uint32 =
   return this.calcModrm()
