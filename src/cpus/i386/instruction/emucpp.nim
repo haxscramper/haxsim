@@ -4,7 +4,7 @@ import emulator/[exceptionhpp, accesshpp]
 import emulator/descriptorhpp
 import hardware/[processorhpp, memoryhpp, crhpp, eflagshpp]
 
-proc typeDescriptor*(this: var EmuInstr, sel: uint16): uint8 =
+proc typeDescriptor*(this: var ExecInstr, sel: uint16): uint8 =
   var gdtBase: uint32
   var gdtLimit: uint16
   var desc: Descriptor
@@ -28,7 +28,7 @@ proc typeDescriptor*(this: var EmuInstr, sel: uint16): uint8 =
   
   return desc.Type
 
-proc setLdtr*(this: var EmuInstr, sel: uint16): void =
+proc setLdtr*(this: var ExecInstr, sel: uint16): void =
   var base, gdtBase: uint32
   var limit, gdtLimit: uint16
   var ldt: LDTDesc
@@ -40,7 +40,7 @@ proc setLdtr*(this: var EmuInstr, sel: uint16): void =
   limit = (ldt.limitH shl 16) + ldt.limitL
   CPU.setDtreg(LDTR, sel, base, limit)
 
-proc setTr*(this: var EmuInstr, sel: uint16): void =
+proc setTr*(this: var ExecInstr, sel: uint16): void =
   var base, gdtBase: uint32
   var limit, gdtLimit: uint16
   var tssdesc: TSSDesc
@@ -53,7 +53,7 @@ proc setTr*(this: var EmuInstr, sel: uint16): void =
   limit = (tssdesc.limitH shl 16) + tssdesc.limitL
   CPU.setDtreg(TR, sel, base, limit)
 
-proc switchTask*(this: var EmuInstr, sel: uint16): void =
+proc switchTask*(this: var ExecInstr, sel: uint16): void =
   var base: uint32
   var limit, prev: uint16
   var newTss, oldTss: TSS
@@ -107,7 +107,7 @@ proc switchTask*(this: var EmuInstr, sel: uint16): void =
   ACS.setSegment(GS, newTss.gs)
   this.setLdtr(newTss.ldtr)
 
-proc jmpf*(this: var EmuInstr, sel: uint16, eip: uint32): void = 
+proc jmpf*(this: var ExecInstr, sel: uint16, eip: uint32): void =
   if CPU.isProtected():
     case this.typeDescriptor(sel):
       of TYPECODE:
@@ -126,7 +126,7 @@ proc jmpf*(this: var EmuInstr, sel: uint16, eip: uint32): void =
     ACS.setSegment(CS, sel)
     CPU.setEip(eip)
 
-proc callf*(this: var EmuInstr, sel: uint16, eip: uint32): void = 
+proc callf*(this: var ExecInstr, sel: uint16, eip: uint32): void =
   var cs: SGRegister
   var RPL: uint8
   cs.raw = ACS.getSegment(CS)
@@ -141,7 +141,7 @@ proc callf*(this: var EmuInstr, sel: uint16, eip: uint32): void =
   ACS.setSegment(CS, sel)
   CPU.setEip(eip)
 
-proc retf*(this: var EmuInstr): void = 
+proc retf*(this: var ExecInstr): void =
   var cs: SGRegister
   var CPL: uint8
   CPL = uint8(ACS.getSegment(CS) and 3)
@@ -157,7 +157,7 @@ proc retf*(this: var EmuInstr): void =
   
   ACS.setSegment(CS, cs.raw)
 
-proc iret*(this: var EmuInstr): void = 
+proc iret*(this: var ExecInstr): void =
   if CPU.isMode32():
     var cs: SGRegister
     var CPL: uint8
@@ -195,7 +195,7 @@ proc iret*(this: var EmuInstr): void =
     INFO(4, "iret (IP : 0x%04x, CS : 0x%04x)", EMU.getIp(), EMU.getSegment(CS))
   
 
-proc chkRing*(this: var EmuInstr, DPL: uint8): bool =
+proc chkRing*(this: var ExecInstr, DPL: uint8): bool =
   var CPL: uint8
   CPL = uint8(ACS.getSegment(CS) and 3)
   return CPL <= DPL

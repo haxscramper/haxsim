@@ -192,13 +192,13 @@ proc testAlImm8*(this: var InstrImpl): void =
 proc movR8Imm8*(this: var InstrImpl): void =
   var reg: uint8
   reg = uint8(OPCODE and ((1 shl 3) - 1))
-  CPU.setGPreg(cast[Reg8T](reg), IMM8.uint8)
+  CPU.setGPreg(Reg8T(reg), IMM8.uint8)
 
 proc movRm8Imm8*(this: var InstrImpl): void =
   this.exec.setRm8(IMM8.uint8)
 
 proc retf*(this: var InstrImpl): void =
-  this.emu.retf()
+  this.exec.retf()
 
 proc int3*(this: var InstrImpl): void =
   CPU.dumpRegs()
@@ -208,7 +208,7 @@ proc intImm8*(this: var InstrImpl): void =
   INT.queueInterrupt(IMM8.uint8, false)
 
 proc iret*(this: var InstrImpl): void =
-  this.emu.iret()
+  this.exec.iret()
 
 proc inAlImm8*(this: var InstrImpl): void =
   CPU.setGPreg(AL, EIO.inIo8(cast[uint8](IMM8)))
@@ -246,30 +246,30 @@ proc std*(this: var InstrImpl): void =
   CPU.eflags.setDirection(true)
 
 proc hlt*(this: var InstrImpl): void =
-  EXCEPTION(EXPGP, not(this.emu.chkRing(0)))
+  EXCEPTION(EXPGP, not(this.exec.chkRing(0)))
   CPU.doHalt(true)
 
 proc ltrRm16*(this: var InstrImpl): void =
   var rm16: uint16
-  EXCEPTION(EXPGP, not(this.emu.chkRing(0)))
+  EXCEPTION(EXPGP, not(this.exec.chkRing(0)))
   rm16 = this.exec.getRm16()
-  this.emu.setTr(rm16)
+  this.exec.setTr(rm16)
 
 proc movR32Crn*(this: var InstrImpl): void =
   var crn: uint32
   crn = this.exec.getCrn()
-  CPU.setGPreg(cast[Reg32T](this.getModRmRM()), crn)
+  CPU.setGPreg(Reg32T(this.getModRmRM()), crn)
   
 
 proc movCrnR32*(this: var InstrImpl): void =
   var r32: uint32
-  EXCEPTION(EXPGP, not(this.emu.chkRing(0)))
-  r32 = GETGPREG(cast[Reg32T](this.getModRmRM()))
+  EXCEPTION(EXPGP, not(this.exec.chkRing(0)))
+  r32 = GETGPREG(Reg32T(this.getModRmRM()))
   this.exec.setCrn(r32)
 
 template SETCCRM8*(cc: untyped, isFlag: untyped): untyped {.dirty.} =
   proc `set cc rm8`*(this: var InstrImpl): void =
-    CPU.setGPreg(cast[Reg32T](this.getModRmRM()), uint32(isFlag))
+    CPU.setGPreg(Reg32T(this.getModRmRM()), uint32(isFlag))
   
 
 SETCCRM8(o, EFLAGSOF)
@@ -467,7 +467,7 @@ proc codeFE*(this: var InstrImpl) =
 proc initInstrImpl*(r: var InstrImpl, instr: Instruction) =
   asgnAux[Instruction](r.exec, instr)
   assertRef(r.exec.get_emu())
-  r.emu.emu = instr.emu
+  r.exec.emu = instr.emu
 
   r.setFuncflag(ICode(0x00), instrbase(addRm8R8),    CHKMODRM)
   r.setFuncflag(ICode(0x02), instrbase(addR8Rm8),    CHKMODRM)

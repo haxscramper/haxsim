@@ -265,7 +265,7 @@ proc cwd*(this: var InstrImpl): void =
   CPU.setGPreg(DX, uint16(if toBool(ax and (1 shl 15)): -1 else: 0))
 
 proc callfPtr1616*(this: var InstrImpl): void =
-  this.emu.callf(PTR16.uint16, IMM16.uint32)
+  this.exec.callf(PTR16.uint16, IMM16.uint32)
 
 proc pushf*(this: var InstrImpl): void =
   PUSH16(CPU.eflags.getFlags())
@@ -366,7 +366,7 @@ proc jmpRel16*(this: var InstrImpl): void =
   discard UPDATEIP(IMM16.int32)
 
 proc jmpfPtr1616*(this: var InstrImpl): void =
-  this.emu.jmpf(PTR16.uint16, IMM16.uint32)
+  this.exec.jmpf(PTR16.uint16, IMM16.uint32)
 
 proc inAxDx*(this: var InstrImpl): void =
   var dx: uint16
@@ -671,7 +671,7 @@ proc callfM1616*(this: var InstrImpl): void =
   m32 = this.exec.getM().uint16
   ip = READMEM16(m32)
   cs = READMEM16(m32 + 2)
-  this.emu.callf(cs, ip.uint32)
+  this.exec.callf(cs, ip.uint32)
 
 proc jmpRm16*(this: var InstrImpl): void =
   var rm16: uint16
@@ -683,7 +683,7 @@ proc jmpfM1616*(this: var InstrImpl): void =
   m32 = this.exec.getM().uint16
   ip = READMEM16(m32)
   sel = READMEM16(m32 + 2)
-  this.emu.jmpf(sel, ip.uint32)
+  this.exec.jmpf(sel, ip.uint32)
 
 proc pushRm16*(this: var InstrImpl): void =
   var rm16: uint16
@@ -693,19 +693,19 @@ proc pushRm16*(this: var InstrImpl): void =
 
 proc lgdtM24*(this: var InstrImpl): void =
   var limit, m48, base: uint16
-  EXCEPTION(EXPGP, not(this.emu.chkRing(0)))
+  EXCEPTION(EXPGP, not(this.exec.chkRing(0)))
   m48 = this.exec.getM().uint16
   limit = READMEM16(m48)
   base = uint16(READMEM32(m48 + 2) and ((1 shl 24) - 1))
-  this.emu.setGdtr(base.uint32, limit)
+  this.exec.setGdtr(base.uint32, limit)
 
 proc lidtM24*(this: var InstrImpl): void =
   var limit, base, m48: uint16
-  EXCEPTION(EXPGP, not(this.emu.chkRing(0)))
+  EXCEPTION(EXPGP, not(this.exec.chkRing(0)))
   m48 = this.exec.getM().uint16
   limit = READMEM16(m48)
   base = uint16(READMEM32(m48 + 2) and ((1 shl 24) - 1))
-  this.emu.setIdtr(base.uint32, limit)
+  this.exec.setIdtr(base.uint32, limit)
 
 proc code81*(this: var InstrImpl): void =
   case this.getModrmReg():

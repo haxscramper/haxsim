@@ -253,10 +253,6 @@ type
   ParseInstr* = object
     chk*: array[MAXOPCODE, set[InstrParseFlag]] ## Configuration for parsing
     ## different opcodes.
-
-  EmuInstr* {.bycopy.} = object of Instruction
-
-
   ExecInstr* = object of Instruction
     instrfuncs*: array[MAXOPCODE, instrfuncT]
 
@@ -264,7 +260,6 @@ type
     logger*: EmuLogger
     exec*: ExecInstr
     parse*: ParseInstr
-    emu*: EmuInstr
 
   EmuInstrEvent* = ref object of EmuEvent
     instr*: InstrData
@@ -272,7 +267,7 @@ type
   instrfuncT* = proc(this: var InstrImpl)
 
 template log*(instr: InstrImpl, ev: EmuEvent): untyped =
-  instr.emu.emu.logger.log(ev, -2)
+  instr.exec.emu.logger.log(ev, -2)
 
 template log*(instr: ExecInstr, ev: EmuEvent, depth: int = -2): untyped =
   instr.emu.logger.log(ev, depth)
@@ -397,14 +392,14 @@ const
 # proc moffs8*(this: InstrFlags): uint8 = this.field1.moffs8
 # proc `moffs8=`*(this: var InstrFlags, value: uint8) = this.field1.moffs8 = value
 
-proc setGdtr*(this: var EmuInstr, base: uint32, limit: uint16): void =
+proc setGdtr*(this: var ExecInstr, base: uint32, limit: uint16): void =
   CPU.setDtreg(GDTR, 0, base, limit)
 
-proc setIdtr*(this: var EmuInstr, base: uint32, limit: uint16): void =
+proc setIdtr*(this: var ExecInstr, base: uint32, limit: uint16): void =
   CPU.setDtreg(IDTR, 0, base, limit)
 
-proc getTr*(this: var EmuInstr): uint16 =
+proc getTr*(this: var ExecInstr): uint16 =
   return CPU.getDtregSelector(TR).uint16()
 
-proc getLdtr*(this: var EmuInstr): uint16 =
+proc getLdtr*(this: var ExecInstr): uint16 =
   return CPU.getDtregSelector(LDTR).uint16()

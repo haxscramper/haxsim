@@ -265,7 +265,7 @@ proc cdq*(this: var InstrImpl): void =
   CPU.setGPreg(EDX, uint32(if toBool(eax and (1 shl 31)): -1 else: 0))
 
 proc callfPtr16_32*(this: var InstrImpl): void =
-  this.emu.callf(PTR16.uint16, IMM32.uint32)
+  this.exec.callf(PTR16.uint16, IMM32.uint32)
 
 proc pushf*(this: var InstrImpl): void =
   PUSH32(CPU.eflags.getEflags())
@@ -367,7 +367,7 @@ proc jmpRel32*(this: var InstrImpl): void =
   discard UPDATEEIP(IMM32)
 
 proc jmpfPtr16_32*(this: var InstrImpl): void =
-  this.emu.jmpf(PTR16.uint16, IMM32.uint32)
+  this.exec.jmpf(PTR16.uint16, IMM32.uint32)
 
 proc inEaxDx*(this: var InstrImpl): void =
   var dx: uint16
@@ -678,7 +678,7 @@ proc callfM16_32*(this: var InstrImpl): void =
   eip = READMEM32(m48)
   cs = READMEM16(m48 + 4)
   INFO(2, "cs = 0x%04x, eip = 0x%08x", cs, eip)
-  this.emu.callf(cs, eip)
+  this.exec.callf(cs, eip)
 
 proc jmpRm32*(this: var InstrImpl): void =
   var rm32: uint32
@@ -691,7 +691,7 @@ proc jmpfM16_32*(this: var InstrImpl): void =
   m48 = this.exec.getM()
   eip = READMEM32(m48)
   sel = READMEM16(m48 + 4)
-  this.emu.jmpf(sel, eip)
+  this.exec.jmpf(sel, eip)
 
 proc pushRm32*(this: var InstrImpl): void =
   var rm32: uint32
@@ -702,22 +702,22 @@ proc pushRm32*(this: var InstrImpl): void =
 proc lgdtM32*(this: var InstrImpl): void =
   var base, m48: uint32
   var limit: uint16
-  EXCEPTION(EXPGP, not(this.emu.chkRing(0)))
+  EXCEPTION(EXPGP, not(this.exec.chkRing(0)))
   m48 = this.exec.getM()
   limit = READMEM16(m48)
   base = READMEM32(m48 + 2)
   INFO(2, "base = 0x%08x, limit = 0x%04x", base, limit)
-  this.emu.setGdtr(base, limit)
+  this.exec.setGdtr(base, limit)
 
 proc lidtM32*(this: var InstrImpl): void =
   var base, m48: uint32
   var limit: uint16
-  EXCEPTION(EXPGP, not(this.emu.chkRing(0)))
+  EXCEPTION(EXPGP, not(this.exec.chkRing(0)))
   m48 = this.exec.getM()
   limit = READMEM16(m48)
   base = READMEM32(m48 + 2)
   INFO(2, "base = 0x%08x, limit = 0x%04x", base, limit)
-  this.emu.setIdtr(base, limit)
+  this.exec.setIdtr(base, limit)
 
 
 proc code_81*(this: var InstrImpl): void =
