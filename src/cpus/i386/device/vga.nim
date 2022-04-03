@@ -1,4 +1,5 @@
 import common
+import hmisc/wrappers/wraphelp
 import dev_io
 
 import std/sequtils
@@ -7,13 +8,13 @@ template r*(reg: untyped): untyped {.dirty.} =
   (addr reg.raw)
 
 type
-  gmode_t* {.size: sizeof(cint).} = enum
-    MODE_TEXT
-    MODE_GRAPHIC
-    MODE_GRAPHIC256
+  gmodeT* {.size: sizeof(cint).} = enum
+    MODETEXT
+    MODEGRAPHIC
+    MODEGRAPHIC256
 
   VGA* = ref object
-    mor*: VGA_mor
+    mor*: VGAMor
     portio*: PortIO
     memio*: ref MemoryIO
     plane*: array[4, seq[uint8]]
@@ -27,70 +28,70 @@ type
   Sequencer* = object
     vga*: ptr VGA
     portio*: PortIO
-    sar*: Sequencer_sar
-    cmr*: Sequencer_cmr
-    map_mr*: Sequencer_map_mr
-    cmsr*: Sequencer_cmsr
-    mem_mr*: Sequencer_mem_mr
+    sar*: SequencerSar
+    cmr*: SequencerCmr
+    mapMr*: SequencerMapMr
+    cmsr*: SequencerCmsr
+    memMr*: SequencerMemMr
     regs*: array[8, ptr uint8]
-    get_font*: ptr uint8
+    getFont*: ptr uint8
 
   CRT* = object
     vga*: ptr VGA
     portio*: PortIO
-    crtcar*: CRT_crtcar
-    htr*: CRT_htr
-    hdeer*: CRT_hdeer
-    shbr*: CRT_shbr
-    ehbr*: CRT_ehbr
-    mslr*: CRT_mslr
-    csr*: CRT_csr
-    cer*: CRT_cer
-    sahr*: CRT_sahr
-    salr*: CRT_salr
-    clhr*: CRT_clhr
-    cllr*: CRT_cllr
-    vdeer*: CRT_vdeer
-    ofsr*: CRT_ofsr
-    crtmcr*: CRT_crtmcr
+    crtcar*: CRTCrtcar
+    htr*: CRTHtr
+    hdeer*: CRTHdeer
+    shbr*: CRTShbr
+    ehbr*: CRTEhbr
+    mslr*: CRTMslr
+    csr*: CRTCsr
+    cer*: CRTCer
+    sahr*: CRTSahr
+    salr*: CRTSalr
+    clhr*: CRTClhr
+    cllr*: CRTCllr
+    vdeer*: CRTVdeer
+    ofsr*: CRTOfsr
+    crtmcr*: CRTCrtmcr
     regs*: array[25, ptr uint8]
 
   GraphicController* = object
     vga*: VGA
     portio*: PortIO
-    gcar*: GraphicController_gcar
-    sr*: GraphicController_sr
-    esr*: GraphicController_esr
-    ccr*: GraphicController_ccr
-    drr*: GraphicController_drr
-    rmsr*: GraphicController_rmsr
-    gmr*: GraphicController_gmr
-    mr*: GraphicController_mr
+    gcar*: GraphicControllerGcar
+    sr*: GraphicControllerSr
+    esr*: GraphicControllerEsr
+    ccr*: GraphicControllerCcr
+    drr*: GraphicControllerDrr
+    rmsr*: GraphicControllerRmsr
+    gmr*: GraphicControllerGmr
+    mr*: GraphicControllerMr
     regs*: array[9, ptr uint8]
 
   Attribute* = object
     vga*: VGA
-    acar*: Attribute_acar
-    field2*: Attribute_field2
-    amcr*: Attribute_amcr
-    cper*: Attribute_cper
+    acar*: AttributeAcar
+    ipr*: array[0x10, AttributeField2]
+    amcr*: AttributeAmcr
+    cper*: AttributeCper
     portio*: PortIO
-    hpelpr*: Attribute_hpelpr
-    csr*: Attribute_csr
+    hpelpr*: AttributeHpelpr
+    csr*: AttributeCsr
     regs*: array[21, ptr uint8]
 
   DAC* = object
     vga*: VGA
     progress*: uint8
-    field2*: DAC_field2
+    clut*: array[0x100, DACField2]
     portio*: PortIO
-    w_par*: DAC_w_par
-    r_par*: DAC_r_par
-    pdr*: DAC_pdr
-    dacsr*: DAC_dacsr
-    pelmr*: DAC_pelmr
+    wPar*: DACWPar
+    rPar*: DACRPar
+    pdr*: DACPdr
+    dacsr*: DACDacsr
+    pelmr*: DACPelmr
 
-  VGA_mor_field1* {.bycopy.} = object
+  VGAMorField1* = object
     IO* {.bitsize: 1.}: uint8
     ER* {.bitsize: 1.}: uint8
     CLK0* {.bitsize: 1.}: uint8
@@ -100,18 +101,18 @@ type
     HSP* {.bitsize: 1.}: uint8
     VSA* {.bitsize: 1.}: uint8
 
-  VGA_mor* {.bycopy, union.} = object
+  VGAMor* {.bycopy, union.} = object
     raw*: uint8
-    field1*: VGA_mor_field1
+    field1*: VGAMorField1
 
-  Sequencer_sar_field1* {.bycopy.} = object
+  SequencerSarField1* = object
     INDX* {.bitsize: 3.}: uint8
 
-  Sequencer_sar* {.bycopy, union.} = object
+  SequencerSar* {.bycopy, union.} = object
     raw*: uint8
-    field1*: Sequencer_sar_field1
+    field1*: SequencerSarField1
 
-  Sequencer_cmr_field1* {.bycopy.} = object
+  SequencerCmrField1* = object
     f89DC* {.bitsize: 1.}: uint8
     field1* {.bitsize: 1.}: uint8
     SL* {.bitsize: 1.}: uint8
@@ -119,114 +120,114 @@ type
     S4* {.bitsize: 1.}: uint8
     SO* {.bitsize: 1.}: uint8
 
-  Sequencer_cmr* {.bycopy, union.} = object
+  SequencerCmr* {.bycopy, union.} = object
     raw*: uint8
-    field1*: Sequencer_cmr_field1
+    field1*: SequencerCmrField1
 
-  Sequencer_map_mr_field1* {.bycopy.} = object
+  SequencerMapMrField1* = object
     MAP0E* {.bitsize: 1.}: uint8
     MAP1E* {.bitsize: 1.}: uint8
     MAP2E* {.bitsize: 1.}: uint8
     MAP3E* {.bitsize: 1.}: uint8
 
-  Sequencer_map_mr* {.bycopy, union.} = object
+  SequencerMapMr* {.bycopy, union.} = object
     raw*: uint8
-    field1*: Sequencer_map_mr_field1
+    field1*: SequencerMapMrField1
 
-  Sequencer_cmsr_field1* {.bycopy.} = object
+  SequencerCmsrField1* = object
     CMB* {.bitsize: 2.}: uint8
     CMA* {.bitsize: 2.}: uint8
     CMBM* {.bitsize: 1.}: uint8
     CMAM* {.bitsize: 1.}: uint8
 
-  Sequencer_cmsr* {.bycopy, union.} = object
+  SequencerCmsr* {.bycopy, union.} = object
     raw*: uint8
-    field1*: Sequencer_cmsr_field1
+    field1*: SequencerCmsrField1
 
-  Sequencer_mem_mr_field1* {.bycopy.} = object
+  SequencerMemMrField1* = object
     field0* {.bitsize: 1.}: uint8
     EM* {.bitsize: 1.}: uint8
     OE* {.bitsize: 1.}: uint8
     C4* {.bitsize: 1.}: uint8
 
-  Sequencer_mem_mr* {.bycopy, union.} = object
+  SequencerMemMr* {.bycopy, union.} = object
     raw*: uint8
-    field1*: Sequencer_mem_mr_field1
+    field1*: SequencerMemMrField1
 
-  CRT_crtcar_field1* {.bycopy.} = object
+  CRTCrtcarField1* = object
     INDX* {.bitsize: 5.}: uint8
 
-  CRT_crtcar* {.bycopy, union.} = object
+  CRTCrtcar* {.bycopy, union.} = object
     raw*: uint8
-    field1*: CRT_crtcar_field1
+    field1*: CRTCrtcarField1
 
-  CRT_htr* {.bycopy, union.} = object
+  CRTHtr* {.bycopy, union.} = object
     raw*: uint8
     HT*: uint8
 
-  CRT_hdeer* {.bycopy, union.} = object
+  CRTHdeer* {.bycopy, union.} = object
     raw*: uint8
     HDEE*: uint8
 
-  CRT_shbr* {.bycopy, union.} = object
+  CRTShbr* {.bycopy, union.} = object
     raw*: uint8
     SHB*: uint8
 
-  CRT_ehbr_field1* {.bycopy.} = object
+  CRTEhbrField1* = object
     EB* {.bitsize: 5.}: uint8
     DESC* {.bitsize: 2.}: uint8
 
-  CRT_mslr_field1* {.bycopy.} = object
+  CRTMslrField1* = object
     MSL* {.bitsize: 5.}: uint8
     SVB9* {.bitsize: 1.}: uint8
     LC9* {.bitsize: 1.}: uint8
     LC* {.bitsize: 1.}: uint8
 
-  CRT_mslr* {.bycopy, union.} = object
+  CRTMslr* {.bycopy, union.} = object
     raw*: uint8
-    field1*: CRT_mslr_field1
+    field1*: CRTMslrField1
 
-  CRT_csr_field1* {.bycopy.} = object
+  CRTCsrField1* = object
     RSCB* {.bitsize: 5.}: uint8
     CO* {.bitsize: 1.}: uint8
 
-  CRT_csr* {.bycopy, union.} = object
+  CRTCsr* {.bycopy, union.} = object
     raw*: uint8
-    field1*: CRT_csr_field1
+    field1*: CRTCsrField1
 
-  CRT_cer_field1* {.bycopy.} = object
+  CRTCerField1* = object
     RSCE* {.bitsize: 5.}: uint8
     CSC* {.bitsize: 2.}: uint8
 
-  CRT_cer* {.bycopy, union.} = object
+  CRTCer* {.bycopy, union.} = object
     raw*: uint8
-    field1*: CRT_cer_field1
+    field1*: CRTCerField1
 
-  CRT_sahr* {.bycopy, union.} = object
+  CRTSahr* {.bycopy, union.} = object
     raw*: uint8
     HBSA*: uint8
 
-  CRT_salr* {.bycopy, union.} = object
+  CRTSalr* {.bycopy, union.} = object
     raw*: uint8
     LBSA*: uint8
 
-  CRT_clhr* {.bycopy, union.} = object
+  CRTClhr* {.bycopy, union.} = object
     raw*: uint8
     HBCL*: uint8
 
-  CRT_cllr* {.bycopy, union.} = object
+  CRTCllr* {.bycopy, union.} = object
     raw*: uint8
     LBCL*: uint8
 
-  CRT_vdeer* {.bycopy, union.} = object
+  CRTVdeer* {.bycopy, union.} = object
     raw*: uint8
     VDEE*: uint8
 
-  CRT_ofsr* {.bycopy, union.} = object
+  CRTOfsr* {.bycopy, union.} = object
     raw*: uint8
     LLWS*: uint8
 
-  CRT_crtmcr_field1* {.bycopy.} = object
+  CRTCrtmcrField1* = object
     CMS0* {.bitsize: 1.}: uint8
     SRSC* {.bitsize: 1.}: uint8
     HRSX* {.bitsize: 1.}: uint8
@@ -236,63 +237,63 @@ type
     WBM* {.bitsize: 1.}: uint8
     HR* {.bitsize: 1.}: uint8
 
-  GraphicController_gcar* {.bycopy, union.} = object
+  GraphicControllerGcar* {.bycopy, union.} = object
     raw*: uint8
-    field1*: GraphicController_gcar_field1
+    field1*: GraphicControllerGcarField1
 
-  GraphicController_sr_field1* {.bycopy.} = object
+  GraphicControllerSrField1* = object
     SRM0* {.bitsize: 1.}: uint8
     SRM1* {.bitsize: 1.}: uint8
     SRM2* {.bitsize: 1.}: uint8
     SRM3* {.bitsize: 1.}: uint8
 
-  CRT_crtmcr* {.bycopy, union.} = object
+  CRTCrtmcr* {.bycopy, union.} = object
     raw*: uint8
-    field1*: CRT_crtmcr_field1
+    field1*: CRTCrtmcrField1
 
-  GraphicController_gcar_field1* {.bycopy.} = object
+  GraphicControllerGcarField1* = object
     INDX* {.bitsize: 4.}: uint8
 
-  GraphicController_sr* {.bycopy, union.} = object
+  GraphicControllerSr* {.bycopy, union.} = object
     raw*: uint8
-    field1*: GraphicController_sr_field1
+    field1*: GraphicControllerSrField1
 
-  GraphicController_esr_field1* {.bycopy.} = object
+  GraphicControllerEsrField1* = object
     ESRM0* {.bitsize: 1.}: uint8
     ESRM1* {.bitsize: 1.}: uint8
     ESRM2* {.bitsize: 1.}: uint8
     ESRM3* {.bitsize: 1.}: uint8
 
-  GraphicController_esr* {.bycopy, union.} = object
+  GraphicControllerEsr* {.bycopy, union.} = object
     raw*: uint8
-    field1*: GraphicController_esr_field1
+    field1*: GraphicControllerEsrField1
 
-  GraphicController_ccr_field1* {.bycopy.} = object
+  GraphicControllerCcrField1* = object
     CCM0* {.bitsize: 1.}: uint8
     CCM1* {.bitsize: 1.}: uint8
     CCM2* {.bitsize: 1.}: uint8
     CCM3* {.bitsize: 1.}: uint8
 
-  GraphicController_ccr* {.bycopy, union.} = object
+  GraphicControllerCcr* {.bycopy, union.} = object
     raw*: uint8
-    field1*: GraphicController_ccr_field1
+    field1*: GraphicControllerCcrField1
 
-  GraphicController_drr_field1* {.bycopy.} = object
+  GraphicControllerDrrField1* = object
     RC* {.bitsize: 3.}: uint8
     FS* {.bitsize: 2.}: uint8
 
-  GraphicController_drr* {.bycopy, union.} = object
+  GraphicControllerDrr* {.bycopy, union.} = object
     raw*: uint8
-    field1*: GraphicController_drr_field1
+    field1*: GraphicControllerDrrField1
 
-  GraphicController_rmsr_field1* {.bycopy.} = object
+  GraphicControllerRmsrField1* = object
     MS* {.bitsize: 2.}: uint8
 
-  GraphicController_rmsr* {.bycopy, union.} = object
+  GraphicControllerRmsr* {.bycopy, union.} = object
     raw*: uint8
-    field1*: GraphicController_rmsr_field1
+    field1*: GraphicControllerRmsrField1
 
-  GraphicController_gmr_field1* {.bycopy.} = object
+  GraphicControllerGmrField1* = object
     WM* {.bitsize: 2.}: uint8
     field1* {.bitsize: 1.}: uint8
     RM* {.bitsize: 1.}: uint8
@@ -300,32 +301,32 @@ type
     SRM* {.bitsize: 1.}: uint8
     f256CM* {.bitsize: 1.}: uint8
 
-  GraphicController_gmr* {.bycopy, union.} = object
+  GraphicControllerGmr* {.bycopy, union.} = object
     raw*: uint8
-    field1*: GraphicController_gmr_field1
+    field1*: GraphicControllerGmrField1
 
-  GraphicController_mr_field1* {.bycopy.} = object
+  GraphicControllerMrField1* = object
     GM* {.bitsize: 1.}: uint8
     OE* {.bitsize: 1.}: uint8
     MM* {.bitsize: 2.}: uint8
 
-  CRT_ehbr* {.bycopy, union.} = object
+  CRTEhbr* {.bycopy, union.} = object
     raw*: uint8
-    field1*: CRT_ehbr_field1
+    field1*: CRTEhbrField1
 
-  GraphicController_mr* {.bycopy, union.} = object
+  GraphicControllerMr* {.bycopy, union.} = object
     raw*: uint8
-    field1*: GraphicController_mr_field1
+    field1*: GraphicControllerMrField1
 
-  Attribute_acar_field1* {.bycopy.} = object
+  AttributeAcarField1* = object
     INDX* {.bitsize: 5.}: uint8
     IPAS* {.bitsize: 1.}: uint8
 
-  Attribute_acar* {.bycopy, union.} = object
+  AttributeAcar* {.bycopy, union.} = object
     raw*: uint8
-    field1*: Attribute_acar_field1
+    field1*: AttributeAcarField1
 
-  Attribute_field2_field1* {.bycopy.} = object
+  AttributeField2Field1* = object
     P0* {.bitsize: 1.}: uint8
     P1* {.bitsize: 1.}: uint8
     P2* {.bitsize: 1.}: uint8
@@ -333,11 +334,11 @@ type
     P4* {.bitsize: 1.}: uint8
     P5* {.bitsize: 1.}: uint8
 
-  Attribute_field2* {.bycopy, union.} = object
+  AttributeField2* {.union.} = object
     raw*: uint8
-    field1*: Attribute_field2_field1
+    field1*: AttributeField2Field1
 
-  Attribute_amcr_field1* {.bycopy.} = object
+  AttributeAmcrField1* = object
     GAM* {.bitsize: 1.}: uint8
     ME* {.bitsize: 1.}: uint8
     ELGCC* {.bitsize: 1.}: uint8
@@ -347,62 +348,62 @@ type
     PELW* {.bitsize: 1.}: uint8
     P54S* {.bitsize: 1.}: uint8
 
-  Attribute_amcr* {.bycopy, union.} = object
+  AttributeAmcr* {.bycopy, union.} = object
     raw*: uint8
-    field1*: Attribute_amcr_field1
+    field1*: AttributeAmcrField1
 
-  Attribute_cper_field1* {.bycopy.} = object
+  AttributeCperField1* = object
     ECP* {.bitsize: 4.}: uint8
     VSM* {.bitsize: 2.}: uint8
 
-  Attribute_cper* {.bycopy, union.} = object
+  AttributeCper* {.bycopy, union.} = object
     raw*: uint8
-    field1*: Attribute_cper_field1
+    field1*: AttributeCperField1
 
-  Attribute_hpelpr_field1* {.bycopy.} = object
+  AttributeHpelprField1* = object
     HPELP* {.bitsize: 4.}: uint8
 
-  Attribute_hpelpr* {.bycopy, union.} = object
+  AttributeHpelpr* {.bycopy, union.} = object
     raw*: uint8
-    field1*: Attribute_hpelpr_field1
+    field1*: AttributeHpelprField1
 
-  Attribute_csr_field1* {.bycopy.} = object
+  AttributeCsrField1* = object
     SC45* {.bitsize: 2.}: uint8
     SC67* {.bitsize: 2.}: uint8
 
-  Attribute_csr* {.bycopy, union.} = object
+  AttributeCsr* {.bycopy, union.} = object
     raw*: uint8
-    field1*: Attribute_csr_field1
+    field1*: AttributeCsrField1
 
-  DAC_field2_field1* {.bycopy.} = object
+  DACField2Field1* = object
     R* {.bitsize: 6.}: uint8
     G* {.bitsize: 6.}: uint8
     B* {.bitsize: 6.}: uint8
 
-  DAC_field2* {.bycopy, union.} = object
+  DACField2* {.bycopy, union.} = object
     raw*: array[3, uint8]
-    field1*: DAC_field2_field1
+    field1*: DACField2Field1
 
-  DAC_w_par* {.bycopy, union.} = object
+  DACWPar* {.bycopy, union.} = object
     raw*: uint8
     index*: uint8
 
-  DAC_r_par* {.bycopy, union.} = object
+  DACRPar* {.bycopy, union.} = object
     raw*: uint8
     index*: uint8
 
-  DAC_pdr* {.bycopy, union.} = object
+  DACPdr* {.bycopy, union.} = object
     raw*: uint8
     color*: uint8
 
-  DAC_dacsr_field1* {.bycopy.} = object
+  DACDacsrField1* = object
     DACstate* {.bitsize: 2.}: uint8
 
-  DAC_dacsr* {.bycopy, union.} = object
+  DACDacsr* {.bycopy, union.} = object
     raw*: uint8
-    field1*: DAC_dacsr_field1
+    field1*: DACDacsrField1
 
-  DAC_pelmr* {.bycopy, union.} = object
+  DACPelmr* {.bycopy, union.} = object
     raw*: uint8
     mask*: uint8
 
@@ -420,24 +421,24 @@ proc deleteVGA*(vga: var VGA): VGA =
   for i in 0 ..< 4:
     discard
 
-proc need_refresh*(this: var VGA): bool =
+proc needRefresh*(this: var VGA): bool =
   var v: bool = this.refresh
   this.refresh = false
   return v
 
-proc get_dac*(this: var VGA): ptr DAC =
+proc getDac*(this: var VGA): ptr DAC =
   return addr this.dac
 
-proc get_attr*(this: var VGA): ptr Attribute =
+proc getAttr*(this: var VGA): ptr Attribute =
   return addr this.attr
 
-proc get_seq*(this: var VGA): ptr Sequencer =
+proc getSeq*(this: var VGA): ptr Sequencer =
   return addr this.`seq`
 
-proc get_crt*(this: var VGA): ptr CRT =
+proc getCrt*(this: var VGA): ptr CRT =
   return addr this.crt
 
-proc get_gc*(this: var VGA): ptr GraphicController =
+proc getGc*(this: var VGA): ptr GraphicController =
   return addr this.gc
 
 proc initSequencer*(v: ptr VGA): Sequencer =
@@ -447,17 +448,7 @@ proc initSequencer*(v: ptr VGA): Sequencer =
       result.regs[i][] = 0
 
 
-proc read*(this: var Sequencer, offset: uint32): uint8 =
-  discard
-
-proc write*(this: var Sequencer, offset: uint32, v: uint8): void =
-  discard
-
-proc in8*(this: var Sequencer, memAddr: uint16): uint8 =
-  discard
-
-proc out8*(this: var Sequencer, memAddr: uint16, v: uint8): void =
-  discard
+proc read*(this: var Sequencer, offset: uint32): uint8
 
 proc initCRT*(v: ptr VGA): CRT =
   result.vga = v
@@ -466,44 +457,11 @@ proc initCRT*(v: ptr VGA): CRT =
       result.regs[i][] = 0
 
 
-proc get_windowsize*(this: var CRT, x: ptr uint16, y: ptr uint16): void =
-  discard
-
-proc attr_index_text*(this: var CRT, n: uint32): uint8 =
-  discard
-
-proc in8*(this: var CRT, memAddr: uint16): uint8 =
-  discard
-
-proc out8*(this: var CRT, memAddr: uint16, v: uint8): void =
-  discard
-
 proc initGraphicController*(v: VGA): GraphicController =
   result.vga = v
   for i in 0 ..< len(result.regs):
     if not result.regs[i].isNil():
       result.regs[i][] = 0
-
-proc read*(this: var GraphicController, offset: uint32): uint8 =
-  discard
-
-proc write*(this: var GraphicController, nplane: uint8, offset: uint32, v: uint8): void =
-  discard
-
-proc chk_offset*(this: var GraphicController, offset: ptr uint32): bool =
-  discard
-
-proc graphic_mode*(this: var GraphicController): gmode_t =
-  discard
-
-proc attr_index_graphic*(this: var GraphicController, n: uint32): uint8 =
-  discard
-
-proc in8*(this: var GraphicController, memAddr: uint16): uint8 =
-  discard
-
-proc out8*(this: var GraphicController, memAddr: uint16, v: uint8): void =
-  discard
 
 proc initAttribute*(v: VGA): Attribute =
   result.vga = v
@@ -511,598 +469,601 @@ proc initAttribute*(v: VGA): Attribute =
     if not result.regs[i].isNil():
       result.regs[i][] = 0
 
-
-proc dac_index*(this: var Attribute, index: uint8): uint8 =
-  discard
-
-proc in8*(this: var Attribute, memAddr: uint16): uint8 =
-  discard
-
-proc out8*(this: var Attribute, memAddr: uint16, v: uint8): void =
-  discard
-
 proc initDAC*(v: VGA): DAC =
   result.vga = v
 
-proc translate_rgb*(this: var DAC, index: uint8): uint32 =
-  discard
+proc IO*(this: VGAMor): uint8 = this.field1.IO
+proc `IO=`*(this: var VGAMor, value: uint8) = this.field1.IO = value
+proc ER*(this: VGAMor): uint8 = this.field1.ER
+proc `ER=`*(this: var VGAMor, value: uint8) = this.field1.ER = value
+proc CLK0*(this: VGAMor): uint8 = this.field1.CLK0
+proc `CLK0=`*(this: var VGAMor, value: uint8) = this.field1.CLK0 = value
+proc CLK1*(this: VGAMor): uint8 = this.field1.CLK1
+proc `CLK1=`*(this: var VGAMor, value: uint8) = this.field1.CLK1 = value
+proc PS*(this: VGAMor): uint8 = this.field1.PS
+proc `PS=`*(this: var VGAMor, value: uint8) = this.field1.PS = value
+proc HSP*(this: VGAMor): uint8 = this.field1.HSP
+proc `HSP=`*(this: var VGAMor, value: uint8) = this.field1.HSP = value
+proc VSA*(this: VGAMor): uint8 = this.field1.VSA
+proc `VSA=`*(this: var VGAMor, value: uint8) = this.field1.VSA = value
+proc INDX*(this: SequencerSar): uint8 = this.field1.INDX
+proc `INDX=`*(this: var SequencerSar, value: uint8) = this.field1.INDX = value
+proc f89DC*(this: SequencerCmr): uint8 = this.field1.f89DC
+proc `f89DC=`*(this: var SequencerCmr, value: uint8) = this.field1.f89DC = value
+proc SL*(this: SequencerCmr): uint8 = this.field1.SL
+proc `SL=`*(this: var SequencerCmr, value: uint8) = this.field1.SL = value
+proc DC*(this: SequencerCmr): uint8 = this.field1.DC
+proc `DC=`*(this: var SequencerCmr, value: uint8) = this.field1.DC = value
+proc S4*(this: SequencerCmr): uint8 = this.field1.S4
+proc `S4=`*(this: var SequencerCmr, value: uint8) = this.field1.S4 = value
+proc SO*(this: SequencerCmr): uint8 = this.field1.SO
+proc `SO=`*(this: var SequencerCmr, value: uint8) = this.field1.SO = value
+proc MAP0E*(this: SequencerMapMr): uint8 = this.field1.MAP0E
+proc `MAP0E=`*(this: var SequencerMapMr, value: uint8) = this.field1.MAP0E = value
+proc MAP1E*(this: SequencerMapMr): uint8 = this.field1.MAP1E
+proc `MAP1E=`*(this: var SequencerMapMr, value: uint8) = this.field1.MAP1E = value
+proc MAP2E*(this: SequencerMapMr): uint8 = this.field1.MAP2E
+proc `MAP2E=`*(this: var SequencerMapMr, value: uint8) = this.field1.MAP2E = value
+proc MAP3E*(this: SequencerMapMr): uint8 = this.field1.MAP3E
+proc `MAP3E=`*(this: var SequencerMapMr, value: uint8) = this.field1.MAP3E = value
+proc CMB*(this: SequencerCmsr): uint8 = this.field1.CMB
+proc `CMB=`*(this: var SequencerCmsr, value: uint8) = this.field1.CMB = value
+proc CMA*(this: SequencerCmsr): uint8 = this.field1.CMA
+proc `CMA=`*(this: var SequencerCmsr, value: uint8) = this.field1.CMA = value
+proc CMBM*(this: SequencerCmsr): uint8 = this.field1.CMBM
+proc `CMBM=`*(this: var SequencerCmsr, value: uint8) = this.field1.CMBM = value
+proc CMAM*(this: SequencerCmsr): uint8 = this.field1.CMAM
+proc `CMAM=`*(this: var SequencerCmsr, value: uint8) = this.field1.CMAM = value
+proc EM*(this: SequencerMemMr): uint8 = this.field1.EM
+proc `EM=`*(this: var SequencerMemMr, value: uint8) = this.field1.EM = value
+proc OE*(this: SequencerMemMr): uint8 = this.field1.OE
+proc `OE=`*(this: var SequencerMemMr, value: uint8) = this.field1.OE = value
+proc C4*(this: SequencerMemMr): uint8 = this.field1.C4
+proc `C4=`*(this: var SequencerMemMr, value: uint8) = this.field1.C4 = value
+proc INDX*(this: CRTCrtcar): uint8 = this.field1.INDX
+proc `INDX=`*(this: var CRTCrtcar, value: uint8) = this.field1.INDX = value
+proc EB*(this: CRTEhbr): uint8 = this.field1.EB
+proc `EB=`*(this: var CRTEhbr, value: uint8) = this.field1.EB = value
+proc DESC*(this: CRTEhbr): uint8 = this.field1.DESC
+proc `DESC=`*(this: var CRTEhbr, value: uint8) = this.field1.DESC = value
+proc MSL*(this: CRTMslr): uint8 = this.field1.MSL
+proc `MSL=`*(this: var CRTMslr, value: uint8) = this.field1.MSL = value
+proc SVB9*(this: CRTMslr): uint8 = this.field1.SVB9
+proc `SVB9=`*(this: var CRTMslr, value: uint8) = this.field1.SVB9 = value
+proc LC9*(this: CRTMslr): uint8 = this.field1.LC9
+proc `LC9=`*(this: var CRTMslr, value: uint8) = this.field1.LC9 = value
+proc LC*(this: CRTMslr): uint8 = this.field1.LC
+proc `LC=`*(this: var CRTMslr, value: uint8) = this.field1.LC = value
+proc RSCB*(this: CRTCsr): uint8 = this.field1.RSCB
+proc `RSCB=`*(this: var CRTCsr, value: uint8) = this.field1.RSCB = value
+proc CO*(this: CRTCsr): uint8 = this.field1.CO
+proc `CO=`*(this: var CRTCsr, value: uint8) = this.field1.CO = value
+proc RSCE*(this: CRTCer): uint8 = this.field1.RSCE
+proc `RSCE=`*(this: var CRTCer, value: uint8) = this.field1.RSCE = value
+proc CSC*(this: CRTCer): uint8 = this.field1.CSC
+proc `CSC=`*(this: var CRTCer, value: uint8) = this.field1.CSC = value
+proc CMS0*(this: CRTCrtmcr): uint8 = this.field1.CMS0
+proc `CMS0=`*(this: var CRTCrtmcr, value: uint8) = this.field1.CMS0 = value
+proc SRSC*(this: CRTCrtmcr): uint8 = this.field1.SRSC
+proc `SRSC=`*(this: var CRTCrtmcr, value: uint8) = this.field1.SRSC = value
+proc HRSX*(this: CRTCrtmcr): uint8 = this.field1.HRSX
+proc `HRSX=`*(this: var CRTCrtmcr, value: uint8) = this.field1.HRSX = value
+proc C2*(this: CRTCrtmcr): uint8 = this.field1.C2
+proc `C2=`*(this: var CRTCrtmcr, value: uint8) = this.field1.C2 = value
+proc AW*(this: CRTCrtmcr): uint8 = this.field1.AW
+proc `AW=`*(this: var CRTCrtmcr, value: uint8) = this.field1.AW = value
+proc WBM*(this: CRTCrtmcr): uint8 = this.field1.WBM
+proc `WBM=`*(this: var CRTCrtmcr, value: uint8) = this.field1.WBM = value
+proc HR*(this: CRTCrtmcr): uint8 = this.field1.HR
+proc `HR=`*(this: var CRTCrtmcr, value: uint8) = this.field1.HR = value
+proc INDX*(this: GraphicControllerGcar): uint8 = this.field1.INDX
+proc `INDX=`*(this: var GraphicControllerGcar, value: uint8) = this.field1.INDX = value
+proc SRM0*(this: GraphicControllerSr): uint8 = this.field1.SRM0
+proc `SRM0=`*(this: var GraphicControllerSr, value: uint8) = this.field1.SRM0 = value
+proc SRM1*(this: GraphicControllerSr): uint8 = this.field1.SRM1
+proc `SRM1=`*(this: var GraphicControllerSr, value: uint8) = this.field1.SRM1 = value
+proc SRM2*(this: GraphicControllerSr): uint8 = this.field1.SRM2
+proc `SRM2=`*(this: var GraphicControllerSr, value: uint8) = this.field1.SRM2 = value
+proc SRM3*(this: GraphicControllerSr): uint8 = this.field1.SRM3
+proc `SRM3=`*(this: var GraphicControllerSr, value: uint8) = this.field1.SRM3 = value
+proc ESRM0*(this: GraphicControllerEsr): uint8 = this.field1.ESRM0
+proc `ESRM0=`*(this: var GraphicControllerEsr, value: uint8) = this.field1.ESRM0 = value
+proc ESRM1*(this: GraphicControllerEsr): uint8 = this.field1.ESRM1
+proc `ESRM1=`*(this: var GraphicControllerEsr, value: uint8) = this.field1.ESRM1 = value
+proc ESRM2*(this: GraphicControllerEsr): uint8 = this.field1.ESRM2
+proc `ESRM2=`*(this: var GraphicControllerEsr, value: uint8) = this.field1.ESRM2 = value
+proc ESRM3*(this: GraphicControllerEsr): uint8 = this.field1.ESRM3
+proc `ESRM3=`*(this: var GraphicControllerEsr, value: uint8) = this.field1.ESRM3 = value
+proc CCM0*(this: GraphicControllerCcr): uint8 = this.field1.CCM0
+proc `CCM0=`*(this: var GraphicControllerCcr, value: uint8) = this.field1.CCM0 = value
+proc CCM1*(this: GraphicControllerCcr): uint8 = this.field1.CCM1
+proc `CCM1=`*(this: var GraphicControllerCcr, value: uint8) = this.field1.CCM1 = value
+proc CCM2*(this: GraphicControllerCcr): uint8 = this.field1.CCM2
+proc `CCM2=`*(this: var GraphicControllerCcr, value: uint8) = this.field1.CCM2 = value
+proc CCM3*(this: GraphicControllerCcr): uint8 = this.field1.CCM3
+proc `CCM3=`*(this: var GraphicControllerCcr, value: uint8) = this.field1.CCM3 = value
+proc RC*(this: GraphicControllerDrr): uint8 = this.field1.RC
+proc `RC=`*(this: var GraphicControllerDrr, value: uint8) = this.field1.RC = value
+proc FS*(this: GraphicControllerDrr): uint8 = this.field1.FS
+proc `FS=`*(this: var GraphicControllerDrr, value: uint8) = this.field1.FS = value
+proc MS*(this: GraphicControllerRmsr): uint8 = this.field1.MS
+proc `MS=`*(this: var GraphicControllerRmsr, value: uint8) = this.field1.MS = value
+proc WM*(this: GraphicControllerGmr): uint8 = this.field1.WM
+proc `WM=`*(this: var GraphicControllerGmr, value: uint8) = this.field1.WM = value
+proc RM*(this: GraphicControllerGmr): uint8 = this.field1.RM
+proc `RM=`*(this: var GraphicControllerGmr, value: uint8) = this.field1.RM = value
+proc OE*(this: GraphicControllerGmr): uint8 = this.field1.OE
+proc `OE=`*(this: var GraphicControllerGmr, value: uint8) = this.field1.OE = value
+proc SRM*(this: GraphicControllerGmr): uint8 = this.field1.SRM
+proc `SRM=`*(this: var GraphicControllerGmr, value: uint8) = this.field1.SRM = value
+proc f256CM*(this: GraphicControllerGmr): uint8 = this.field1.f256CM
+proc `f256CM=`*(this: var GraphicControllerGmr, value: uint8) = this.field1.f256CM = value
+proc GM*(this: GraphicControllerMr): uint8 = this.field1.GM
+proc `GM=`*(this: var GraphicControllerMr, value: uint8) = this.field1.GM = value
+proc OE*(this: GraphicControllerMr): uint8 = this.field1.OE
+proc `OE=`*(this: var GraphicControllerMr, value: uint8) = this.field1.OE = value
+proc MM*(this: GraphicControllerMr): uint8 = this.field1.MM
+proc `MM=`*(this: var GraphicControllerMr, value: uint8) = this.field1.MM = value
+proc INDX*(this: AttributeAcar): uint8 = this.field1.INDX
+proc `INDX=`*(this: var AttributeAcar, value: uint8) = this.field1.INDX = value
+proc IPAS*(this: AttributeAcar): uint8 = this.field1.IPAS
+proc `IPAS=`*(this: var AttributeAcar, value: uint8) = this.field1.IPAS = value
+proc P0*(this: AttributeField2): uint8 = this.field1.P0
+proc `P0=`*(this: var AttributeField2, value: uint8) = this.field1.P0 = value
+proc P1*(this: AttributeField2): uint8 = this.field1.P1
+proc `P1=`*(this: var AttributeField2, value: uint8) = this.field1.P1 = value
+proc P2*(this: AttributeField2): uint8 = this.field1.P2
+proc `P2=`*(this: var AttributeField2, value: uint8) = this.field1.P2 = value
+proc P3*(this: AttributeField2): uint8 = this.field1.P3
+proc `P3=`*(this: var AttributeField2, value: uint8) = this.field1.P3 = value
+proc P4*(this: AttributeField2): uint8 = this.field1.P4
+proc `P4=`*(this: var AttributeField2, value: uint8) = this.field1.P4 = value
+proc P5*(this: AttributeField2): uint8 = this.field1.P5
+proc `P5=`*(this: var AttributeField2, value: uint8) = this.field1.P5 = value
 
-proc in8*(this: var DAC, memAddr: uint16): uint8 =
-  discard
+# proc raw*(this: Attribute): uint8 = this.ipr.raw
+# proc `raw=`*(this: var AttributeField2, value: uint8) = this.raw = value
+# proc P0*(this: AttributeField2): uint8 = this.field1.P0
+# proc `P0=`*(this: var AttributeField2, value: uint8) = this.field1.P0 = value
+# proc P1*(this: AttributeField2): uint8 = this.field1.P1
+# proc `P1=`*(this: var AttributeField2, value: uint8) = this.field1.P1 = value
+# proc P2*(this: AttributeField2): uint8 = this.field1.P2
+# proc `P2=`*(this: var AttributeField2, value: uint8) = this.field1.P2 = value
+# proc P3*(this: AttributeField2): uint8 = this.field1.P3
+# proc `P3=`*(this: var AttributeField2, value: uint8) = this.field1.P3 = value
+# proc P4*(this: AttributeField2): uint8 = this.field1.P4
+# proc `P4=`*(this: var AttributeField2, value: uint8) = this.field1.P4 = value
+# proc P5*(this: AttributeField2): uint8 = this.field1.P5
+# proc `P5=`*(this: var AttributeField2, value: uint8) = this.field1.P5 = value
 
-proc out8*(this: var DAC, memAddr: uint16, v: uint8): void =
-  discard
+proc GAM*(this: AttributeAmcr): uint8 = this.field1.GAM
+proc `GAM=`*(this: var AttributeAmcr, value: uint8) = this.field1.GAM = value
+proc ME*(this: AttributeAmcr): uint8 = this.field1.ME
+proc `ME=`*(this: var AttributeAmcr, value: uint8) = this.field1.ME = value
+proc ELGCC*(this: AttributeAmcr): uint8 = this.field1.ELGCC
+proc `ELGCC=`*(this: var AttributeAmcr, value: uint8) = this.field1.ELGCC = value
+proc ELSBI*(this: AttributeAmcr): uint8 = this.field1.ELSBI
+proc `ELSBI=`*(this: var AttributeAmcr, value: uint8) = this.field1.ELSBI = value
+proc PELPC*(this: AttributeAmcr): uint8 = this.field1.PELPC
+proc `PELPC=`*(this: var AttributeAmcr, value: uint8) = this.field1.PELPC = value
+proc PELW*(this: AttributeAmcr): uint8 = this.field1.PELW
+proc `PELW=`*(this: var AttributeAmcr, value: uint8) = this.field1.PELW = value
+proc P54S*(this: AttributeAmcr): uint8 = this.field1.P54S
+proc `P54S=`*(this: var AttributeAmcr, value: uint8) = this.field1.P54S = value
+proc ECP*(this: AttributeCper): uint8 = this.field1.ECP
+proc `ECP=`*(this: var AttributeCper, value: uint8) = this.field1.ECP = value
+proc VSM*(this: AttributeCper): uint8 = this.field1.VSM
+proc `VSM=`*(this: var AttributeCper, value: uint8) = this.field1.VSM = value
+proc HPELP*(this: AttributeHpelpr): uint8 = this.field1.HPELP
+proc `HPELP=`*(this: var AttributeHpelpr, value: uint8) = this.field1.HPELP = value
+proc SC45*(this: AttributeCsr): uint8 = this.field1.SC45
+proc `SC45=`*(this: var AttributeCsr, value: uint8) = this.field1.SC45 = value
+proc SC67*(this: AttributeCsr): uint8 = this.field1.SC67
+proc `SC67=`*(this: var AttributeCsr, value: uint8) = this.field1.SC67 = value
+proc R*(this: DACField2): uint8 = this.field1.R
+proc `R=`*(this: var DACField2, value: uint8) = this.field1.R = value
+proc G*(this: DACField2): uint8 = this.field1.G
+proc `G=`*(this: var DACField2, value: uint8) = this.field1.G = value
+proc B*(this: DACField2): uint8 = this.field1.B
+proc `B=`*(this: var DACField2, value: uint8) = this.field1.B = value
+# proc raw*(this: DAC): array[3, uint8] = this.field2.raw
+# proc `raw=`*(this: var DAC, value: array[3, uint8]) = this.field2.raw = value
+# proc R*(this: DAC): uint8 = this.field2.field1.R
+# proc `R=`*(this: var DAC, value: uint8) = this.field2.field1.R = value
+# proc G*(this: DAC): uint8 = this.field2.field1.G
+# proc `G=`*(this: var DAC, value: uint8) = this.field2.field1.G = value
+# proc B*(this: DAC): uint8 = this.field2.field1.B
+# proc `B=`*(this: var DAC, value: uint8) = this.field2.field1.B = value
+proc DACstate*(this: DACDacsr): uint8 = this.field1.DACstate
+proc `DACstate=`*(this: var DACDacsr, value: uint8) = this.field1.DACstate = value
 
-proc IO*(this: VGA_mor): uint8 = this.field1.IO
-proc `IO=`*(this: var VGA_mor, value: uint8) = this.field1.IO = value
-proc ER*(this: VGA_mor): uint8 = this.field1.ER
-proc `ER=`*(this: var VGA_mor, value: uint8) = this.field1.ER = value
-proc CLK0*(this: VGA_mor): uint8 = this.field1.CLK0
-proc `CLK0=`*(this: var VGA_mor, value: uint8) = this.field1.CLK0 = value
-proc CLK1*(this: VGA_mor): uint8 = this.field1.CLK1
-proc `CLK1=`*(this: var VGA_mor, value: uint8) = this.field1.CLK1 = value
-proc PS*(this: VGA_mor): uint8 = this.field1.PS
-proc `PS=`*(this: var VGA_mor, value: uint8) = this.field1.PS = value
-proc HSP*(this: VGA_mor): uint8 = this.field1.HSP
-proc `HSP=`*(this: var VGA_mor, value: uint8) = this.field1.HSP = value
-proc VSA*(this: VGA_mor): uint8 = this.field1.VSA
-proc `VSA=`*(this: var VGA_mor, value: uint8) = this.field1.VSA = value
-proc INDX*(this: Sequencer_sar): uint8 = this.field1.INDX
-proc `INDX=`*(this: var Sequencer_sar, value: uint8) = this.field1.INDX = value
-proc f89DC*(this: Sequencer_cmr): uint8 = this.field1.f89DC
-proc `f89DC=`*(this: var Sequencer_cmr, value: uint8) = this.field1.f89DC = value
-proc SL*(this: Sequencer_cmr): uint8 = this.field1.SL
-proc `SL=`*(this: var Sequencer_cmr, value: uint8) = this.field1.SL = value
-proc DC*(this: Sequencer_cmr): uint8 = this.field1.DC
-proc `DC=`*(this: var Sequencer_cmr, value: uint8) = this.field1.DC = value
-proc S4*(this: Sequencer_cmr): uint8 = this.field1.S4
-proc `S4=`*(this: var Sequencer_cmr, value: uint8) = this.field1.S4 = value
-proc SO*(this: Sequencer_cmr): uint8 = this.field1.SO
-proc `SO=`*(this: var Sequencer_cmr, value: uint8) = this.field1.SO = value
-proc MAP0E*(this: Sequencer_map_mr): uint8 = this.field1.MAP0E
-proc `MAP0E=`*(this: var Sequencer_map_mr, value: uint8) = this.field1.MAP0E = value
-proc MAP1E*(this: Sequencer_map_mr): uint8 = this.field1.MAP1E
-proc `MAP1E=`*(this: var Sequencer_map_mr, value: uint8) = this.field1.MAP1E = value
-proc MAP2E*(this: Sequencer_map_mr): uint8 = this.field1.MAP2E
-proc `MAP2E=`*(this: var Sequencer_map_mr, value: uint8) = this.field1.MAP2E = value
-proc MAP3E*(this: Sequencer_map_mr): uint8 = this.field1.MAP3E
-proc `MAP3E=`*(this: var Sequencer_map_mr, value: uint8) = this.field1.MAP3E = value
-proc CMB*(this: Sequencer_cmsr): uint8 = this.field1.CMB
-proc `CMB=`*(this: var Sequencer_cmsr, value: uint8) = this.field1.CMB = value
-proc CMA*(this: Sequencer_cmsr): uint8 = this.field1.CMA
-proc `CMA=`*(this: var Sequencer_cmsr, value: uint8) = this.field1.CMA = value
-proc CMBM*(this: Sequencer_cmsr): uint8 = this.field1.CMBM
-proc `CMBM=`*(this: var Sequencer_cmsr, value: uint8) = this.field1.CMBM = value
-proc CMAM*(this: Sequencer_cmsr): uint8 = this.field1.CMAM
-proc `CMAM=`*(this: var Sequencer_cmsr, value: uint8) = this.field1.CMAM = value
-proc EM*(this: Sequencer_mem_mr): uint8 = this.field1.EM
-proc `EM=`*(this: var Sequencer_mem_mr, value: uint8) = this.field1.EM = value
-proc OE*(this: Sequencer_mem_mr): uint8 = this.field1.OE
-proc `OE=`*(this: var Sequencer_mem_mr, value: uint8) = this.field1.OE = value
-proc C4*(this: Sequencer_mem_mr): uint8 = this.field1.C4
-proc `C4=`*(this: var Sequencer_mem_mr, value: uint8) = this.field1.C4 = value
-proc INDX*(this: CRT_crtcar): uint8 = this.field1.INDX
-proc `INDX=`*(this: var CRT_crtcar, value: uint8) = this.field1.INDX = value
-proc EB*(this: CRT_ehbr): uint8 = this.field1.EB
-proc `EB=`*(this: var CRT_ehbr, value: uint8) = this.field1.EB = value
-proc DESC*(this: CRT_ehbr): uint8 = this.field1.DESC
-proc `DESC=`*(this: var CRT_ehbr, value: uint8) = this.field1.DESC = value
-proc MSL*(this: CRT_mslr): uint8 = this.field1.MSL
-proc `MSL=`*(this: var CRT_mslr, value: uint8) = this.field1.MSL = value
-proc SVB9*(this: CRT_mslr): uint8 = this.field1.SVB9
-proc `SVB9=`*(this: var CRT_mslr, value: uint8) = this.field1.SVB9 = value
-proc LC9*(this: CRT_mslr): uint8 = this.field1.LC9
-proc `LC9=`*(this: var CRT_mslr, value: uint8) = this.field1.LC9 = value
-proc LC*(this: CRT_mslr): uint8 = this.field1.LC
-proc `LC=`*(this: var CRT_mslr, value: uint8) = this.field1.LC = value
-proc RSCB*(this: CRT_csr): uint8 = this.field1.RSCB
-proc `RSCB=`*(this: var CRT_csr, value: uint8) = this.field1.RSCB = value
-proc CO*(this: CRT_csr): uint8 = this.field1.CO
-proc `CO=`*(this: var CRT_csr, value: uint8) = this.field1.CO = value
-proc RSCE*(this: CRT_cer): uint8 = this.field1.RSCE
-proc `RSCE=`*(this: var CRT_cer, value: uint8) = this.field1.RSCE = value
-proc CSC*(this: CRT_cer): uint8 = this.field1.CSC
-proc `CSC=`*(this: var CRT_cer, value: uint8) = this.field1.CSC = value
-proc CMS0*(this: CRT_crtmcr): uint8 = this.field1.CMS0
-proc `CMS0=`*(this: var CRT_crtmcr, value: uint8) = this.field1.CMS0 = value
-proc SRSC*(this: CRT_crtmcr): uint8 = this.field1.SRSC
-proc `SRSC=`*(this: var CRT_crtmcr, value: uint8) = this.field1.SRSC = value
-proc HRSX*(this: CRT_crtmcr): uint8 = this.field1.HRSX
-proc `HRSX=`*(this: var CRT_crtmcr, value: uint8) = this.field1.HRSX = value
-proc C2*(this: CRT_crtmcr): uint8 = this.field1.C2
-proc `C2=`*(this: var CRT_crtmcr, value: uint8) = this.field1.C2 = value
-proc AW*(this: CRT_crtmcr): uint8 = this.field1.AW
-proc `AW=`*(this: var CRT_crtmcr, value: uint8) = this.field1.AW = value
-proc WBM*(this: CRT_crtmcr): uint8 = this.field1.WBM
-proc `WBM=`*(this: var CRT_crtmcr, value: uint8) = this.field1.WBM = value
-proc HR*(this: CRT_crtmcr): uint8 = this.field1.HR
-proc `HR=`*(this: var CRT_crtmcr, value: uint8) = this.field1.HR = value
-proc INDX*(this: GraphicController_gcar): uint8 = this.field1.INDX
-proc `INDX=`*(this: var GraphicController_gcar, value: uint8) = this.field1.INDX = value
-proc SRM0*(this: GraphicController_sr): uint8 = this.field1.SRM0
-proc `SRM0=`*(this: var GraphicController_sr, value: uint8) = this.field1.SRM0 = value
-proc SRM1*(this: GraphicController_sr): uint8 = this.field1.SRM1
-proc `SRM1=`*(this: var GraphicController_sr, value: uint8) = this.field1.SRM1 = value
-proc SRM2*(this: GraphicController_sr): uint8 = this.field1.SRM2
-proc `SRM2=`*(this: var GraphicController_sr, value: uint8) = this.field1.SRM2 = value
-proc SRM3*(this: GraphicController_sr): uint8 = this.field1.SRM3
-proc `SRM3=`*(this: var GraphicController_sr, value: uint8) = this.field1.SRM3 = value
-proc ESRM0*(this: GraphicController_esr): uint8 = this.field1.ESRM0
-proc `ESRM0=`*(this: var GraphicController_esr, value: uint8) = this.field1.ESRM0 = value
-proc ESRM1*(this: GraphicController_esr): uint8 = this.field1.ESRM1
-proc `ESRM1=`*(this: var GraphicController_esr, value: uint8) = this.field1.ESRM1 = value
-proc ESRM2*(this: GraphicController_esr): uint8 = this.field1.ESRM2
-proc `ESRM2=`*(this: var GraphicController_esr, value: uint8) = this.field1.ESRM2 = value
-proc ESRM3*(this: GraphicController_esr): uint8 = this.field1.ESRM3
-proc `ESRM3=`*(this: var GraphicController_esr, value: uint8) = this.field1.ESRM3 = value
-proc CCM0*(this: GraphicController_ccr): uint8 = this.field1.CCM0
-proc `CCM0=`*(this: var GraphicController_ccr, value: uint8) = this.field1.CCM0 = value
-proc CCM1*(this: GraphicController_ccr): uint8 = this.field1.CCM1
-proc `CCM1=`*(this: var GraphicController_ccr, value: uint8) = this.field1.CCM1 = value
-proc CCM2*(this: GraphicController_ccr): uint8 = this.field1.CCM2
-proc `CCM2=`*(this: var GraphicController_ccr, value: uint8) = this.field1.CCM2 = value
-proc CCM3*(this: GraphicController_ccr): uint8 = this.field1.CCM3
-proc `CCM3=`*(this: var GraphicController_ccr, value: uint8) = this.field1.CCM3 = value
-proc RC*(this: GraphicController_drr): uint8 = this.field1.RC
-proc `RC=`*(this: var GraphicController_drr, value: uint8) = this.field1.RC = value
-proc FS*(this: GraphicController_drr): uint8 = this.field1.FS
-proc `FS=`*(this: var GraphicController_drr, value: uint8) = this.field1.FS = value
-proc MS*(this: GraphicController_rmsr): uint8 = this.field1.MS
-proc `MS=`*(this: var GraphicController_rmsr, value: uint8) = this.field1.MS = value
-proc WM*(this: GraphicController_gmr): uint8 = this.field1.WM
-proc `WM=`*(this: var GraphicController_gmr, value: uint8) = this.field1.WM = value
-proc RM*(this: GraphicController_gmr): uint8 = this.field1.RM
-proc `RM=`*(this: var GraphicController_gmr, value: uint8) = this.field1.RM = value
-proc OE*(this: GraphicController_gmr): uint8 = this.field1.OE
-proc `OE=`*(this: var GraphicController_gmr, value: uint8) = this.field1.OE = value
-proc SRM*(this: GraphicController_gmr): uint8 = this.field1.SRM
-proc `SRM=`*(this: var GraphicController_gmr, value: uint8) = this.field1.SRM = value
-proc f256CM*(this: GraphicController_gmr): uint8 = this.field1.f256CM
-proc `f256CM=`*(this: var GraphicController_gmr, value: uint8) = this.field1.f256CM = value
-proc GM*(this: GraphicController_mr): uint8 = this.field1.GM
-proc `GM=`*(this: var GraphicController_mr, value: uint8) = this.field1.GM = value
-proc OE*(this: GraphicController_mr): uint8 = this.field1.OE
-proc `OE=`*(this: var GraphicController_mr, value: uint8) = this.field1.OE = value
-proc MM*(this: GraphicController_mr): uint8 = this.field1.MM
-proc `MM=`*(this: var GraphicController_mr, value: uint8) = this.field1.MM = value
-proc INDX*(this: Attribute_acar): uint8 = this.field1.INDX
-proc `INDX=`*(this: var Attribute_acar, value: uint8) = this.field1.INDX = value
-proc IPAS*(this: Attribute_acar): uint8 = this.field1.IPAS
-proc `IPAS=`*(this: var Attribute_acar, value: uint8) = this.field1.IPAS = value
-proc P0*(this: Attribute_field2): uint8 = this.field1.P0
-proc `P0=`*(this: var Attribute_field2, value: uint8) = this.field1.P0 = value
-proc P1*(this: Attribute_field2): uint8 = this.field1.P1
-proc `P1=`*(this: var Attribute_field2, value: uint8) = this.field1.P1 = value
-proc P2*(this: Attribute_field2): uint8 = this.field1.P2
-proc `P2=`*(this: var Attribute_field2, value: uint8) = this.field1.P2 = value
-proc P3*(this: Attribute_field2): uint8 = this.field1.P3
-proc `P3=`*(this: var Attribute_field2, value: uint8) = this.field1.P3 = value
-proc P4*(this: Attribute_field2): uint8 = this.field1.P4
-proc `P4=`*(this: var Attribute_field2, value: uint8) = this.field1.P4 = value
-proc P5*(this: Attribute_field2): uint8 = this.field1.P5
-proc `P5=`*(this: var Attribute_field2, value: uint8) = this.field1.P5 = value
-proc raw*(this: Attribute): uint8 = this.field2.raw
-proc `raw=`*(this: var Attribute, value: uint8) = this.field2.raw = value
-proc P0*(this: Attribute): uint8 = this.field2.field1.P0
-proc `P0=`*(this: var Attribute, value: uint8) = this.field2.field1.P0 = value
-proc P1*(this: Attribute): uint8 = this.field2.field1.P1
-proc `P1=`*(this: var Attribute, value: uint8) = this.field2.field1.P1 = value
-proc P2*(this: Attribute): uint8 = this.field2.field1.P2
-proc `P2=`*(this: var Attribute, value: uint8) = this.field2.field1.P2 = value
-proc P3*(this: Attribute): uint8 = this.field2.field1.P3
-proc `P3=`*(this: var Attribute, value: uint8) = this.field2.field1.P3 = value
-proc P4*(this: Attribute): uint8 = this.field2.field1.P4
-proc `P4=`*(this: var Attribute, value: uint8) = this.field2.field1.P4 = value
-proc P5*(this: Attribute): uint8 = this.field2.field1.P5
-proc `P5=`*(this: var Attribute, value: uint8) = this.field2.field1.P5 = value
-proc GAM*(this: Attribute_amcr): uint8 = this.field1.GAM
-proc `GAM=`*(this: var Attribute_amcr, value: uint8) = this.field1.GAM = value
-proc ME*(this: Attribute_amcr): uint8 = this.field1.ME
-proc `ME=`*(this: var Attribute_amcr, value: uint8) = this.field1.ME = value
-proc ELGCC*(this: Attribute_amcr): uint8 = this.field1.ELGCC
-proc `ELGCC=`*(this: var Attribute_amcr, value: uint8) = this.field1.ELGCC = value
-proc ELSBI*(this: Attribute_amcr): uint8 = this.field1.ELSBI
-proc `ELSBI=`*(this: var Attribute_amcr, value: uint8) = this.field1.ELSBI = value
-proc PELPC*(this: Attribute_amcr): uint8 = this.field1.PELPC
-proc `PELPC=`*(this: var Attribute_amcr, value: uint8) = this.field1.PELPC = value
-proc PELW*(this: Attribute_amcr): uint8 = this.field1.PELW
-proc `PELW=`*(this: var Attribute_amcr, value: uint8) = this.field1.PELW = value
-proc P54S*(this: Attribute_amcr): uint8 = this.field1.P54S
-proc `P54S=`*(this: var Attribute_amcr, value: uint8) = this.field1.P54S = value
-proc ECP*(this: Attribute_cper): uint8 = this.field1.ECP
-proc `ECP=`*(this: var Attribute_cper, value: uint8) = this.field1.ECP = value
-proc VSM*(this: Attribute_cper): uint8 = this.field1.VSM
-proc `VSM=`*(this: var Attribute_cper, value: uint8) = this.field1.VSM = value
-proc HPELP*(this: Attribute_hpelpr): uint8 = this.field1.HPELP
-proc `HPELP=`*(this: var Attribute_hpelpr, value: uint8) = this.field1.HPELP = value
-proc SC45*(this: Attribute_csr): uint8 = this.field1.SC45
-proc `SC45=`*(this: var Attribute_csr, value: uint8) = this.field1.SC45 = value
-proc SC67*(this: Attribute_csr): uint8 = this.field1.SC67
-proc `SC67=`*(this: var Attribute_csr, value: uint8) = this.field1.SC67 = value
-proc R*(this: DAC_field2): uint8 = this.field1.R
-proc `R=`*(this: var DAC_field2, value: uint8) = this.field1.R = value
-proc G*(this: DAC_field2): uint8 = this.field1.G
-proc `G=`*(this: var DAC_field2, value: uint8) = this.field1.G = value
-proc B*(this: DAC_field2): uint8 = this.field1.B
-proc `B=`*(this: var DAC_field2, value: uint8) = this.field1.B = value
-proc raw*(this: DAC): array[3, uint8] = this.field2.raw
-proc `raw=`*(this: var DAC, value: array[3, uint8]) = this.field2.raw = value
-proc R*(this: DAC): uint8 = this.field2.field1.R
-proc `R=`*(this: var DAC, value: uint8) = this.field2.field1.R = value
-proc G*(this: DAC): uint8 = this.field2.field1.G
-proc `G=`*(this: var DAC, value: uint8) = this.field2.field1.G = value
-proc B*(this: DAC): uint8 = this.field2.field1.B
-proc `B=`*(this: var DAC, value: uint8) = this.field2.field1.B = value
-proc DACstate*(this: DAC_dacsr): uint8 = this.field1.DACstate
-proc `DACstate=`*(this: var DAC_dacsr, value: uint8) = this.field1.DACstate = value
+template chkRegidx*(this, n: untyped): untyped {.dirty.} =
+  if int(n) > sizeof(this.regs):
+    ERROR("register index out of bound", n)
 
-template chk_regidx*(n: untyped): untyped {.dirty.} =
-  block:
-    var doTmp: bool = true
-    while doTmp or (0):
-      doTmp = "false"
-      if n > sizeof((regs)):
-        ERROR("register index out of bound", n)
+  if not(toBool(this.regs[n])):
+    ERROR("not implemented")
 
-      if not(regs[n]):
-        ERROR("not implemented")
+proc getWindowsize*(this: var CRT, x: ptr uint16, y: ptr uint16): void =
+  x[] = 8 * this.hdeer.HDEE
+  y[] = 8 * this.vdeer.VDEE
 
-when false:
-  proc get_windowsize*(this: var VGA, x: ptr uint16, y: ptr uint16): void =
-    crt.get_windowsize(x, y)
+proc getWindowsize*(this: var VGA, x: ptr uint16, y: ptr uint16): void =
+  this.crt.getWindowsize(x, y)
 
-  proc rgb_image*(this: var VGA, buffer: ptr uint8, size: uint32): void =
-    var mode: gmode_t = gc.graphic_mode()
-    for i in 0 ..< size:
-      var dac_idx: uint8
-      var rgb: uint32
-      attr_idx = (if mode xor MODE_TEXT:
-            gc.attr_index_graphic(i)
+proc graphicMode*(this: var GraphicController): gmodeT =
+  if this.mr.GM.toBool():
+    if this.gmr.f256CM.toBool():
+      return MODEGRAPHIC256
 
-          else:
-            crt.attr_index_text(i)
-          )
-      dac_idx = (if mode xor MODE_GRAPHIC256:
-            attr.dac_index(attr_idx)
+    return MODEGRAPHIC
 
-          else:
-            attr_idx
-          )
-      rgb = dac.translate_rgb(dac_idx)
-      (postInc(buffer))[] = rgb and 0xff
-      (postInc(buffer))[] = (rgb shr 8) and 0xff
-      (postInc(buffer))[] = (rgb shr 16) and 0xff
+  return MODETEXT
 
-  proc in8*(this: var VGA, memAddr: uint16): uint8 =
-    case memAddr:
-      of 0x3c2:
-        return 0
-      of 0x3c3:
-        return 0
-      of 0x3cc:
-        return mor.raw
-      of 0x3ba, 0x3da:
-        return 0
-    return -1
+proc readPlane*(this: var VGA, nplane: uint8, offset: uint32): uint8 =
+  if nplane > 3 or offset > (1 shl 16) - 1:
+    ERROR("Out of Plane range")
 
-  proc out8*(this: var VGA, memAddr: uint16, v: uint8): void =
-    case memAddr:
-      of 0x3c2:
-        mor.raw = v
-      of 0x3c3:
-        discard
-      of 0x3ba, 0x3da:
-        discard
+  return this.plane[nplane][offset]
 
-  proc read8*(this: var VGA, offset: uint32): uint8 =
-    return (if mor.ER:
-              seq.read(offset)
+proc attrIndexGraphic*(this: var GraphicController, n: uint32): uint8 =
+  return this.vga.readPlane(2, n)
 
-            else:
-              0
-            )
-
-  proc write8*(this: var VGA, offset: uint32, v: uint8): void =
-    var count: cint = 0
-    if mor.ER:
-      seq.write(offset, v)
-      if not((postInc(count) mod 0x10)):
-        refresh = true
-
-
-
-  proc read_plane*(this: var VGA, nplane: uint8, offset: uint32): uint8 =
-    if nplane > 3 or offset > (1 shl 16) - 1:
-      ERROR("Out of Plane range")
-
-    return plane[nplane][offset]
-
-  proc write_plane*(this: var VGA, nplane: uint8, offset: uint32, v: uint8): void =
-    if nplane > 3 or offset > (1 shl 16) - 1:
-      ERROR("Out of Plane range")
-
-    plane[nplane][offset] = v
-
-
-  proc VGA_Sequencer_read*(offset: uint32): uint8 =
-    if not(mem_mr.EM):
-      offset = (offset and (1 shl 16) - 1)
-
-    return vga.gc.read(offset)
-
-  template SEQ_WRITE_PLANE*(n: untyped, o: untyped, v: untyped): untyped {.dirty.} =
-    if (map_mr.raw shr (n)) and 1:
-      vga.gc.write(n, o, v)
-
-
-  proc VGA_Sequencer_write*(offset: uint32, v: uint8): void =
-    if not(mem_mr.EM):
-      offset = (offset and (1 shl 16) - 1)
-
-    if mem_mr.C4:
-      SEQ_WRITE_PLANE(offset and 3, offset and (not(3)), v)
-
-    else:
-      if mem_mr.OE:
-        for i in 0 ..< 4:
-          SEQ_WRITE_PLANE(i, offset, v)
+proc getFont*(this: var Sequencer, att: uint8): ptr uint8 =
+  var v: uint8
+  var fontOfst: uint16 = 0
+  v = (if toBool(att and 0x8):
+        (this.cmsr.CMAM shl 2) + this.cmsr.CMA
 
       else:
-        var nplane: uint8 = offset and 1
-        SEQ_WRITE_PLANE(nplane, offset, v)
-        SEQ_WRITE_PLANE(nplane + 2, offset, v)
+        (this.cmsr.CMBM shl 2) + this.cmsr.CMB
+      )
+  fontOfst = (if toBool(v and 4):
+        (v and (not(4'u8))) * 2 + 1
+
+      else:
+        v * 2
+      )
+  if not(this.memMr.EM.toBool()):
+    fontOfst = (fontOfst and (1 shl 16) - 1)
+
+  # FIXME
+  return (addr this.vga.plane[2][0]) + fontOfst
 
 
+proc attrIndexText*(this: var CRT, n: uint32): uint8 =
+  var att, chr: uint8
+  var font: ptr uint8
+  var bits: uint8
+  var y, x, idx: uint16
+  x = uint16(n mod (8 * this.hdeer.HDEE))
+  y = uint16(n div (8 * this.hdeer.HDEE))
+  idx = y div (this.mslr.MSL + 1) * this.hdeer.HDEE + x div 8
+  chr = this.vga[].readPlane(0, uint32(idx * 2))
+  att = this.vga[].readPlane(1, uint32(idx * 2))
+  font = getFont(this.vga.seq, att)
+  bits = (font + chr * 0x10 + y mod (this.mslr.MSL + 1))[]
+  return (if toBool((bits shr (x mod 8)) and 1):
+            att and 0x0f
 
-  proc VGA_Sequencer_get_font*(att: uint8): ptr uint8 =
-    var v: uint8
-    var font_ofst: uint16 = 0
-    v = (if att and 0x8:
-          (cmsr.CMAM shl 2) + cmsr.CMA
+          else:
+            (att and 0xf0) shr 4
+          )
 
-        else:
-          (cmsr.CMBM shl 2) + cmsr.CMB
-        )
-    font_ofst = (if v and 4:
-          (v and (not(4))) * 2 + 1
+proc dacIndex*(this: var Attribute, index: uint8): uint8 =
+  var dacIdx: uint8
+  type
+    field1 = object
+      low {.bitsize: 4.}: uint8
+      high {.bitsize: 2.}: uint8
 
-        else:
-          v * 2
-        )
-    if not(mem_mr.EM):
-      font_ofst = (font_ofst and (1 shl 16) - 1)
+  type
+    IpData {.union.} = object
+      raw: uint8
+      field1: field1
 
-    return vga.plane[2] + font_ofst
-
-  proc VGA_Sequencer_in8*(memAddr: uint16): uint8 =
-    case memAddr:
-      of 0x3c4:
-        return sar.raw
-      of 0x3c5:
-        return regs[sar.INDX][]
-    return -1
-
-  proc VGA_Sequencer_out8*(memAddr: uint16, v: uint8): void =
-    case memAddr:
-      of 0x3c4:
-        chk_regidx(v)
-        sar.raw = v
-      of 0x3c5:
-        regs[sar.INDX][] = v
+  proc low(this: IpData): uint8 = this.field1.low
+  proc `low=`(this: var IpData, value: uint8) = this.field1.low = value
+  proc high(this: IpData): uint8 = this.field1.high
+  proc `high=`(this: var IpData, value: uint8) = this.field1.high = value
 
 
-  proc VGA_CRT_get_windowsize*(x: ptr uint16, y: ptr uint16): void =
-    x[] = 8 * hdeer.HDEE
-    y[] = 8 * vdeer.VDEE
-
-  proc VGA_CRT_attr_index_text*(n: uint32): uint8 =
-    var att: uint8
-    var font: ptr uint8
-    var bits: uint8
-    var y: uint16
-    x = n mod (8 * hdeer.HDEE)
-    y = n / (8 * hdeer.HDEE)
-    idx = y / (mslr.MSL + 1) * hdeer.HDEE + x / 8
-    chr = vga.read_plane(0, idx * 2)
-    att = vga.read_plane(1, idx * 2)
-    font = vga.seq.get_font(att)
-    bits = (font + chr * 0x10 + y mod (mslr.MSL + 1))[]
-    return (if (bits shr (x mod 8)) and 1:
-              att and 0x0f
+  var ipData: IpData
+  ipData.raw = this.ipr[index and 0xf].raw
+  if toBool(this.amcr.GAM):
+    dacIdx = ipData.low
+    dacIdx = (dacIdx + ((if toBool(this.amcr.P54S):
+              this.csr.SC45
 
             else:
-              (att and 0xf0) shr 4
-            )
+              ipData.high
+            )) shl 4)
+    dacIdx = (dacIdx + this.csr.SC67 shl 6)
 
-  proc VGA_CRT_in8*(memAddr: uint16): uint8 =
-    case memAddr:
-      of 0x3b4, 0x3d4:
-        return crtcar.raw
-      of 0x3b5, 0x3d5:
-        return regs[crtcar.INDX][]
-    return -1
+  else:
+    dacIdx = ipData.low
 
-  proc VGA_CRT_out8*(memAddr: uint16, v: uint8): void =
-    case memAddr:
-      of 0x3b4, 0x3d4:
-        chk_regidx(v)
-        crtcar.raw = v
-      of 0x3b5, 0x3d5:
-        regs[crtcar.INDX][] = v
+  return dacIdx
 
+proc translateRgb*(this: var DAC, index: uint8): uint32 =
+  var rgb: uint32
+  rgb = uint32(this.clut[index].R shl 0x02)
+  rgb = uint32(rgb + this.clut[index].G shl 0x0a)
+  rgb = uint32(rgb + this.clut[index].B shl 0x12)
+  return rgb
 
-  proc VGA_GraphicController_read*(offset: uint32): uint8 =
-    if not(chk_offset(addr offset)):
-      return 0
+proc in8*(this: var DAC, memAddr: uint16): uint8 =
+  var v: uint8
+  case memAddr:
+    of 0x3c6: return this.pelmr.raw
+    of 0x3c7: return this.dacsr.raw
+    of 0x3c9:
+      v = this.clut[this.rPar.index].raw[postInc(this.progress)]
+      if this.progress == 3:
+        this.progress = 0
+        postInc(this.rPar.index)
 
-    case gmr.WM:
-      of 0:
-        if gmr.OE:
-          var nplane: uint8 = (rmsr.MS and 2) + (offset and 1)
-          return vga.read_plane(nplane, offset and (not(1)))
-
-        else:
-          return vga.read_plane(rmsr.MS, offset)
-
-      of 1:
-        discard
-    return 0
-
-  proc VGA_GraphicController_write*(nplane: uint8, offset: uint32, v: uint8): void =
-    if not(chk_offset(addr offset)):
-      return
-
-    case gmr.WM:
-      of 0:
-        if gmr.OE:
-          offset = (offset and not(1))
-
-        vga.write_plane(nplane, offset, v)
-      of 1:
-        discard
-      of 2:
-        discard
-      of 3:
-        discard
-    INFO(4, "plane[%d][0x%x] = 0x%02x", nplane, offset, v)
-
-  proc VGA_GraphicController_chk_offset*(offset: ptr uint32): bool =
-    var size: uint32
-    var valid: bool
-    case mr.MM:
-      of 0:
-        base = 0x00000
-        size = 0x20000
-      of 1:
-        base = 0x00000
-        size = 0x10000
-      of 2:
-        base = 0x10000
-        size = 0x08000
-      of 3:
-        base = 0x18000
-        size = 0x08000
-    valid = (offset[] >= base and offset[] < base + size)
-    offset[] = (offset[] - base)
-    return valid
-
-  proc VGA_GraphicController_graphic_mode*(): gmode_t =
-    if mr.GM:
-      if gmr.f256CM:
-        return MODE_GRAPHIC256
-
-      return MODE_GRAPHIC
-
-    return MODE_TEXT
-
-  proc VGA_GraphicController_attr_index_graphic*(n: uint32): uint8 =
-    return vga.read_plane(2, n)
-
-  proc VGA_GraphicController_in8*(memAddr: uint16): uint8 =
-    case memAddr:
-      of 0x3ce:
-        return gcar.raw
-      of 0x3cf:
-        return regs[gcar.INDX][]
-    return -1
-
-  proc VGA_GraphicController_out8*(memAddr: uint16, v: uint8): void =
-    case memAddr:
-      of 0x3ce:
-        chk_regidx(v)
-        gcar.raw = v
-      of 0x3cf:
-        regs[gcar.INDX][] = v
-
-
-  proc VGA_Attribute_dac_index*(index: uint8): uint8 =
-    var dac_idx: uint8
-    type
-      field1* {.bycopy.} = object
-        low* {.bitsize: 4.}: uint8
-        high* {.bitsize: 2.}: uint8
-
-    proc low*(this: field1): uint8 = this.field1.low
-    proc `low=`*(this: var field1, value: uint8) = this.field1.low = value
-    proc high*(this: field1): uint8 = this.field1.high
-    proc `high=`*(this: var field1, value: uint8) = this.field1.high = value
-    type
-      IpData* {.bycopy, union.} = object
-        raw*: uint8
-        field1*: field1
-
-    var ip_data: IpData
-    ip_data.raw = ipr[index and 0xf].raw
-    if amcr.GAM:
-      dac_idx = ip_data.low
-      dac_idx = (dac_idx + ((if amcr.P54S:
-                csr.SC45
-
-              else:
-                ip_data.high
-              )) shl 4)
-      dac_idx = (dac_idx + csr.SC67 shl 6)
+      return v
 
     else:
-      dac_idx = ip_data.low
+      assert false
 
-    return dac_idx
+  return uint8.high()
 
-  proc VGA_Attribute_in8*(memAddr: uint16): uint8 =
-    case memAddr:
-      of 0x3c0:
-        return acar.raw
-      of 0x3c1:
-        return regs[acar.INDX][]
-    return -1
+proc out8*(this: var DAC, memAddr: uint16, v: uint8): void =
+  case memAddr:
+    of 0x3c7:
+      if v > 0xff:
+        ERROR("")
 
-  proc VGA_Attribute_out8*(memAddr: uint16, v: uint8): void =
-    case memAddr:
-      of 0x3c0:
-        chk_regidx(v)
-        acar.raw = v
-      of 0x3c1:
-        regs[acar.INDX][] = v
+      this.rPar.raw = v
+      this.progress = 0
+    of 0x3c8:
+      if v > 0xff:
+        ERROR("")
+
+      this.wPar.raw = v
+      this.progress = 0
+    of 0x3c9:
+      this.clut[this.wPar.index].raw[postInc(this.progress)] = v
+      if this.progress == 3:
+        this.progress = 0
+        postInc(this.wPar.index)
+
+    else:
+      assert false
 
 
-  proc VGA_DAC_translate_rgb*(index: uint8): uint32 =
+
+proc rgbImage*(this: var VGA, buffer: ptr uint8, size: uint32): void =
+  var mode: gmodeT = this.gc.graphicMode()
+  for i in 0 ..< size:
+    var dacIdx, attrIdx: uint8
     var rgb: uint32
+    attrIdx = (if toBool(mode.int xor MODETEXT.int):
+          this.gc.attrIndexGraphic(i)
 
-    rgb = clut[index].R shl 0x02
-    rgb = (rgb + clut[index].G shl 0x0a)
-    rgb = (rgb + clut[index].B shl 0x12)
-    return rgb
+        else:
+          this.crt.attrIndexText(i)
+        )
+    dacIdx = (if toBool(mode.int xor MODEGRAPHIC256.int):
+          this.attr.dacIndex(attrIdx)
 
-  proc VGA_DAC_in8*(memAddr: uint16): uint8 =
-    var v: uint8
-    case memAddr:
-      of 0x3c6: return pelmr.raw
-      of 0x3c7: return dacsr.raw
-      of 0x3c9:
-        v = clut[r_par.index].raw[postInc(progress)]
-        if progress == 3:
-          progress = 0
-          postInc(r_par.index)
+        else:
+          attrIdx
+        )
 
-        return v
-    return -1
+    var buffer = buffer
+    rgb = this.dac.translateRgb(dacIdx)
+    inc buffer ; buffer[] = uint8(rgb and 0xff)
+    inc buffer ; buffer[] = uint8((rgb shr 8) and 0xff)
+    inc buffer ; buffer[] = uint8((rgb shr 16) and 0xff)
 
-  proc VGA_DAC_out8*(memAddr: uint16, v: uint8): void =
-    case memAddr:
-      of 0x3c7:
-        if v > 0xff:
-          ERROR("")
+proc in8*(this: var VGA, memAddr: uint16): uint8 =
+  case memAddr:
+    of 0x3c2: return 0
+    of 0x3c3: return 0
+    of 0x3cc: return this.mor.raw
+    of 0x3ba, 0x3da: return 0
+    else: discard
+  return high(uint8)
 
-        r_par.raw = v
-        progress = 0
-      of 0x3c8:
-        if v > 0xff:
-          ERROR("")
+proc out8*(this: var VGA, memAddr: uint16, v: uint8): void =
+  case memAddr:
+    of 0x3c2: this.mor.raw = v
+    of 0x3c3: discard
+    of 0x3ba, 0x3da: discard
+    else: discard
 
-        w_par.raw = v
-        progress = 0
-      of 0x3c9:
-        clut[w_par.index].raw[postInc(progress)] = v
-        if progress == 3:
-          progress = 0
-          postInc(w_par.index)
+proc read8*(this: var VGA, offset: uint32): uint8 =
+  return (if this.mor.ER.toBool(): this.seq.read(offset) else: 0)
+
+proc write*(this: var GraphicController, nplane: uint8, offset: uint32, v: uint8)
+
+proc writePlane*(this: var Sequencer, n: uint8, o: uint32, v: uint8) =
+  if toBool((this.mapMr.raw shr n) and 1):
+    this.vga.gc.write(n, o, v)
+
+proc writePlane*(this: var VGA, nplane: uint8, offset: uint32, v: uint8): void =
+  if nplane > 3 or offset > (1 shl 16) - 1:
+    ERROR("Out of Plane range")
+
+  this.plane[nplane][offset] = v
+
+proc write*(this: var Sequencer, offset: uint32, v: uint8): void =
+  var offset = offset
+  if not(this.memMr.EM.toBool()):
+    offset = (offset and (1 shl 16) - 1)
+
+  if this.memMr.C4.toBool():
+    this.writePlane(uint8(offset and 3), offset and (not(3'u32)), v)
+
+  else:
+    if this.memMr.OE.toBool():
+      for i in 0'u8 ..< 4'u8:
+        this.writePlane(i, offset, v)
+
+    else:
+      var nplane: uint8 = uint8(offset and 1)
+      this.writePlane(nplane, offset, v)
+      this.writePlane(nplane + 2, offset, v)
+
+
+proc write8*(this: var VGA, offset: uint32, v: uint8): void =
+  var count: cint = 0
+  if this.mor.ER.toBool():
+    this.seq.write(offset, v)
+    if not(toBool(postInc(count) mod 0x10)):
+      this.refresh = true
+
+proc chkOffset*(this: var GraphicController, offset: ptr uint32): bool =
+  var size, base: uint32
+  var valid: bool
+  case this.mr.MM:
+    of 0:
+      base = 0x00000
+      size = 0x20000
+    of 1:
+      base = 0x00000
+      size = 0x10000
+    of 2:
+      base = 0x10000
+      size = 0x08000
+    of 3:
+      base = 0x18000
+      size = 0x08000
+
+    else:
+      discard
+
+  valid = (offset[] >= base and offset[] < base + size)
+  offset[] = (offset[] - base)
+  return valid
+
+
+
+
+proc write*(this: var GraphicController, nplane: uint8, offset: uint32, v: uint8): void =
+  var offset = offset
+  if not(chkOffset(this, addr offset)):
+    return
+
+  case this.gmr.WM:
+    of 0:
+      var offset = offset
+      if toBool(this.gmr.OE):
+        offset = (offset and not(1'u32))
+
+      this.vga.writePlane(nplane, offset, v)
+    of 1: discard
+    of 2: discard
+    of 3: discard
+    else: discard
+
+proc read*(this: var GraphicController, offset: uint32): uint8 =
+  var offset = offset
+  if not(chkOffset(this, addr offset)):
+    return 0
+
+  case this.gmr.WM:
+    of 0:
+      if toBool(this.gmr.OE):
+        var nplane: uint8 = uint8((this.rmsr.MS and 2) + (offset and 1))
+        return this.vga.readPlane(nplane, offset and (not(1'u32)))
+
+      else:
+        return this.vga.readPlane(this.rmsr.MS, offset)
+
+    of 1:
+      discard
+
+    else:
+      discard
+
+
+  return 0
+
+
+
+
+proc read*(this: var Sequencer, offset: uint32): uint8 =
+  var offset = offset
+  if not(this.memMr.EM.toBool()):
+    offset = (offset and (1 shl 16) - 1)
+
+  return this.vga.gc.read(offset)
+
+
+
+
+proc in8*(this: var Sequencer, memAddr: uint16): uint8 =
+  case memAddr:
+    of 0x3c4: return this.sar.raw
+    of 0x3c5: return this.regs[this.sar.INDX][]
+    else: return uint8.high()
+
+proc out8*(this: var Sequencer, memAddr: uint16, v: uint8): void =
+  case memAddr:
+    of 0x3c4:
+      chkRegidx(this, v)
+      this.sar.raw = v
+
+    of 0x3c5:
+      this.regs[this.sar.INDX][] = v
+
+    else:
+      discard
+
+proc in8*(this: var CRT, memAddr: uint16): uint8 =
+  case memAddr:
+    of 0x3b4, 0x3d4: return this.crtcar.raw
+    of 0x3b5, 0x3d5: return this.regs[this.crtcar.INDX][]
+    else: return high(uint8)
+
+proc out8*(this: var CRT, memAddr: uint16, v: uint8): void =
+  case memAddr:
+    of 0x3b4, 0x3d4:
+      chkRegidx(this, v)
+      this.crtcar.raw = v
+
+    of 0x3b5, 0x3d5:
+      this.regs[this.crtcar.INDX][] = v
+
+    else:
+      discard
+
+
+
+proc in8*(this: var GraphicController, memAddr: uint16): uint8 =
+  case memAddr:
+    of 0x3ce: return this.gcar.raw
+    of 0x3cf: return this.regs[this.gcar.INDX][]
+    else: return high(uint8)
+
+proc out8*(this: var GraphicController, memAddr: uint16, v: uint8): void =
+  case memAddr:
+    of 0x3ce:
+      chkRegidx(this, v)
+      this.gcar.raw = v
+    of 0x3cf:
+      this.regs[this.gcar.INDX][] = v
+
+    else:
+      discard
+
+proc in8*(this: var Attribute, memAddr: uint16): uint8 =
+  case memAddr:
+    of 0x3c0: return this.acar.raw
+    of 0x3c1: return this.regs[this.acar.INDX][]
+    else: return high(uint8)
+
+proc out8*(this: var Attribute, memAddr: uint16, v: uint8): void =
+  case memAddr:
+    of 0x3c0:
+      chkRegidx(this, v)
+      this.acar.raw = v
+    of 0x3c1:
+      this.regs[this.acar.INDX][] = v
+
+    else:
+      discard
