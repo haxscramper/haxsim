@@ -41,36 +41,45 @@ proc parseOpcode*(this: var InstrImpl): void =
 
 
 proc parseModrm32*(this: var InstrImpl): void =
-  if this.mod != 3 and this.rm == 4:
+  if this.mod != modRegAddr and this.rm == 4:
     this.idata.dSIB = ACS.getCode8(0)
     CPU.updateEIp(1)
 
-  if this.mod == 2 or
-    (this.mod == 0 and this.rm == 5) or
-    (this.mod == 0 and this.base == 5):
+  if # If doubleword displacement explicitly follows addressing byte
+     this.mod == modDispDWord or
+     # indirect SIB with no displacement
+    (this.mod == modIndSib and this.rm == 5) or
+     # displacement with only addressing mode
+    (this.mod == modIndSib and this.base == 5):
 
     this.idata.disp32 = ACS.getCode32(0).int32()
     CPU.updateEIp(4)
 
-  else:
-    if this.mod == 1:
-      this.idata.disp8 = cast[int8](ACS.getCode8(0))
-      CPU.updateEIp(1)
+  elif this.mod == modDispByte:
+    # Byte displacement
+    this.idata.disp8 = ACS.getCode8(0).int8
+    CPU.updateEIp(1)
 
 
 proc parseModrm16*(this: var InstrImpl): void =
-  if (this.mod == 0 and this.rm == 6) or
-     this.mod == 2:
+  if # Indirect SIB with no displacement.
+     #
+     # FIXME - `rm` should be `== 5`?
+     # http://www.c-jump.com/CIS77/CPU/x86/lecture.html#X77_0060_mod_reg_r_m_byte
+    (this.mod == modIndSib and this.rm == 6) or
+     # Doubleword displacement
+     this.mod == modDispDWord:
 
     this.idata.disp16 = ACS.getCode32(0).int16()
     CPU.updateEIp(2)
 
-  else:
-    if this.mod == 1:
-      this.idata.disp8 = cast[int8](ACS.getCode8(0))
-      CPU.updateEIp(1)
+  elif this.mod == modDispByte:
+    # Byte signed displacement
+    this.idata.disp8 = ACS.getCode8(0).int8
+    CPU.updateEIp(1)
 
 proc parseModrmSibDisp*(this: var InstrImpl): void =
+  ## Parse MODRM byte and potential subsequent SIB and displacement bytes
   this.idata.modrm = cast[ModRM](ACS.getCode8(0))
   CPU.updateEIp(1)
   if CPU.isMode32() xor this.exec.chszAd:
@@ -91,6 +100,17 @@ proc parseMoffs*(this: var InstrImpl): void =
     CPU.updateEIp(2)
 
 proc parse*(this: var InstrImpl): void =
+  ## Parser new instruction into `this.idata` field, advancing `EIP` as
+  ## needed.
+  ##
+  ## Data parsed:
+  ##
+  ## - Opcode with prefixes (1-4 bytes, required)
+  ## - ModR/M (1 byte, if required)
+  ## - SIB (1 byte, if required)
+  ## - Displacement (1, 2 or 4 bytes, if required)
+  ## - Immediate (1, 2 or 4 bytes, if required)
+
   this.parseOpcode()
   var op = this.idata.opcode
   # REVIEW not sure if this bithack is really necessary - implementation
@@ -100,6 +120,8 @@ proc parse*(this: var InstrImpl): void =
     op = (op and 0xff) or 0x0100
 
   if iParseModrm in this.chk[op]:
+    # Whether MODRM is used in the instruction is encoded in the parser
+    # flags, this information is not available from the opcode alone.
     this.parseModrmSibDisp()
 
   if iParseImm32 in this.chk[op]:

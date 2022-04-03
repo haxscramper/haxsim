@@ -29,14 +29,15 @@ proc exec*(this: var InstrImpl): bool =
 proc calcModrm16*(this: var ExecInstr): uint32 =
   var memAddr: uint32 = 0
   case this.getModRmMod():
-    of 1: memAddr = (memAddr + this.disp8.uint32)
-    of 2: memAddr = (memAddr + this.disp16.uint32)
+    of modDispByte: memAddr = (memAddr + this.disp8.uint32)
+    of modDispDWord: memAddr = (memAddr + this.disp16.uint32)
     else: assert false
+
   case this.getModRmRM():
     of 0, 1, 7:
       memAddr = (memAddr + CPU.getGPreg(BX))
     of 2, 3, 6:
-      if this.getModRmMod() == 0 and this.getModRmRM() == 6:
+      if this.getModRmMod() == modIndSib and this.getModRmRM() == 6:
         memAddr = (memAddr + this.disp16.uint32)
 
       else:
@@ -58,7 +59,7 @@ proc calcModrm16*(this: var ExecInstr): uint32 =
 
 proc calcSib*(this: var ExecInstr): uint32 =
   var base: uint32
-  if this.base == 5 and this.getModRmMod() == 0:
+  if this.base == 5 and this.getModRmMod() == modIndSib:
     base = this.disp32.uint32
 
   else:
@@ -81,14 +82,14 @@ proc calcSib*(this: var ExecInstr): uint32 =
 proc calcModrm32*(this: var ExecInstr): uint32 =
   var memAddr: uint32 = 0
   case this.getModRmMod():
-    of 1: memAddr = (memAddr + this.disp8.uint32)
-    of 2: memAddr = (memAddr + this.disp32.uint32)
+    of modDispByte: memAddr = (memAddr + this.disp8.uint32)
+    of modDispDWord: memAddr = (memAddr + this.disp32.uint32)
     else: assert false
   case this.getModRmRM():
     of 4:
       memAddr = (memAddr + this.calcSib())
     of 5:
-      if this.getModRmMod() == 0:
+      if this.getModRmMod() == modIndSib:
         memAddr = (memAddr + this.disp32.uint32)
 
     else:
@@ -99,7 +100,7 @@ proc calcModrm32*(this: var ExecInstr): uint32 =
 
 
 proc calcModrm*(this: var ExecInstr): uint32 =
-  ASSERT(this.getModRmMod() != 3)
+  assert(this.getModRmMod() != modRegAddr)
   this.idata.segment = DS
   if this.isMode32() xor this.chszAd:
     return this.calcModrm32()
@@ -108,7 +109,7 @@ proc calcModrm*(this: var ExecInstr): uint32 =
     return this.calcModrm16()
   
 proc setRm32*(this: var ExecInstr, value: uint32): void =
-  if this.getModRmMod() == 3:
+  if this.getModRmMod() == modRegAddr:
     CPU.setGPreg(Reg32T(this.getModRmRM()), value)
   
   else:
@@ -116,7 +117,7 @@ proc setRm32*(this: var ExecInstr, value: uint32): void =
 
 
 proc getRm32*(this: var ExecInstr): uint32 =
-  if this.getModRmMod() == 3:
+  if this.getModRmMod() == modRegAddr:
     return CPU.getGPreg(Reg32T(this.getModRmRM()))
   
   else:
@@ -138,7 +139,7 @@ proc getMoffs32*(this: var ExecInstr): uint32 =
   return READMEM32(this.moffs)
 
 proc setRm16*(this: var ExecInstr, value: uint16): void =
-  if this.getModRmMod() == 3:
+  if this.getModRmMod() == modRegAddr:
     CPU.setGPreg(Reg16T(this.getModRmRM()), value)
   
   else:
@@ -146,7 +147,7 @@ proc setRm16*(this: var ExecInstr, value: uint16): void =
   
 
 proc getRm16*(this: var ExecInstr): uint16 =
-  if this.getModRmMod() == 3:
+  if this.getModRmMod() == modRegAddr:
     return CPU.getGPreg(Reg16T(this.getModRmRM()))
   
   else:
@@ -168,7 +169,7 @@ proc getMoffs16*(this: var ExecInstr): uint16 =
   return READMEM16(this.moffs)
 
 proc setRm8*(this: var ExecInstr, value: uint8): void =
-  if this.getModRmMod() == 3:
+  if this.getModRmMod() == modRegAddr:
     CPU.setGPreg(Reg8T(this.getModRmRM()), value)
   
   else:
@@ -176,7 +177,7 @@ proc setRm8*(this: var ExecInstr, value: uint8): void =
   
 
 proc getRm8*(this: var ExecInstr): uint8 =
-  if this.getModRmMod() == 3:
+  if this.getModRmMod() == modRegAddr:
     return CPU.getGPreg(Reg8T(this.getModRmRM()))
   
   else:

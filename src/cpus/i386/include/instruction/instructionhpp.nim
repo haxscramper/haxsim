@@ -37,13 +37,28 @@ template WRITEMEM8*(addrD: untyped, v: untyped): untyped {.dirty.} =
 
 const MAXOPCODE* = 0x200
 type
+  InstrModFlags* = enum
+    ## The MOD field specifies x86 addressing mode:
+    modIndSib = 0b00 ##
+    ## Either of:
+    ##
+    ## 1. register indirect addressing (`add byte [eax], 17`)
+    ## 2. SIB with no displacement (if `R/M == 100`)
+    ## 3. Displacement only addressing (when `R/M == 101`)
+
+    modDispByte = 0b01 ## Byte *signed* displacement follows addressing
+                       ## byte
+    modDispDWord = 0b10 ## Doubleword *signed* (can be negative)
+                        ## displacement follows addressing byte
+    modRegAddr = 0b11 ## Register addressing mode
+
   ModRM* = object
     ## The ModR/M byte encodes a register or an opcode extension, and a
     ## register or a memory address.
     ## https://wiki.osdev.org/X86-64_Instruction_Encoding#ModR.2FM
     rm* {.bitsize: 3.}: NBits[3]
     reg* {.bitsize: 3.}: NBits[3]
-    `mod`* {.bitsize: 2.}: NBits[2]
+    `mod`* {.bitsize: 2.}: InstrModFlags
 
   SIB* {.bycopy.} = object
     base* {.bitsize: 3.}: uint8
@@ -200,15 +215,10 @@ template imm8*(this: InstrImpl | ExecInstr)   : untyped = this.idata.imm8
 template ptr16*(this: InstrImpl | ExecInstr)  : untyped = this.idata.ptr16
 template moffs*(this: InstrImpl | ExecInstr)  : untyped = this.idata.moffs
 
-
-
-
-# func mod*(idata: InstrData): NBits[3] =
-
 proc getPreRepeat*(this: InstrImpl): repT = this.exec.idata.prerepeat
 
-template declareGetPart*(name, size, expr, system: untyped): untyped =
-  template name*(this {.inject.}: ExecInstr): NBits[size] =
+template declareGetPart*(name, size, ResType, expr, system: untyped): untyped =
+  template name*(this {.inject.}: ExecInstr): ResType =
     block:
       let result = expr
       let e = ev(`eek name`).withIt do:
@@ -216,57 +226,25 @@ template declareGetPart*(name, size, expr, system: untyped): untyped =
       this.log(e, -3)
       result
 
-  template name*(this {.inject.}: InstrImpl): NBits[size] =
+  template name*(this {.inject.}: InstrImpl): ResType =
     this.exec.name()
 
-declareGetPart(getModrmMod, 2, this.idata.modrm.mod, evs2)
-declareGetPart(getModrmRm, 3, this.idata.modrm.rm, evs2)
-declareGetPart(getModrmReg, 3, this.idata.modrm.reg, evs2)
-
-# proc getModrmRM*(this: ExecInstr): NBits[3] =
-#   result = this.instr.modrm.rm
-#   this.log ev(eekGetModrmRM).withIt do:
-#     it.value = evalue(result.uint8, 3, evs2)
-
-# proc getModrmRM*(this: InstrImpl): NBits[3] =
-#   result = this.exec.getModrmRM()
-
-# proc getModrmReg*(this: ExecInstr): NBits[3] =
-#   result = this.instr.modrm.reg
-#   this.log ev(eekGetModrmReg).withIt do:
-#     it.value = evalue(result.uint8, 3, evs2)
-
-# proc getModrmReg*(this: InstrImpl): NBits[3] =
-#   result = this.exec.getModrmReg()
-
+declareGetPart(getModrmMod, 2, InstrModFlags, this.idata.modrm.mod, evs2)
+declareGetPart(getModrmRm, 3, NBits[3], this.idata.modrm.rm, evs2)
+declareGetPart(getModrmReg, 3, NBits[3], this.idata.modrm.reg, evs2)
 
 
 
 const
-  CHKMODRM* = {iParseModrm} # (1 shl 0)
-  CHKIMM32* = {iParseImm32} # (1 shl 1)
-  CHKIMM16* = {iParseImm16} # (1 shl 2)
-  CHKIMM8*  = {iParseImm8} # (1 shl 3)
-  CHKPTR16* = {iParsePtr16} # (1 shl 4)
-  CHKMOFFS* = {iParseMoffs} # (1 shl 5)
+  CHKMODRM* = {iParseModrm}
+  CHKIMM32* = {iParseImm32}
+  CHKIMM16* = {iParseImm16}
+  CHKIMM8*  = {iParseImm8}
+  CHKPTR16* = {iParsePtr16}
+  CHKMOFFS* = {iParseMoffs}
   CHSZNONE* = 0
   CHSZOP*   = 1
   CHSZAD*   = 2
-
-# proc modrm*(this: InstrFlags): uint8 = this.field1.modrm
-# proc `modrm=`*(this: var InstrFlags, value: uint8) = this.field1.modrm = value
-# proc imm32*(this: InstrFlags): uint8 = this.field1.imm32
-# proc `imm32=`*(this: var InstrFlags, value: uint8) = this.field1.imm32 = value
-# proc imm16*(this: InstrFlags): uint8 = this.field1.imm16
-# proc `imm16=`*(this: var InstrFlags, value: uint8) = this.field1.imm16 = value
-# proc imm8*(this: InstrFlags): uint8 = this.field1.imm8
-# proc `imm8=`*(this: var InstrFlags, value: uint8) = this.field1.imm8 = value
-# proc ptr16*(this: InstrFlags): uint8 = this.field1.ptr16
-# proc `ptr16=`*(this: var InstrFlags, value: uint8) = this.field1.ptr16 = value
-# proc moffs*(this: InstrFlags): uint8 = this.field1.moffs
-# proc `moffs=`*(this: var InstrFlags, value: uint8) = this.field1.moffs = value
-# proc moffs8*(this: InstrFlags): uint8 = this.field1.moffs8
-# proc `moffs8=`*(this: var InstrFlags, value: uint8) = this.field1.moffs8 = value
 
 proc setGdtr*(this: var ExecInstr, base: uint32, limit: uint16): void =
   CPU.setDtreg(GDTR, 0, base, limit)

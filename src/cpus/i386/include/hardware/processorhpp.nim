@@ -6,9 +6,10 @@ export Reg32T, Reg16T, Reg8T, SgRegT, DTregT
 
 type
   GPRegister* {.union.} = object
-    reg32*: uint32
-    reg16*: uint16
-    regLH*: RegLH
+    ## General-purpose register
+    reg32*: uint32 ## Full (extended, 32-bit) value of the regsiters
+    reg16*: uint16 ## Lower word of the registers
+    regLH*: RegLH ## Two lower bytes of the register
 
   RegLH* = object
     reg8L*: uint8
@@ -77,7 +78,6 @@ type
     field2*: typeField2
 
 
-
 proc A*(this: `type`): uint8 = this.field2.A
 proc `A=`*(this: var `type`, value: uint8) = this.field2.A = value
 proc segc*(this: `type`): uint8 = this.field2.segc
@@ -110,32 +110,35 @@ proc index*(this: SGRegister): uint16 = this.field0.field1.index
 proc `index=`*(this: var SGRegister, value: uint16) = this.field0.field1.index = value
 
 type
-  DTRegister* {.bycopy.} = object
+  DTRegister* = object
+    ## Data register object
     selector*: uint16
     base*: uint32
     limit*: uint16
 
-type
-  ProcessorField0* {.union.} = object
+  InstructionPointer* {.union.} = object
     ## The instruction pointer register (EIP) contains the offset address,
     ## relative to the start of the current code segment, of the next
     ## sequential instruction to be executed. The instruction pointer is
     ## not directly visible to the programmer; it is controlled implicitly
     ## by control-transfer instructions, interrupts, and exceptions.
-    eip*: uint32
-    ip*: uint16
+    eip*: uint32 ## Extended instruction pointer
+    ip*: uint16 ## Base instruction pointer
 
-  Processor* = ref object of CR
-    logger*: EmuLogger
-    eflags*: Eflags
-    field0*: ProcessorField0
-    gpregs*: array[Reg32T, GPRegister]
+  ProcessorObj* =  object of CR
+    ## Current state of the CPU
+    logger*: EmuLogger ## Reference to main logger instance
+    eflags*: Eflags ## Extended execution flags
+    field0*: InstructionPointer ## Value of the instruction pointer
+    gpregs*: array[Reg32T, GPRegister] ## General-purpose registers
     sgregs*: array[SgRegT, SGRegister] ## Segment registers hold the
     ## segment address of various items. They are only available in 16
     ## values. They can only be set by a general register or special
     ## instructions.
-    dtregs*: array[DTregT, DTRegister]
-    halt*: bool
+    dtregs*: array[DTregT, DTRegister] ## Data registers
+    halt*: bool ## Is execution halted?
+
+  Processor* = ref ProcessorObj ## Reference type for the processor
 
 template log*(p: Processor, ev: EmuEvent, depth: int = -2): untyped =
   p.logger.log(ev, depth)
