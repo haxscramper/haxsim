@@ -126,11 +126,9 @@ proc transV2l*(this: var DataAccess, mode: acsmodeT, seg: SgRegT, vaddr: uint32)
 
     EXCEPTION(EXPGP, vaddr > limit)
     laddr = base + vaddr
-    INFO(6, "base=0x%04x, limit=0x%02x, laddr=0x%02x", base, limit, laddr)
 
   else:
     laddr = (sg.raw shl 4) + vaddr
-    INFO(6, "base=0x%04x, laddr=0x%02x", sg.raw shl 4, laddr)
 
   return laddr
 

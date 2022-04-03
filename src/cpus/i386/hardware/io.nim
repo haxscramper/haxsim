@@ -100,7 +100,8 @@ proc setMemio*(this: var IO, base: uint32, len: csizeT, dev: ref MemoryIO): void
   assertRef(this.memory)
   assertRef(dev)
   var memAddr: uint32
-  ASSERT(not((base != 0 and ((1 shl 12) - 1) != 0)))
+  # echov base
+  # ASSERT(not((base != 0 and ((1 shl 12) - 1) != 0)))
   dev[].setMem(this.memory, base, len)
   this.memIo[base] = dev
   block:
