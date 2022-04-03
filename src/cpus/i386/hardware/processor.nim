@@ -1,7 +1,7 @@
 import commonhpp
 import eflagshpp
 import crhpp
-import ../../instruction/syntaxes
+import instruction/syntaxes
 export Reg32T, Reg16T, Reg8T, SgRegT, DTregT
 
 type
@@ -261,3 +261,35 @@ proc isHalt*(this: Processor): bool =
 
 proc doHalt*(this: var Processor, h: bool): void =
   this.halt = h
+
+import hardware/[processorhpp, crhpp, eflagshpp]
+import commonhpp
+
+proc initProcessor*(logger: EmuLogger): Processor =
+  assertRef(logger)
+  logger.logScope ev(eekInitCPU)
+  # memset(gpregs, 0, sizeof(gpregs))
+  # memset(sgregs, 0, sizeof(sgregs))
+  result = Processor(logger: logger)
+  initCR(result)
+  # asgnAux[CR](result, initCR())
+  assertRef(logger)
+  result.set_eip(0x0000fff0)
+  result.set_crn(0, 0x60000010)
+  result.eflags.set_eflags(0x00000002)
+  result.sgregs[CS].raw = 0xf000
+  result.sgregs[CS].cache.base = 0xffff0000u32
+  result.sgregs[CS].cache.flags.`type`.segc = 1
+  for i in ES .. GS:
+    result.sgregs[i].cache.limit = 0xffff
+    result.sgregs[i].cache.flags.P = 1
+    result.sgregs[i].cache.flags.`type`.A = 1
+    result.sgregs[i].cache.flags.`type`.data.w = 1
+
+  result.dtregs[IDTR].base  = 0x0000
+  result.dtregs[IDTR].limit = 0xffff
+  result.dtregs[GDTR].base  = 0x0000
+  result.dtregs[GDTR].limit = 0xffff
+  result.dtregs[LDTR].base  = 0x0000
+  result.dtregs[LDTR].limit = 0xffff
+  result.halt = false

@@ -1,5 +1,5 @@
 import util/debughpp
-import ../instruction/[syntaxes, opcodes]
+import instruction/[syntaxes, opcodes]
 import std/strformat
 export strformat
 import std/strutils

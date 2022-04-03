@@ -1,6 +1,6 @@
-import commonhpp
-import dev_irqhpp
-import dev_iohpp
+import common
+import dev_irq
+import dev_io
 
 type
   Timer* {.bycopy.} = object

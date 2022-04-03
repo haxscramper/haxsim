@@ -1,5 +1,16 @@
-import
-  device/syscontrolhpp
+import common
+import dev_io
+import hardware/memory
+
+type
+  SysControl* = object
+    portio*: PortIO
+    mem*: Memory
+  
+proc initSysControl*(m: Memory): SysControl =
+  result.mem = m
+
+import device/syscontrolhpp
 proc in8*(this: var SysControl, memAddr: uint16): uint8 =
   return mem.is_ena_a20gate() shl 1
 

@@ -1,5 +1,5 @@
-import commonhpp
-import hardware/memoryhpp
+import common
+import hardware/memory
 import std/lenientops
 
 type

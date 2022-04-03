@@ -1,9 +1,9 @@
-import commonhpp
-import device/vgahpp
+import common
+import device/vga
 import hmisc/core/all
-import device/keyboardhpp
-import device/mousehpp
-import hardware/memoryhpp
+import device/keyboard
+import device/mouse
+import hardware/memory
 
 type
   UISetting* = object

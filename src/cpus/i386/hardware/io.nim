@@ -1,6 +1,6 @@
-import commonhpp
-import memoryhpp
-import device/dev_iohpp
+import common
+import memory
+import device/dev_io
 import std/tables
 
 type

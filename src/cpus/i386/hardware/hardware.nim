@@ -1,6 +1,6 @@
 import commonhpp
 import processorhpp
-import ../../hardware/processorcpp
+import hardware/processorcpp
 import memoryhpp
 import iohpp
 

@@ -1,6 +1,6 @@
 import commonhpp
-import dev_irqhpp
-import dev_iohpp
+import dev_irq
+import dev_io
 
 const MAX_IRQ* = 8
 type
