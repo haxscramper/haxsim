@@ -2,37 +2,36 @@ import std/enumutils
 
 type
   Reg32T* = enum
-    EAX
-    ECX
-    EDX ## Called the Data register It is used for I/O port access,
+    EAX = 0b000
+    ECX = 0b001
+    EDX = 0b010 ## Called the Data register It is used for I/O port access,
     ## arithmetic, some interrupt calls.
-    EBX
-    ESP ## Stack pointer register Holds the top address of the stack
-    EBP ## Stack Base pointer register. Holds the base address of the stack
-    ESI ## Source index register. Used for string and memory array copying
-    EDI ## Destination index register Used for string, memory array copying
-    ## and setting and for far pointer addressing with ES
-    GPREGSCOUNT
+    EBX = 0b011
+    ESP = 0b100 ## Stack pointer register Holds the top address of the stack
+    EBP = 0b101 ## Stack Base pointer register. Holds the base address of the stack
+    ESI = 0b110 ## Source index register. Used for string and memory array copying
+    EDI = 0b111 ## Destination index register Used for string, memory array
+    ## copying and setting and for far pointer addressing with ES
 
   Reg16T* = enum
-    AX
-    CX
-    DX
-    BX
-    SP ## Part of ESP
-    BP ## Part of EBP
-    SI ## Part of ESI
-    DI ## Part of EDI
+    AX = 0b000
+    CX = 0b001
+    DX = 0b010
+    BX = 0b011
+    SP = 0b100 ## Part of ESP
+    BP = 0b101 ## Part of EBP
+    SI = 0b110 ## Part of ESI
+    DI = 0b111 ## Part of EDI
 
   Reg8T* = enum
-    AL
-    CL
-    DL
-    BL
-    AH
-    CH
-    DH
-    BH
+    AL = 0b000
+    CL = 0b001
+    DL = 0b010
+    BL = 0b011
+    AH = 0b100
+    CH = 0b101
+    DH = 0b110
+    BH = 0b111
 
 
   SgRegT* = enum
