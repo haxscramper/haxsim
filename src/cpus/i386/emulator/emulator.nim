@@ -1,23 +1,22 @@
-import commonhpp
+import common
 import hmisc/core/all
-import accesshpp
-import interrupthpp
-import uihpp
+import access
+import interrupt
+import ui
 import std/with
 import hardware/[
-  iohpp,
-  memoryhpp,
-  processorhpp,
+  io,
+  memory,
+  processor,
 ]
 import device/[
-  deviceshpp,
-  pichpp,
-  fddhpp,
-  pithpp,
-  syscontrolhpp,
-  comhpp,
-  vgahpp,
-  keyboardhpp
+  pic,
+  fdd,
+  pit,
+  syscontrol,
+  com,
+  vga,
+  keyboard
 ]
 
 type

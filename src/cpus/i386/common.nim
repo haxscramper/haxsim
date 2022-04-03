@@ -1,4 +1,3 @@
-import util/debughpp
 import instruction/[syntaxes, opcodes]
 import std/strformat
 export strformat
@@ -7,13 +6,24 @@ export strutils
 import hmisc/wrappers/wraphelp
 import hmisc/other/hpprint
 export hpprint
-export debughpp
 import hmisc/core/all
 export all
 import eventer
 export eventer
 import std/math
 
+template ASSERT*(expr: untyped): untyped =
+  assert expr
+
+template ERROR*(msg: string, other: varargs[untyped]): untyped =
+  assert false, msg
+
+# template EXCEPTION*(kind, eif: untyped): untyped =
+#   if eif:
+#     assert false, $kind
+
+template INFO*(lvl: int, msg: string, other: varargs[untyped]): untyped =
+  echo instantiationInfo(), msg
 
 func pow2*(pow: int): uint =
   result = 2

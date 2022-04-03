@@ -1,17 +1,17 @@
-import instruction/execcpp
+import instruction/exec
 import std/math
 import hmisc/algo/[clformat, clformat_interpolate]
 
-import "commonhpp"
-import emulator/[emulatorhpp, interruptcpp]
-import hardware/[processorhpp, memoryhpp, iohpp]
-import device/[dev_iohpp]
+import common
+import emulator/[emulator, interrupt]
+import hardware/[processor, memory, io]
+import device/[dev_io]
 import instruction/[
-  instructionhpp,
-  basehpp,
-  instr16cpp,
-  instr32cpp,
-  parsecpp,
+  instruction,
+  base,
+  instr16,
+  instr32,
+  parse,
 ]
 
 
@@ -167,7 +167,7 @@ proc runEmulator*(eset: Setting): void =
 
   var full = initFull(emuset)
   if not(full.emu.insertFloppy(0, eset.imageName, false)):
-    WARN("cannot load image \'%s\'", eset.imageName)
+    assert false, "cannot load image \'%s\'"
     return 
   
   full.emu.loadBinary("bios/bios.bin", 0xf0000, 0, 0x2800)

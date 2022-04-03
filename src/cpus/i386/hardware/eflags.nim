@@ -1,11 +1,12 @@
-import commonhpp
+import common
+
 type
-  EflagsImpl* {.bycopy, union.} = object
+  EflagsImpl* {.union.} = object
     reg32*: uint32
     reg16*: uint16
     field2*: EflagsImplField2Type
   
-  EflagsImplField2Type* {.bycopy.} = object
+  EflagsImplField2Type* = object
     CF* {.bitsize: 1.}: uint32
     field1* {.bitsize: 1.}: uint32
     PF* {.bitsize: 1.}: uint32
@@ -117,8 +118,7 @@ proc setInterrupt*(this: var Eflags, interrupt: bool): void =
 proc setDirection*(this: var Eflags, dir: bool): void =
   this.eflags.DF = dir.uint32
 
-import hardware/eflagshpp
-import commonhpp
+import common
 import std/[lenientops, bitops]
 
 proc chk_parity*(this: var Eflags, v: uint8): bool =

@@ -1,10 +1,8 @@
-import instruction/[basehpp, instructionhpp]
-import commonhpp, execcpp
-import ../hardware/[eflagscpp, processorcpp]
-import hardware/[processorhpp, memoryhpp, eflagshpp, iohpp]
-import ../instruction/emucpp
-import emulator/[exceptionhpp, emulatorhpp, accesshpp, interrupthpp]
-import ./opcodes
+import instruction/[base, instruction, emu]
+import common, exec
+import hardware/[eflags, processor, processor, memory, io]
+import emulator/[exception, emulator, access, interrupt]
+import opcodes
 
 template instrbase*(f: untyped): untyped {.dirty.} =
  instrfuncT(f)
@@ -200,7 +198,6 @@ proc retf*(this: var InstrImpl): void =
   this.exec.retf()
 
 proc int3*(this: var InstrImpl): void =
-  CPU.dumpRegs()
   MEM.dumpMem((ACS.getSegment(SS) shl 4) + CPU.getGpreg(ESP) - 0x40, 0x80.csizeT)
 
 proc intImm8*(this: var InstrImpl): void =

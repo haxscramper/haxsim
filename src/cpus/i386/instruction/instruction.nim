@@ -1,8 +1,8 @@
-import hardware/[processorhpp, eflagshpp]
+import hardware/[processor, eflags]
 import std/tables
-import ../instruction/opcodes
-import commonhpp
-import emulator/[emulatorhpp, accesshpp]
+import instruction/opcodes
+import common
+import emulator/[emulator, access]
 
 template EMU*(): untyped =
   let tmp = this.getEmu()

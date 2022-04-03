@@ -1,6 +1,6 @@
-import commonhpp
-import eflagshpp
-import crhpp
+import common
+import eflags
+import cr
 import instruction/syntaxes
 export Reg32T, Reg16T, Reg8T, SgRegT, DTregT
 
@@ -262,8 +262,8 @@ proc isHalt*(this: Processor): bool =
 proc doHalt*(this: var Processor, h: bool): void =
   this.halt = h
 
-import hardware/[processorhpp, crhpp, eflagshpp]
-import commonhpp
+import hardware/[cr, eflags]
+import common
 
 proc initProcessor*(logger: EmuLogger): Processor =
   assertRef(logger)

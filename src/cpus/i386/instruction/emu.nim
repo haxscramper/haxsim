@@ -1,8 +1,8 @@
-import instruction/instructionhpp
-import commonhpp
-import emulator/[exceptionhpp, accesshpp]
-import emulator/descriptorhpp
-import hardware/[processorhpp, memoryhpp, crhpp, eflagshpp]
+import common
+
+import instruction/instruction
+import emulator/[exception, access, descriptor]
+import hardware/[processor, memory, cr, eflags]
 
 proc typeDescriptor*(this: var ExecInstr, sel: uint16): uint8 =
   var gdtBase: uint32

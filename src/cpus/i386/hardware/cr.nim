@@ -1,10 +1,10 @@
-import commonhpp
+import common
 import std/lenientops
 
 ## Implementation of the control register and associated logic.
 
 type
-  CRCr0Field1* {.bycopy.} = object
+  CRCr0Field1* = object
     PE* {.bitsize: 1.}: uint32 ## If 1, system is in protected mode, else system is in real mode
     MP* {.bitsize: 1.}: uint32 ## Controls interaction of WAIT/FWAIT instructions with TS flag in CR0
     EM* {.bitsize: 1.}: uint32 ## If set, no x87 floating-point unit present, if clear, x87 FPU present

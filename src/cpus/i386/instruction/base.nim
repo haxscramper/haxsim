@@ -1,5 +1,5 @@
-import commonhpp
-import instructionhpp
+import common
+import instruction
 
 template instr*(b: InstrImpl): untyped = b.exec.instr
 

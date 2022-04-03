@@ -1,7 +1,7 @@
-import instruction/instructionhpp
-import commonhpp
-import emulator/[accesshpp, emulatorhpp]
-import hardware/processorhpp
+import instruction/instruction
+import common
+import emulator/[access, emulator]
+import hardware/processor
 
 proc getEmu*(this: var InstrImpl): Emulator =
   result = this.exec.getEmu()

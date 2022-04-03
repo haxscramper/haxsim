@@ -1,6 +1,6 @@
-import commonhpp
+import common
 type
-  IRQ* {.bycopy, inheritable.} = ref object
+  IRQ* {.inheritable.} = ref object
     intr*: bool
   
 proc initIRQ*(): IRQ = 

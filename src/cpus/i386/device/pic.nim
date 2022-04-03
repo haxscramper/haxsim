@@ -1,14 +1,14 @@
-import commonhpp
+import common
 import dev_irq
 import dev_io
 
 const MAX_IRQ* = 8
 type
-  OCW2* {.bycopy, union.} = object
+  OCW2* {.union.} = object
     raw*: uint8
     field1*: OCW2_field1
 
-  OCW2_field1* {.bycopy.} = object
+  OCW2_field1* = object
     L* {.bitsize: 3.}: uint8
     field1* {.bitsize: 2.}: uint8
     EOI* {.bitsize: 1.}: uint8
@@ -25,7 +25,7 @@ proc R*(this: OCW2): uint8 = this.field1.R
 proc `R=`*(this: var OCW2, value: uint8) = this.field1.R = value
 
 type
-  PIC* {.bycopy.} = ref object of IRQ
+  PIC* = ref object of IRQ
     portio*: PortIO
     pic_m*: PIC
     irq*: array[MAX_IRQ, IRQ]
@@ -38,15 +38,15 @@ type
     ic4*: PIC_ic4
     init_icn*: int8
 
-  PIC_ic2_field1* {.bycopy.} = object
+  PIC_ic2_field1* = object
     IVA_h* {.bitsize: 3.}: uint8
     IVA_x86* {.bitsize: 5.}: uint8
 
-  PIC_ic1* {.bycopy, union.} = object
+  PIC_ic1* {.union.} = object
     raw*: uint8
     field1*: PIC_ic1_field1
 
-  PIC_ic1_field1* {.bycopy.} = object
+  PIC_ic1_field1* = object
     IC4* {.bitsize: 1.}: uint8
     SNGL* {.bitsize: 1.}: uint8
     ADI* {.bitsize: 1.}: uint8
@@ -54,11 +54,11 @@ type
     field4* {.bitsize: 1.}: uint8
     IVA_l* {.bitsize: 3.}: uint8
 
-  PIC_ic2* {.bycopy, union.} = object
+  PIC_ic2* {.union.} = object
     raw*: uint8
     field1*: PIC_ic2_field1
 
-  PIC_ic3_field1* {.bycopy.} = object
+  PIC_ic3_field1* = object
     S0* {.bitsize: 1.}: uint8
     S1* {.bitsize: 1.}: uint8
     S2* {.bitsize: 1.}: uint8
@@ -68,19 +68,19 @@ type
     S6* {.bitsize: 1.}: uint8
     S7* {.bitsize: 1.}: uint8
 
-  PIC_ic3_field2* {.bycopy.} = object
+  PIC_ic3_field2* = object
     ID* {.bitsize: 3.}: uint8
 
-  PIC_ic3* {.bycopy, union.} = object
+  PIC_ic3* {.union.} = object
     raw*: uint8
     field1*: PIC_ic3_field1
     field2*: PIC_ic3_field2
 
-  PIC_ic4* {.bycopy, union.} = object
+  PIC_ic4* {.union.} = object
     raw*: uint8
     field1*: PIC_ic4_field1
 
-  PIC_ic4_field1* {.bycopy.} = object
+  PIC_ic4_field1* = object
     PM* {.bitsize: 1.}: uint8
     AEOI* {.bitsize: 1.}: uint8
     MS* {.bitsize: 1.}: uint8

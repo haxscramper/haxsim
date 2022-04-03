@@ -1,10 +1,9 @@
-import commonhpp
-import processorhpp
-import hardware/processorcpp
-import memoryhpp
-import iohpp
+import common
+import hardware/processor
+import memory
+import io
 
-export commonhpp, processorhpp, memoryhpp, iohpp
+export common, processor, memory, io
 
 type
   Hardware* {.inheritable.} = object

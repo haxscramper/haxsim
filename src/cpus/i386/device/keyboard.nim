@@ -1,8 +1,7 @@
-import commonhpp
-import dev_irqhpp
-import dev_iohpp
-import mousehpp
-import hardware/memoryhpp
+import common
+import dev_irq
+import dev_io
+import hardware/memory
 
 type
   Mouse* = ref object of IRQ
@@ -59,144 +58,147 @@ proc get_mouse*(this: var Keyboard): Mouse =
   return this.mouse
 
 proc OBF*(this: Keyboard_kcsr_Type): uint8 = this.field1.OBF
-proc `OBF=`*(this: var Keyboard_kcsr_Type): uint8 = this.field1.OBF
+proc `OBF=`*(this: var Keyboard_kcsr_Type, value: uint8) = this.field1.OBF = value
 proc IBF*(this: Keyboard_kcsr_Type): uint8 = this.field1.IBF
-proc `IBF=`*(this: var Keyboard_kcsr_Type): uint8 = this.field1.IBF
+proc `IBF=`*(this: var Keyboard_kcsr_Type, value: uint8) = this.field1.IBF = value
 proc F0*(this: Keyboard_kcsr_Type): uint8 = this.field1.F0
-proc `F0=`*(this: var Keyboard_kcsr_Type): uint8 = this.field1.F0
+proc `F0=`*(this: var Keyboard_kcsr_Type, value: uint8) = this.field1.F0 = value
 proc F1*(this: Keyboard_kcsr_Type): uint8 = this.field1.F1
-proc `F1=`*(this: var Keyboard_kcsr_Type): uint8 = this.field1.F1
+proc `F1=`*(this: var Keyboard_kcsr_Type, value: uint8) = this.field1.F1 = value
 proc ST4*(this: Keyboard_kcsr_Type): uint8 = this.field1.ST4
-proc `ST4=`*(this: var Keyboard_kcsr_Type): uint8 = this.field1.ST4
+proc `ST4=`*(this: var Keyboard_kcsr_Type, value: uint8) = this.field1.ST4 = value
 proc ST5*(this: Keyboard_kcsr_Type): uint8 = this.field1.ST5
-proc `ST5=`*(this: var Keyboard_kcsr_Type): uint8 = this.field1.ST5
+proc `ST5=`*(this: var Keyboard_kcsr_Type, value: uint8) = this.field1.ST5 = value
 proc ST6*(this: Keyboard_kcsr_Type): uint8 = this.field1.ST6
-proc `ST6=`*(this: var Keyboard_kcsr_Type): uint8 = this.field1.ST6
+proc `ST6=`*(this: var Keyboard_kcsr_Type, value: uint8) = this.field1.ST6 = value
 proc ST7*(this: Keyboard_kcsr_Type): uint8 = this.field1.ST7
-proc `ST7=`*(this: var Keyboard_kcsr_Type): uint8 = this.field1.ST7
+proc `ST7=`*(this: var Keyboard_kcsr_Type, value: uint8) = this.field1.ST7 = value
 
-
-import device/mousehpp
-import device/keyboardhpp
 
 proc command*(this: var Mouse, v: uint8): void =
   case v:
     of 0xf4:
-      while (keyboard.kcsr.OBF):
+      while toBool(this.keyboard.kcsr.OBF):
         discard
 
-      keyboard.kcsr.OBF = 1
-      keyboard.out_buf = 0xfa
-      if keyboard.ccb.MIE:
-        intr = true
+      this.keyboard.kcsr.OBF = 1
+      this.keyboard.out_buf = 0xfa
+      if this.keyboard.ccb.MIE.toBool():
+        this.intr = true
 
-      enable = true
+      this.enable = true
+
+    else:
+      discard
 
 proc send_code*(this: var Mouse, code: uint8): void =
-  if keyboard.ccb.ME or not(enable):
+  if this.keyboard.ccb.ME.toBool() or not(this.enable):
     return
 
   # FIXME
   # while (keyboard.kcsr.OBF):
   #   std.this_thread.sleep_for(std.chrono.microseconds(10))
 
-  keyboard.kcsr.OBF = 1
-  keyboard.out_buf = code
-  if keyboard.ccb.MIE:
-    intr = true
+  this.keyboard.kcsr.OBF = 1
+  this.keyboard.out_buf = code
+  if this.keyboard.ccb.MIE.toBool():
+    this.intr = true
 
-import device/keyboardhpp
+proc read_outbuf*(this: var Keyboard): uint8 =
+  this.kcsr.OBF = 0
+  return this.out_buf
+
+
+
 proc in8*(this: var Keyboard, memAddr: uint16): uint8 =
   case memAddr:
     of 0x60:
-      return read_outbuf()
+      return this.read_outbuf()
     of 0x64:
-      return kcsr.raw
-  return -1
-
-proc out8*(this: var Keyboard, memAddr: uint16, v: uint8): void =
-  case memAddr:
-    of 0x60:
-      kcsr.F1 = 0
-    of 0x64:
-      kcsr.F1 = 1
-  command(v)
-
-proc command*(this: var Keyboard, v: uint8): void =
-  if not(kcsr.ST6):
-    if kcsr.F1:
-      case v:
-        of 0xa7:
-          ccb.ME = 0
-
-          return
-        of 0xa8:
-          ccb.ME = 1
-
-          return
-        of 0xad:
-          ccb.KE = 0
-
-          return
-        of 0xae:
-          ccb.KE = 1
-
-          return
-        else:
-          if v < 0x40:
-            write_outbuf(controller_ram[v mod 0x20])
-            return
-
-
+      return this.kcsr.raw
     else:
       discard
 
-    mode = v
-    kcsr.ST6 = 1
-
-  else:
-    if kcsr.F1:
-      discard
-
-    else:
-      case mode:
-        of 0xd1:
-          swt_a20gate(v)
-        of 0xd2:
-          send_code(v)
-        of 0xd3:
-          mouse.send_code(v)
-        of 0xd4:
-          mouse.command(v)
-        else:
-          if mode >= 0x40 and mode < 0x80:
-            controller_ram[(mode - 0x40) mod 0x20] = v
-
-
-    kcsr.ST6 = 0
-
+  return uint8(255)
 
 proc write_outbuf*(this: var Keyboard, v: uint8): void =
-  while (kcsr.OBF):
+  while this.kcsr.OBF.toBool():
     discard
-  kcsr.OBF = 1
-  out_buf = v
-  if ccb.KIE:
-    intr = true
+  this.kcsr.OBF = 1
+  this.out_buf = v
+  if this.ccb.KIE.toBool():
+    this.intr = true
 
-
-proc read_outbuf*(this: var Keyboard): uint8 =
-  kcsr.OBF = 0
-  return out_buf
 
 proc send_code*(this: var Keyboard, scancode: uint8): void =
-  if not(ccb.KE):
-    write_outbuf(scancode)
+  if not(this.ccb.KE.toBool()):
+    this.write_outbuf(scancode)
 
 
 proc swt_a20gate*(this: var Keyboard, v: uint8): void =
   case v:
     of 0xdd:
-      mem.set_a20gate(false)
+      this.mem.set_a20gate(false)
     of 0xdf:
-      mem.set_a20gate(true)
+      this.mem.set_a20gate(true)
+    else:
+      discard
+
+
+proc command*(this: var Keyboard, v: uint8): void =
+  if not(this.kcsr.ST6.toBool()):
+    if this.kcsr.F1.toBool():
+      case v:
+        of 0xa7:
+          this.ccb.ME = 0
+          return
+        of 0xa8:
+          this.ccb.ME = 1
+          return
+        of 0xad:
+          this.ccb.KE = 0
+          return
+        of 0xae:
+          this.ccb.KE = 1
+          return
+        else:
+          if v < 0x40:
+            write_outbuf(this, this.controller_ram[v mod 0x20])
+            return
+
+    else:
+      discard
+
+    this.mode = v
+    this.kcsr.ST6 = 1
+
+  elif this.kcsr.F1.toBool():
+    discard
+
+  else:
+    case this.mode:
+      of 0xd1:
+        this.swt_a20gate(v)
+      of 0xd2:
+        this.send_code(v)
+      of 0xd3:
+        this.mouse.send_code(v)
+      of 0xd4:
+        this.mouse.command(v)
+      else:
+        if this.mode >= 0x40 and this.mode < 0x80:
+          this.controller_ram[(this.mode - 0x40) mod 0x20] = v
+
+  this.kcsr.ST6 = 0
+
+
+proc out8*(this: var Keyboard, memAddr: uint16, v: uint8): void =
+  case memAddr:
+    of 0x60: this.kcsr.F1 = 0
+    of 0x64: this.kcsr.F1 = 1
+    else: discard
+
+  command(this, v)
+
+
+

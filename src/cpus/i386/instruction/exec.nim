@@ -1,7 +1,7 @@
-import instruction/instructionhpp
-import hardware/[processorhpp, crhpp]
-import emulator/accesshpp
-import commonhpp
+import instruction/instruction
+import hardware/[processor, cr]
+import emulator/access
+import common
 
 template INSTR(): untyped = this.exec.idata
 

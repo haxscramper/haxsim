@@ -1,5 +1,5 @@
-import commonhpp
-import hardware/[hardwarehpp, crhpp]
+import common
+import hardware/[hardware, cr]
 type
   PDE* {.bycopy.} = object
     P* {.bitsize: 1.}: uint32
@@ -46,8 +46,8 @@ proc initDataAccess*(size: ESize, logger: EmuLogger): DataAccess =
   assertRef(result.mem)
   assertRef(result.io.memory)
 
-import emulator/exceptionhpp
-import emulator/descriptorhpp
+import emulator/exception
+import emulator/descriptor
 
 proc setSegment*(this: var DataAccess, reg: SgRegT, sel: uint16): void =
   var sg: SGRegister

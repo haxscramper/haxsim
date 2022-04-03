@@ -1,12 +1,12 @@
-import instruction/[basehpp, instructionhpp]
-import instr_basecpp
-import commonhpp
-import ./emucpp
-import ./execcpp
+import instruction/[base, instruction]
+import instr_base
+import common
+import ./emu
+import ./exec
 import ./opcodes
-import ../hardware/eflagscpp
-import hardware/[processorhpp, eflagshpp, iohpp]
-import emulator/[exceptionhpp, emulatorhpp, accesshpp]
+import hardware/eflags
+import hardware/[processor, eflags, io]
+import emulator/[exception, emulator, access]
 
 template instr32*(f: untyped): untyped {.dirty.} = 
   instrfuncT(f)

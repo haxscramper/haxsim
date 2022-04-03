@@ -1,7 +1,7 @@
-import commonhpp
+import common
 import std/deques
-import accesshpp
-import device/pichpp
+import access
+import device/pic
 
 type
   IVT* {.bycopy, union.} = object
@@ -40,13 +40,13 @@ proc iret*(this: var Interrupt): void =
   discard
 
 import std/deques
-import device/[dev_irqhpp, pichpp]
-import commonhpp
-import device/piccpp
-import hardware/[crhpp, processorhpp, memoryhpp, eflagshpp, hardwarehpp]
-import emulator/exceptionhpp
-import emulator/descriptorhpp
-import emulator/accesshpp
+import device/[dev_irq, pic]
+import common
+import device/pic
+import hardware/[cr, processor, memory, eflags, hardware]
+import emulator/exception
+import emulator/descriptor
+import emulator/access
 
 proc saveRegs*(acs: var DataAccess, this: var Interrupt, chpl: bool, cs: uint16): void =
   if acs.cpu.isProtected():

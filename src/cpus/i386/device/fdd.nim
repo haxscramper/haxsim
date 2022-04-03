@@ -4,9 +4,9 @@ import std/deques
 import std/math
 # import std/threads
 import std/locks
-import commonhpp
-import dev_iohpp
-import dev_irqhpp
+import common
+import dev_io
+import dev_irq
 
 const
   MAX_FDD*                = 4

@@ -2,7 +2,6 @@ import common
 import device/vga
 import hmisc/core/all
 import device/keyboard
-import device/mouse
 import hardware/memory
 
 type
