@@ -1,8 +1,9 @@
 import instruction/[opcodes, syntaxes]
+import common
 import hmisc/core/all
 import std/[options, strutils, sequtils, math, enumutils, sets]
 import hmisc/other/hpprint
-import hmisc/algo/[hlex_base, lexcast]
+import hmisc/algo/[hlex_base, lexcast, clformat]
 
 type
   InstrOperandKind* = enum
@@ -73,24 +74,26 @@ proc selectOpcode*(instr: var InstrDesc) =
           dk == dataKind or
           (dk == opData16_32 and dataKind in {opData16, opData32})
         ):
-          # echov "data:", dataKind, operand.dataKind.get()
           allMatch = false
 
         elif not matchingTarget(operand.target, addrKind):
-          # echov "target:", operand.target, addrKind
           allMatch = false
 
       if allMatch:
         match.incl op.dedupOpcodes()
 
-      # else:
-      #   echov "fail:", op
-
   assert match.len == 1, $match
   instr.opcode = toSeq(match)[0]
 
 proc compileInstr*(instr: InstrDesc): seq[uint8] =
-  discard
+  let opc = instr.opcode
+  if opc.isExtended():
+    echov opc.opIdx()
+    result.add cast[array[2, uint8]](opc.opIdx())
+
+  else:
+    result.add opc.opIdx().uint8()
+
 
 proc enumNames[E: enum](): seq[string] =
   for val in low(E) .. high(E):
@@ -165,10 +168,15 @@ proc parseInstr*(text: string): InstrDesc =
     if op.isSome() and op.get().dataKind.isNone():
       op.get().dataKind = known
 
-  # pprinte result
   selectOpcode(result)
 
-
 startHax()
-pprinte parseInstr("mov al, ah")
-pprinte parseInstr("sub BYTE [eax + 8], 17")
+
+proc test(code: string) =
+  let instr = parseInstr(code)
+  echov code
+  pprinte instr
+  echo hshow(compileInstr(instr), clShowHex)
+
+test("mov al, ah")
+test("sub BYTE [eax + 8], 17")

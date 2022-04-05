@@ -425,9 +425,6 @@ proc code_80*(this: var InstrImpl): void =
     else:
       ERROR("not implemented: 0x80 /%d\\n", this.getModrmReg())
 
-proc code_82*(this: var InstrImpl): void =
-  code_80(this)
-
 proc codeC0*(this: var InstrImpl): void =
   case this.getModrmReg():
     of 4: this.shlRm8Imm8()
@@ -544,8 +541,8 @@ proc initInstrImpl*(r: var InstrImpl, instr: ExecInstr) =
   r.setFuncflag(ICode(0x0f9d), instrbase(setnlRm8),   CHKMODRM)
   r.setFuncflag(ICode(0x0f9e), instrbase(setleRm8),   CHKMODRM)
   r.setFuncflag(ICode(0x0f9f), instrbase(setnleRm8),  CHKMODRM)
-  r.setFuncflag(ICode(0x80),   instrbase(code_80),    CHKMODRM + CHKIMM8)
-  r.setFuncflag(ICode(0x82),   instrbase(code_82),    CHKMODRM + CHKIMM8)
+  r.setFuncflag(ICode(0x80),   instrbase(code80),     CHKMODRM + CHKIMM8)
+  r.setFuncflag(ICode(0x82),   instrbase(code80),     CHKMODRM + CHKIMM8)
   r.setFuncflag(ICode(0xc0),   instrbase(codeC0),     CHKMODRM + CHKIMM8)
   r.setFuncflag(ICode(0xf6),   instrbase(codeF6),     CHKMODRM)
   r.setFuncFlag(ICode(0xfe),   instrbase(codeFE),     CHKMODRM)

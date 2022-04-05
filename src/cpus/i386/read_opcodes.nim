@@ -1,4 +1,6 @@
 import std/parsecsv
+import std/sequtils
+import std/sets
 import std/streams
 import std/tables
 import std/strformat
@@ -54,6 +56,7 @@ var flags = {
 }
 
 var resMnemonics: Table[string, seq[string]]
+var hasModrm, hasMoffs, hasImm8, hasImm16, hasImm32, hasImm16_32: HashSet[string]
 
 while readRow(x):
   var args = ""
@@ -86,25 +89,37 @@ while readRow(x):
 
   let mneName = x.rowEntry("mnemonic")
   let opname = "op" & mneName & args
+
+  if x.rowEntry("moffs") != "": hasMoffs.incl opname
+  if x.rowEntry("modrm") != "": hasModrm.incl opname
+  if x.rowEntry("imm") != "":
+    case x.rowEntry("imm"):
+      of "8": hasImm8.incl opname
+      of "16": hasImm16.incl opname
+      of "32": hasImm32.incl opname
+      of "16/32": hasImm16_32.incl opname
+      else: assert false, "unexpected value of 'immediate' field for " &
+        $x.row
+
   resMnemonics.mgetOrPut(mneName, @[]).add opname
   operands.addf("\n    of $#: [$#]", opname.alignLeft(30), operandsTmp)
 
 
   res.addf(
-    "\n    $# = (0x$#_$#_$#, \"$#\")",
+    "\n    $# = (0x$#_$#_$#'u64, \"$#\")",
     opname.alignLeft(30),
     num[0..1], num[2..3], num[4..5],
     x.rowEntry("mnemonic") & mne,)
 
   assert validIdentifier("a" & args), args & $x.row
 
-
   for _, (name, body) in mpairs(flags):
     body.addf("\n    of $#: set[OpFlagIO]({", opname.alignLeft(30))
     let e = x.rowEntry(name)
     if e notin [""]:
       for ch in e.normalize():
-        if ch != '.':
+        if ch notin {'.', ' '}:
+          # echo x.row, name
           body.addf("$#, ", symbolName(parseEnum[OpFlagIO]($ch)))
 
     body.add "})"
@@ -131,6 +146,57 @@ writeFile(
     "import ./syntaxes, std/options",
     res,
     &"""
+
+func hasModrm*(code: ICode): bool =
+  case code:
+    of { hasModrm.toSeq().join(", ") }:
+      true
+    else:
+      false
+
+func hasMoffs*(code: ICode): bool =
+  case code:
+    of { hasMoffs.toSeq().join(", ") }:
+      true
+
+    else:
+      false
+
+func hasImm8*(code: ICode): bool =
+  case code:
+    of { hasImm8.toSeq().join(", ") }:
+      true
+
+    else:
+      false
+
+func hasImm16*(code: ICode): bool =
+  return false
+  # case code:
+  #   of { hasImm16.toSeq().join(", ") }:
+  #     true
+
+  #   else:
+  #     false
+
+func hasImm16_32*(code: ICode): bool =
+  case code:
+    of { hasImm16_32.toSeq().join(", ") }:
+      true
+
+    else:
+      false
+
+func hasImm32*(code: ICode): bool =
+  return false
+  # case code:
+  #   of { hasImm32.toSeq().join(", ") }:
+  #     true
+
+  #   else:
+  #     false
+
+
 func getTestedFlags*(code: ICode): set[OpFlagIO] =
   case code:{flags[0][1]}
 
@@ -143,3 +209,5 @@ func getModifiedFlags*(code: ICode): set[OpFlagIO] =
 )
 
 execShell shellCmd(nim, check, "instruction/opcodes.nim")
+
+echo "finished"

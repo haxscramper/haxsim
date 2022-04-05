@@ -714,18 +714,18 @@ proc code81*(this: var InstrImpl): void =
     else:
       ERROR("not implemented: 0x81 /%d\\n", this.getModrmReg())
 
-proc code83*(this: var InstrImpl): void =
-  case this.getModrmReg():
-    of 0: this.addRm16Imm8()
-    of 1: this.orRm16Imm8()
-    of 2: this.adcRm16Imm8()
-    of 3: this.sbbRm16Imm8()
-    of 4: this.andRm16Imm8()
-    of 5: this.subRm16Imm8()
-    of 6: this.xorRm16Imm8()
-    of 7: this.cmpRm16Imm8()
-    else:
-      ERROR("not implemented: 0x83 /%d\\n", this.getModrmReg())
+# proc code83*(this: var InstrImpl): void =
+#   case this.getModrmReg():
+#     of 0: this.addRm16Imm8()
+#     of 1: this.orRm16Imm8()
+#     of 2: this.adcRm16Imm8()
+#     of 3: this.sbbRm16Imm8()
+#     of 4: this.andRm16Imm8()
+#     of 5: this.subRm16Imm8()
+#     of 6: this.xorRm16Imm8()
+#     of 7: this.cmpRm16Imm8()
+#     else:
+#       ERROR("not implemented: 0x83 /%d\\n", this.getModrmReg())
 
 proc codeC1*(this: var InstrImpl): void =
   case this.getModrmReg():
@@ -828,10 +828,10 @@ proc initInstrImpl16*(r: var InstrImpl, instr: ExecInstr) =
 
   r.setFuncflag(ICode(0x3d), instr16(cmpAxImm16),       CHKIMM16)
 
-  r.setFuncflag(ICode(0x40), instr16(incR16),           {})
-  r.setFuncflag(ICode(0x48), instr16(decR16),           {})
-  r.setFuncflag(ICode(0x50), instr16(pushR16),          {})
-  r.setFuncflag(ICode(0x58), instr16(popR16),           {})
+  for i in 0 .. 7: r.setFuncflag(ICode(0x40 + i), instr16(incR16), {})
+  for i in 0 .. 7: r.setFuncflag(ICode(0x48 + i), instr16(decR16), {})
+  for i in 0 .. 7: r.setFuncflag(ICode(0x50 + i), instr16(pushR16), {})
+  for i in 0 .. 7: r.setFuncflag(ICode(0x58 + i), instr16(popR16), {})
 
   r.setFuncflag(ICode(0x60), instr16(pusha),            {})
   r.setFuncflag(ICode(0x61), instr16(popa),             {})
@@ -851,7 +851,7 @@ proc initInstrImpl16*(r: var InstrImpl, instr: ExecInstr) =
   r.setFuncflag(ICode(0x8c), instr16(movRm16Sreg),  CHKMODRM)
   r.setFuncflag(ICode(0x8d), instr16(leaR16M16),    CHKMODRM)
 
-  r.setFuncflag(ICode(0x90), instr16(xchgR16Ax),    CHKIMM16)
+  for i in 0 .. 7: r.setFuncflag(ICode(0x90 + i), instr16(xchgR16Ax), CHKIMM16)
 
   r.setFuncflag(ICode(0x98), instr16(cbw),          {})
   r.setFuncflag(ICode(0x99), instr16(cwd),          {})
@@ -908,8 +908,7 @@ proc initInstrImpl16*(r: var InstrImpl, instr: ExecInstr) =
   r.setFuncflag(ICode(0x0fbf), instr16(movsxR16Rm16), CHKMODRM)
 
   r.setFuncflag(ICode(0x81), instr16(code81), CHKMODRM + CHKIMM16)
-
-  r.setFuncflag(ICode(0x83), instr16(code83), CHKMODRM + CHKIMM8)
+  r.setFuncflag(ICode(0x83), instr16(code81), CHKMODRM + CHKIMM8)
 
   r.setFuncflag(ICode(0xc1), instr16(codeC1), CHKMODRM + CHKIMM8)
   r.setFuncflag(ICode(0xd3), instr16(codeD3), CHKMODRM)

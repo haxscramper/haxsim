@@ -5,6 +5,7 @@ import std/strutils
 export strutils
 import hmisc/wrappers/wraphelp
 import hmisc/other/hpprint
+import hmisc/algo/clformat
 export hpprint
 import hmisc/core/all
 export all
@@ -120,6 +121,25 @@ func copymem*[R](
 
 func toBin*(u: uint, size: int): string =
   toBin(u.BiggestInt, size)
+
+func isExtended*(icode: ICode): bool =
+  toBool((icode.uint and 0xF0_FF_FF) and 0x0F_00_00)
+
+const
+  clShowHex* = hdisplay(flags += {dfUseHex, dfSplitNumbers})
+  clShowBin* = hdisplay(flags += {dfUseBin, dfSplitNumbers})
+
+func opIdx*(icode: ICode): uint16 =
+  echov icode, hshow(icode.uint, clShowBin)
+  if isExtended(icode):
+    uint16((icode.uint and 0xFF_FF_00) shr 16)
+
+  else:
+    uint16((icode.uint and 0xFF_00_00) shr 16)
+
+
+func opExt*(icode: ICode): uint8 =
+  uint8(icode.uint and 0x00_00_FF)
 
 func formatOpcode*(code: uint16): string =
   let is2 = toBool(code and 0x0F00)

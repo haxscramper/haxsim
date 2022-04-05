@@ -710,18 +710,18 @@ proc code_81*(this: var InstrImpl): void =
     else:
       ERROR("not implemented: 0x81 /%d\\n", this.getModrmReg())
 
-proc code_83*(this: var InstrImpl): void =
-  case this.getModrmReg():
-    of 0: this.addRm32Imm8()
-    of 1: this.orRm32Imm8()
-    of 2: this.adcRm32Imm8()
-    of 3: this.sbbRm32Imm8()
-    of 4: this.andRm32Imm8()
-    of 5: this.subRm32Imm8()
-    of 6: this.xorRm32Imm8()
-    of 7: this.cmpRm32Imm8()
-    else:
-      ERROR("not implemented: 0x83 /%d\\n", this.getModrmReg())
+# proc code_83*(this: var InstrImpl): void =
+#   case this.getModrmReg():
+#     of 0: this.addRm32Imm8()
+#     of 1: this.orRm32Imm8()
+#     of 2: this.adcRm32Imm8()
+#     of 3: this.sbbRm32Imm8()
+#     of 4: this.andRm32Imm8()
+#     of 5: this.subRm32Imm8()
+#     of 6: this.xorRm32Imm8()
+#     of 7: this.cmpRm32Imm8()
+#     else:
+#       ERROR("not implemented: 0x83 /%d\\n", this.getModrmReg())
 
 proc codeC1*(this: var InstrImpl): void =
   case this.getModrmReg():
@@ -849,7 +849,7 @@ proc initInstrImpl32*(r: var InstrImpl, instr: ExecInstr) =
   r.setFuncflag(ICode(0x8c), instr32(movRm32Sreg), CHKMODRM)
   r.setFuncflag(ICode(0x8d), instr32(leaR32M32), CHKMODRM)
 
-  for i in 0 .. 8: r.setFuncflag(ICode(0x90 + i), instr32(xchgR32Eax), CHKIMM32)
+  for i in 0 .. 7: r.setFuncflag(ICode(0x90 + i), instr32(xchgR32Eax), CHKIMM32)
 
   r.setFuncflag(ICode(0x98), instr32(cwde), {})
   r.setFuncflag(ICode(0x99), instr32(cdq), {})
@@ -908,9 +908,8 @@ proc initInstrImpl32*(r: var InstrImpl, instr: ExecInstr) =
   r.setFuncflag(ICode(0x0fbe), instr32(movsxR32Rm8),  CHKMODRM)
   r.setFuncflag(ICode(0x0fbf), instr32(movsxR32Rm16), CHKMODRM)
 
-  r.setFuncflag(ICode(0x81), instr32(code_81), CHKMODRM + CHKIMM32)
-
-  r.setFuncflag(ICode(0x83), instr32(code_83), CHKMODRM + CHKIMM8)
+  r.setFuncflag(ICode(0x81), instr32(code81), CHKMODRM + CHKIMM32)
+  r.setFuncflag(ICode(0x83), instr32(code81), CHKMODRM + CHKIMM8)
 
   r.setFuncflag(ICode(0xc1), instr32(codeC1), CHKMODRM + CHKIMM8)
   r.setFuncflag(ICode(0xd3), instr32(codeD3), CHKMODRM)

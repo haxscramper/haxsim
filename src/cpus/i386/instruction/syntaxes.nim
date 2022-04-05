@@ -70,11 +70,13 @@ type
     opAddrGRegSI = "SI"
 
     opAddrGRegEAX = "EAX"
-    opAddrGRegEBP = "EBP"
+    opAddrGRegEBX = "EBX"
     opAddrGRegECX = "ECX"
-    opAddrGRegEDI = "EDI"
     opAddrGRegEDX = "EDX"
+    opAddrGRegEDI = "EDI"
+    opAddrGRegEBP = "EBP"
     opAddrGRegESI = "ESI"
+    opAddrGRegESP = "ESP"
 
     opAddrSReg = "SREG"
     opAddrSRegDS = "DS"
@@ -129,11 +131,13 @@ type
     opkGRegDI = "di"
     opkGRegDX = "dx"
     opkGRegEAX = "eax"
-    opkGRegEBP = "ebp"
     opkGRegECX = "ecx"
-    opkGRegEDI = "edi"
     opkGRegEDX = "edx"
+    opkGRegEBX = "ebx"
+    opkGRegEBP = "ebp"
+    opkGRegEDI = "edi"
     opkGRegESI = "esi"
+    opkGRegESP = "esp"
     opkGregSI = "si"
 
     opkImm16 = "imm16"
@@ -213,8 +217,8 @@ func getDataKind*(en: OpKind): OpDataKind =
        opkDTregGDTR, opkDTregIDTR, opkDTregLDTR, opkTR, opkMSW:
       opData16
 
-    of opkGRegEAX, opkGRegEBP, opkGRegECX,
-       opkGRegEDI, opkGREgEDX, opkGRegESI,
+    of opkGRegEAX, opkGRegEBP, opkGRegECX, opkGRegEBX,
+       opkGRegEDI, opkGREgEDX, opkGRegESI, opkGRegESP,
        opkEFlags:
       opData32
 
@@ -272,10 +276,12 @@ func getAddrKind*(en: OpKind): OpAddrKind =
 
     of opkGRegEAX: opAddrGRegEAX
     of opkGRegEBP: opAddrGRegEBP
+    of opkGRegEBX: opAddrGRegEBX
     of opkGRegECX: opAddrGRegECX
     of opkGRegEDI: opAddrGRegEDI
     of opkGRegEDX: opAddrGRegEDX
     of opkGRegESI: opAddrGRegESI
+    of opkGRegESP: opAddrGRegESP
 
     of opkSReg: opAddrSReg
     of opkSRegDS: opAddrSRegDS
