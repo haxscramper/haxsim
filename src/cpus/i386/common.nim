@@ -141,11 +141,14 @@ func opIdx*(icode: ICode): uint16 =
 func opExt*(icode: ICode): uint8 =
   uint8(icode.uint and 0x00_00_FF)
 
-func formatOpcode*(code: uint16): string =
+func toOpcode*(code: uint16, ext: uint8 = 0): ICode =
+  tern(toBool((code and 0xF0_FF) and 0x0F_00),
+       ICode((code.uint64 shl 12) and ext),
+       ICode((code.uint64 shl 16) and ext))
+
+func formatOpcode*(code: uint16, ext: uint8 = 0): string =
   let is2 = toBool(code and 0x0F00)
   "0x$# ($#)" % [
     toHex(code)[^tern(is2, 4, 2) .. ^1],
-    tern(is2,
-         $ICode(code.uint64 shl 12),
-         $ICode(code.uint64 shl 16))
+    $toOpcode(code, ext)
   ]

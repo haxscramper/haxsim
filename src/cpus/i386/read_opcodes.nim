@@ -57,10 +57,12 @@ var flags = {
 
 var resMnemonics: Table[string, seq[string]]
 var hasModrm, hasMoffs, hasImm8, hasImm16, hasImm32, hasImm16_32: HashSet[string]
+var isExtendedOpcode: HashSet[string]
 
 while readRow(x):
   var args = ""
   var mne = ""
+
   let num = align(
     join([
       x.rowEntry("po").toUpper().align(2, padding = '0'),
@@ -89,6 +91,9 @@ while readRow(x):
 
   let mneName = x.rowEntry("mnemonic")
   let opname = "op" & mneName & args
+
+  if x.rowEntry("o") notin ["", "r", "R"]:
+    isExtendedOpcode.incl opname
 
   if x.rowEntry("moffs") != "": hasMoffs.incl opname
   if x.rowEntry("modrm") != "": hasModrm.incl opname
@@ -149,26 +154,18 @@ writeFile(
 
 func hasModrm*(code: ICode): bool =
   case code:
-    of { hasModrm.toSeq().join(", ") }:
-      true
-    else:
-      false
+    of { hasModrm.toSeq().join(", ") }: true
+    else: false
 
 func hasMoffs*(code: ICode): bool =
   case code:
-    of { hasMoffs.toSeq().join(", ") }:
-      true
-
-    else:
-      false
+    of { hasMoffs.toSeq().join(", ") }: true
+    else: false
 
 func hasImm8*(code: ICode): bool =
   case code:
-    of { hasImm8.toSeq().join(", ") }:
-      true
-
-    else:
-      false
+    of { hasImm8.toSeq().join(", ") }: true
+    else: false
 
 func hasImm16*(code: ICode): bool =
   return false
@@ -181,11 +178,13 @@ func hasImm16*(code: ICode): bool =
 
 func hasImm16_32*(code: ICode): bool =
   case code:
-    of { hasImm16_32.toSeq().join(", ") }:
-      true
+    of { hasImm16_32.toSeq().join(", ") }: true
+    else: false
 
-    else:
-      false
+func isExtendedOpcode*(code: ICode): bool =
+   case code:
+     of { isExtendedOpcode.toSeq().join(", ") }: true
+     else: false
 
 func hasImm32*(code: ICode): bool =
   return false

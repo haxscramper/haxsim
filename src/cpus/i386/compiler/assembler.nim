@@ -1,4 +1,4 @@
-import instruction/[opcodes, syntaxes]
+import instruction/[opcodes, syntaxes, instruction]
 import common
 import hmisc/core/all
 import std/[options, strutils, sequtils, math, enumutils, sets]
@@ -28,6 +28,7 @@ type
 
   InstrOperand* = object
     text*: string
+    indirect*: bool
     target*: InstrOperandTarget
     dataKind*: Option[OpDataKind] # made optional for the sake of parsing
     # algorithm that does post-correction after elements are parsed. If
@@ -46,7 +47,12 @@ proc matchingTarget(target: InstrOperandTarget, addrKind: OpAddrKind): bool =
      target.kind in { iokReg8, iokReg16, iokReg32 }:
     result = true
 
-  elif addrKind in { opAddrImm } and target.kind in { iokImmediate }:
+  elif addrKind in { opAddrImm } and
+       target.kind in { iokImmediate }:
+    result = true
+
+  elif addrKind in { opAddrGRegEAX } and
+       target.kind in { iokReg32 }:
     result = true
 
 
@@ -54,6 +60,7 @@ func dedupOpcodes*(code: ICode): ICode =
   case code:
     # https://stackoverflow.com/questions/44335265/difference-between-mov-r-m8-r8-and-mov-r8-r-m8
     of opMOV_Reg_B_RegMem_B: opMOV_RegMem_B_Reg_B
+    of opSUB_Reg_V_RegMem_V: opSUB_RegMem_V_Reg_V
     else: code
 
 
@@ -72,27 +79,90 @@ proc selectOpcode*(instr: var InstrDesc) =
         let dk = operand.dataKind.get()
         if not(
           dk == dataKind or
-          (dk == opData16_32 and dataKind in {opData16, opData32})
+          (dk == opData16_32 and dataKind in { opData16, opData32 }) or
+          (dk == opData16 and dataKind == opData1632) or
+          (dk == opData32 and dataKind == opData1632)
         ):
+          # echov "data:", dk, dataKind
           allMatch = false
 
         elif not matchingTarget(operand.target, addrKind):
+          # echov "target:", operand.target, addrKind
           allMatch = false
 
       if allMatch:
         match.incl op.dedupOpcodes()
 
+      # else:
+      #   echov "fail", op
+
   assert match.len == 1, $match
   instr.opcode = toSeq(match)[0]
 
+proc regCode*(target: InstrOperandTarget): uint8 =
+  case target.kind:
+    of iokReg8: uint8(target.reg8)
+    of iokReg16: uint8(target.reg16)
+    of iokReg32: uint8(target.reg32)
+    else: assert false; 0'u8
+
 proc compileInstr*(instr: InstrDesc): seq[uint8] =
   let opc = instr.opcode
+  # echov "------------"
+  # echov opc
+  # echov opc.hasModrm()
   if opc.isExtended():
     echov opc.opIdx()
     result.add cast[array[2, uint8]](opc.opIdx())
 
   else:
     result.add opc.opIdx().uint8()
+
+  if opc.hasModrm():
+    var rm = ModRM()
+    var trail: seq[EByte]
+    if instr.operands[0].canGet(arg):
+      if arg.indirect:
+        if arg.offset.canGet(offset):
+          if offset in -128 .. +127:
+            rm.mod = modDispByte
+            trail.add cast[EByte](offset.int8)
+
+          else:
+            rm.mod = modDispDWord
+            trail.add cast[array[4, EByte]](offset)
+
+        else:
+          rm.mod = modIndSib
+
+      else:
+        if arg.offset.canGet(offset):
+          assert false
+
+        else:
+          # Register addressing mode - source and target elements are
+          # registers.
+          rm.mod = modRegAddr
+
+      if arg.target.kind in { iokReg8, iokReg16, iokReg32 }:
+        rm.rm = arg.target.regCode()
+
+      if instr.operands[1].canGet(src) and
+         src.target.kind in { iokReg8, iokReg16, iokReg32 }:
+          rm.reg = src.target.regCode()
+
+    if opc.isExtendedOpcode():
+      rm.reg = opc.opExt()
+
+    result.add cast[EByte](rm)
+    result.add trail
+
+  if instr.operands[1].canGet(src):
+    if opc.hasImm8():
+      result.add cast[EByte](src.target.value.uint8)
+
+    elif opc.hasImm16_32():
+      result.add cast[array[2, EByte]](src.target.value.uint16)
 
 
 proc enumNames[E: enum](): seq[string] =
@@ -115,6 +185,7 @@ proc parseOperand*(str: var PosStr): InstrOperand =
 
   var id: string
   if str['[']:
+    result.indirect = true
     str.skip('[')
     id = str.popIdent()
     str.space()
@@ -172,11 +243,18 @@ proc parseInstr*(text: string): InstrDesc =
 
 startHax()
 
-proc test(code: string) =
+proc test(code: string, dbg: bool = false) =
   let instr = parseInstr(code)
-  echov code
-  pprinte instr
+  if dbg:
+    echov code
+    pprinte instr
+
   echo hshow(compileInstr(instr), clShowHex)
 
 test("mov al, ah")
-test("sub BYTE [eax + 8], 17")
+test("sub BYTE [ebx + 8], 17")
+test("sub BYTE [ebx], 17")
+test("sub eax, ebx")
+test("sub eax, ecx")
+test("sub ebx, ebx")
+test("sub ebx, ecx")

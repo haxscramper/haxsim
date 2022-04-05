@@ -318,43 +318,36 @@ proc andRm8Imm8*(this: var InstrImpl): void =
   CPU.eflags.updateAND(rm8, this.imm8.uint8)
 
 proc subRm8Imm8*(this: var InstrImpl): void =
-  var rm8: uint8
-  rm8 = this.exec.getRm8()
+  var rm8: uint8 = this.exec.getRm8()
   this.exec.setRm8(rm8 - this.imm8.uint8)
   CPU.eflags.updateSUB(rm8, this.imm8.uint8)
 
 proc xorRm8Imm8*(this: var InstrImpl): void =
-  var rm8: uint8
-  rm8 = this.exec.getRm8()
+  var rm8: uint8 = this.exec.getRm8()
   this.exec.setRm8(rm8 xor this.imm8.uint8)
 
 proc cmpRm8Imm8*(this: var InstrImpl): void =
-  var rm8: uint8
-  rm8 = this.exec.getRm8()
+  var rm8: uint8 = this.exec.getRm8()
   CPU.eflags.updateSUB(rm8, this.imm8.uint8)
 
 
 proc shlRm8Imm8*(this: var InstrImpl): void =
-  var rm8: uint8
-  rm8 = this.exec.getRm8()
+  var rm8: uint8 = this.exec.getRm8()
   this.exec.setRm8(rm8 shl this.imm8.uint8)
   CPU.eflags.updateSHL(rm8, this.imm8.uint8)
 
 proc shrRm8Imm8*(this: var InstrImpl): void =
-  var rm8: uint8
-  rm8 = this.exec.getRm8()
+  var rm8: uint8 = this.exec.getRm8()
   this.exec.setRm8(rm8 shr this.imm8.uint8)
   CPU.eflags.updateSHR(rm8, this.imm8.uint8)
 
 proc salRm8Imm8*(this: var InstrImpl): void =
-  var rm8S: int8
-  rm8S = this.exec.getRm8().int8()
+  var rm8S: int8 = this.exec.getRm8().int8()
   this.exec.setRm8(uint8(rm8S shl this.imm8))
 
 
 proc sarRm8Imm8*(this: var InstrImpl): void =
-  var rm8S: int8
-  rm8S = this.exec.getRm8().int8
+  var rm8S: int8 = this.exec.getRm8().int8
   this.exec.setRm8(uint8(rm8S shr this.imm8))
 
 
