@@ -724,7 +724,7 @@ func getOpcodes*(code: ICodeMnemonic): seq[ICode] =
 
 func hasModrm*(code: ICode): bool =
   case code:
-    of opADD_RegMem_B_Imm_B, opMOV_CH_B_Imm_B, opSGDT_Mem_P_GDTR_W, opROL_RegMem_V_CL_B, opDIV_EDX_D_EAX_D_RegMem_V, opLTR_TR_W_RegMem_W, opIMUL_Reg_V_RegMem_V_Imm_V, opIMUL_Reg_V_RegMem_V_Imm_B, opDEC_RegMem_B, opCMP_RegMem_V_Imm_V, opLMSW_MSW_W_RegMem_W, opSHR_RegMem_B_Imm_B, opROL_RegMem_V_Imm_B, opSAL_RegMem_V_Imm_B, opOR_Reg_V_RegMem_V, opSMSW_Mem_W_MSW_W, opSIDT_Mem_P_IDTR_W, opMOV_Reg_D_CR_F, opSETBE_RegMem_B, opXOR_RegMem_B_Imm_B, opLLDT_LDTR_W_RegMem_W, opMOV_Reg_B_RegMem_B, opMOVZX_Reg_V_RegMem_W, opCMP_RegMem_B_Imm_B, opMOV_DL_B_Imm_B, opADD_RegMem_V_Reg_V, opCALL_RegMem_V, opTEST_RegMem_V_Reg_V, opINC_RegMem_V, opSETNZ_RegMem_B, opSETNL_RegMem_B, opMOV_RegMem_V_Imm_V, opMOV_DH_B_Imm_B, opXOR_RegMem_B_Reg_B, opINC_RegMem_B, opOR_RegMem_B_Imm_B, opADD_RegMem_V_Imm_V, opDEC_RegMem_V, opLIDT_IDTR_W_Mem_P, opLEA_Reg_V_Mem_V, opMOV_BH_B_Imm_B, opNOT_RegMem_B, opJMP_RegMem_V, opNEG_RegMem_B, opADC_RegMem_V_Imm_V, opJNO_Imm_V, opMOV_BL_B_Imm_B, opSAL_RegMem_B_Imm_B, opSHR_RegMem_V_CL_B, opIDIV_AL_B_AH_B_AX_W_RegMem_B, opAND_RegMem_V_Imm_V, opXCHG_Reg_B_RegMem_B, opMOV_AL_B_Imm_B, opRCL_RegMem_V_Imm_B, opSHL_RegMem_B_Imm_B, opSETNB_RegMem_B, opSAR_RegMem_V_CL_B, opMOV_RegMem_V_Reg_V, opPUSH_RegMem_V, opROL_RegMem_B_Imm_B, opIDIV_EDX_D_EAX_D_RegMem_V, opSAR_RegMem_V_Imm_B, opRCR_RegMem_V_CL_B, opSUB_Reg_B_RegMem_B, opXOR_RegMem_V_Reg_V, opCMP_RegMem_V_Reg_V, opOR_RegMem_V_Imm_V, opTEST_RegMem_B_Imm_B, opMUL_AX_W_AL_B_RegMem_B, opADD_Reg_B_RegMem_B, opSUB_Reg_V_RegMem_V, opRCL_RegMem_B_Imm_B, opMOV_RegMem_B_Reg_B, opSUB_RegMem_B_Reg_B, opSBB_RegMem_V_Imm_V, opSTR_Mem_W_TR_W, opSAR_RegMem_B_Imm_B, opIMUL_Reg_V_RegMem_V, opCALLF_Mem_P, opSETNS_RegMem_B, opTEST_RegMem_V_Imm_V, opRCR_RegMem_B_Imm_B, opSUB_RegMem_V_Reg_V, opRCL_RegMem_V_CL_B, opSETO_RegMem_B, opOR_RegMem_V_Reg_V, opSETNO_RegMem_B, opMOV_SREG_W_RegMem_W, opMOV_Mem_W_SREG_W, opSAL_RegMem_V_CL_B, opADD_Reg_V_RegMem_V, opSHL_RegMem_V_CL_B, opOR_Reg_B_RegMem_B, opROR_RegMem_V_CL_B, opXOR_Reg_V_RegMem_V, opDIV_AL_B_AH_B_AX_W_RegMem_B, opTEST_RegMem_B_Reg_B, opLGDT_GDTR_W_Mem_P, opSHL_RegMem_V_Imm_B, opNOT_RegMem_V, opVERR_RegMem_W, opVERW_RegMem_W, opSETL_RegMem_B, opAND_Reg_B_RegMem_B, opSUB_RegMem_B_Imm_B, opSLDT_Mem_W_LDTR_W, opADC_RegMem_B_Imm_B, opSETLE_RegMem_B, opAND_RegMem_B_Reg_B, opMOVSX_Reg_V_RegMem_B, opSHR_RegMem_V_Imm_B, opXOR_Reg_B_RegMem_B, opAND_Reg_V_RegMem_V, opSETZ_RegMem_B, opRCR_RegMem_V_Imm_B, opSETS_RegMem_B, opROR_RegMem_B_Imm_B, opMOVZX_Reg_V_RegMem_B, opXCHG_Reg_V_RegMem_V, opJMPF_Mem_P, opAND_RegMem_V_Reg_V, opSUB_RegMem_V_Imm_V, opMOV_CL_B_Imm_B, opSBB_RegMem_B_Imm_B, opMOVSX_Reg_V_RegMem_W, opMOV_AH_B_Imm_B, opXOR_RegMem_V_Imm_V, opNEG_RegMem_V, opAND_RegMem_B_Imm_B, opSETP_RegMem_B, opSETNLE_RegMem_B, opIMUL_AX_W_AL_B_RegMem_B, opSETNBE_RegMem_B, opMUL_EDX_D_EAX_D_RegMem_V, opIMUL_EDX_D_EAX_D_RegMem_V, opSETB_RegMem_B, opSETNP_RegMem_B, opADD_RegMem_B_Reg_B, opROR_RegMem_V_Imm_B, opMOV_CR_F_Reg_D, opMOV_Reg_V_RegMem_V: true
+    of opADD_RegMem_B_Imm_B, opDIV_EDX_D_EAX_D_RegMem_V, opSGDT_Mem_P_GDTR_W, opROL_RegMem_V_CL_B, opLTR_TR_W_RegMem_W, opIMUL_Reg_V_RegMem_V_Imm_V, opIMUL_Reg_V_RegMem_V_Imm_B, opDEC_RegMem_B, opCMP_RegMem_V_Imm_V, opLMSW_MSW_W_RegMem_W, opSHR_RegMem_B_Imm_B, opROL_RegMem_V_Imm_B, opSAL_RegMem_V_Imm_B, opOR_Reg_V_RegMem_V, opSMSW_Mem_W_MSW_W, opSIDT_Mem_P_IDTR_W, opMOV_Reg_D_CR_F, opSETBE_RegMem_B, opXOR_RegMem_B_Imm_B, opLLDT_LDTR_W_RegMem_W, opMOV_Reg_B_RegMem_B, opMOVZX_Reg_V_RegMem_W, opCMP_RegMem_B_Imm_B, opADD_RegMem_V_Reg_V, opCALL_RegMem_V, opTEST_RegMem_V_Reg_V, opINC_RegMem_V, opSETNZ_RegMem_B, opSETNL_RegMem_B, opMOV_RegMem_V_Imm_V, opXOR_RegMem_B_Reg_B, opINC_RegMem_B, opOR_RegMem_B_Imm_B, opADD_RegMem_V_Imm_V, opDEC_RegMem_V, opLIDT_IDTR_W_Mem_P, opLEA_Reg_V_Mem_V, opNOT_RegMem_B, opJMP_RegMem_V, opNEG_RegMem_B, opADC_RegMem_V_Imm_V, opJNO_Imm_V, opSHR_RegMem_V_CL_B, opSAL_RegMem_B_Imm_B, opIDIV_AL_B_AH_B_AX_W_RegMem_B, opAND_RegMem_V_Imm_V, opXCHG_Reg_B_RegMem_B, opRCL_RegMem_V_Imm_B, opSHL_RegMem_B_Imm_B, opSETNB_RegMem_B, opSAR_RegMem_V_CL_B, opMOV_RegMem_V_Reg_V, opPUSH_RegMem_V, opROL_RegMem_B_Imm_B, opIDIV_EDX_D_EAX_D_RegMem_V, opSAR_RegMem_V_Imm_B, opRCR_RegMem_V_CL_B, opSUB_Reg_B_RegMem_B, opXOR_RegMem_V_Reg_V, opCMP_RegMem_V_Reg_V, opOR_RegMem_V_Imm_V, opTEST_RegMem_B_Imm_B, opMUL_AX_W_AL_B_RegMem_B, opADD_Reg_B_RegMem_B, opSUB_Reg_V_RegMem_V, opRCL_RegMem_B_Imm_B, opMOV_RegMem_B_Reg_B, opSUB_RegMem_B_Reg_B, opSBB_RegMem_V_Imm_V, opSTR_Mem_W_TR_W, opSAR_RegMem_B_Imm_B, opIMUL_Reg_V_RegMem_V, opCALLF_Mem_P, opSETNS_RegMem_B, opTEST_RegMem_V_Imm_V, opRCR_RegMem_B_Imm_B, opSUB_RegMem_V_Reg_V, opRCL_RegMem_V_CL_B, opSETO_RegMem_B, opMOV_RegMem_B_Imm_B, opOR_RegMem_V_Reg_V, opSETNO_RegMem_B, opMOV_SREG_W_RegMem_W, opMOV_Mem_W_SREG_W, opSAL_RegMem_V_CL_B, opADD_Reg_V_RegMem_V, opSHL_RegMem_V_CL_B, opOR_Reg_B_RegMem_B, opROR_RegMem_V_CL_B, opXOR_Reg_V_RegMem_V, opDIV_AL_B_AH_B_AX_W_RegMem_B, opTEST_RegMem_B_Reg_B, opLGDT_GDTR_W_Mem_P, opSHL_RegMem_V_Imm_B, opNOT_RegMem_V, opVERR_RegMem_W, opVERW_RegMem_W, opSETL_RegMem_B, opAND_Reg_B_RegMem_B, opSUB_RegMem_B_Imm_B, opSLDT_Mem_W_LDTR_W, opADC_RegMem_B_Imm_B, opSETLE_RegMem_B, opAND_RegMem_B_Reg_B, opMOVSX_Reg_V_RegMem_B, opSHR_RegMem_V_Imm_B, opXOR_Reg_B_RegMem_B, opAND_Reg_V_RegMem_V, opSETZ_RegMem_B, opRCR_RegMem_V_Imm_B, opSETS_RegMem_B, opROR_RegMem_B_Imm_B, opMOVZX_Reg_V_RegMem_B, opXCHG_Reg_V_RegMem_V, opJMPF_Mem_P, opAND_RegMem_V_Reg_V, opSUB_RegMem_V_Imm_V, opSBB_RegMem_B_Imm_B, opMOVSX_Reg_V_RegMem_W, opXOR_RegMem_V_Imm_V, opNEG_RegMem_V, opAND_RegMem_B_Imm_B, opSETP_RegMem_B, opSETNLE_RegMem_B, opIMUL_AX_W_AL_B_RegMem_B, opSETNBE_RegMem_B, opMUL_EDX_D_EAX_D_RegMem_V, opIMUL_EDX_D_EAX_D_RegMem_V, opSETB_RegMem_B, opSETNP_RegMem_B, opADD_RegMem_B_Reg_B, opROR_RegMem_V_Imm_B, opMOV_CR_F_Reg_D, opMOV_Reg_V_RegMem_V: true
     else: false
 
 func hasMoffs*(code: ICode): bool =
@@ -734,7 +734,7 @@ func hasMoffs*(code: ICode): bool =
 
 func hasImm8*(code: ICode): bool =
   case code:
-    of opJNZ_Imm_B, opADD_RegMem_B_Imm_B, opMOV_CH_B_Imm_B, opIMUL_Reg_V_RegMem_V_Imm_B, opJL_Imm_B, opROL_RegMem_V_Imm_B, opSAL_RegMem_V_Imm_B, opOUT_Imm_B_EAX_D, opJNO_Imm_B, opJZ_Imm_B, opJC_Imm_B, opJS_Imm_B, opJP_Imm_B, opXOR_RegMem_B_Imm_B, opJO_Imm_B, opJNL_Imm_B, opJNP_Imm_B, opOUT_Imm_B_AL_B, opJG_Imm_B, opCMP_RegMem_B_Imm_B, opMOV_DL_B_Imm_B, opINT_Imm_B_EFLAGS_D, opSHL_RegMem_V_Imm_B, opMOV_DH_B_Imm_B, opOR_RegMem_B_Imm_B, opSUB_RegMem_B_Imm_B, opADD_AL_B_Imm_B, opADC_RegMem_B_Imm_B, opMOV_BH_B_Imm_B, opJBE_Imm_B, opTEST_AL_B_Imm_B, opSHR_RegMem_V_Imm_B, opMOV_BL_B_Imm_B, opIN_AL_B_Imm_B, opJLE_Imm_B, opMOV_AL_B_Imm_B, opAND_AL_B_Imm_B, opRCL_RegMem_V_Imm_B, opRCR_RegMem_V_Imm_B, opOR_AL_B_Imm_B, opMOV_CL_B_Imm_B, opJNC_Imm_B, opSBB_RegMem_B_Imm_B, opSAR_RegMem_V_Imm_B, opJMP_Imm_B, opJNBE_Imm_B, opMOV_AH_B_Imm_B, opJNS_Imm_B, opAND_RegMem_B_Imm_B, opSUB_AL_B_Imm_B, opCMP_AL_B_Imm_B, opPUSH_Imm_B, opROR_RegMem_V_Imm_B: true
+    of opJNZ_Imm_B, opADD_RegMem_B_Imm_B, opMOV_CH_B_Imm_B, opIMUL_Reg_V_RegMem_V_Imm_B, opJL_Imm_B, opROL_RegMem_V_Imm_B, opSAL_RegMem_V_Imm_B, opOUT_Imm_B_EAX_D, opJNO_Imm_B, opMOV_RegMem_B_Imm_B, opJZ_Imm_B, opJC_Imm_B, opJS_Imm_B, opJP_Imm_B, opXOR_RegMem_B_Imm_B, opJO_Imm_B, opJNL_Imm_B, opJNP_Imm_B, opOUT_Imm_B_AL_B, opJG_Imm_B, opCMP_RegMem_B_Imm_B, opMOV_DL_B_Imm_B, opINT_Imm_B_EFLAGS_D, opSHL_RegMem_V_Imm_B, opMOV_DH_B_Imm_B, opOR_RegMem_B_Imm_B, opSUB_RegMem_B_Imm_B, opADD_AL_B_Imm_B, opADC_RegMem_B_Imm_B, opMOV_BH_B_Imm_B, opJBE_Imm_B, opTEST_AL_B_Imm_B, opSHR_RegMem_V_Imm_B, opMOV_BL_B_Imm_B, opIN_AL_B_Imm_B, opJLE_Imm_B, opMOV_AL_B_Imm_B, opAND_AL_B_Imm_B, opRCL_RegMem_V_Imm_B, opRCR_RegMem_V_Imm_B, opOR_AL_B_Imm_B, opMOV_CL_B_Imm_B, opJNC_Imm_B, opSBB_RegMem_B_Imm_B, opSAR_RegMem_V_Imm_B, opJMP_Imm_B, opJNBE_Imm_B, opMOV_AH_B_Imm_B, opJNS_Imm_B, opAND_RegMem_B_Imm_B, opSUB_AL_B_Imm_B, opCMP_AL_B_Imm_B, opPUSH_Imm_B, opROR_RegMem_V_Imm_B: true
     else: false
 
 func hasImm16*(code: ICode): bool =
@@ -1584,19 +1584,22 @@ func getUsedOperands*(code: ICode): array[4, Option[(OpAddrKind, OpDataKind)]] =
     AdMem = opAddrMem
     AdRegMem = opAddrRegMem
     AdA = opAddrPtr
-    AdAX = opAddrGRegAX
     AdAH = opAddrGRegAH
     AdAL = opAddrGRegAL
+    AdAX = opAddrGRegAX
     AdCH = opAddrGRegCH
-    AdDH = opAddrGRegDH
-    AdDI = opAddrGRegDI
-    AdDL = opAddrGRegDL
-    AdBL = opAddrGRegBL
-    AdDX = opAddrGRegDX
-    AdBP = opAddrGRegBP
-    AdBH = opAddrGRegBH
     AdCL = opAddrGRegCL
+    AdCX = opAddrGRegCX
     AdSI = opAddrGRegSI
+    AdDI = opAddrGRegDI
+    AdBP = opAddrGRegBP
+    AdSP = opAddrGRegSP
+    AdDL = opAddrGRegDL
+    AdDH = opAddrGRegDH
+    AdDX = opAddrGRegDX
+    AdBL = opAddrGRegBL
+    AdBH = opAddrGRegBH
+    AdBX = opAddrGRegBX
     AdEAX = opAddrGRegEAX
     AdEBX = opAddrGRegEBX
     AdECX = opAddrGRegECX
@@ -1608,7 +1611,6 @@ func getUsedOperands*(code: ICode): array[4, Option[(OpAddrKind, OpDataKind)]] =
     AdSREG = opAddrSReg
     AdDS = opAddrSRegDS
     AdES = opAddrSRegES
-    AdCX = opAddrSRegCX
     AdFS = opAddrSRegFS
     AdCS = opAddrSRegCS
     AdGS = opAddrSRegGS

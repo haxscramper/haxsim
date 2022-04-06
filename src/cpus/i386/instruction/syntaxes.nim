@@ -95,7 +95,7 @@ type
     opAddrSReg = "SREG"
     opAddrSRegDS = "DS"
     opAddrSRegES = "ES"
-    opAddrSRegCX = "CX"
+    # opAddrSRegCX = "CX"
     opAddrSRegFS = "FS"
     opAddrSRegCS = "CS"
     opAddrSRegGS = "GS"
@@ -188,6 +188,7 @@ type
     opkGRegDX = "dx"
     opkGRegBL = "bl"
     opkGRegCH = "ch"
+    opkGRegCX = "cx"
     opkGRegDH = "dh"
     opkGRegBH = "bh"
 
@@ -230,7 +231,6 @@ type
     opkRel8 = "rel8"
 
     opkSRegCS = "cs"
-    opkSRegCX = "cx"
     opkSRegDS = "ds"
     opkSRegES = "es"
     opkSRegFS = "fs"
@@ -275,7 +275,7 @@ func getDataKind*(en: OpKind): OpDataKind =
       opData8
 
     of opkGRegAX, opkSRegDS, opkGregDX, opkGRegBP, opkSRegES, opkSRegCS,
-       opkSRegFS, opkSRegCX,
+       opkSRegFS, opkGRegCX,
        opkDTregGDTR, opkDTregIDTR, opkDTregLDTR, opkTR, opkMSW:
       opData16
 
@@ -355,7 +355,7 @@ func getAddrKind*(en: OpKind): OpAddrKind =
     of opkSReg: opAddrSReg
     of opkSRegDS: opAddrSRegDS
     of opkSRegES: opAddrSRegES
-    of opkSRegCX: opAddrSRegCX
+    of opkGRegCX: opAddrGRegCX
     of opkSRegFS: opAddrSRegFS
     of opkSRegCS: opAddrSRegCS
     of opkGRegCL: opAddrGRegCL

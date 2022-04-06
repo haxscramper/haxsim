@@ -103,7 +103,10 @@ proc matchingTarget(given: InstrOperand, expect: OpAddrKind): bool =
 
 let
   opMoreSpecialized* = toTable({
-    opMOV_EAX_D_Imm_V: opMOV_RegMem_V_Imm_V
+    # Map from more specialied instructions into their generalized
+    # counterparts.
+    opMOV_EAX_D_Imm_V: opMOV_RegMem_V_Imm_V,
+    opMOV_AH_B_Imm_B: opMOV_RegMem_B_Imm_B
   })
 
 func dedupOpcodes*(code: ICode): ICode =
@@ -192,7 +195,7 @@ proc selectOpcode*(instr: var InstrDesc) =
   for item in match:
     if item in opMoreSpecialized and
        opMoreSpecialized[item] in match:
-      toRemove.add item
+      toRemove.add opMoreSpecialized[item]
 
   for item in toRemove:
     match.excl item
