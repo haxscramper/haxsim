@@ -1,6 +1,4 @@
 import hardware/[processor, eflags]
-import std/tables
-import instruction/opcodes
 import common
 import emulator/[emulator, access]
 

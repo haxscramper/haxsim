@@ -1,4 +1,3 @@
-import common
 type
   IRQ* {.inheritable.} = ref object
     intr*: bool

@@ -1,7 +1,7 @@
 import instruction/[opcodes, syntaxes, instruction]
 import common
 import hmisc/core/all
-import std/[options, strutils, sequtils, math, enumutils, sets]
+import std/[options, strutils, sequtils, math, enumutils, sets, tables]
 import hmisc/other/hpprint
 import hmisc/algo/[hlex_base, lexcast, clformat]
 
@@ -10,6 +10,7 @@ type
     iokReg8
     iokReg16
     iokReg32
+    iokOffset
     iokImmediate
 
   InstrOperandTarget* = object
@@ -26,6 +27,10 @@ type
       of iokImmediate:
         value*: int
 
+      of iokOffset:
+        section*: string
+        offset*: int
+
   InstrOperand* = object
     text*: string
     indirect*: bool
@@ -41,63 +46,171 @@ type
     opcode*: ICode
     operands*: array[4, Option[InstrOperand]]
 
+type
+  InstrParseError* = object of CatchableError
 
-proc matchingTarget(target: InstrOperandTarget, addrKind: OpAddrKind): bool =
-  if addrKind in { opAddrReg, opAddrRegMem } and
-     target.kind in { iokReg8, iokReg16, iokReg32 }:
-    result = true
 
-  elif addrKind in { opAddrImm } and
-       target.kind in { iokImmediate }:
-    result = true
+  InstrErrorOperands* = object of InstrParseError
 
-  elif addrKind in { opAddrGRegEAX } and
-       target.kind in { iokReg32 }:
-    result = true
 
+proc matchingTarget(given: InstrOperand, expect: OpAddrKind): bool =
+  let k = given.target.kind
+  let t = given.target
+  const regs = { iokReg8, iokReg16, iokReg32 }
+  case expect:
+    of opAddrReg:
+      if k in regs:
+        result = not given.indirect
+
+    of opAddrRegMem:
+      if k in regs:
+        result = true
+
+    of opAddrImm:
+      result = k in { iokImmediate }
+
+    of opAddr32Kinds:
+      result = k == iokReg32 and t.reg32 == opAddrToReg32[expect].get()
+
+    of opAddr16Kinds:
+      result = k == iokReg16 and t.reg16 == opAddrToReg16[expect].get()
+
+    of opAddr8Kinds:
+      result = k == iokReg8 and t.reg8 == opAddrToReg8[expect].get()
+
+    of opAddrOffs:
+      result = k == iokOffset
+
+    else:
+      assert false, $expect.symbolName()
+
+  # if (
+  #   (expect in { opAddrReg } and not given.indirect) or
+  #   (expect in { opAddrRegMem } and operand.indirect)
+  # ) and k in { iokReg8, iokReg16, iokReg32 }:
+  #   result = true
+
+  # elif expect in { opAddrImm } and
+  #      tk in { iokImmediate }:
+  #   result = true
+
+  # elif expect in { opAddrGRegEAX } and
+  #      tk in { iokReg32 }:
+  #   result = true
+
+  # echov tk, expect, result
+
+
+let
+  opMoreSpecialized* = toTable({
+    opMOV_EAX_D_Imm_V: opMOV_RegMem_V_Imm_V
+  })
 
 func dedupOpcodes*(code: ICode): ICode =
   case code:
     # https://stackoverflow.com/questions/44335265/difference-between-mov-r-m8-r8-and-mov-r8-r-m8
     of opMOV_Reg_B_RegMem_B: opMOV_RegMem_B_Reg_B
     of opSUB_Reg_V_RegMem_V: opSUB_RegMem_V_Reg_V
+    # of opMov_Reg_B_RegMem_B: opMov_RegMem_B_Reg_B
+    # of opMOV_Reg_V_Imm_V: opMOV_EAX_D_Imm_V
     else: code
 
+func `$`*(instr: InstrOperandTarget): string =
+  case instr.kind:
+    of iokReg8: "R8:" & $instr.reg8
+    of iokReg16: "R16:" & $instr.reg16
+    of iokReg32: "R32:" & $instr.reg32
+    of iokImmediate: "M:" & $instr.value
+    of iokOffset: "O:" & $instr.value
+
+func `$`*(instr: InstrOperand): string =
+  "[$# k:$# ind:$#$#]" % [
+    $instr.target,
+    tern(?instr.dataKind, $instr.dataKind.get(), "?"),
+    $instr.indirect,
+    tern(?instr.offset, "+" & $instr.offset.get(), "")
+  ]
+
+func formatKind*(k: OpDataKind): string =
+  case k:
+    of opFlag: "F (flag)"
+    of opData1616_32_32: "A"
+    of opData8: "B (Byte)"
+    of opData16: "W (Word)"
+    of opData32: "D (DWord)"
+    of opData16_32: "V (16/32)"
+    of opData48: "P (48)"
 
 proc selectOpcode*(instr: var InstrDesc) =
   var match: HashSet[ICode]
   let giveLen = instr.operands.mapIt(tern(it.isSome(), 1, 0)).sum()
-  echov instr.mnemonic.symbolName()
+  var failures: seq[(ICode, string)]
   for op in instr.mnemonic.getOpcodes():
-    let args = op.getUsedOperands()
-    let argsLen = args.mapIt(tern(it.isSome(), 1, 0)).sum()
-    if giveLen == argsLen:
+    let expected = op.getUsedOperands()
+    let expectedLen = expected.mapIt(tern(it.isSome(), 1, 0)).sum()
+    if giveLen == expectedLen:
       var allMatch = true
+      var failDesc: seq[string]
       for idx in 0 ..< giveLen:
-        let (addrKind, dataKind) = args[idx].get()
-        let operand = instr.operands[idx].get()
-        let dk = operand.dataKind.get()
+        if not allMatch:
+          continue
+
+        let (expectAddr, expectData) = expected[idx].get()
+        let given = instr.operands[idx].get()
+        let givenData = given.dataKind.get()
         if not(
-          dk == dataKind or
-          (dk == opData16_32 and dataKind in { opData16, opData32 }) or
-          (dk == opData16 and dataKind == opData1632) or
-          (dk == opData32 and dataKind == opData1632)
+          givenData == expectData or
+          (givenData == opData16_32 and expectData in { opData16, opData32 }) or
+          (givenData == opData16 and expectData == opData1632) or
+          (givenData == opData32 and expectData == opData1632)
         ):
-          # echov "data:", dk, dataKind
+          failDesc.add format(
+            "Data kind mismatch - wanted '$#' for '$#', but got '$#'",
+            $expectData.formatKind().toGreen(), idx,
+            $givenData.formatKind().toRed())
+
           allMatch = false
 
-        elif not matchingTarget(operand.target, addrKind):
-          # echov "target:", operand.target, addrKind
+        elif not matchingTarget(given, expectAddr):
+          failDesc.add format(
+            "Target mismatch - wanted '$#' for '$#', but got '$#'",
+            $toGreen($expectAddr), idx, $toRed($given))
+
           allMatch = false
 
       if allMatch:
         match.incl op.dedupOpcodes()
 
-      # else:
-      #   echov "fail", op
+      else:
+        failures.add(op, failDesc.join("\n"))
 
-  assert match.len == 1, $match
-  instr.opcode = toSeq(match)[0]
+  # Some instructions have more specialized versions implemented - for
+  # example general `mov r/m16/32 imm16/32` can be encoded using operand
+  # `C6`, but if target register is `EAX`, then it is an `B8`. I think some
+  # of these alternative encodings are redundant.
+  var toRemove: seq[ICode]
+  for item in match:
+    if item in opMoreSpecialized and
+       opMoreSpecialized[item] in match:
+      toRemove.add item
+
+  for item in toRemove:
+    match.excl item
+
+  if match.len == 0:
+    # No possible matches most likely indicates error in the user input code.
+    raise newException(
+      InstrErrorOperands, "No matching code for $# - alternatives:\n$#" % [
+        $instr.mnemonic,
+        failures.mapIt("$#:\n$#" % [
+          $toUpperAscii($it[0]).toYellow(),
+          it[1].indent(2)]).join("\n").indent(2)
+      ])
+
+  else:
+
+    assert match.len == 1, $match
+    instr.opcode = toSeq(match)[0]
 
 proc regCode*(target: InstrOperandTarget): uint8 =
   case target.kind:
@@ -251,10 +364,11 @@ proc test(code: string, dbg: bool = false) =
 
   echo hshow(compileInstr(instr), clShowHex)
 
-test("mov al, ah")
-test("sub BYTE [ebx + 8], 17")
-test("sub BYTE [ebx], 17")
-test("sub eax, ebx")
-test("sub eax, ecx")
-test("sub ebx, ebx")
-test("sub ebx, ecx")
+when isMainModule:
+  test("mov al, ah")
+  test("sub BYTE [ebx + 8], 17")
+  test("sub BYTE [ebx], 17")
+  test("sub eax, ebx")
+  test("sub eax, ecx")
+  test("sub ebx, ebx")
+  test("sub ebx, ecx")

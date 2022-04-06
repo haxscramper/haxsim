@@ -249,33 +249,38 @@ proc set_command*(this: var PIC, v: uint8): void =
 
 proc set_data*(this: var PIC, v: uint8): void =
   if this.init_icn > 0:
+    var done = false
     case preInc(this.init_icn):
       of 2:
         this.ic2.raw = v
         INFO(2, "ic2 : 0x%04x", v)
         if this.ic1.SNGL.toBool():
-          {.warning: "[FIXME] 'cxx_goto done'".}
+          done = true
 
-        return
+        else:
+          return
       of 3:
         this.ic3.raw = v
         INFO(2, "ic3 : 0x%04x", v)
         if not(this.ic1.IC4).toBool():
-          {.warning: "[FIXME] 'cxx_goto done'".}
+          done = true
 
-        return
+        else:
+          return
+
       of 4:
         this.ic4.raw = v
-        INFO(2, "ic4 : 0x%04x", v)
+        done = true
 
       else:
-        block done:
-          this.init_icn = 0
+        done = true
 
-        for i in 0 ..< MAX_IRQ:
-          if this.irq[i].toBool():
-            {.warning: "[FIXME] 'this.irq[i][].chk_intreq()'".}
+    if done:
+      this.init_icn = 0
 
+      for i in 0 ..< MAX_IRQ:
+        if this.irq[i].toBool():
+          discard this.irq[i].chkIntreq()
 
   else:
     this.imr = not(v)

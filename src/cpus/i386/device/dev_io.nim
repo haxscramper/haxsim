@@ -1,6 +1,5 @@
 import common
 import hardware/memory
-import std/lenientops
 
 type
   PortIO* = object

@@ -1,4 +1,5 @@
-import std/enumutils
+import std/[enumutils, options, tables]
+import hmisc/core/all
 
 type
   Reg32T* = enum
@@ -54,20 +55,33 @@ type
     opAddrImm1 = "One"
     opAddrImm3 = "Three"
 
-    opAddrImm = "Imm"
-    opAddrReg = "Reg"
-    opAddrMem = "Mem"
-    opAddrRegMem = "RegMem"
+    opAddrImm = "Imm" ## Immediate value operand
+    opAddrOffs = "Offs" ## Offset from section start
+    opAddrReg = "Reg" ## Register
+    opAddrMem = "Mem" ## Memory location
+    opAddrRegMem = "RegMem" ## Register or indirect register
     opAddrPtr = "A"
 
-    opAddrGRegAX = "AX"
     opAddrGRegAH = "AH"
     opAddrGRegAL = "AL"
-    opAddrGRegDI = "DI"
-    opAddrGRegDX = "DX"
-    opAddrGRegBP = "BP"
+    opAddrGRegAX = "AX"
+
+    opAddrGRegCH = "CH"
     opAddrGRegCL = "CL"
+    opAddrGRegCX = "CX"
+
     opAddrGRegSI = "SI"
+    opAddrGRegDI = "DI"
+    opAddrGRegBP = "BP"
+    opAddrGRegSP = "SP"
+
+    opAddrGRegDL = "DL"
+    opAddrGRegDH = "DH"
+    opAddrGRegDX = "DX"
+
+    opAddrGRegBL = "BL"
+    opAddrGRegBH = "BH"
+    opAddrGRegBX = "BX"
 
     opAddrGRegEAX = "EAX"
     opAddrGRegEBX = "EBX"
@@ -99,6 +113,47 @@ type
     opAddrStack = "STACK"
     opAddrEflags = "EFLAGS"
 
+const
+  opAddrToReg8* = toSparseMapArray({
+    opAddrGregAL: AL,
+    opAddrGregCL: CL,
+    opAddrGregDL: DL,
+    opAddrGregBL: BL,
+    opAddrGregAH: AH,
+    opAddrGregCH: CH,
+    opAddrGregDH: DH,
+    opAddrGregBH: BH,
+  })
+
+
+  opAddrToReg16* = toSparseMapArray({
+    opAddrGregAX: AX,
+    opAddrGregCX: CX,
+    opAddrGregDX: DX,
+    opAddrGregBX: BX,
+    opAddrGregSP: SP,
+    opAddrGregBP: BP,
+    opAddrGregSI: SI,
+    opAddrGregDI: DI,
+  })
+
+  opAddrToReg32* = toSparseMapArray({
+    opAddrGregEAX: EAX,
+    opAddrGregECX: ECX,
+    opAddrGregEDX: EDX,
+    opAddrGregEBX: EBX,
+    opAddrGregESP: ESP,
+    opAddrGregEBP: EBP,
+    opAddrGregESI: ESI,
+    opAddrGregEDI: EDI,
+  })
+
+  opAddr8Kinds* = toKeySet(opAddrToReg8)
+  opAddr16Kinds* = toKeySet(opAddrToReg16)
+  opAddr32Kinds* = toKeySet(opAddrToReg32)
+
+
+type
   OpDataKind* = enum
     opFlag = "F"
 
@@ -125,11 +180,17 @@ type
 
     opkGRegAH = "ah"
     opkGRegAL = "al"
+    opkGRegDL = "dl"
+    opkGRegCL = "cl"
     opkGRegAX = "ax"
     opkGRegBP = "bp"
-    opkGRegCL = "cl"
     opkGRegDI = "di"
     opkGRegDX = "dx"
+    opkGRegBL = "bl"
+    opkGRegCH = "ch"
+    opkGRegDH = "dh"
+    opkGRegBH = "bh"
+
     opkGRegEAX = "eax"
     opkGRegECX = "ecx"
     opkGRegEDX = "edx"
@@ -209,7 +270,8 @@ func getDataKind*(en: OpKind): OpDataKind =
       opData16
 
     of opkReg32, opkMem32: opData32
-    of opkGRegAH, opkGRegAL, opkGRegCL, opkSRegGS, opkSRegSS:
+    of opkGRegAH, opkGRegAL, opkGRegCL, opkSRegGS, opkSRegSS,
+       opkGRegDL, opkGRegBL, opkGRegCH, opkGRegDH, opkGRegBH:
       opData8
 
     of opkGRegAX, opkSRegDS, opkGregDX, opkGRegBP, opkSRegES, opkSRegCS,
@@ -241,9 +303,11 @@ func getDataKind*(en: OpKind): OpDataKind =
 func getAddrKind*(en: OpKind): OpAddrKind =
   case en:
     of opkImm16_32, opkImm8, opkImm16,
-       opkRel16_32, opkRel8,
-       opkMoffs8, opkMoffs16_32:
+       opkRel16_32, opkRel8:
       opAddrImm
+
+    of opkMoffs8, opkMoffs16_32:
+      opAddrOffs
 
     of opkExec1:
       opAddrImm1
@@ -268,11 +332,16 @@ func getAddrKind*(en: OpKind): OpAddrKind =
 
     of opkGRegAH: opAddrGRegAH
     of opkGRegAL: opAddrGRegAL
+    of opkGRegCH: opAddrGRegCH
     of opkGRegAX: opAddrGRegAX
     of opkGRegDX: opAddrGRegDX
     of opkGRegBP: opAddrGRegBP
     of opkGRegDI: opAddrGRegDI
+    of opkGRegDL: opAddrGRegDL
+    of opkGRegBL: opAddrGRegBL
     of opkGRegSI: opAddrGregSI
+    of opkGRegDH: opAddrGregDH
+    of opkGRegBH: opAddrGregBH
 
     of opkGRegEAX: opAddrGRegEAX
     of opkGRegEBP: opAddrGRegEBP

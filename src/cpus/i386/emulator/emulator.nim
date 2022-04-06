@@ -3,7 +3,6 @@ import hmisc/core/all
 import access
 import interrupt
 import ui
-import std/with
 import hardware/[
   io,
   memory,

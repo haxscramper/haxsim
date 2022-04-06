@@ -131,6 +131,7 @@ while readRow(x):
 
 res.add """
 
+
   ICodeMnemonic* = enum"""
 
 for mne, impl in resMnemonics:

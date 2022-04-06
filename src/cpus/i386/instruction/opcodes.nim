@@ -248,10 +248,10 @@ type
     opPOPFD_EFLAGS_D               = (0x9D_00_00'u64, "POPFD EFlags")
     opSAHF_AH_B                    = (0x9E_00_00'u64, "SAHF AH")
     opLAHF_AH_B                    = (0x9F_00_00'u64, "LAHF AH")
-    opMOV_AL_B_Imm_B               = (0xA0_00_00'u64, "MOV AL moffs8")
-    opMOV_EAX_D_Imm_V              = (0xA1_00_00'u64, "MOV eAX moffs16/32")
-    opMOV_Imm_B_AL_B               = (0xA2_00_00'u64, "MOV moffs8 AL")
-    opMOV_Imm_V_EAX_D              = (0xA3_00_00'u64, "MOV moffs16/32 eAX")
+    opMOV_AL_B_Offs_B              = (0xA0_00_00'u64, "MOV AL moffs8")
+    opMOV_EAX_D_Offs_V             = (0xA1_00_00'u64, "MOV eAX moffs16/32")
+    opMOV_Offs_B_AL_B              = (0xA2_00_00'u64, "MOV moffs8 AL")
+    opMOV_Offs_V_EAX_D             = (0xA3_00_00'u64, "MOV moffs16/32 eAX")
     opMOVS_Mem_B_Mem_B             = (0xA4_00_00'u64, "MOVS m8 m8")
     opMOVS_Mem_V_Mem_V             = (0xA5_00_00'u64, "MOVS m16/32 m16/32")
     opCMPS_Mem_B_Mem_B             = (0xA6_00_00'u64, "CMPS m8 m8")
@@ -264,8 +264,22 @@ type
     opLODS_EAX_D_Mem_V             = (0xAD_00_00'u64, "LODS eAX m16/32")
     opSCAS_Mem_B_AL_B              = (0xAE_00_00'u64, "SCAS m8 AL")
     opSCAS_Mem_V_EAX_D             = (0xAF_00_00'u64, "SCAS m16/32 eAX")
-    opMOV_Reg_B_Imm_B              = (0xB0_00_00'u64, "MOV r8 imm8")
-    opMOV_Reg_V_Imm_V              = (0xB8_00_00'u64, "MOV r16/32 imm16/32")
+    opMOV_AL_B_Imm_B               = (0xB0_00_00'u64, "MOV AL imm8")
+    opMOV_CL_B_Imm_B               = (0xB1_00_00'u64, "MOV CL imm8")
+    opMOV_DL_B_Imm_B               = (0xB2_00_00'u64, "MOV DL imm8")
+    opMOV_BL_B_Imm_B               = (0xB3_00_00'u64, "MOV BL imm8")
+    opMOV_AH_B_Imm_B               = (0xB4_00_00'u64, "MOV AH imm8")
+    opMOV_CH_B_Imm_B               = (0xB5_00_00'u64, "MOV CH imm8")
+    opMOV_DH_B_Imm_B               = (0xB6_00_00'u64, "MOV DH imm8")
+    opMOV_BH_B_Imm_B               = (0xB7_00_00'u64, "MOV BH imm8")
+    opMOV_EAX_D_Imm_V              = (0xB8_00_00'u64, "MOV EAX imm16/32")
+    opMOV_ECX_D_Imm_V              = (0xB9_00_00'u64, "MOV ECX imm16/32")
+    opMOV_EDX_D_Imm_V              = (0xBA_00_00'u64, "MOV EDX imm16/32")
+    opMOV_EBX_D_Imm_V              = (0xBB_00_00'u64, "MOV EBX imm16/32")
+    opMOV_ESP_D_Imm_V              = (0xBC_00_00'u64, "MOV ESP imm16/32")
+    opMOV_EBP_D_Imm_V              = (0xBD_00_00'u64, "MOV EBP imm16/32")
+    opMOV_ESI_D_Imm_V              = (0xBE_00_00'u64, "MOV ESI imm16/32")
+    opMOV_EDI_D_Imm_V              = (0xBF_00_00'u64, "MOV EDI imm16/32")
     opROL_RegMem_B_Imm_B           = (0xC0_00_00'u64, "ROL r/m8 imm8")
     opROR_RegMem_B_Imm_B           = (0xC0_00_01'u64, "ROR r/m8 imm8")
     opRCL_RegMem_B_Imm_B           = (0xC0_00_02'u64, "RCL r/m8 imm8")
@@ -385,6 +399,7 @@ type
     opJMP_RegMem_V                 = (0xFF_00_04'u64, "JMP r/m16/32")
     opJMPF_Mem_P                   = (0xFF_00_05'u64, "JMPF m16:16/32")
     opPUSH_RegMem_V                = (0xFF_00_06'u64, "PUSH r/m16/32")
+
   ICodeMnemonic* = enum
     opMneMOVSX        = "MOVSX"
     opMnePOPFD        = "POPFD"
@@ -689,7 +704,7 @@ func getOpcodes*(code: ICodeMnemonic): seq[ICode] =
     of opMneUD2         : @[ opUD2 ]
     of opMneSETNZ       : @[ opSETNZ_RegMem_B ]
     of opMneMOVS        : @[ opMOVS_Mem_B_Mem_B, opMOVS_Mem_V_Mem_V ]
-    of opMneMOV         : @[ opMOV_Reg_D_CR_F, opMOV_Reg_D_DR_F, opMOV_CR_F_Reg_D, opMOV_DR_F_Reg_D, opMOV_RegMem_B_Reg_B, opMOV_RegMem_V_Reg_V, opMOV_Reg_B_RegMem_B, opMOV_Reg_V_RegMem_V, opMOV_Mem_W_SREG_W, opMOV_SREG_W_RegMem_W, opMOV_AL_B_Imm_B, opMOV_EAX_D_Imm_V, opMOV_Imm_B_AL_B, opMOV_Imm_V_EAX_D, opMOV_Reg_B_Imm_B, opMOV_Reg_V_Imm_V, opMOV_RegMem_B_Imm_B, opMOV_RegMem_V_Imm_V ]
+    of opMneMOV         : @[ opMOV_Reg_D_CR_F, opMOV_Reg_D_DR_F, opMOV_CR_F_Reg_D, opMOV_DR_F_Reg_D, opMOV_RegMem_B_Reg_B, opMOV_RegMem_V_Reg_V, opMOV_Reg_B_RegMem_B, opMOV_Reg_V_RegMem_V, opMOV_Mem_W_SREG_W, opMOV_SREG_W_RegMem_W, opMOV_AL_B_Offs_B, opMOV_EAX_D_Offs_V, opMOV_Offs_B_AL_B, opMOV_Offs_V_EAX_D, opMOV_AL_B_Imm_B, opMOV_CL_B_Imm_B, opMOV_DL_B_Imm_B, opMOV_BL_B_Imm_B, opMOV_AH_B_Imm_B, opMOV_CH_B_Imm_B, opMOV_DH_B_Imm_B, opMOV_BH_B_Imm_B, opMOV_EAX_D_Imm_V, opMOV_ECX_D_Imm_V, opMOV_EDX_D_Imm_V, opMOV_EBX_D_Imm_V, opMOV_ESP_D_Imm_V, opMOV_EBP_D_Imm_V, opMOV_ESI_D_Imm_V, opMOV_EDI_D_Imm_V, opMOV_RegMem_B_Imm_B, opMOV_RegMem_V_Imm_V ]
     of opMneSETNS       : @[ opSETNS_RegMem_B ]
     of opMneBTR         : @[ opBTR_RegMem_V_Reg_V, opBTR_RegMem_V_Imm_B ]
     of opMneLGDT        : @[ opLGDT_GDTR_W_Mem_P ]
@@ -709,17 +724,17 @@ func getOpcodes*(code: ICodeMnemonic): seq[ICode] =
 
 func hasModrm*(code: ICode): bool =
   case code:
-    of opADD_RegMem_B_Imm_B, opDIV_EDX_D_EAX_D_RegMem_V, opSGDT_Mem_P_GDTR_W, opROL_RegMem_V_CL_B, opLTR_TR_W_RegMem_W, opIMUL_Reg_V_RegMem_V_Imm_V, opIMUL_Reg_V_RegMem_V_Imm_B, opDEC_RegMem_B, opCMP_RegMem_V_Imm_V, opLMSW_MSW_W_RegMem_W, opROL_RegMem_V_Imm_B, opSAL_RegMem_V_Imm_B, opOR_Reg_V_RegMem_V, opSMSW_Mem_W_MSW_W, opSIDT_Mem_P_IDTR_W, opMOV_Reg_D_CR_F, opSETBE_RegMem_B, opXOR_RegMem_B_Imm_B, opLLDT_LDTR_W_RegMem_W, opMOV_Reg_B_RegMem_B, opMOVZX_Reg_V_RegMem_W, opCMP_RegMem_B_Imm_B, opADD_RegMem_V_Reg_V, opCALL_RegMem_V, opTEST_RegMem_V_Reg_V, opINC_RegMem_V, opSETNZ_RegMem_B, opSETNL_RegMem_B, opMOV_RegMem_V_Imm_V, opXOR_RegMem_B_Reg_B, opINC_RegMem_B, opOR_RegMem_B_Imm_B, opADD_RegMem_V_Imm_V, opDEC_RegMem_V, opLIDT_IDTR_W_Mem_P, opLEA_Reg_V_Mem_V, opNOT_RegMem_B, opJMP_RegMem_V, opNEG_RegMem_B, opADC_RegMem_V_Imm_V, opJNO_Imm_V, opSHR_RegMem_V_CL_B, opIDIV_AL_B_AH_B_AX_W_RegMem_B, opAND_RegMem_V_Imm_V, opXCHG_Reg_B_RegMem_B, opRCL_RegMem_V_Imm_B, opSETNB_RegMem_B, opSAR_RegMem_V_CL_B, opMOV_RegMem_V_Reg_V, opPUSH_RegMem_V, opIDIV_EDX_D_EAX_D_RegMem_V, opSAR_RegMem_V_Imm_B, opRCR_RegMem_V_CL_B, opSUB_Reg_B_RegMem_B, opXOR_RegMem_V_Reg_V, opCMP_RegMem_V_Reg_V, opOR_RegMem_V_Imm_V, opTEST_RegMem_B_Imm_B, opMUL_AX_W_AL_B_RegMem_B, opADD_Reg_B_RegMem_B, opSUB_Reg_V_RegMem_V, opMOV_RegMem_B_Reg_B, opSUB_RegMem_B_Reg_B, opSBB_RegMem_V_Imm_V, opMOV_Reg_B_Imm_B, opSTR_Mem_W_TR_W, opIMUL_Reg_V_RegMem_V, opCALLF_Mem_P, opSETNS_RegMem_B, opTEST_RegMem_V_Imm_V, opSUB_RegMem_V_Reg_V, opRCL_RegMem_V_CL_B, opSETO_RegMem_B, opOR_RegMem_V_Reg_V, opSETNO_RegMem_B, opMOV_SREG_W_RegMem_W, opMOV_Mem_W_SREG_W, opSAL_RegMem_V_CL_B, opADD_Reg_V_RegMem_V, opSHL_RegMem_V_CL_B, opOR_Reg_B_RegMem_B, opROR_RegMem_V_CL_B, opXOR_Reg_V_RegMem_V, opDIV_AL_B_AH_B_AX_W_RegMem_B, opTEST_RegMem_B_Reg_B, opLGDT_GDTR_W_Mem_P, opSHL_RegMem_V_Imm_B, opNOT_RegMem_V, opVERR_RegMem_W, opVERW_RegMem_W, opSETL_RegMem_B, opAND_Reg_B_RegMem_B, opSUB_RegMem_B_Imm_B, opSLDT_Mem_W_LDTR_W, opADC_RegMem_B_Imm_B, opSETLE_RegMem_B, opAND_RegMem_B_Reg_B, opMOVSX_Reg_V_RegMem_B, opSHR_RegMem_V_Imm_B, opXOR_Reg_B_RegMem_B, opAND_Reg_V_RegMem_V, opSETZ_RegMem_B, opRCR_RegMem_V_Imm_B, opSETS_RegMem_B, opMOVZX_Reg_V_RegMem_B, opXCHG_Reg_V_RegMem_V, opJMPF_Mem_P, opAND_RegMem_V_Reg_V, opSUB_RegMem_V_Imm_V, opSBB_RegMem_B_Imm_B, opMOVSX_Reg_V_RegMem_W, opXOR_RegMem_V_Imm_V, opNEG_RegMem_V, opAND_RegMem_B_Imm_B, opSETP_RegMem_B, opSETNLE_RegMem_B, opIMUL_AX_W_AL_B_RegMem_B, opSETNBE_RegMem_B, opMUL_EDX_D_EAX_D_RegMem_V, opIMUL_EDX_D_EAX_D_RegMem_V, opSETB_RegMem_B, opSETNP_RegMem_B, opADD_RegMem_B_Reg_B, opROR_RegMem_V_Imm_B, opMOV_CR_F_Reg_D, opMOV_Reg_V_RegMem_V: true
+    of opADD_RegMem_B_Imm_B, opMOV_CH_B_Imm_B, opSGDT_Mem_P_GDTR_W, opROL_RegMem_V_CL_B, opDIV_EDX_D_EAX_D_RegMem_V, opLTR_TR_W_RegMem_W, opIMUL_Reg_V_RegMem_V_Imm_V, opIMUL_Reg_V_RegMem_V_Imm_B, opDEC_RegMem_B, opCMP_RegMem_V_Imm_V, opLMSW_MSW_W_RegMem_W, opSHR_RegMem_B_Imm_B, opROL_RegMem_V_Imm_B, opSAL_RegMem_V_Imm_B, opOR_Reg_V_RegMem_V, opSMSW_Mem_W_MSW_W, opSIDT_Mem_P_IDTR_W, opMOV_Reg_D_CR_F, opSETBE_RegMem_B, opXOR_RegMem_B_Imm_B, opLLDT_LDTR_W_RegMem_W, opMOV_Reg_B_RegMem_B, opMOVZX_Reg_V_RegMem_W, opCMP_RegMem_B_Imm_B, opMOV_DL_B_Imm_B, opADD_RegMem_V_Reg_V, opCALL_RegMem_V, opTEST_RegMem_V_Reg_V, opINC_RegMem_V, opSETNZ_RegMem_B, opSETNL_RegMem_B, opMOV_RegMem_V_Imm_V, opMOV_DH_B_Imm_B, opXOR_RegMem_B_Reg_B, opINC_RegMem_B, opOR_RegMem_B_Imm_B, opADD_RegMem_V_Imm_V, opDEC_RegMem_V, opLIDT_IDTR_W_Mem_P, opLEA_Reg_V_Mem_V, opMOV_BH_B_Imm_B, opNOT_RegMem_B, opJMP_RegMem_V, opNEG_RegMem_B, opADC_RegMem_V_Imm_V, opJNO_Imm_V, opMOV_BL_B_Imm_B, opSAL_RegMem_B_Imm_B, opSHR_RegMem_V_CL_B, opIDIV_AL_B_AH_B_AX_W_RegMem_B, opAND_RegMem_V_Imm_V, opXCHG_Reg_B_RegMem_B, opMOV_AL_B_Imm_B, opRCL_RegMem_V_Imm_B, opSHL_RegMem_B_Imm_B, opSETNB_RegMem_B, opSAR_RegMem_V_CL_B, opMOV_RegMem_V_Reg_V, opPUSH_RegMem_V, opROL_RegMem_B_Imm_B, opIDIV_EDX_D_EAX_D_RegMem_V, opSAR_RegMem_V_Imm_B, opRCR_RegMem_V_CL_B, opSUB_Reg_B_RegMem_B, opXOR_RegMem_V_Reg_V, opCMP_RegMem_V_Reg_V, opOR_RegMem_V_Imm_V, opTEST_RegMem_B_Imm_B, opMUL_AX_W_AL_B_RegMem_B, opADD_Reg_B_RegMem_B, opSUB_Reg_V_RegMem_V, opRCL_RegMem_B_Imm_B, opMOV_RegMem_B_Reg_B, opSUB_RegMem_B_Reg_B, opSBB_RegMem_V_Imm_V, opSTR_Mem_W_TR_W, opSAR_RegMem_B_Imm_B, opIMUL_Reg_V_RegMem_V, opCALLF_Mem_P, opSETNS_RegMem_B, opTEST_RegMem_V_Imm_V, opRCR_RegMem_B_Imm_B, opSUB_RegMem_V_Reg_V, opRCL_RegMem_V_CL_B, opSETO_RegMem_B, opOR_RegMem_V_Reg_V, opSETNO_RegMem_B, opMOV_SREG_W_RegMem_W, opMOV_Mem_W_SREG_W, opSAL_RegMem_V_CL_B, opADD_Reg_V_RegMem_V, opSHL_RegMem_V_CL_B, opOR_Reg_B_RegMem_B, opROR_RegMem_V_CL_B, opXOR_Reg_V_RegMem_V, opDIV_AL_B_AH_B_AX_W_RegMem_B, opTEST_RegMem_B_Reg_B, opLGDT_GDTR_W_Mem_P, opSHL_RegMem_V_Imm_B, opNOT_RegMem_V, opVERR_RegMem_W, opVERW_RegMem_W, opSETL_RegMem_B, opAND_Reg_B_RegMem_B, opSUB_RegMem_B_Imm_B, opSLDT_Mem_W_LDTR_W, opADC_RegMem_B_Imm_B, opSETLE_RegMem_B, opAND_RegMem_B_Reg_B, opMOVSX_Reg_V_RegMem_B, opSHR_RegMem_V_Imm_B, opXOR_Reg_B_RegMem_B, opAND_Reg_V_RegMem_V, opSETZ_RegMem_B, opRCR_RegMem_V_Imm_B, opSETS_RegMem_B, opROR_RegMem_B_Imm_B, opMOVZX_Reg_V_RegMem_B, opXCHG_Reg_V_RegMem_V, opJMPF_Mem_P, opAND_RegMem_V_Reg_V, opSUB_RegMem_V_Imm_V, opMOV_CL_B_Imm_B, opSBB_RegMem_B_Imm_B, opMOVSX_Reg_V_RegMem_W, opMOV_AH_B_Imm_B, opXOR_RegMem_V_Imm_V, opNEG_RegMem_V, opAND_RegMem_B_Imm_B, opSETP_RegMem_B, opSETNLE_RegMem_B, opIMUL_AX_W_AL_B_RegMem_B, opSETNBE_RegMem_B, opMUL_EDX_D_EAX_D_RegMem_V, opIMUL_EDX_D_EAX_D_RegMem_V, opSETB_RegMem_B, opSETNP_RegMem_B, opADD_RegMem_B_Reg_B, opROR_RegMem_V_Imm_B, opMOV_CR_F_Reg_D, opMOV_Reg_V_RegMem_V: true
     else: false
 
 func hasMoffs*(code: ICode): bool =
   case code:
-    of opMOV_EAX_D_Imm_V, opMOV_Imm_B_AL_B, opMOV_AL_B_Imm_B, opMOV_Imm_V_EAX_D: true
+    of opMOV_Offs_B_AL_B, opMOV_EAX_D_Offs_V, opMOV_Offs_V_EAX_D, opMOV_AL_B_Offs_B: true
     else: false
 
 func hasImm8*(code: ICode): bool =
   case code:
-    of opJNZ_Imm_B, opADD_RegMem_B_Imm_B, opIMUL_Reg_V_RegMem_V_Imm_B, opJL_Imm_B, opROL_RegMem_V_Imm_B, opSAL_RegMem_V_Imm_B, opOUT_Imm_B_EAX_D, opJNO_Imm_B, opJZ_Imm_B, opJC_Imm_B, opJS_Imm_B, opJP_Imm_B, opXOR_RegMem_B_Imm_B, opJO_Imm_B, opJNL_Imm_B, opJNP_Imm_B, opOUT_Imm_B_AL_B, opJG_Imm_B, opCMP_RegMem_B_Imm_B, opINT_Imm_B_EFLAGS_D, opSHL_RegMem_V_Imm_B, opOR_RegMem_B_Imm_B, opSUB_RegMem_B_Imm_B, opADD_AL_B_Imm_B, opADC_RegMem_B_Imm_B, opJBE_Imm_B, opTEST_AL_B_Imm_B, opSHR_RegMem_V_Imm_B, opIN_AL_B_Imm_B, opJLE_Imm_B, opRCL_RegMem_V_Imm_B, opAND_AL_B_Imm_B, opRCR_RegMem_V_Imm_B, opOR_AL_B_Imm_B, opJNC_Imm_B, opSBB_RegMem_B_Imm_B, opSAR_RegMem_V_Imm_B, opJMP_Imm_B, opJNBE_Imm_B, opJNS_Imm_B, opAND_RegMem_B_Imm_B, opSUB_AL_B_Imm_B, opCMP_AL_B_Imm_B, opPUSH_Imm_B, opROR_RegMem_V_Imm_B, opMOV_Reg_B_Imm_B: true
+    of opJNZ_Imm_B, opADD_RegMem_B_Imm_B, opMOV_CH_B_Imm_B, opIMUL_Reg_V_RegMem_V_Imm_B, opJL_Imm_B, opROL_RegMem_V_Imm_B, opSAL_RegMem_V_Imm_B, opOUT_Imm_B_EAX_D, opJNO_Imm_B, opJZ_Imm_B, opJC_Imm_B, opJS_Imm_B, opJP_Imm_B, opXOR_RegMem_B_Imm_B, opJO_Imm_B, opJNL_Imm_B, opJNP_Imm_B, opOUT_Imm_B_AL_B, opJG_Imm_B, opCMP_RegMem_B_Imm_B, opMOV_DL_B_Imm_B, opINT_Imm_B_EFLAGS_D, opSHL_RegMem_V_Imm_B, opMOV_DH_B_Imm_B, opOR_RegMem_B_Imm_B, opSUB_RegMem_B_Imm_B, opADD_AL_B_Imm_B, opADC_RegMem_B_Imm_B, opMOV_BH_B_Imm_B, opJBE_Imm_B, opTEST_AL_B_Imm_B, opSHR_RegMem_V_Imm_B, opMOV_BL_B_Imm_B, opIN_AL_B_Imm_B, opJLE_Imm_B, opMOV_AL_B_Imm_B, opAND_AL_B_Imm_B, opRCL_RegMem_V_Imm_B, opRCR_RegMem_V_Imm_B, opOR_AL_B_Imm_B, opMOV_CL_B_Imm_B, opJNC_Imm_B, opSBB_RegMem_B_Imm_B, opSAR_RegMem_V_Imm_B, opJMP_Imm_B, opJNBE_Imm_B, opMOV_AH_B_Imm_B, opJNS_Imm_B, opAND_RegMem_B_Imm_B, opSUB_AL_B_Imm_B, opCMP_AL_B_Imm_B, opPUSH_Imm_B, opROR_RegMem_V_Imm_B: true
     else: false
 
 func hasImm16*(code: ICode): bool =
@@ -733,7 +748,7 @@ func hasImm16*(code: ICode): bool =
 
 func hasImm16_32*(code: ICode): bool =
   case code:
-    of opCALL_Imm_V, opIMUL_Reg_V_RegMem_V_Imm_V, opJNZ_Imm_V, opJS_Imm_V, opJL_Imm_V, opADD_EAX_D_Imm_V, opJZ_Imm_V, opJNL_Imm_V, opJBE_Imm_V, opJB_Imm_V, opJMP_Imm_V, opOR_EAX_D_Imm_V, opXCHG_ESP_D_EAX_D, opXCHG_ESI_D_EAX_D, opJNBE_Imm_V, opXCHG_EDI_D_EAX_D, opAND_EAX_D_Imm_V, opPUSH_Imm_V, opMOV_RegMem_V_Imm_V, opJNP_Imm_V, opJNLE_Imm_V, opMOV_Reg_V_Imm_V, opJP_Imm_V, opXOR_EAX_D_Imm_V, opTEST_EAX_D_Imm_V, opJLE_Imm_V, opXCHG_EAX_D_EAX_D, opJNO_Imm_V, opXCHG_EBX_D_EAX_D, opXCHG_EBP_D_EAX_D, opXCHG_ECX_D_EAX_D, opCALLF_A_P, opJNB_Imm_V, opCMP_EAX_D_Imm_V, opXCHG_EDX_D_EAX_D, opJNS_Imm_V, opJMPF_A_P, opJO_Imm_V, opSUB_EAX_D_Imm_V: true
+    of opMOV_EAX_D_Imm_V, opCALL_Imm_V, opIMUL_Reg_V_RegMem_V_Imm_V, opJNZ_Imm_V, opJS_Imm_V, opJL_Imm_V, opMOV_ECX_D_Imm_V, opADD_EAX_D_Imm_V, opMOV_EBP_D_Imm_V, opJZ_Imm_V, opJNL_Imm_V, opJBE_Imm_V, opJB_Imm_V, opJMP_Imm_V, opOR_EAX_D_Imm_V, opXCHG_ESP_D_EAX_D, opXCHG_ESI_D_EAX_D, opJNBE_Imm_V, opXCHG_EDI_D_EAX_D, opAND_EAX_D_Imm_V, opPUSH_Imm_V, opMOV_ESI_D_Imm_V, opMOV_EDI_D_Imm_V, opMOV_RegMem_V_Imm_V, opJNP_Imm_V, opJNLE_Imm_V, opJP_Imm_V, opXOR_EAX_D_Imm_V, opTEST_EAX_D_Imm_V, opMOV_EDX_D_Imm_V, opJLE_Imm_V, opXCHG_EAX_D_EAX_D, opMOV_EBX_D_Imm_V, opJNO_Imm_V, opXCHG_EBX_D_EAX_D, opMOV_ESP_D_Imm_V, opXCHG_EBP_D_EAX_D, opXCHG_ECX_D_EAX_D, opCALLF_A_P, opJNB_Imm_V, opCMP_EAX_D_Imm_V, opXCHG_EDX_D_EAX_D, opJNS_Imm_V, opJMPF_A_P, opJO_Imm_V, opSUB_EAX_D_Imm_V: true
     else: false
 
 func isExtendedOpcode*(code: ICode): bool =
@@ -999,10 +1014,10 @@ func getTestedFlags*(code: ICode): set[OpFlagIO] =
     of opPOPFD_EFLAGS_D              : set[OpFlagIO]({})
     of opSAHF_AH_B                   : set[OpFlagIO]({})
     of opLAHF_AH_B                   : set[OpFlagIO]({opfSigned, opfZero, opfAbove, opfParity, opfCarry, })
-    of opMOV_AL_B_Imm_B              : set[OpFlagIO]({})
-    of opMOV_EAX_D_Imm_V             : set[OpFlagIO]({})
-    of opMOV_Imm_B_AL_B              : set[OpFlagIO]({})
-    of opMOV_Imm_V_EAX_D             : set[OpFlagIO]({})
+    of opMOV_AL_B_Offs_B             : set[OpFlagIO]({})
+    of opMOV_EAX_D_Offs_V            : set[OpFlagIO]({})
+    of opMOV_Offs_B_AL_B             : set[OpFlagIO]({})
+    of opMOV_Offs_V_EAX_D            : set[OpFlagIO]({})
     of opMOVS_Mem_B_Mem_B            : set[OpFlagIO]({opfDirection, })
     of opMOVS_Mem_V_Mem_V            : set[OpFlagIO]({opfDirection, })
     of opCMPS_Mem_B_Mem_B            : set[OpFlagIO]({opfDirection, })
@@ -1015,8 +1030,22 @@ func getTestedFlags*(code: ICode): set[OpFlagIO] =
     of opLODS_EAX_D_Mem_V            : set[OpFlagIO]({opfDirection, })
     of opSCAS_Mem_B_AL_B             : set[OpFlagIO]({opfDirection, })
     of opSCAS_Mem_V_EAX_D            : set[OpFlagIO]({opfDirection, })
-    of opMOV_Reg_B_Imm_B             : set[OpFlagIO]({})
-    of opMOV_Reg_V_Imm_V             : set[OpFlagIO]({})
+    of opMOV_AL_B_Imm_B              : set[OpFlagIO]({})
+    of opMOV_CL_B_Imm_B              : set[OpFlagIO]({})
+    of opMOV_DL_B_Imm_B              : set[OpFlagIO]({})
+    of opMOV_BL_B_Imm_B              : set[OpFlagIO]({})
+    of opMOV_AH_B_Imm_B              : set[OpFlagIO]({})
+    of opMOV_CH_B_Imm_B              : set[OpFlagIO]({})
+    of opMOV_DH_B_Imm_B              : set[OpFlagIO]({})
+    of opMOV_BH_B_Imm_B              : set[OpFlagIO]({})
+    of opMOV_EAX_D_Imm_V             : set[OpFlagIO]({})
+    of opMOV_ECX_D_Imm_V             : set[OpFlagIO]({})
+    of opMOV_EDX_D_Imm_V             : set[OpFlagIO]({})
+    of opMOV_EBX_D_Imm_V             : set[OpFlagIO]({})
+    of opMOV_ESP_D_Imm_V             : set[OpFlagIO]({})
+    of opMOV_EBP_D_Imm_V             : set[OpFlagIO]({})
+    of opMOV_ESI_D_Imm_V             : set[OpFlagIO]({})
+    of opMOV_EDI_D_Imm_V             : set[OpFlagIO]({})
     of opROL_RegMem_B_Imm_B          : set[OpFlagIO]({})
     of opROR_RegMem_B_Imm_B          : set[OpFlagIO]({})
     of opRCL_RegMem_B_Imm_B          : set[OpFlagIO]({opfCarry, })
@@ -1385,10 +1414,10 @@ func getModifiedFlags*(code: ICode): set[OpFlagIO] =
     of opPOPFD_EFLAGS_D              : set[OpFlagIO]({})
     of opSAHF_AH_B                   : set[OpFlagIO]({opfSigned, opfZero, opfAbove, opfParity, opfCarry, })
     of opLAHF_AH_B                   : set[OpFlagIO]({})
-    of opMOV_AL_B_Imm_B              : set[OpFlagIO]({})
-    of opMOV_EAX_D_Imm_V             : set[OpFlagIO]({})
-    of opMOV_Imm_B_AL_B              : set[OpFlagIO]({})
-    of opMOV_Imm_V_EAX_D             : set[OpFlagIO]({})
+    of opMOV_AL_B_Offs_B             : set[OpFlagIO]({})
+    of opMOV_EAX_D_Offs_V            : set[OpFlagIO]({})
+    of opMOV_Offs_B_AL_B             : set[OpFlagIO]({})
+    of opMOV_Offs_V_EAX_D            : set[OpFlagIO]({})
     of opMOVS_Mem_B_Mem_B            : set[OpFlagIO]({})
     of opMOVS_Mem_V_Mem_V            : set[OpFlagIO]({})
     of opCMPS_Mem_B_Mem_B            : set[OpFlagIO]({opfOverflow, opfSigned, opfZero, opfAbove, opfParity, opfCarry, })
@@ -1401,8 +1430,22 @@ func getModifiedFlags*(code: ICode): set[OpFlagIO] =
     of opLODS_EAX_D_Mem_V            : set[OpFlagIO]({})
     of opSCAS_Mem_B_AL_B             : set[OpFlagIO]({opfOverflow, opfSigned, opfZero, opfAbove, opfParity, opfCarry, })
     of opSCAS_Mem_V_EAX_D            : set[OpFlagIO]({opfOverflow, opfSigned, opfZero, opfAbove, opfParity, opfCarry, })
-    of opMOV_Reg_B_Imm_B             : set[OpFlagIO]({})
-    of opMOV_Reg_V_Imm_V             : set[OpFlagIO]({})
+    of opMOV_AL_B_Imm_B              : set[OpFlagIO]({})
+    of opMOV_CL_B_Imm_B              : set[OpFlagIO]({})
+    of opMOV_DL_B_Imm_B              : set[OpFlagIO]({})
+    of opMOV_BL_B_Imm_B              : set[OpFlagIO]({})
+    of opMOV_AH_B_Imm_B              : set[OpFlagIO]({})
+    of opMOV_CH_B_Imm_B              : set[OpFlagIO]({})
+    of opMOV_DH_B_Imm_B              : set[OpFlagIO]({})
+    of opMOV_BH_B_Imm_B              : set[OpFlagIO]({})
+    of opMOV_EAX_D_Imm_V             : set[OpFlagIO]({})
+    of opMOV_ECX_D_Imm_V             : set[OpFlagIO]({})
+    of opMOV_EDX_D_Imm_V             : set[OpFlagIO]({})
+    of opMOV_EBX_D_Imm_V             : set[OpFlagIO]({})
+    of opMOV_ESP_D_Imm_V             : set[OpFlagIO]({})
+    of opMOV_EBP_D_Imm_V             : set[OpFlagIO]({})
+    of opMOV_ESI_D_Imm_V             : set[OpFlagIO]({})
+    of opMOV_EDI_D_Imm_V             : set[OpFlagIO]({})
     of opROL_RegMem_B_Imm_B          : set[OpFlagIO]({opfOverflow, opfSigned, opfZero, opfAbove, opfParity, opfCarry, })
     of opROR_RegMem_B_Imm_B          : set[OpFlagIO]({opfOverflow, opfSigned, opfZero, opfAbove, opfParity, opfCarry, })
     of opRCL_RegMem_B_Imm_B          : set[OpFlagIO]({opfOverflow, opfSigned, opfZero, opfAbove, opfParity, opfCarry, })
@@ -1536,6 +1579,7 @@ func getUsedOperands*(code: ICode): array[4, Option[(OpAddrKind, OpDataKind)]] =
     AdOne = opAddrImm1
     AdThree = opAddrImm3
     AdImm = opAddrImm
+    AdOffs = opAddrOffs
     AdReg = opAddrReg
     AdMem = opAddrMem
     AdRegMem = opAddrRegMem
@@ -1543,9 +1587,14 @@ func getUsedOperands*(code: ICode): array[4, Option[(OpAddrKind, OpDataKind)]] =
     AdAX = opAddrGRegAX
     AdAH = opAddrGRegAH
     AdAL = opAddrGRegAL
+    AdCH = opAddrGRegCH
+    AdDH = opAddrGRegDH
     AdDI = opAddrGRegDI
+    AdDL = opAddrGRegDL
+    AdBL = opAddrGRegBL
     AdDX = opAddrGRegDX
     AdBP = opAddrGRegBP
+    AdBH = opAddrGRegBH
     AdCL = opAddrGRegCL
     AdSI = opAddrGRegSI
     AdEAX = opAddrGRegEAX
@@ -1820,10 +1869,10 @@ func getUsedOperands*(code: ICode): array[4, Option[(OpAddrKind, OpDataKind)]] =
     of opPOPFD_EFLAGS_D              : [some((AdEFLAGS, DaD))   , nop                     , nop                     , nop                     , ]
     of opSAHF_AH_B                   : [some((AdAH, DaB))       , nop                     , nop                     , nop                     , ]
     of opLAHF_AH_B                   : [some((AdAH, DaB))       , nop                     , nop                     , nop                     , ]
-    of opMOV_AL_B_Imm_B              : [some((AdAL, DaB))       , some((AdImm, DaB))      , nop                     , nop                     , ]
-    of opMOV_EAX_D_Imm_V             : [some((AdEAX, DaD))      , some((AdImm, DaV))      , nop                     , nop                     , ]
-    of opMOV_Imm_B_AL_B              : [some((AdImm, DaB))      , some((AdAL, DaB))       , nop                     , nop                     , ]
-    of opMOV_Imm_V_EAX_D             : [some((AdImm, DaV))      , some((AdEAX, DaD))      , nop                     , nop                     , ]
+    of opMOV_AL_B_Offs_B             : [some((AdAL, DaB))       , some((AdOffs, DaB))     , nop                     , nop                     , ]
+    of opMOV_EAX_D_Offs_V            : [some((AdEAX, DaD))      , some((AdOffs, DaV))     , nop                     , nop                     , ]
+    of opMOV_Offs_B_AL_B             : [some((AdOffs, DaB))     , some((AdAL, DaB))       , nop                     , nop                     , ]
+    of opMOV_Offs_V_EAX_D            : [some((AdOffs, DaV))     , some((AdEAX, DaD))      , nop                     , nop                     , ]
     of opMOVS_Mem_B_Mem_B            : [some((AdMem, DaB))      , some((AdMem, DaB))      , nop                     , nop                     , ]
     of opMOVS_Mem_V_Mem_V            : [some((AdMem, DaV))      , some((AdMem, DaV))      , nop                     , nop                     , ]
     of opCMPS_Mem_B_Mem_B            : [some((AdMem, DaB))      , some((AdMem, DaB))      , nop                     , nop                     , ]
@@ -1836,8 +1885,22 @@ func getUsedOperands*(code: ICode): array[4, Option[(OpAddrKind, OpDataKind)]] =
     of opLODS_EAX_D_Mem_V            : [some((AdEAX, DaD))      , some((AdMem, DaV))      , nop                     , nop                     , ]
     of opSCAS_Mem_B_AL_B             : [some((AdMem, DaB))      , some((AdAL, DaB))       , nop                     , nop                     , ]
     of opSCAS_Mem_V_EAX_D            : [some((AdMem, DaV))      , some((AdEAX, DaD))      , nop                     , nop                     , ]
-    of opMOV_Reg_B_Imm_B             : [some((AdReg, DaB))      , some((AdImm, DaB))      , nop                     , nop                     , ]
-    of opMOV_Reg_V_Imm_V             : [some((AdReg, DaV))      , some((AdImm, DaV))      , nop                     , nop                     , ]
+    of opMOV_AL_B_Imm_B              : [some((AdAL, DaB))       , some((AdImm, DaB))      , nop                     , nop                     , ]
+    of opMOV_CL_B_Imm_B              : [some((AdCL, DaB))       , some((AdImm, DaB))      , nop                     , nop                     , ]
+    of opMOV_DL_B_Imm_B              : [some((AdDL, DaB))       , some((AdImm, DaB))      , nop                     , nop                     , ]
+    of opMOV_BL_B_Imm_B              : [some((AdBL, DaB))       , some((AdImm, DaB))      , nop                     , nop                     , ]
+    of opMOV_AH_B_Imm_B              : [some((AdAH, DaB))       , some((AdImm, DaB))      , nop                     , nop                     , ]
+    of opMOV_CH_B_Imm_B              : [some((AdCH, DaB))       , some((AdImm, DaB))      , nop                     , nop                     , ]
+    of opMOV_DH_B_Imm_B              : [some((AdDH, DaB))       , some((AdImm, DaB))      , nop                     , nop                     , ]
+    of opMOV_BH_B_Imm_B              : [some((AdBH, DaB))       , some((AdImm, DaB))      , nop                     , nop                     , ]
+    of opMOV_EAX_D_Imm_V             : [some((AdEAX, DaD))      , some((AdImm, DaV))      , nop                     , nop                     , ]
+    of opMOV_ECX_D_Imm_V             : [some((AdECX, DaD))      , some((AdImm, DaV))      , nop                     , nop                     , ]
+    of opMOV_EDX_D_Imm_V             : [some((AdEDX, DaD))      , some((AdImm, DaV))      , nop                     , nop                     , ]
+    of opMOV_EBX_D_Imm_V             : [some((AdEBX, DaD))      , some((AdImm, DaV))      , nop                     , nop                     , ]
+    of opMOV_ESP_D_Imm_V             : [some((AdESP, DaD))      , some((AdImm, DaV))      , nop                     , nop                     , ]
+    of opMOV_EBP_D_Imm_V             : [some((AdEBP, DaD))      , some((AdImm, DaV))      , nop                     , nop                     , ]
+    of opMOV_ESI_D_Imm_V             : [some((AdESI, DaD))      , some((AdImm, DaV))      , nop                     , nop                     , ]
+    of opMOV_EDI_D_Imm_V             : [some((AdEDI, DaD))      , some((AdImm, DaV))      , nop                     , nop                     , ]
     of opROL_RegMem_B_Imm_B          : [some((AdRegMem, DaB))   , some((AdImm, DaB))      , nop                     , nop                     , ]
     of opROR_RegMem_B_Imm_B          : [some((AdRegMem, DaB))   , some((AdImm, DaB))      , nop                     , nop                     , ]
     of opRCL_RegMem_B_Imm_B          : [some((AdRegMem, DaB))   , some((AdImm, DaB))      , nop                     , nop                     , ]

@@ -867,7 +867,7 @@ proc initInstrImpl16*(r: var InstrImpl, instr: ExecInstr) =
 
   r.setFuncflag(ICode(0xa9), instr16(testAxImm16),  CHKIMM16)
 
-  r.setFuncflag(ICOde(0xb8), instr16(movR16Imm16),  CHKIMM16)
+  for i in 0 .. 7: r.setFuncflag(ICOde(0xb8 + i), instr16(movR16Imm16),  CHKIMM16)
 
   r.setFuncflag(ICode(0xc3), instr16(ret),          {})
   r.setFuncflag(ICode(0xc7), instr16(movRm16Imm16), CHKMODRM + CHKIMM16)

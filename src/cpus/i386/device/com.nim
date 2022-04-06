@@ -1,4 +1,3 @@
-import common
 import dev_io
 type
   COM* = object
