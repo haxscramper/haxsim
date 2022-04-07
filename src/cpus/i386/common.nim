@@ -151,3 +151,8 @@ func formatOpcode*(code: uint16, ext: uint8 = 0): string =
     toHex(code)[^tern(is2, 4, 2) .. ^1],
     $toOpcode(code, ext)
   ]
+
+
+func toInt*(u: uint8): int8 = cast[int8](u)
+func toInt*(u: uint16): int16 = cast[int16](u)
+func toInt*(u: uint32): int32 = cast[int32](u)

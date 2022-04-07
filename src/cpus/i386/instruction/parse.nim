@@ -125,11 +125,11 @@ proc parse*(this: var InstrImpl): void =
     this.parseModrmSibDisp()
 
   if iParseImm32 in this.chk[op]:
-    this.idata.imm32 = ACS.getCode32(0).int32()
+    this.idata.imm32 = cast[int32](ACS.getCode32(0))
     CPU.updateEIp(4)
 
   elif iParseImm16 in this.chk[op]:
-    this.idata.imm16 = ACS.getCode16(0).int16()
+    this.idata.imm16 = cast[int16](ACS.getCode16(0))
     CPU.updateEIp(2)
 
   elif iParseImm8 in this.chk[op]:
