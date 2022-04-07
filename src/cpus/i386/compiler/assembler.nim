@@ -3,7 +3,7 @@ import common
 import hmisc/core/all
 import std/[options, strutils, sequtils, math, enumutils, sets, tables]
 import hmisc/other/hpprint
-import hmisc/algo/[hlex_base, lexcast, clformat]
+import hmisc/algo/[hlex_base, lexcast, clformat, clformat_interpolate]
 
 type
   InstrOperandKind* = enum
@@ -81,6 +81,12 @@ proc matchingTarget(given: InstrOperand, expect: OpAddrKind): bool =
     of opAddrOffs:
       result = k == iokOffset
 
+    of opAddrMem:
+      result = false
+
+    of opAddrSReg:
+      result = false
+
     else:
       assert false, $expect.symbolName()
 
@@ -106,7 +112,8 @@ let
     # Map from more specialied instructions into their generalized
     # counterparts.
     opMOV_EAX_D_Imm_V: opMOV_RegMem_V_Imm_V,
-    opMOV_AH_B_Imm_B: opMOV_RegMem_B_Imm_B
+    opMOV_AH_B_Imm_B: opMOV_RegMem_B_Imm_B,
+    opMOV_AL_B_Imm_B: opMOV_RegMem_B_Imm_B
   })
 
 func dedupOpcodes*(code: ICode): ICode =
@@ -134,6 +141,15 @@ func `$`*(instr: InstrOperand): string =
     tern(?instr.offset, "+" & $instr.offset.get(), "")
   ]
 
+func hshow*(instr: InstrOperandTarget, opts: HDisplayOpts = defaultHDIsplay): ColoredText =
+  toCyan($instr)
+
+func hshow*(instr: InstrOperand, opts: HDisplayOpts = defaultHDisplay): ColoredText =
+  let dat = tern(?instr.dataKind, hshow(instr.dataKind.get(), opts), clt"?")
+  let offset = tern(?instr.offset, "+" & hshow(instr.offset.get(), opts), clt"")
+
+  return clfmt"[{hshow(instr.target, opts)} k:{dat} ind:{hshow(instr.indirect)}{offset}]"
+
 func formatKind*(k: OpDataKind): string =
   case k:
     of opFlag: "F (flag)"
@@ -144,14 +160,46 @@ func formatKind*(k: OpDataKind): string =
     of opData16_32: "V (16/32)"
     of opData48: "P (48)"
 
+func usedLen[R, T](arr: array[R, Option[T]]): int =
+  for item in arr:
+    if isSome(item):
+      inc result
+
+proc skippedOperands(desc: InstrDesc): seq[InstrOperand] =
+  case desc.mnemonic:
+    of opMneIMUL:
+      if desc.operands.usedLen() == 2:
+        result.add desc.operands[0].get()
+
+    else:
+      discard
+
 proc selectOpcode*(instr: var InstrDesc) =
   var match: HashSet[ICode]
-  let giveLen = instr.operands.mapIt(tern(it.isSome(), 1, 0)).sum()
+
+  # Get all explicitly given operands
+  var givenOperands = instr.operands.filterIt(?it).mapIt(it.get())
+  # Fill in missing elements, for instructions like `imul ax, 0x12` which
+  # need to be translated into `imul ax, ax, 0x12`.
+  givenOperands.insert(skippedOperands(instr))
+  let giveLen = givenOperands.len()
+  # Collect parts of the error message in case of malformed input
   var failures: seq[(ICode, string)]
+
   for op in instr.mnemonic.getOpcodes():
     let expected = op.getUsedOperands()
     let expectedLen = expected.mapIt(tern(it.isSome(), 1, 0)).sum()
-    if giveLen == expectedLen:
+    if giveLen != expectedLen:
+      failures.add(
+        op,
+        "Invalid number of operands - expected '$#' ($#), but got '$#' ($#)" % [
+          $toGreen($expectedLen),
+          $hshow(expected),
+          $toRed($giveLen),
+          $hshow(givenOperands)
+      ])
+
+    else:
       var allMatch = true
       var failDesc: seq[string]
       for idx in 0 ..< giveLen:
@@ -159,7 +207,7 @@ proc selectOpcode*(instr: var InstrDesc) =
           continue
 
         let (expectAddr, expectData) = expected[idx].get()
-        let given = instr.operands[idx].get()
+        let given = givenOperands[idx]
         let givenData = given.dataKind.get()
         if not(
           givenData == expectData or
@@ -313,7 +361,20 @@ proc parseOperand*(str: var PosStr): InstrOperand =
     str.skip(']')
 
   else:
-    id = str.popIdent()
+    id = str.asStrSlice():
+      discard str.trySkip('-')
+      discard str.trySkip('0')
+      if str.trySkip('x'):
+        str.skipWhile(strutils.HexDigits + {'_'})
+
+      elif str.trySkip('o'):
+        str.skipWhile({'0' .. '7', '_'})
+
+      elif str.trySkip('b'):
+        str.skipWhile({'0', '1', '_'})
+
+      else:
+        str.skipWhile(IdentChars + Digits + {'_'})
 
   type T = InstrOperandTarget
   var tar: T
