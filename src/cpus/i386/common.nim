@@ -130,7 +130,6 @@ const
   clShowBin* = hdisplay(flags += {dfUseBin, dfSplitNumbers})
 
 func opIdx*(icode: ICode): uint16 =
-  echov icode, hshow(icode.uint, clShowBin)
   if isExtended(icode):
     uint16((icode.uint and 0xFF_FF_00) shr 16)
 

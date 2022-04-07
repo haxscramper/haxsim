@@ -1,6 +1,5 @@
 import common
 import eventer
-import std/strformat
 import std/math
 
 template DEFAULTMEMORYSIZE*(): untyped {.dirty.} =

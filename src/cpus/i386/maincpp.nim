@@ -29,11 +29,12 @@ type
     uiFull*: bool
     uiVm*: bool
 
-  FullImpl = ref object
-    data: InstrData
-    impl16: InstrImpl
-    impl32: InstrImpl
-    emu: Emulator
+  FullImpl* = ref object
+    ## Full implementation of the emulator
+    data*: InstrData ## Data for instruction currently being executed
+    impl16*: InstrImpl ## Implementation of the instructions for 16-bit mode
+    impl32*: InstrImpl ## Implementation for 32-bit mode
+    emu*: Emulator ## Emulator core object
 
 template log*(full: FullImpl, ev: EmuEvent): untyped =
   full.emu.logger.log(ev, -2)
@@ -101,11 +102,8 @@ proc loop*(full: var FullImpl) =
     #   emu.dumpRegs()
     #   emu.stop()
 
-proc initFull*(emuset: var EmuSetting): FullImpl =
-  var logger = initEmuLogger()
-  logger.logScope ev(eekInitEmulator)
-  var emu = initEmulator(emuset, logger)
-  let data = InstrData()
+proc addEchoHandler*(full: var FullImpl) =
+  var emu = full.emu
   var ind = 0
   proc echoHandler(ev: EmuEvent) =
     if ev.kind in eekEndKinds:
@@ -144,12 +142,15 @@ proc initFull*(emuset: var EmuSetting): FullImpl =
     if ev.kind in eekStartKinds:
       inc ind
 
-
-
   emu.logger.setHook(echoHandler)
 
+proc initFull*(emuset: var EmuSetting, logger: EmuLogger = initEmuLogger()): FullImpl =
+  ## Create full implementation of the evaluation core
+  var logger = logger
+  logger.logScope ev(eekInitEmulator)
+  var emu = initEmulator(emuset, logger)
+  let data = InstrData()
   var full = FullImpl(emu: emu, data: data)
-
   var instr = initExecInstr(full.emu, full.data, false)
   assertRef(full.emu)
   full.impl16 = initInstrImpl16(instr)
@@ -236,7 +237,7 @@ proc main1() =
 
   full.loop()
 
-
-startHax()
-main1()
-echo "done"
+when isMainModule:
+  startHax()
+  main1()
+  echo "done"

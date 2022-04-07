@@ -1,4 +1,4 @@
-import std/[enumutils, options, tables]
+import std/[enumutils, options]
 import hmisc/core/all
 
 type

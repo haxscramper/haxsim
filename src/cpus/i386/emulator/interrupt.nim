@@ -40,10 +40,10 @@ proc iret*(this: var Interrupt): void =
   discard
 
 import std/deques
-import device/[dev_irq, pic]
+import device/[pic]
 import common
 import device/pic
-import hardware/[cr, processor, memory, eflags, hardware]
+import hardware/[processor, memory, eflags, hardware]
 import emulator/exception
 import emulator/descriptor
 import emulator/access

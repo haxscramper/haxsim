@@ -1,5 +1,4 @@
 import common
-import std/lenientops
 
 ## Implementation of the control register and associated logic.
 

@@ -119,7 +119,7 @@ proc setDirection*(this: var Eflags, dir: bool): void =
   this.eflags.DF = dir.uint32
 
 import common
-import std/[lenientops, bitops]
+import std/[lenientops]
 
 proc chk_parity*(this: var Eflags, v: uint8): bool =
   var p: bool = true

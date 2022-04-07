@@ -167,15 +167,15 @@ proc getIp*(this: var Processor): uint32 =
   this.log ev(eekGetIP).withIt do:
     it.value = evalue(result, 32)
 
-proc getGpreg*(this: var Processor, n: Reg32T): uint32 =
+proc getGpreg*(this: Processor, n: Reg32T): uint32 =
   return this.gpregs[n].reg32
 
-proc getGpreg*(this: var Processor, n: Reg16T): uint16 =
-  return this.gpregs[Reg32T(n)].reg16
+proc getGpreg*(this: Processor, n: Reg16T): uint16 =
+  return this.gpregs[Reg32T(n.int)].reg16
 
-proc getGpreg*(this: var Processor, n: Reg8T): uint8 =
+proc getGpreg*(this: Processor, n: Reg8T): uint8 =
   if n < AH:
-    result = this.gpregs[Reg32T(n)].reg8L
+    result = this.gpregs[Reg32T(n.int)].reg8L
 
   else:
     result = this.gpregs[Reg32T(n.int - AH.int)].reg8H
@@ -183,6 +183,10 @@ proc getGpreg*(this: var Processor, n: Reg8T): uint8 =
   this.log ev(eekGetReg8).withIt do:
     it.memAddr = n.uint64
     it.value = evalue(result, sizeof(result))
+
+proc `[]`*(this: Processor, reg: Reg8T): uint8 = this.getGPreg(reg)
+proc `[]`*(this: Processor, reg: Reg16T): uint16 = this.getGPreg(reg)
+proc `[]`*(this: Processor, reg: Reg32T): uint32 = this.getGPreg(reg)
 
 
 proc getSgreg*(this: Processor, n: SgRegT, reg: var SGRegister): void =
@@ -213,11 +217,11 @@ proc setGpreg*(this: var Processor, n: Reg32T, v: uint32): void =
   this.gpregs[n].reg32 = v
 
 proc setGpreg*(this: var Processor, n: Reg16T, v: uint16): void =
-  this.gpregs[Reg32T(n)].reg16 = v
+  this.gpregs[Reg32T(n.int)].reg16 = v
 
 proc setGpreg*(this: var Processor, n: Reg8T, v: uint8): void =
   if n < AH:
-    this.gpregs[Reg32T(n)].reg8L = v
+    this.gpregs[Reg32T(n.int)].reg8L = v
 
   else:
     this.gpregs[Reg32T(n.int - AH.int)].reg8H = v
@@ -240,16 +244,16 @@ proc updateGpreg*(this: var Processor, n: Reg32T, v: int32) =
   this.gpregs[n].reg32 = (this.gpregs[n].reg32 + v.uint32)
 
 proc updateGpreg*(this: var Processor, n: Reg16T, v: int16) =
-  this.gpregs[Reg32T(n)].reg16 = (this.gpregs[Reg32T(n)].reg16 + v.uint16)
+  this.gpregs[Reg32T(n.int)].reg16 = (this.gpregs[Reg32T(n.int)].reg16 + v.uint16)
 
 proc updateGpreg*(this: var Processor, n: Reg8T, v: int8) =
   let rhs = if n < AH:
-              this.gpregs[Reg32T(n)].reg8L + v.uint8
+              this.gpregs[Reg32T(n.int)].reg8L + v.uint8
             else:
               this.gpregs[Reg32T(n.int - AH.int)].reg8H + v.uint8
 
   if n < AH:
-    this.gpregs[Reg32T(n)].reg8L = rhs
+    this.gpregs[Reg32T(n.int)].reg8L = rhs
 
   else:
     this.gpregs[Reg32T(n.int - AH.int)].reg8H = rhs
