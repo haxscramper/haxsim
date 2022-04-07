@@ -19,8 +19,6 @@ proc eval*(instr: openarray[string]): Emulator =
   for i in instr:
     let dat = parseInstr(i)
     let bin = dat.compileInstr()
-    echov i
-    echo hshow(bin, op)
     compiled.add bin
 
   var eset = EmuSetting(memSize: ESize(compiled.len() + 12))
@@ -40,3 +38,15 @@ suite "Register math":
     check eval([
       "mov ax, 2", "imul ax, -0x2", "hlt"
     ]).cpu[AX] == cast[uint16](-0x4'i16)
+
+    block:
+      let cpu = eval([
+        "mov ax, 2",
+        "mov bx, 3",
+        "xor ax, bx",
+        "hlt"
+      ]).cpu
+
+      check:
+        cpu[AX] == (0b11u16 xor 0b10u16)
+        cpu[BX] == 0b11u16

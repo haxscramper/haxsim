@@ -121,6 +121,7 @@ func dedupOpcodes*(code: ICode): ICode =
     # https://stackoverflow.com/questions/44335265/difference-between-mov-r-m8-r8-and-mov-r8-r-m8
     of opMOV_Reg_B_RegMem_B: opMOV_RegMem_B_Reg_B
     of opSUB_Reg_V_RegMem_V: opSUB_RegMem_V_Reg_V
+    of opXOR_Reg_V_RegMem_V: opXOR_RegMem_V_Reg_V
     # of opMov_Reg_B_RegMem_B: opMov_RegMem_B_Reg_B
     # of opMOV_Reg_V_Imm_V: opMOV_EAX_D_Imm_V
     else: code
