@@ -1,7 +1,7 @@
 import instruction/[instruction, emu]
 import common, exec
 import hardware/[eflags, processor, processor, memory, io]
-import emulator/[exception, emulator, access, interrupt]
+import emulator/[emulator, access, interrupt]
 
 template instrbase*(f: untyped): untyped {.dirty.} =
  instrfuncT(f)

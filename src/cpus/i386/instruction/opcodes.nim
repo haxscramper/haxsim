@@ -380,10 +380,10 @@ type
     opTEST_RegMem_V_Imm_V          = (0xF7_00_00'u64, "TEST r/m16/32 imm16/32")
     opNOT_RegMem_V                 = (0xF7_00_02'u64, "NOT r/m16/32")
     opNEG_RegMem_V                 = (0xF7_00_03'u64, "NEG r/m16/32")
-    opMUL_EDX_D_EAX_D_RegMem_V     = (0xF7_00_04'u64, "MUL eDX eAX r/m16/32")
-    opIMUL_EDX_D_EAX_D_RegMem_V    = (0xF7_00_05'u64, "IMUL eDX eAX r/m16/32")
-    opDIV_EDX_D_EAX_D_RegMem_V     = (0xF7_00_06'u64, "DIV eDX eAX r/m16/32")
-    opIDIV_EDX_D_EAX_D_RegMem_V    = (0xF7_00_07'u64, "IDIV eDX eAX r/m16/32")
+    opMUL_EDX_D                    = (0xF7_00_04'u64, "MUL eDX")
+    opIMUL_EDX_D                   = (0xF7_00_05'u64, "IMUL eDX")
+    opDIV_EDX_D                    = (0xF7_00_06'u64, "DIV eDX")
+    opIDIV_EDX_D                   = (0xF7_00_07'u64, "IDIV eDX")
     opCLC                          = (0xF8_00_00'u64, "CLC")
     opSTC                          = (0xF9_00_00'u64, "STC")
     opCLI                          = (0xFA_00_00'u64, "CLI")
@@ -596,7 +596,7 @@ func getOpcodes*(code: ICodeMnemonic): seq[ICode] =
     of opMneVERW        : @[ opVERW_RegMem_W ]
     of opMneLMSW        : @[ opLMSW_MSW_W_RegMem_W ]
     of opMneJB          : @[ opJB_Imm_V ]
-    of opMneIDIV        : @[ opIDIV_AL_B_AH_B_AX_W_RegMem_B, opIDIV_EDX_D_EAX_D_RegMem_V ]
+    of opMneIDIV        : @[ opIDIV_AL_B_AH_B_AX_W_RegMem_B, opIDIV_EDX_D ]
     of opMneAAA         : @[ opAAA_AL_B_AH_B ]
     of opMneSMSW        : @[ opSMSW_Mem_W_MSW_W ]
     of opMneAND         : @[ opAND_RegMem_B_Reg_B, opAND_RegMem_V_Reg_V, opAND_Reg_B_RegMem_B, opAND_Reg_V_RegMem_V, opAND_AL_B_Imm_B, opAND_EAX_D_Imm_V, opAND_RegMem_B_Imm_B, opAND_RegMem_V_Imm_V ]
@@ -656,7 +656,7 @@ func getOpcodes*(code: ICodeMnemonic): seq[ICode] =
     of opMneSGDT        : @[ opSGDT_Mem_P_GDTR_W ]
     of opMneSUB         : @[ opSUB_RegMem_B_Reg_B, opSUB_RegMem_V_Reg_V, opSUB_Reg_B_RegMem_B, opSUB_Reg_V_RegMem_V, opSUB_AL_B_Imm_B, opSUB_EAX_D_Imm_V, opSUB_RegMem_B_Imm_B, opSUB_RegMem_V_Imm_V ]
     of opMneOUTS        : @[ opOUTS_DX_W_Mem_B, opOUTS_DX_W_Mem_V ]
-    of opMneIMUL        : @[ opIMUL_Reg_V_RegMem_V, opIMUL_Reg_V_RegMem_V_Imm_V, opIMUL_Reg_V_RegMem_V_Imm_B, opIMUL_AX_W_AL_B_RegMem_B, opIMUL_EDX_D_EAX_D_RegMem_V ]
+    of opMneIMUL        : @[ opIMUL_Reg_V_RegMem_V, opIMUL_Reg_V_RegMem_V_Imm_V, opIMUL_Reg_V_RegMem_V_Imm_B, opIMUL_AX_W_AL_B_RegMem_B, opIMUL_EDX_D ]
     of opMneINT         : @[ opINT_Three_B_EFLAGS_D, opINT_Imm_B_EFLAGS_D ]
     of opMneLSS         : @[ opLSS_SS_B_Reg_V_Mem_P ]
     of opMneCALL        : @[ opCALL_Imm_V, opCALL_RegMem_V ]
@@ -677,8 +677,8 @@ func getOpcodes*(code: ICodeMnemonic): seq[ICode] =
     of opMneBTC         : @[ opBTC_RegMem_V_Imm_B, opBTC_RegMem_V_Reg_V ]
     of opMnePUSH        : @[ opPUSH_ES_W, opPUSH_CS_W, opPUSH_FS_W, opPUSH_GS_B, opPUSH_SS_B, opPUSH_DS_W, opPUSH_EAX_D, opPUSH_ECX_D, opPUSH_EDX_D, opPUSH_EBX_D, opPUSH_ESP_D, opPUSH_EBP_D, opPUSH_ESI_D, opPUSH_EDI_D, opPUSH_Imm_V, opPUSH_Imm_B, opPUSH_RegMem_V ]
     of opMneSETP        : @[ opSETP_RegMem_B ]
-    of opMneMUL         : @[ opMUL_AX_W_AL_B_RegMem_B, opMUL_EDX_D_EAX_D_RegMem_V ]
-    of opMneDIV         : @[ opDIV_AL_B_AH_B_AX_W_RegMem_B, opDIV_EDX_D_EAX_D_RegMem_V ]
+    of opMneMUL         : @[ opMUL_AX_W_AL_B_RegMem_B, opMUL_EDX_D ]
+    of opMneDIV         : @[ opDIV_AL_B_AH_B_AX_W_RegMem_B, opDIV_EDX_D ]
     of opMneJNB         : @[ opJNB_Imm_V ]
     of opMneJS          : @[ opJS_Imm_V, opJS_Imm_B ]
     of opMneSHL         : @[ opSHL_RegMem_B_Imm_B, opSHL_RegMem_V_Imm_B, opSHL_RegMem_B_One_B, opSHL_RegMem_V_One_B, opSHL_RegMem_B_CL_B, opSHL_RegMem_V_CL_B ]
@@ -724,7 +724,7 @@ func getOpcodes*(code: ICodeMnemonic): seq[ICode] =
 
 func hasModrm*(code: ICode): bool =
   case code:
-    of opADD_RegMem_B_Imm_B, opDIV_EDX_D_EAX_D_RegMem_V, opSGDT_Mem_P_GDTR_W, opROL_RegMem_V_CL_B, opLTR_TR_W_RegMem_W, opIMUL_Reg_V_RegMem_V_Imm_V, opIMUL_Reg_V_RegMem_V_Imm_B, opDEC_RegMem_B, opCMP_RegMem_V_Imm_V, opLMSW_MSW_W_RegMem_W, opSHR_RegMem_B_Imm_B, opROL_RegMem_V_Imm_B, opSAL_RegMem_V_Imm_B, opOR_Reg_V_RegMem_V, opSMSW_Mem_W_MSW_W, opSIDT_Mem_P_IDTR_W, opMOV_Reg_D_CR_F, opSETBE_RegMem_B, opXOR_RegMem_B_Imm_B, opLLDT_LDTR_W_RegMem_W, opMOV_Reg_B_RegMem_B, opMOVZX_Reg_V_RegMem_W, opCMP_RegMem_B_Imm_B, opADD_RegMem_V_Reg_V, opCALL_RegMem_V, opTEST_RegMem_V_Reg_V, opINC_RegMem_V, opSETNZ_RegMem_B, opSETNL_RegMem_B, opMOV_RegMem_V_Imm_V, opXOR_RegMem_B_Reg_B, opINC_RegMem_B, opOR_RegMem_B_Imm_B, opADD_RegMem_V_Imm_V, opDEC_RegMem_V, opLIDT_IDTR_W_Mem_P, opLEA_Reg_V_Mem_V, opNOT_RegMem_B, opJMP_RegMem_V, opNEG_RegMem_B, opADC_RegMem_V_Imm_V, opJNO_Imm_V, opSHR_RegMem_V_CL_B, opSAL_RegMem_B_Imm_B, opIDIV_AL_B_AH_B_AX_W_RegMem_B, opAND_RegMem_V_Imm_V, opXCHG_Reg_B_RegMem_B, opRCL_RegMem_V_Imm_B, opSHL_RegMem_B_Imm_B, opSETNB_RegMem_B, opSAR_RegMem_V_CL_B, opMOV_RegMem_V_Reg_V, opPUSH_RegMem_V, opROL_RegMem_B_Imm_B, opIDIV_EDX_D_EAX_D_RegMem_V, opSAR_RegMem_V_Imm_B, opRCR_RegMem_V_CL_B, opSUB_Reg_B_RegMem_B, opXOR_RegMem_V_Reg_V, opCMP_RegMem_V_Reg_V, opOR_RegMem_V_Imm_V, opTEST_RegMem_B_Imm_B, opMUL_AX_W_AL_B_RegMem_B, opADD_Reg_B_RegMem_B, opSUB_Reg_V_RegMem_V, opRCL_RegMem_B_Imm_B, opMOV_RegMem_B_Reg_B, opSUB_RegMem_B_Reg_B, opSBB_RegMem_V_Imm_V, opSTR_Mem_W_TR_W, opSAR_RegMem_B_Imm_B, opIMUL_Reg_V_RegMem_V, opCALLF_Mem_P, opSETNS_RegMem_B, opTEST_RegMem_V_Imm_V, opRCR_RegMem_B_Imm_B, opSUB_RegMem_V_Reg_V, opRCL_RegMem_V_CL_B, opSETO_RegMem_B, opMOV_RegMem_B_Imm_B, opOR_RegMem_V_Reg_V, opSETNO_RegMem_B, opMOV_SREG_W_RegMem_W, opMOV_Mem_W_SREG_W, opSAL_RegMem_V_CL_B, opADD_Reg_V_RegMem_V, opSHL_RegMem_V_CL_B, opOR_Reg_B_RegMem_B, opROR_RegMem_V_CL_B, opXOR_Reg_V_RegMem_V, opDIV_AL_B_AH_B_AX_W_RegMem_B, opTEST_RegMem_B_Reg_B, opLGDT_GDTR_W_Mem_P, opSHL_RegMem_V_Imm_B, opNOT_RegMem_V, opVERR_RegMem_W, opVERW_RegMem_W, opSETL_RegMem_B, opAND_Reg_B_RegMem_B, opSUB_RegMem_B_Imm_B, opSLDT_Mem_W_LDTR_W, opADC_RegMem_B_Imm_B, opSETLE_RegMem_B, opAND_RegMem_B_Reg_B, opMOVSX_Reg_V_RegMem_B, opSHR_RegMem_V_Imm_B, opXOR_Reg_B_RegMem_B, opAND_Reg_V_RegMem_V, opSETZ_RegMem_B, opRCR_RegMem_V_Imm_B, opSETS_RegMem_B, opROR_RegMem_B_Imm_B, opMOVZX_Reg_V_RegMem_B, opXCHG_Reg_V_RegMem_V, opJMPF_Mem_P, opAND_RegMem_V_Reg_V, opSUB_RegMem_V_Imm_V, opSBB_RegMem_B_Imm_B, opMOVSX_Reg_V_RegMem_W, opXOR_RegMem_V_Imm_V, opNEG_RegMem_V, opAND_RegMem_B_Imm_B, opSETP_RegMem_B, opSETNLE_RegMem_B, opIMUL_AX_W_AL_B_RegMem_B, opSETNBE_RegMem_B, opMUL_EDX_D_EAX_D_RegMem_V, opIMUL_EDX_D_EAX_D_RegMem_V, opSETB_RegMem_B, opSETNP_RegMem_B, opADD_RegMem_B_Reg_B, opROR_RegMem_V_Imm_B, opMOV_CR_F_Reg_D, opMOV_Reg_V_RegMem_V: true
+    of opADD_RegMem_B_Imm_B, opSGDT_Mem_P_GDTR_W, opROL_RegMem_V_CL_B, opLTR_TR_W_RegMem_W, opIMUL_Reg_V_RegMem_V_Imm_V, opIMUL_Reg_V_RegMem_V_Imm_B, opDEC_RegMem_B, opCMP_RegMem_V_Imm_V, opLMSW_MSW_W_RegMem_W, opSHR_RegMem_B_Imm_B, opROL_RegMem_V_Imm_B, opSAL_RegMem_V_Imm_B, opOR_Reg_V_RegMem_V, opSMSW_Mem_W_MSW_W, opSIDT_Mem_P_IDTR_W, opMOV_Reg_D_CR_F, opSETBE_RegMem_B, opXOR_RegMem_B_Imm_B, opLLDT_LDTR_W_RegMem_W, opMOV_Reg_B_RegMem_B, opMOVZX_Reg_V_RegMem_W, opCMP_RegMem_B_Imm_B, opADD_RegMem_V_Reg_V, opCALL_RegMem_V, opTEST_RegMem_V_Reg_V, opINC_RegMem_V, opSETNZ_RegMem_B, opSETNL_RegMem_B, opMOV_RegMem_V_Imm_V, opXOR_RegMem_B_Reg_B, opINC_RegMem_B, opOR_RegMem_B_Imm_B, opADD_RegMem_V_Imm_V, opDEC_RegMem_V, opLIDT_IDTR_W_Mem_P, opLEA_Reg_V_Mem_V, opNOT_RegMem_B, opJMP_RegMem_V, opNEG_RegMem_B, opADC_RegMem_V_Imm_V, opJNO_Imm_V, opSHR_RegMem_V_CL_B, opSAL_RegMem_B_Imm_B, opIDIV_AL_B_AH_B_AX_W_RegMem_B, opAND_RegMem_V_Imm_V, opXCHG_Reg_B_RegMem_B, opRCL_RegMem_V_Imm_B, opSHL_RegMem_B_Imm_B, opSETNB_RegMem_B, opSAR_RegMem_V_CL_B, opMOV_RegMem_V_Reg_V, opPUSH_RegMem_V, opROL_RegMem_B_Imm_B, opSAR_RegMem_V_Imm_B, opRCR_RegMem_V_CL_B, opSUB_Reg_B_RegMem_B, opXOR_RegMem_V_Reg_V, opCMP_RegMem_V_Reg_V, opOR_RegMem_V_Imm_V, opTEST_RegMem_B_Imm_B, opMUL_AX_W_AL_B_RegMem_B, opMUL_EDX_D, opADD_Reg_B_RegMem_B, opSUB_Reg_V_RegMem_V, opRCL_RegMem_B_Imm_B, opMOV_RegMem_B_Reg_B, opSUB_RegMem_B_Reg_B, opSBB_RegMem_V_Imm_V, opSTR_Mem_W_TR_W, opSAR_RegMem_B_Imm_B, opIMUL_Reg_V_RegMem_V, opCALLF_Mem_P, opSETNS_RegMem_B, opTEST_RegMem_V_Imm_V, opRCR_RegMem_B_Imm_B, opDIV_EDX_D, opSUB_RegMem_V_Reg_V, opRCL_RegMem_V_CL_B, opSETO_RegMem_B, opMOV_RegMem_B_Imm_B, opOR_RegMem_V_Reg_V, opSETNO_RegMem_B, opMOV_SREG_W_RegMem_W, opMOV_Mem_W_SREG_W, opSAL_RegMem_V_CL_B, opADD_Reg_V_RegMem_V, opSHL_RegMem_V_CL_B, opOR_Reg_B_RegMem_B, opROR_RegMem_V_CL_B, opXOR_Reg_V_RegMem_V, opDIV_AL_B_AH_B_AX_W_RegMem_B, opTEST_RegMem_B_Reg_B, opLGDT_GDTR_W_Mem_P, opSHL_RegMem_V_Imm_B, opNOT_RegMem_V, opVERR_RegMem_W, opIDIV_EDX_D, opVERW_RegMem_W, opSETL_RegMem_B, opAND_Reg_B_RegMem_B, opSUB_RegMem_B_Imm_B, opSLDT_Mem_W_LDTR_W, opIMUL_EDX_D, opADC_RegMem_B_Imm_B, opSETLE_RegMem_B, opAND_RegMem_B_Reg_B, opMOVSX_Reg_V_RegMem_B, opSHR_RegMem_V_Imm_B, opXOR_Reg_B_RegMem_B, opAND_Reg_V_RegMem_V, opSETZ_RegMem_B, opRCR_RegMem_V_Imm_B, opSETS_RegMem_B, opROR_RegMem_B_Imm_B, opMOVZX_Reg_V_RegMem_B, opXCHG_Reg_V_RegMem_V, opJMPF_Mem_P, opAND_RegMem_V_Reg_V, opSUB_RegMem_V_Imm_V, opSBB_RegMem_B_Imm_B, opMOVSX_Reg_V_RegMem_W, opXOR_RegMem_V_Imm_V, opNEG_RegMem_V, opAND_RegMem_B_Imm_B, opSETP_RegMem_B, opSETNLE_RegMem_B, opIMUL_AX_W_AL_B_RegMem_B, opSETNBE_RegMem_B, opSETB_RegMem_B, opSETNP_RegMem_B, opADD_RegMem_B_Reg_B, opROR_RegMem_V_Imm_B, opMOV_CR_F_Reg_D, opMOV_Reg_V_RegMem_V: true
     else: false
 
 func hasMoffs*(code: ICode): bool =
@@ -753,7 +753,7 @@ func hasImm16_32*(code: ICode): bool =
 
 func isExtendedOpcode*(code: ICode): bool =
    case code:
-     of opADD_RegMem_B_Imm_B, opDIV_EDX_D_EAX_D_RegMem_V, opSGDT_Mem_P_GDTR_W, opROL_RegMem_V_CL_B, opLTR_TR_W_RegMem_W, opBTC_RegMem_V_Imm_B, opDEC_RegMem_B, opCMP_RegMem_V_Imm_V, opLMSW_MSW_W_RegMem_W, opSHR_RegMem_B_Imm_B, opROL_RegMem_V_Imm_B, opSAL_RegMem_V_Imm_B, opSMSW_Mem_W_MSW_W, opSIDT_Mem_P_IDTR_W, opSETBE_RegMem_B, opXOR_RegMem_B_Imm_B, opSAL_RegMem_B_CL_B, opLLDT_LDTR_W_RegMem_W, opCMP_RegMem_B_Imm_B, opCALL_RegMem_V, opRCR_RegMem_B_One_B, opINC_RegMem_V, opSETNZ_RegMem_B, opSETNL_RegMem_B, opMOV_RegMem_V_Imm_V, opROR_RegMem_B_One_B, opINC_RegMem_B, opOR_RegMem_B_Imm_B, opADD_RegMem_V_Imm_V, opDEC_RegMem_V, opLIDT_IDTR_W_Mem_P, opSHL_RegMem_B_One_B, opNOT_RegMem_B, opROL_RegMem_B_CL_B, opJMP_RegMem_V, opBTS_RegMem_V_Imm_B, opNEG_RegMem_B, opADC_RegMem_V_Imm_V, opRCL_RegMem_V_One_B, opSHR_RegMem_V_CL_B, opSAL_RegMem_B_Imm_B, opRCR_RegMem_B_CL_B, opIDIV_AL_B_AH_B_AX_W_RegMem_B, opAND_RegMem_V_Imm_V, opRCL_RegMem_V_Imm_B, opSHL_RegMem_B_Imm_B, opSETNB_RegMem_B, opRCL_RegMem_B_One_B, opSAR_RegMem_V_CL_B, opPUSH_RegMem_V, opBTR_RegMem_V_Imm_B, opROL_RegMem_B_Imm_B, opIDIV_EDX_D_EAX_D_RegMem_V, opSAR_RegMem_V_Imm_B, opRCR_RegMem_V_CL_B, opOR_RegMem_V_Imm_V, opSHR_RegMem_V_One_B, opTEST_RegMem_B_Imm_B, opMUL_AX_W_AL_B_RegMem_B, opRCL_RegMem_B_CL_B, opRCL_RegMem_B_Imm_B, opSAR_RegMem_B_Imm_B, opSBB_RegMem_V_Imm_V, opSTR_Mem_W_TR_W, opCALLF_Mem_P, opSETNS_RegMem_B, opTEST_RegMem_V_Imm_V, opBT_RegMem_V_Imm_B, opRCR_RegMem_B_Imm_B, opRCL_RegMem_V_CL_B, opROR_RegMem_V_One_B, opSETO_RegMem_B, opMOV_RegMem_B_Imm_B, opSETNO_RegMem_B, opSAL_RegMem_V_CL_B, opSAR_RegMem_B_One_B, opSHL_RegMem_V_CL_B, opROR_RegMem_V_CL_B, opROL_RegMem_V_One_B, opDIV_AL_B_AH_B_AX_W_RegMem_B, opSHL_RegMem_V_Imm_B, opLGDT_GDTR_W_Mem_P, opNOT_RegMem_V, opVERR_RegMem_W, opVERW_RegMem_W, opSETL_RegMem_B, opSUB_RegMem_B_Imm_B, opSLDT_Mem_W_LDTR_W, opADC_RegMem_B_Imm_B, opSETLE_RegMem_B, opRCR_RegMem_V_One_B, opSHL_RegMem_V_One_B, opSAR_RegMem_V_One_B, opSHR_RegMem_V_Imm_B, opSETZ_RegMem_B, opRCR_RegMem_V_Imm_B, opSETS_RegMem_B, opROR_RegMem_B_Imm_B, opSHR_RegMem_B_CL_B, opJMPF_Mem_P, opSUB_RegMem_V_Imm_V, opSBB_RegMem_B_Imm_B, opROR_RegMem_B_CL_B, opXOR_RegMem_V_Imm_V, opROL_RegMem_B_One_B, opSAL_RegMem_B_One_B, opNEG_RegMem_V, opAND_RegMem_B_Imm_B, opSETP_RegMem_B, opSETNLE_RegMem_B, opIMUL_AX_W_AL_B_RegMem_B, opSAR_RegMem_B_CL_B, opSETNBE_RegMem_B, opPOP_RegMem_V, opMUL_EDX_D_EAX_D_RegMem_V, opSHL_RegMem_B_CL_B, opSHR_RegMem_B_One_B, opIMUL_EDX_D_EAX_D_RegMem_V, opSETB_RegMem_B, opSETNP_RegMem_B, opROR_RegMem_V_Imm_B, opSAL_RegMem_V_One_B: true
+     of opADD_RegMem_B_Imm_B, opSGDT_Mem_P_GDTR_W, opROL_RegMem_V_CL_B, opLTR_TR_W_RegMem_W, opBTC_RegMem_V_Imm_B, opDEC_RegMem_B, opCMP_RegMem_V_Imm_V, opLMSW_MSW_W_RegMem_W, opSHR_RegMem_B_Imm_B, opROL_RegMem_V_Imm_B, opSAL_RegMem_V_Imm_B, opSMSW_Mem_W_MSW_W, opSIDT_Mem_P_IDTR_W, opSETBE_RegMem_B, opXOR_RegMem_B_Imm_B, opSAL_RegMem_B_CL_B, opLLDT_LDTR_W_RegMem_W, opCMP_RegMem_B_Imm_B, opCALL_RegMem_V, opRCR_RegMem_B_One_B, opINC_RegMem_V, opSETNZ_RegMem_B, opSETNL_RegMem_B, opMOV_RegMem_V_Imm_V, opROR_RegMem_B_One_B, opINC_RegMem_B, opOR_RegMem_B_Imm_B, opADD_RegMem_V_Imm_V, opDEC_RegMem_V, opLIDT_IDTR_W_Mem_P, opSHL_RegMem_B_One_B, opNOT_RegMem_B, opROL_RegMem_B_CL_B, opJMP_RegMem_V, opBTS_RegMem_V_Imm_B, opNEG_RegMem_B, opADC_RegMem_V_Imm_V, opRCL_RegMem_V_One_B, opSHR_RegMem_V_CL_B, opSAL_RegMem_B_Imm_B, opRCR_RegMem_B_CL_B, opIDIV_AL_B_AH_B_AX_W_RegMem_B, opAND_RegMem_V_Imm_V, opRCL_RegMem_V_Imm_B, opSHL_RegMem_B_Imm_B, opSETNB_RegMem_B, opRCL_RegMem_B_One_B, opSAR_RegMem_V_CL_B, opPUSH_RegMem_V, opBTR_RegMem_V_Imm_B, opROL_RegMem_B_Imm_B, opSAR_RegMem_V_Imm_B, opRCR_RegMem_V_CL_B, opOR_RegMem_V_Imm_V, opSHR_RegMem_V_One_B, opTEST_RegMem_B_Imm_B, opMUL_AX_W_AL_B_RegMem_B, opRCL_RegMem_B_CL_B, opMUL_EDX_D, opRCL_RegMem_B_Imm_B, opSAR_RegMem_B_Imm_B, opSBB_RegMem_V_Imm_V, opSTR_Mem_W_TR_W, opCALLF_Mem_P, opSETNS_RegMem_B, opTEST_RegMem_V_Imm_V, opBT_RegMem_V_Imm_B, opRCR_RegMem_B_Imm_B, opDIV_EDX_D, opRCL_RegMem_V_CL_B, opROR_RegMem_V_One_B, opSETO_RegMem_B, opMOV_RegMem_B_Imm_B, opSETNO_RegMem_B, opSAL_RegMem_V_CL_B, opSAR_RegMem_B_One_B, opSHL_RegMem_V_CL_B, opROR_RegMem_V_CL_B, opROL_RegMem_V_One_B, opDIV_AL_B_AH_B_AX_W_RegMem_B, opSHL_RegMem_V_Imm_B, opLGDT_GDTR_W_Mem_P, opNOT_RegMem_V, opIDIV_EDX_D, opVERR_RegMem_W, opVERW_RegMem_W, opSETL_RegMem_B, opSUB_RegMem_B_Imm_B, opIMUL_EDX_D, opSLDT_Mem_W_LDTR_W, opADC_RegMem_B_Imm_B, opSETLE_RegMem_B, opRCR_RegMem_V_One_B, opSHL_RegMem_V_One_B, opSAR_RegMem_V_One_B, opSHR_RegMem_V_Imm_B, opSETZ_RegMem_B, opRCR_RegMem_V_Imm_B, opSETS_RegMem_B, opROR_RegMem_B_Imm_B, opSHR_RegMem_B_CL_B, opJMPF_Mem_P, opSUB_RegMem_V_Imm_V, opSBB_RegMem_B_Imm_B, opROR_RegMem_B_CL_B, opXOR_RegMem_V_Imm_V, opROL_RegMem_B_One_B, opSAL_RegMem_B_One_B, opNEG_RegMem_V, opAND_RegMem_B_Imm_B, opSETP_RegMem_B, opSETNLE_RegMem_B, opIMUL_AX_W_AL_B_RegMem_B, opSAR_RegMem_B_CL_B, opSETNBE_RegMem_B, opPOP_RegMem_V, opSHL_RegMem_B_CL_B, opSHR_RegMem_B_One_B, opSETB_RegMem_B, opSETNP_RegMem_B, opROR_RegMem_V_Imm_B, opSAL_RegMem_V_One_B: true
      else: false
 
 func hasImm32*(code: ICode): bool =
@@ -1146,10 +1146,10 @@ func getTestedFlags*(code: ICode): set[OpFlagIO] =
     of opTEST_RegMem_V_Imm_V         : set[OpFlagIO]({})
     of opNOT_RegMem_V                : set[OpFlagIO]({})
     of opNEG_RegMem_V                : set[OpFlagIO]({})
-    of opMUL_EDX_D_EAX_D_RegMem_V    : set[OpFlagIO]({})
-    of opIMUL_EDX_D_EAX_D_RegMem_V   : set[OpFlagIO]({})
-    of opDIV_EDX_D_EAX_D_RegMem_V    : set[OpFlagIO]({})
-    of opIDIV_EDX_D_EAX_D_RegMem_V   : set[OpFlagIO]({})
+    of opMUL_EDX_D                   : set[OpFlagIO]({})
+    of opIMUL_EDX_D                  : set[OpFlagIO]({})
+    of opDIV_EDX_D                   : set[OpFlagIO]({})
+    of opIDIV_EDX_D                  : set[OpFlagIO]({})
     of opCLC                         : set[OpFlagIO]({})
     of opSTC                         : set[OpFlagIO]({})
     of opCLI                         : set[OpFlagIO]({})
@@ -1546,10 +1546,10 @@ func getModifiedFlags*(code: ICode): set[OpFlagIO] =
     of opTEST_RegMem_V_Imm_V         : set[OpFlagIO]({opfOverflow, opfSigned, opfZero, opfAbove, opfParity, opfCarry, })
     of opNOT_RegMem_V                : set[OpFlagIO]({})
     of opNEG_RegMem_V                : set[OpFlagIO]({opfOverflow, opfSigned, opfZero, opfAbove, opfParity, opfCarry, })
-    of opMUL_EDX_D_EAX_D_RegMem_V    : set[OpFlagIO]({opfOverflow, opfSigned, opfZero, opfAbove, opfParity, opfCarry, })
-    of opIMUL_EDX_D_EAX_D_RegMem_V   : set[OpFlagIO]({opfOverflow, opfSigned, opfZero, opfAbove, opfParity, opfCarry, })
-    of opDIV_EDX_D_EAX_D_RegMem_V    : set[OpFlagIO]({opfOverflow, opfSigned, opfZero, opfAbove, opfParity, opfCarry, })
-    of opIDIV_EDX_D_EAX_D_RegMem_V   : set[OpFlagIO]({opfOverflow, opfSigned, opfZero, opfAbove, opfParity, opfCarry, })
+    of opMUL_EDX_D                   : set[OpFlagIO]({opfOverflow, opfSigned, opfZero, opfAbove, opfParity, opfCarry, })
+    of opIMUL_EDX_D                  : set[OpFlagIO]({opfOverflow, opfSigned, opfZero, opfAbove, opfParity, opfCarry, })
+    of opDIV_EDX_D                   : set[OpFlagIO]({opfOverflow, opfSigned, opfZero, opfAbove, opfParity, opfCarry, })
+    of opIDIV_EDX_D                  : set[OpFlagIO]({opfOverflow, opfSigned, opfZero, opfAbove, opfParity, opfCarry, })
     of opCLC                         : set[OpFlagIO]({opfCarry, })
     of opSTC                         : set[OpFlagIO]({opfCarry, })
     of opCLI                         : set[OpFlagIO]({opfInterrupt, })
@@ -2003,10 +2003,10 @@ func getUsedOperands*(code: ICode): array[4, Option[(OpAddrKind, OpDataKind)]] =
     of opTEST_RegMem_V_Imm_V         : [some((AdRegMem, DaV))   , some((AdImm, DaV))      , nop                     , nop                     , ]
     of opNOT_RegMem_V                : [some((AdRegMem, DaV))   , nop                     , nop                     , nop                     , ]
     of opNEG_RegMem_V                : [some((AdRegMem, DaV))   , nop                     , nop                     , nop                     , ]
-    of opMUL_EDX_D_EAX_D_RegMem_V    : [some((AdEDX, DaD))      , some((AdEAX, DaD))      , some((AdRegMem, DaV))   , nop                     , ]
-    of opIMUL_EDX_D_EAX_D_RegMem_V   : [some((AdEDX, DaD))      , some((AdEAX, DaD))      , some((AdRegMem, DaV))   , nop                     , ]
-    of opDIV_EDX_D_EAX_D_RegMem_V    : [some((AdEDX, DaD))      , some((AdEAX, DaD))      , some((AdRegMem, DaV))   , nop                     , ]
-    of opIDIV_EDX_D_EAX_D_RegMem_V   : [some((AdEDX, DaD))      , some((AdEAX, DaD))      , some((AdRegMem, DaV))   , nop                     , ]
+    of opMUL_EDX_D                   : [some((AdEDX, DaD))      , nop                     , nop                     , nop                     , ]
+    of opIMUL_EDX_D                  : [some((AdEDX, DaD))      , nop                     , nop                     , nop                     , ]
+    of opDIV_EDX_D                   : [some((AdEDX, DaD))      , nop                     , nop                     , nop                     , ]
+    of opIDIV_EDX_D                  : [some((AdEDX, DaD))      , nop                     , nop                     , nop                     , ]
     of opCLC                         : [nop                     , nop                     , nop                     , nop                     , ]
     of opSTC                         : [nop                     , nop                     , nop                     , nop                     , ]
     of opCLI                         : [nop                     , nop                     , nop                     , nop                     , ]

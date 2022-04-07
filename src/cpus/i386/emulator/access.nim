@@ -46,7 +46,6 @@ proc initDataAccess*(size: ESize, logger: EmuLogger): DataAccess =
   assertRef(result.mem)
   assertRef(result.io.memory)
 
-import emulator/exception
 import emulator/descriptor
 
 proc setSegment*(this: var DataAccess, reg: SgRegT, sel: uint16): void =

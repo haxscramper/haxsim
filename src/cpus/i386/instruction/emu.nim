@@ -1,7 +1,7 @@
 import common
 
 import instruction/instruction
-import emulator/[exception, access, descriptor]
+import emulator/[access, descriptor]
 import hardware/[processor, memory, cr, eflags]
 
 proc typeDescriptor*(this: var ExecInstr, sel: uint16): uint8 =
@@ -10,7 +10,10 @@ proc typeDescriptor*(this: var ExecInstr, sel: uint16): uint8 =
   var desc: Descriptor
   gdtBase = CPU.getDtregBase(GDTR)
   gdtLimit = CPU.getDtregLimit(GDTR)
-  EXCEPTION(EXPGP, sel > gdtLimit)
+  if gdtLimit < sel:
+    raise newException(
+      EXP_GP, "gdt limit: $#, selector: $#" % [$gdtLimit, $sel])
+
   MEM.readDataBlob(desc, gdtBase + sel)
 
   if desc.S.toBool():
@@ -34,7 +37,10 @@ proc setLdtr*(this: var ExecInstr, sel: uint16): void =
   var ldt: LDTDesc
   gdtBase = CPU.getDtregBase(GDTR)
   gdtLimit = CPU.getDtregLimit(GDTR)
-  EXCEPTION(EXPGP, sel > gdtLimit)
+  if gdtLimit < sel:
+    raise newException(
+      EXP_GP, "gdt limit: $#, selector: $#" % [$gdtLimit, $sel])
+
   MEM.readDataBlob(ldt, gdtBase + sel)
   base = (ldt.baseH shl 24) + (ldt.baseM shl 16) + ldt.baseL
   limit = (ldt.limitH shl 16) + ldt.limitL
@@ -46,9 +52,13 @@ proc setTr*(this: var ExecInstr, sel: uint16): void =
   var tssdesc: TSSDesc
   gdtBase = CPU.getDtregBase(GDTR)
   gdtLimit = CPU.getDtregLimit(GDTR)
-  EXCEPTION(EXPGP, sel > gdtLimit)
+  if gdtLimit < sel:
+    raise newException(
+      EXP_GP, "gdt limit: $#, selector: $#" % [$gdtLimit, $sel])
   MEM.readDataBlob(tssdesc, gdtBase + sel)
-  EXCEPTION(EXPGP, tssdesc.getType() != TYPETSS)
+  if tssdesc.getType() != TYPETSS:
+    raise newException(EXP_GP, "tssdesc: $#" % [$tssdesc])
+
   base = (tssdesc.baseH shl 24) + (tssdesc.baseM shl 16) + tssdesc.baseL
   limit = (tssdesc.limitH shl 16) + tssdesc.limitL
   CPU.setDtreg(TR, sel, base, limit)
@@ -60,7 +70,9 @@ proc switchTask*(this: var ExecInstr, sel: uint16): void =
   prev = CPU.getDtregSelector(TR).uint16
   base = CPU.getDtregBase(TR)
   limit = CPU.getDtregLimit(TR)
-  EXCEPTION(EXPGP, limit < (sizeof(TSS) - 1).uint16)
+  if limit < (sizeof(TSS) - 1).uint16:
+    raise newException(EXP_GP, "limit: $#" % [$limit])
+
   MEM.readDataBlob(oldTss, base)
   oldTss.cr3 = CPU.getCrn(3)
   oldTss.eip = CPU.getEip()
@@ -84,7 +96,9 @@ proc switchTask*(this: var ExecInstr, sel: uint16): void =
   this.setTr(sel)
   base = CPU.getDtregBase(TR)
   limit = CPU.getDtregLimit(TR)
-  EXCEPTION(EXPGP, limit < uint16(sizeof(TSS) - 1))
+  if limit < (sizeof(TSS) - 1).uint16:
+    raise newException(EXP_GP, "limit: $#" % [$limit])
+
   MEM.readDataBlob(newTss, base)
   newTss.prevSel = prev
   MEM.writeDataBlob(base, newTss)

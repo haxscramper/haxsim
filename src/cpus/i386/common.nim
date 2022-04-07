@@ -1,5 +1,5 @@
 import instruction/[syntaxes, opcodes]
-import std/strformat
+import std/[strformat, enumutils]
 export strformat
 import std/strutils
 export strutils
@@ -19,10 +19,6 @@ template ASSERT*(expr: untyped): untyped =
 template ERROR*(msg: string, other: varargs[untyped]): untyped =
   assert false, msg
 
-# template EXCEPTION*(kind, eif: untyped): untyped =
-#   if eif:
-#     assert false, $kind
-
 template INFO*(lvl: int, msg: string, other: varargs[untyped]): untyped =
   echo instantiationInfo(), msg
 
@@ -35,8 +31,30 @@ type
   NBits*[Count: static[int]] = range[0'u .. pow2(Count) - 1]
 
 type
+  EmuCpuExceptionKind* = enum
+    EXP_DE = (0x00, "divide by zero")
+    EXP_DB = (0x01, "debug")
+    EXP_BP = (0x03, "breakpoint")
+    EXP_OF = (0x04, "overflow")
+    EXP_BR = (0x05, "bound range exceeded")
+    EXP_UD = (0x06, "invalid opcode")
+    EXP_NM = (0x07, "device not available")
+    EXP_DF = (0x08, "double fault")
+    EXP_TS = (0x0A, "invalid TSS")
+    EXP_NP = (0x0B, "segment not present")
+    EXP_SS = (0x0C, "stack-segment fault")
+    EXP_GP = (0x0D, "general protection fault")
+    EXP_PF = (0x0E, "page fault")
+    EXP_MF = (0x10, "floating-point exception")
+    EXP_AC = (0x11, "alignment check")
+    EXP_MC = (0x12, "machine check")
+    EXP_XF = (0x13, "simd floating point exception")
+    EXP_VE = (0x14, "virtualization exception")
+    EXP_SX = (0x1E, "security exception")
+
   EmuCpuException* = object of CatchableError
     ## CPU exception - part of the CPU operation
+    kind*: EmuCpuExceptionKind
 
   EmuImplError* = object of CatchableError
     ## Error in the CPU implementation
@@ -44,6 +62,32 @@ type
   EmuIoError* = object of EmuImplError
     ## IO-related errors
     port*: uint16
+
+func newException*(
+    kind: EmuCpuExceptionKind, desc: string): ref EmuCpuException =
+  new(result)
+  result.msg = "Exception during evaluation #$# ($#). $#" % [
+    symbolName(kind).substr(4),
+    $kind,
+    desc
+  ]
+  result.kind = kind
+
+# type
+#   exception_t* = enum
+
+template EXCEPTION*(n: untyped, c: untyped, msg: string = ""): untyped {.deprecated: "[#########]".} =
+  if c:
+    raise newException(n, msg)
+
+
+template EXCEPTION_WITH*(n: untyped, c: untyped, e: untyped): untyped {.dirty.} =
+  if c:
+    assert false, "exception interrupt %d (%s)"
+    e
+    when false:
+      # FIXME wrap expression
+      raise n
 
 
 const KB* = 1024

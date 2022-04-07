@@ -5,7 +5,7 @@ import ./emu
 import ./exec
 import hardware/eflags
 import hardware/[processor, eflags, io]
-import emulator/[exception, emulator, access]
+import emulator/[emulator, access]
 
 template instr16*(f: untyped): untyped {.dirty.} =
   instrfuncT(f)
@@ -622,20 +622,23 @@ proc imulDxAxRm16*(this: var InstrImpl): void =
   CPU.eflags.updateIMUL(axS, rm16S)
 
 proc divDxAxRm16*(this: var InstrImpl): void =
-  var rm16: uint16
-  var val: uint32
-  rm16 = this.exec.getRm16()
-  EXCEPTION(EXPDE, not(rm16.toBool()))
-  val = (CPU.getGPreg(DX) shl 16) or CPU.getGPreg(AX)
+  var rm16: uint16 = this.exec.getRm16()
+
+  if rm16 == 0:
+    raise newException(EXP_DE, "divider was zero")
+
+  var val: uint32 = (CPU.getGPreg(DX) shl 16) or CPU.getGPreg(AX)
   CPU.setGPreg(AX, uint16(val div rm16))
   CPU.setGPreg(DX, uint16(val mod rm16))
 
 proc idivDxAxRm16*(this: var InstrImpl): void =
-  var rm16S: int16
-  var valS: int32
-  rm16S = this.exec.getRm16().int16
-  EXCEPTION(EXPDE, not(rm16S.toBool()))
-  valS = int32((CPU.getGPreg(DX) shl 16) or CPU.getGPreg(AX))
+  var rm16S: int16 = this.exec.getRm16().int16
+  echov "w"
+  if rm16S == 0:
+    raise newException(EXP_DE, "divider was zero")
+  # EXCEPTION(EXPDE, not(rm16S.toBool()))
+
+  var valS: int32 = int32((CPU.getGPreg(DX) shl 16) or CPU.getGPreg(AX))
   CPU.setGPreg(AX, uint16(valS div rm16S))
   CPU.setGPreg(DX, uint16(valS mod rm16S))
 

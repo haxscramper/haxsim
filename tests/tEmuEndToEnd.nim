@@ -50,3 +50,15 @@ suite "Register math":
       check:
         cpu[AX] == (0b11u16 xor 0b10u16)
         cpu[BX] == 0b11u16
+
+suite "Interrupts":
+  test "Division by zero":
+    echov "Hello"
+    let emu = eval([
+      "mov ax, 2",
+      "mov dx, 0",
+      "div edx",
+      "hlt"
+    ])
+
+    pprinte emu.cpu.gpregs

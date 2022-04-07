@@ -5,7 +5,7 @@ import ./emu
 import ./exec
 import hardware/eflags
 import hardware/[processor, eflags, io]
-import emulator/[exception, emulator, access]
+import emulator/[emulator, access]
 
 template instr32*(f: untyped): untyped {.dirty.} = 
   instrfuncT(f)

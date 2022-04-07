@@ -44,7 +44,6 @@ import device/[pic]
 import common
 import device/pic
 import hardware/[processor, memory, eflags, hardware]
-import emulator/exception
 import emulator/descriptor
 import emulator/access
 
