@@ -22,6 +22,10 @@ proc `reg8H=`*(this: var GPRegister, value: uint8) = this.regLH.reg8H = value
 
 type
   SGRegCache* = object
+    ## To allow for fast accesses to segmented memory, the x86 processor
+    ## keeps a copy of each segment descriptor in a special descriptor
+    ## cache. This saves the processor from accessing the GDT for every
+    ## memory access made
     base*:        uint32
     limit* {.bitsize: 20.}: uint32
     flags*:        SGRegCacheFlags
@@ -38,12 +42,12 @@ type
     cnf*    {.bitsize: 1.}: uint8
     field3* {.bitsize: 1.}: uint8
 
-  typeField2* {.bycopy.} = object
+  typeField2* = object
     A*      {.bitsize: 1.}: uint8
     field1* {.bitsize: 2.}: uint8
     segc*   {.bitsize: 1.}: uint8
 
-  SGRegCacheFlagsField2* {.bycopy.} = object
+  SGRegCacheFlagsField2* = object
     field0* {.bitsize: 4.}: uint8
     S*      {.bitsize: 1.}: uint8
     DPL*    {.bitsize: 2.}: uint8
@@ -55,7 +59,7 @@ type
 
   SGRegCacheFlags* {.union.} = object
     raw* {.bitsize: 12.}: uint16
-    `type`*:        `type`
+    typ*:        typ
     field2*:        SGRegCacheFlagsField2
 
   SGRegister* = object
@@ -72,16 +76,16 @@ type
     TI*    {.bitsize: 1.}: uint16
     index* {.bitsize: 13.}: uint16
 
-  `type`* {.union.} = object
+  typ* {.union.} = object
     data*:   data
     code*:   code
     field2*: typeField2
 
 
-proc A*(this: `type`): uint8 = this.field2.A
-proc `A=`*(this: var `type`, value: uint8) = this.field2.A = value
-proc segc*(this: `type`): uint8 = this.field2.segc
-proc `segc=`*(this: var `type`, value: uint8) = this.field2.segc = value
+proc A*(this: typ): uint8 = this.field2.A
+proc `A=`*(this: var typ, value: uint8) = this.field2.A = value
+proc segc*(this: typ): uint8 = this.field2.segc
+proc `segc=`*(this: var typ, value: uint8) = this.field2.segc = value
 proc S*(this: SGRegCacheFlags): uint8 = this.field2.S
 proc `S=`*(this: var SGRegCacheFlags, value: uint8) = this.field2.S = value
 proc DPL*(this: SGRegCacheFlags): uint8 = this.field2.DPL
@@ -191,8 +195,8 @@ proc `[]`*(this: Processor, reg: Reg16T): uint16 = this.getGPreg(reg)
 proc `[]`*(this: Processor, reg: Reg32T): uint32 = this.getGPreg(reg)
 
 
-proc getSgreg*(this: Processor, n: SgRegT, reg: var SGRegister): void =
-  reg = this.sgregs[n]
+proc getSgreg*(this: Processor, n: SgRegT): SgRegister =
+  result = this.sgregs[n]
 
 proc getDtregSelector*(this: Processor, n: DTregT): uint32 =
   result = this.dtregs[n].selector
@@ -286,12 +290,12 @@ proc initProcessor*(logger: EmuLogger): Processor =
   result.eflags.set_eflags(0x00000002)
   result.sgregs[CS].raw = 0xf000
   result.sgregs[CS].cache.base = 0xffff0000u32
-  result.sgregs[CS].cache.flags.`type`.segc = 1
+  result.sgregs[CS].cache.flags.typ.segc = 1
   for i in ES .. GS:
     result.sgregs[i].cache.limit = 0xffff
     result.sgregs[i].cache.flags.P = 1
-    result.sgregs[i].cache.flags.`type`.A = 1
-    result.sgregs[i].cache.flags.`type`.data.w = 1
+    result.sgregs[i].cache.flags.typ.A = 1
+    result.sgregs[i].cache.flags.typ.data.w = 1
 
   result.dtregs[IDTR].base  = 0x0000
   result.dtregs[IDTR].limit = 0xffff

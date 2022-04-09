@@ -52,47 +52,46 @@ proc initDataAccess*(size: ESize, logger: EmuLogger): DataAccess =
 import emulator/descriptor
 
 proc setSegment*(this: var DataAccess, reg: SgRegT, sel: uint16): void =
-  var sg: SGRegister
-  var cache: ptr SGRegCache = addr sg.cache
-  this.cpu.getSgreg(reg, sg)
+  ## Set segment value in the GDT table, update cache in the SG registers.
+  ## https://wiki.osdev.org/Descriptor_Cache
+  var sg: SGRegister = this.cpu.getSgreg(reg)
   sg.raw = sel
   if this.cpu.isProtected():
-    var dtBase: uint32
-    var dtLimit, dtIndex: uint16
-    var gdt: SegDesc
-    let sgregName = ["ES", "CS", "SS", "DS", "FS", "GS"]
-    dtIndex = sg.index shl 3
-    dtBase = this.cpu.getDtregBase(if sg.TI.bool: LDTR else: GDTR)
-    dtLimit = this.cpu.getDtregLimit(if sg.TI.bool: LDTR else: GDTR)
+    let dtIndex: uint16 = sg.index shl 3
+    var dtBase: uint32 = this.cpu.getDtregBase(if sg.TI.bool: LDTR else: GDTR)
+    let dtLimit: uint16 = this.cpu.getDtregLimit(if sg.TI.bool: LDTR else: GDTR)
+
     if (reg == CS or reg == SS) and not(dtIndex).bool: raise newException(EXP_GP, "")
     if dtIndex > dtLimit:
       raise newException(
         EXP_GP, "dtIndex: $#, dtLimit: $#" % [$dtIndex, $dtLimit])
 
 
+    var gdt: SegDesc
     this.mem.readDataBlob(gdt, dtBase + dtIndex)
 
-    cache.base = (gdt.baseH shl 24) + (gdt.baseM shl 16) + gdt.baseL
-    cache.limit = (gdt.limitH shl 16) + gdt.limitL
+    sg.cache.base = (gdt.baseH shl 24) + (gdt.baseM shl 16) + gdt.baseL
+    sg.cache.limit = (gdt.limitH shl 16) + gdt.limitL
+
+    # sg.cache.flags.typ = gdt.getType()
     cast[ptr uint8](
-      addr cache.flags.`type`
+      addr sg.cache.flags.typ
     )[] = cast[ptr uint8](
       addr gdt.getType()
     )[]
 
-    cache.flags.AVL = gdt.AVL
-    cache.flags.DB = gdt.DB
-    cache.flags.G = gdt.G
+    sg.cache.flags.AVL = gdt.AVL
+    sg.cache.flags.DB = gdt.DB
+    sg.cache.flags.G = gdt.G
 
   else:
-    cache.base = cast[uint32](sel) shl 4
+    sg.cache.base = cast[uint32](sel) shl 4
 
   this.log ev(eekSetSegment, evalue(sg.raw, 16), reg.uint8)
   this.cpu.setSgreg(reg, sg)
 
 proc getSegment*(this: var DataAccess, reg: SgRegT): uint16 =
-  var sg: SGRegister
-  this.cpu.getSgreg(reg, sg)
+  let sg: SGRegister = this.cpu.getSgreg(reg)
   result = sg.raw
   this.log ev(eekGetSegment, evalue(result, 16), reg.uint8)
 
@@ -102,8 +101,7 @@ proc transVirtualToLinear*(
 
   let CPL: uint8 = this.getSegment(CS).uint8 and 3
 
-  var sg: SGRegister
-  this.cpu.getSgreg(seg, sg)
+  let sg: SGRegister = this.cpu.getSgreg(seg)
   if this.cpu.isProtected():
     let cache: SGRegCache = sg.cache
     var base = cache.base
@@ -112,15 +110,15 @@ proc transVirtualToLinear*(
     if cache.flags.G.bool:
       limit = (limit shl 12)
 
-    if cache.flags.`type`.segc.bool:
+    if cache.flags.typ.segc.bool:
       if mode == MODEWRITE:
         raise newException(EXP_GP, "")
 
-      if mode == MODEREAD and not(cache.flags.`type`.code.r).bool:
+      if mode == MODEREAD and not(cache.flags.typ.code.r).bool:
         raise newException(EXP_GP, "")
 
       if CPL > cache.flags.DPL and
-        not((mode == MODEEXEC and cache.flags.`type`.code.cnf.bool)).bool:
+        not((mode == MODEEXEC and cache.flags.typ.code.cnf.bool)).bool:
 
         raise newException(EXP_GP, "")
 
@@ -128,13 +126,13 @@ proc transVirtualToLinear*(
       if mode == MODEEXEC:
         raise newException(EXP_GP, "")
 
-      if mode == MODEWRITE and not(cache.flags.`type`.data.w).bool:
+      if mode == MODEWRITE and not(cache.flags.typ.data.w).bool:
         raise newException(EXP_GP, "")
 
       if CPL > cache.flags.DPL:
         raise newException(EXP_GP, "")
 
-      if cache.flags.`type`.data.exd.bool:
+      if cache.flags.typ.data.exd.bool:
         base = (base - limit)
 
     if vaddr > limit:
