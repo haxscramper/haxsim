@@ -2,31 +2,31 @@ import common
 import hardware/[hardware, cr]
 type
   PDE* {.bycopy.} = object
-    P* {.bitsize: 1.}: uint32
-    RW* {.bitsize: 1.}: uint32
-    US* {.bitsize: 1.}: uint32
-    PWT* {.bitsize: 1.}: uint32
-    PCD* {.bitsize: 1.}: uint32
-    A* {.bitsize: 1.}: uint32
-    field6* {.bitsize: 1.}: uint32
-    PS* {.bitsize: 1.}: uint32
-    G* {.bitsize: 1.}: uint32
-    field9* {.bitsize: 3.}: uint32
-    ptblBase* {.bitsize: 20.}: uint32
+    P* {.bitsize: 1.}: U32
+    RW* {.bitsize: 1.}: U32
+    US* {.bitsize: 1.}: U32
+    PWT* {.bitsize: 1.}: U32
+    PCD* {.bitsize: 1.}: U32
+    A* {.bitsize: 1.}: U32
+    field6* {.bitsize: 1.}: U32
+    PS* {.bitsize: 1.}: U32
+    G* {.bitsize: 1.}: U32
+    field9* {.bitsize: 3.}: U32
+    ptblBase* {.bitsize: 20.}: U32
 
 type
   PTE* {.bycopy.} = object
-    P* {.bitsize: 1.}: uint32
-    RW* {.bitsize: 1.}: uint32
-    US* {.bitsize: 1.}: uint32
-    PWT* {.bitsize: 1.}: uint32
-    PCD* {.bitsize: 1.}: uint32
-    A* {.bitsize: 1.}: uint32
-    D* {.bitsize: 1.}: uint32
-    PAT* {.bitsize: 1.}: uint32
-    G* {.bitsize: 1.}: uint32
-    field9* {.bitsize: 3.}: uint32
-    pageBase* {.bitsize: 20.}: uint32
+    P* {.bitsize: 1.}: U32
+    RW* {.bitsize: 1.}: U32
+    US* {.bitsize: 1.}: U32
+    PWT* {.bitsize: 1.}: U32
+    PCD* {.bitsize: 1.}: U32
+    A* {.bitsize: 1.}: U32
+    D* {.bitsize: 1.}: U32
+    PAT* {.bitsize: 1.}: U32
+    G* {.bitsize: 1.}: U32
+    field9* {.bitsize: 3.}: U32
+    pageBase* {.bitsize: 20.}: U32
 
 type
   acsmodeT* {.size: sizeof(cint).} = enum
@@ -51,15 +51,15 @@ proc initDataAccess*(size: ESize, logger: EmuLogger): DataAccess =
 
 import emulator/descriptor
 
-proc setSegment*(this: var DataAccess, reg: SgRegT, sel: uint16): void =
+proc setSegment*(this: var DataAccess, reg: SgRegT, sel: U16): void =
   ## Set segment value in the GDT table, update cache in the SG registers.
   ## https://wiki.osdev.org/Descriptor_Cache
   var sg: SGRegister = this.cpu.getSgreg(reg)
   sg.raw = sel
   if this.cpu.isProtected():
-    let dtIndex: uint16 = sg.index shl 3
-    var dtBase: uint32 = this.cpu.getDtregBase(if sg.TI.bool: LDTR else: GDTR)
-    let dtLimit: uint16 = this.cpu.getDtregLimit(if sg.TI.bool: LDTR else: GDTR)
+    let dtIndex: U16 = sg.index shl 3
+    var dtBase: U32 = this.cpu.getDtregBase(if sg.TI.bool: LDTR else: GDTR)
+    let dtLimit: U16 = this.cpu.getDtregLimit(if sg.TI.bool: LDTR else: GDTR)
 
     if (reg == CS or reg == SS) and not(dtIndex).bool: raise newException(EXP_GP, "")
     if dtIndex > dtLimit:
@@ -74,9 +74,9 @@ proc setSegment*(this: var DataAccess, reg: SgRegT, sel: uint16): void =
     sg.cache.limit = (gdt.limitH shl 16) + gdt.limitL
 
     # sg.cache.flags.typ = gdt.getType()
-    cast[ptr uint8](
+    cast[ptr U8](
       addr sg.cache.flags.typ
-    )[] = cast[ptr uint8](
+    )[] = cast[ptr U8](
       addr gdt.getType()
     )[]
 
@@ -85,21 +85,21 @@ proc setSegment*(this: var DataAccess, reg: SgRegT, sel: uint16): void =
     sg.cache.flags.G = gdt.G
 
   else:
-    sg.cache.base = cast[uint32](sel) shl 4
+    sg.cache.base = cast[U32](sel) shl 4
 
-  this.log ev(eekSetSegment, evalue(sg.raw, 16), reg.uint8)
+  this.log ev(eekSetSegment, evalue(sg.raw, 16), reg.U8)
   this.cpu.setSgreg(reg, sg)
 
-proc getSegment*(this: var DataAccess, reg: SgRegT): uint16 =
+proc getSegment*(this: var DataAccess, reg: SgRegT): U16 =
   let sg: SGRegister = this.cpu.getSgreg(reg)
   result = sg.raw
-  this.log ev(eekGetSegment, evalue(result, 16), reg.uint8)
+  this.log ev(eekGetSegment, evalue(result, 16), reg.U8)
 
 proc transVirtualToLinear*(
-    this: var DataAccess, mode: acsmodeT, seg: SgRegT, vaddr: uint32): uint32 =
+    this: var DataAccess, mode: acsmodeT, seg: SgRegT, vaddr: U32): U32 =
   ## Translate virtual (logical) address `vaddr` into linear address
 
-  let CPL: uint8 = this.getSegment(CS).uint8 and 3
+  let CPL: U8 = this.getSegment(CS).U8 and 3
 
   let sg: SGRegister = this.cpu.getSgreg(seg)
   if this.cpu.isProtected():
@@ -149,16 +149,16 @@ proc transVirtualToLinear*(
 
 
 
-proc searchTlb*(this: var DataAccess, vpn: uint32, pte: ptr PTE): bool =
-  if vpn + 1 > uint32(this.tlb.len() != 0 or not(this.tlb[vpn].isNil())):
+proc searchTlb*(this: var DataAccess, vpn: U32, pte: ptr PTE): bool =
+  if vpn + 1 > U32(this.tlb.len() != 0 or not(this.tlb[vpn].isNil())):
     return false
 
   ASSERT(pte.isNil())
   pte[] = this.tlb[vpn][]
   return true
 
-proc cacheTlb*(this: var DataAccess, vpn: uint32, pte: PTE): void =
-  if vpn + 1 > this.tlb.len().uint32:
+proc cacheTlb*(this: var DataAccess, vpn: U32, pte: PTE): void =
+  if vpn + 1 > this.tlb.len().U32:
     this.tlb.setLen(vpn + 1)
 
   this.tlb[vpn] = cast[ptr PTE](alloc(sizeof(PTE)))
@@ -166,30 +166,29 @@ proc cacheTlb*(this: var DataAccess, vpn: uint32, pte: PTE): void =
 
 
 proc transVirtualToPhysical*(
-  this: var DataAccess, mode: acsmodeT, seg: SgRegT, vaddr: uint32): uint32 =
+  this: var DataAccess, mode: acsmodeT, seg: SgRegT, vaddr: U32): U32 =
   ## Translate virtual address `varddr` to physical one. For full
   ## documentation see section 5.1 - "Page translation"
   this.logger.scope "Virtual to physical addrss"
 
-  let laddr: uint32 = this.transVirtualToLinear(mode, seg, vaddr)
+  let laddr: U32 = this.transVirtualToLinear(mode, seg, vaddr)
   if this.cpu.isEnaPaging():
     var pte: PTE
     if not(this.cpu.isProtected()):
       raise newException(EXP_GP, "Ena paging requires protected mode")
 
-    let cpl: uint8 = this.getSegment(CS).uint8 and 3
-    let vpn: uint32 = laddr shr 12
-    let offset: uint16 = laddr.uint16 and ((1 shl 12) - 1)
+    let cpl: U8 = this.getSegment(CS).U8 and 3
+    let vpn: U32 = laddr shr 12
+    let offset: U16 = laddr.U16 and ((1 shl 12) - 1)
     if not(this.searchTlb(vpn, addr pte)):
-      var pdirBase, ptblBase: uint32
-      var pdirIndex, ptblIndex: uint16
-      pdirIndex = uint16(laddr shr 22)
-      ptblIndex = uint16((laddr shr 12) and ((1 shl 10) - 1))
-      pdirBase = this.cpu.getPdirBase() shl 12
+      let pdirIndex: U16 = U16(laddr shr 22)
+      let ptblIndex: U16 = U16((laddr shr 12) and ((1 shl 10) - 1))
+      let pdirBase: U32 = this.cpu.getPdirBase() shl 12
+
       var pde: PDE
       this.mem.readDataBlob(
         pde,
-        uint32(pdirBase + pdirIndex) * sizeof(PDE).uint32)
+        U32(pdirBase + pdirIndex) * sizeof(PDE).U32)
 
       if not(pde.P).toBool():
         this.cpu.setCrn(2, laddr)
@@ -203,10 +202,10 @@ proc transVirtualToPhysical*(
         this.cpu.setCrn(2, laddr)
         raise newException(EXP_PF, "")
 
-      ptblBase = pde.ptblBase shl 12
+      let ptblBase: U32 = pde.ptblBase shl 12
       this.mem.readDataBlob(
         pte,
-        uint32(ptblBase + ptblIndex) * sizeof(PTE).uint32())
+        U32(ptblBase + ptblIndex) * sizeof(PTE).U32())
 
       this.cacheTlb(vpn, pte)
 
@@ -230,8 +229,8 @@ proc transVirtualToPhysical*(
   if not(this.mem.isEnaA20gate()):
     result = (result and (1 shl 20) - 1)
 
-proc readMem32Seg*(this: var DataAccess, seg: SgRegT, memAddr: uint32): uint32 =
-  var paddr, ioBase: uint32
+proc readMem32Seg*(this: var DataAccess, seg: SgRegT, memAddr: U32): U32 =
+  var paddr, ioBase: U32
   paddr = this.transVirtualToPhysical(MODEREAD, seg, memAddr)
   ioBase = this.io.chkMemio(paddr)
   if ioBase != 0:
@@ -240,8 +239,8 @@ proc readMem32Seg*(this: var DataAccess, seg: SgRegT, memAddr: uint32): uint32 =
   else:
     return this.mem.readMem32(paddr)
 
-proc readMem16Seg*(this: var DataAccess, seg: SgRegT, memAddr: uint32): uint16 =
-  var paddr, ioBase: uint32
+proc readMem16Seg*(this: var DataAccess, seg: SgRegT, memAddr: U32): U16 =
+  var paddr, ioBase: U32
   paddr = this.transVirtualToPhysical(MODEREAD, seg, memAddr)
   ioBase = this.io.chkMemio(paddr)
   return (if ioBase != 0:
@@ -251,8 +250,8 @@ proc readMem16Seg*(this: var DataAccess, seg: SgRegT, memAddr: uint32): uint16 =
             this.mem.readMem16(paddr)
           )
 
-proc readMem8Seg*(this: var DataAccess, seg: SgRegT, memAddr: uint32): uint8 =
-  var paddr, ioBase: uint32
+proc readMem8Seg*(this: var DataAccess, seg: SgRegT, memAddr: U32): U8 =
+  var paddr, ioBase: U32
   paddr = this.transVirtualToPhysical(MODEREAD, seg, memAddr)
   ioBase = this.io.chkMemio(paddr)
   return (if ioBase != 0:
@@ -262,8 +261,8 @@ proc readMem8Seg*(this: var DataAccess, seg: SgRegT, memAddr: uint32): uint8 =
             this.mem.readMem8(paddr)
           )
 
-proc writeMem32Seg*(this: var DataAccess, seg: SgRegT, memAddr: uint32, v: uint32): void =
-  var paddr, ioBase: uint32
+proc writeMem32Seg*(this: var DataAccess, seg: SgRegT, memAddr: U32, v: U32): void =
+  var paddr, ioBase: U32
   paddr = this.transVirtualToPhysical(MODEWRITE, seg, memAddr)
   ioBase = this.io.chkMemio(paddr)
   if ioBase != 0:
@@ -273,8 +272,8 @@ proc writeMem32Seg*(this: var DataAccess, seg: SgRegT, memAddr: uint32, v: uint3
     this.mem.writeMem32(paddr, v)
 
 
-proc writeMem16Seg*(this: var DataAccess, seg: SgRegT, memAddr: uint32, v: uint16): void =
-  var paddr, ioBase: uint32
+proc writeMem16Seg*(this: var DataAccess, seg: SgRegT, memAddr: U32, v: U16): void =
+  var paddr, ioBase: U32
   paddr = this.transVirtualToPhysical(MODEWRITE, seg, memAddr)
   ioBase = this.io.chkMemio(paddr)
   if ioBase != 0:
@@ -284,8 +283,8 @@ proc writeMem16Seg*(this: var DataAccess, seg: SgRegT, memAddr: uint32, v: uint1
     this.mem.writeMem16(paddr, v)
 
 
-proc writeMem8Seg*(this: var DataAccess, seg: SgRegT, memAddr: uint32, v: uint8): void =
-  var paddr, ioBase: uint32
+proc writeMem8Seg*(this: var DataAccess, seg: SgRegT, memAddr: U32, v: U8): void =
+  var paddr, ioBase: U32
   paddr = this.transVirtualToPhysical(MODEWRITE, seg, memAddr)
   ioBase = this.io.chkMemio(paddr)
   if ioBase != 0:
@@ -296,72 +295,72 @@ proc writeMem8Seg*(this: var DataAccess, seg: SgRegT, memAddr: uint32, v: uint8)
 
 
 
-proc execMem8Seg*(this: var DataAccess, seg: SgRegT, memAddr: uint32): uint8 =
+proc execMem8Seg*(this: var DataAccess, seg: SgRegT, memAddr: U32): U8 =
   let pos = this.transVirtualToPhysical(MODEEXEC, seg, memAddr)
   return this.mem.readMem8(pos)
 
-proc execMem16Seg*(this: var DataAccess, seg: SgRegT, memAddr: uint32): uint16 =
+proc execMem16Seg*(this: var DataAccess, seg: SgRegT, memAddr: U32): U16 =
   return this.mem.readMem16(this.transVirtualToPhysical(MODEEXEC, seg, memAddr))
 
-proc getData8*(this: var DataAccess, seg: SgRegT, memAddr: uint32): uint8 =
+proc getData8*(this: var DataAccess, seg: SgRegT, memAddr: U32): U8 =
   return this.readMem8Seg(seg, memAddr)
 
-proc getData16*(this: var DataAccess, seg: SgRegT, memAddr: uint32): uint16 =
+proc getData16*(this: var DataAccess, seg: SgRegT, memAddr: U32): U16 =
   return this.readMem16Seg(seg, memAddr)
 
-proc getData32*(this: var DataAccess, seg: SgRegT, memAddr: uint32): uint32 =
+proc getData32*(this: var DataAccess, seg: SgRegT, memAddr: U32): U32 =
   return this.readMem32Seg(seg, memAddr)
 
-proc putData8*(this: var DataAccess, seg: SgRegT, memAddr: uint32, v: uint8): void =
+proc putData8*(this: var DataAccess, seg: SgRegT, memAddr: U32, v: U8): void =
   this.writeMem8Seg(seg, memAddr, v)
 
-proc putData16*(this: var DataAccess, seg: SgRegT, memAddr: uint32, v: uint16): void =
+proc putData16*(this: var DataAccess, seg: SgRegT, memAddr: U32, v: U16): void =
   this.writeMem16Seg(seg, memAddr, v)
 
-proc putData32*(this: var DataAccess, seg: SgRegT, memAddr: uint32, v: uint32): void =
+proc putData32*(this: var DataAccess, seg: SgRegT, memAddr: U32, v: U32): void =
   this.writeMem32Seg(seg, memAddr, v)
 
-proc getCode8*(this: var DataAccess, index: cint): uint8 =
+proc getCode8*(this: var DataAccess, index: cint): U8 =
   ## Get single Byte from executable memory. Use CS register to compute
   ## base.
   this.logger.logScope ev(eekGetCode)
-  result = this.execMem8Seg(CS, this.cpu.getEip() + index.uint32)
+  result = this.execMem8Seg(CS, this.cpu.getEip() + index.U32)
 
-proc getCode16*(this: var DataAccess, index: cint): uint16 =
+proc getCode16*(this: var DataAccess, index: cint): U16 =
   this.logger.logScope ev(eekGetCode)
-  return this.execMem16Seg(CS, this.cpu.getEip() + index.uint32)
+  return this.execMem16Seg(CS, this.cpu.getEip() + index.U32)
 
-proc execMem32Seg*(this: var DataAccess, seg: SgRegT, memAddr: uint32): uint32 =
+proc execMem32Seg*(this: var DataAccess, seg: SgRegT, memAddr: U32): U32 =
   return this.mem.readMem32(this.transVirtualToPhysical(MODEEXEC, seg, memAddr))
 
-proc getCode32*(this: var DataAccess, index: cint): uint32 =
+proc getCode32*(this: var DataAccess, index: cint): U32 =
   this.logger.logScope ev(eekGetCode)
-  return this.execMem32Seg(CS, this.cpu.getEip() + index.uint32)
+  return this.execMem32Seg(CS, this.cpu.getEip() + index.U32)
 
 
-proc push32*(this: var DataAccess, value: uint32): void =
+proc push32*(this: var DataAccess, value: U32): void =
   this.logger.scope "push 32"
 
   this.cpu.updateGpreg(ESP, -4)
-  let esp: uint32 = this.cpu.getGpreg(ESP)
+  let esp: U32 = this.cpu.getGpreg(ESP)
   this.writeMem32Seg(SS, esp, value)
 
-proc pop32*(this: var DataAccess): uint32 =
+proc pop32*(this: var DataAccess): U32 =
   this.logger.scope "pop 32"
 
-  let esp: uint32 = this.cpu.getGpreg(ESP)
-  let value: uint32 = this.readMem32Seg(SS, esp)
+  let esp: U32 = this.cpu.getGpreg(ESP)
+  let value: U32 = this.readMem32Seg(SS, esp)
   this.cpu.updateGpreg(ESP, 4)
   return value
 
-proc push16*(this: var DataAccess, value: uint16): void =
+proc push16*(this: var DataAccess, value: U16): void =
   this.logger.scope "push 16"
 
   this.cpu.updateGpreg(SP, -2)
-  let sp: uint16 = this.cpu.getGpreg(SP)
+  let sp: U16 = this.cpu.getGpreg(SP)
   this.writeMem16Seg(SS, sp, value)
 
-proc pop16*(this: var DataAccess): uint16 =
+proc pop16*(this: var DataAccess): U16 =
   this.logger.scope "pop 16"
 
   let sp = this.cpu.getGpreg(SP)

@@ -32,6 +32,14 @@ type
   NBits*[Count: static[int]] = range[0'u .. pow2(Count) - 1]
 
 type
+  U8* = uint8
+  U16* = uint16
+  U32* = uint32
+  I8* = int8
+  I16* = int16
+  I32* = int32
+
+type
   EmuCpuExceptionKind* = enum
     EXP_DE = (0x00u8, "divide by zero")
     EXP_DB = (0x01u8, "debug")
