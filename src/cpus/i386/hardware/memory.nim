@@ -2,18 +2,21 @@ import common
 import eventer
 import std/math
 
+type
+  EmuMemoryError* = object of EmuImplError
+
 template DEFAULTMEMORYSIZE*(): untyped {.dirty.} =
   (1 * KB)
 
-template ASSERTRANGE*(memAddr: untyped, memLen: untyped): untyped {.dirty.} =
-  assert(
-    int(memAddr + memLen - 1) < this.memory.len(),
-    "Memory access not in range. addr: $#, size: $#, memory: $#" % [
-      $memAddr,
-      $memLen,
-      $this.memory.len()
-    ]
-  )
+template assertRange(memAddr: untyped, memLen: untyped): untyped =
+  if this.memory.len() < int(memAddr + memLen - 1):
+    raise newException(
+      EmuMemoryError,
+      "Memory access not in range. addr: $#, size: $#, memory: $#" % [
+        $hshow(memAddr, clShowHex),
+        $hshow(memLen, clShowHex),
+        $hshow(this.memory.len(), clShowHex)
+      ])
 
 template INRANGE*(memAddr: untyped, memLen: untyped): untyped {.dirty.} =
   (int(memAddr + memLen - 1) < this.memory.len())
@@ -36,41 +39,38 @@ proc isEnaA20gate*(this: Memory): bool =
   return this.a20gate
 
 proc writeMem8*(this: var Memory, memAddr: uint32, v: uint8): void =
-  if INRANGE(memAddr, 1):
-    this.memory[memAddr] = v
+  assertRange(memAddr, 1)
+  this.log ev(eekSetMem8, evalue(v, 8), memAddr)
+  this.memory[memAddr] = v
 
 
 proc writeMem16*(this: var Memory, memAddr: uint32, v: uint16): void =
-  if INRANGE(memAddr, 2):
-    (cast[ptr uint16](addr this.memory[memAddr]))[] = v
+  assertRange(memAddr, 2)
+  this.log ev(eekSetMem16, evalue(v, 16), memAddr)
+  (cast[ptr uint16](addr this.memory[memAddr]))[] = v
 
 
 proc writeMem32*(this: var Memory, memAddr: uint32, v: uint32): void =
-  if INRANGE(memAddr, 4):
-    (cast[ptr uint32](addr this.memory[memAddr]))[] = v
+  assertRange(memAddr, 4)
+  this.log ev(eekSetMem32, evalue(v, 32), memAddr)
+  (cast[ptr uint32](addr this.memory[memAddr]))[] = v
 
 
 proc readMem32*(this: var Memory, memAddr: uint32): uint32 =
-  if INRANGE(memAddr, 4):
-    return (cast[ptr uint32](addr this.memory[memAddr]))[]
+  assertRange(memAddr, 4)
+  result = (cast[ptr uint32](addr this.memory[memAddr]))[]
+  this.log ev(eekGetMem32, evalue(result, 32), memAddr)
 
-  else:
-    return 0
 
 proc readMem16*(this: var Memory, memAddr: uint32): uint16 =
-  if INRANGE(memAddr, 2):
-    return (cast[ptr uint16](addr this.memory[memAddr]))[]
-
-  else:
-    return 0
+  assertRange(memAddr, 2)
+  result = (cast[ptr uint16](addr this.memory[memAddr]))[]
+  this.log ev(eekGetMem16, evalue(result, 16), memAddr)
 
 proc readMem8*(this: var Memory, memAddr: uint32): uint8 =
-  if INRANGE(memAddr, 1):
-    result = this.memory[memAddr]
-    this.log ev(eekGetMem8, evalue(result, 8), memAddr)
-
-  else:
-    assert(false, "OOM - $# is not in 0..$#" % [$memAddr, $this.memory.high])
+  assert(INRANGE(memAddr, 1), "OOM - $# is not in 0..$#" % [$memAddr, $this.memory.high])
+  result = this.memory[memAddr]
+  this.log ev(eekGetMem8, evalue(result, 8), memAddr)
 
 proc initMemory*(size: ESize, logger: EmuLogger): Memory =
   Memory(memory: newSeq[uint8](size), a20gate: false, logger: logger)
@@ -98,7 +98,7 @@ proc dumpMem*(
 proc readData*(
   this: var Memory, dst: EPointer, srcAddr: EPointer, size: ESize): ESize =
 
-  ASSERTRANGE(srcAddr, size)
+  assertRange(srcAddr, size)
   copymem(
     dest = this.memory.asMemPointer(dst).asVar(),
     source = this.memory.asMemPointer(srcAddr),
@@ -136,7 +136,7 @@ proc writeDataBlob*[T](this: var Memory, dstAddr: EPointer, src: T) =
 
 
 proc writeDataBlob*(this: var Memory, dstAddr: EPointer, blob: var MemData) =
-  ASSERTRANGE(dstAddr.int(), blob.len())
+  assertRange(dstAddr.int(), blob.len())
   copymem(
     dest = this.memory.asMemPointer(dstAddr).asVar(),
     source = blob.asMemPointer(0),
@@ -146,7 +146,7 @@ proc writeDataBlob*(this: var Memory, dstAddr: EPointer, blob: var MemData) =
 proc writeData*(
     this: var Memory, dstAddr: EPointer, src: EPointer, size: ESize): ESize =
 
-  ASSERTRANGE(dstAddr, size)
+  assertRange(dstAddr, size)
   copymem(
     dest = this.memory.asMemPointer(dstAddr).asVar(),
     source = this.memory.asMemPointer(src),

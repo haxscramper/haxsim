@@ -9,7 +9,7 @@ const
   TYPE_CODE* = 0x18
 
 type
-  Descriptor* {.bycopy.} = object
+  Descriptor* = object
     limit_l*:           uint16
     base_l*:            uint16
     base_m*:            uint8
@@ -192,7 +192,7 @@ type
     field8* {.bitsize: 16.}: uint16
 
 type
-  IntGateDesc* {.bycopy.} = object
+  IntGateDesc* = object
     offset_l*:        uint16
     seg_sel*:        uint16
     field2* {.bitsize: 8.}: uint8

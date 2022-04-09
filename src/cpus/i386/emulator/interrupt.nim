@@ -4,18 +4,9 @@ import access
 import device/pic
 
 type
-  IVT* {.bycopy, union.} = object
-    raw*: uint32
-    field1*: IVTField1
-
-  IVTField1* {.bycopy.} = object
+  IVT* = object
     offset*: uint16
     segment*: uint16
-
-proc offset*(this: IVT): uint16 = this.field1.offset
-proc `offset=`*(this: var IVT, value: uint16) = this.field1.offset = value
-proc segment*(this: IVT): uint16 = this.field1.segment
-proc `segment=`*(this: var IVT, value: uint16) = this.field1.segment = value
 
 type
   Interrupt* = object
@@ -81,20 +72,14 @@ proc saveRegs*(acs: var DataAccess, this: var Interrupt, chpl: bool, cs: uint16)
 proc handleInterrupt*(acs: var DataAccess, this: var Interrupt): void =
   acs.logger.logScope ev(eekInterruptHandler)
 
-  var intr: (uint8, bool)
-  var n: uint8
-  var cs: uint16
-  var hard: bool
   if this.intrQ.len() == 0:
     return
 
-  intr = this.intrQ.popFirst()
-  n = intr[0]
-  hard = intr[1]
+  let (n, hard) = this.intrQ.popFirst()
 
   if acs.cpu.isProtected():
-    var RPL, CPL: uint8
-    CPL = uint8(acs.getSegment(CS) and 3)
+    var RPL: uint8
+    var CPL: uint8 = uint8(acs.getSegment(CS) and 3)
     let idtBase: uint32 = acs.cpu.getDtregBase(IDTR)
     let idtOffset: uint16 = n shl 3
     let idtLimit: uint16 = acs.cpu.getDtregLimit(IDTR)
@@ -105,14 +90,15 @@ proc handleInterrupt*(acs: var DataAccess, this: var Interrupt): void =
     var idt: IntGateDesc
     acs.mem.readDataBlob(idt, idtBase + idtOffset)
 
-    {.warning: "[FIXME] 'RPL = idt.segSel.RPL'".}
+    var segSel = addr idt.seg_sel
+    RPL = cast[ptr SGregister](segSel)[].RPL.uint8()
 
     if not(idt.P.toBool()): raise newException(EXPNP, "")
     if CPL < RPL:
       raise newException(EXP_GP, "CPL: $#, RPL: $#" % [$CPL, $RPL])
 
     if not(hard) and CPL > idt.DPL: raise newException(EXPGP, "")
-    cs = acs.getSegment(CS)
+    let cs = acs.getSegment(CS)
     acs.setSegment(CS, idt.segSel)
     acs.saveRegs(this, toBool(CPL xor RPL), cs)
     acs.cpu.setEip((idt.offsetH shl 16) + idt.offsetL)
@@ -120,19 +106,16 @@ proc handleInterrupt*(acs: var DataAccess, this: var Interrupt): void =
       acs.cpu.eflags.setInterrupt(false)
 
   else:
-    var idtBase: uint32
-    var idtOffset, idtLimit: uint16
-    var ivt: IVT
-    idtBase = acs.cpu.getDtregBase(IDTR)
-    idtLimit = acs.cpu.getDtregLimit(IDTR)
-    idtOffset = n shl 2
+    let idtBase: uint32 = acs.cpu.getDtregBase(IDTR)
+    let idtOffset: uint16 = n shl 2
+    let idtLimit: uint16 = acs.cpu.getDtregLimit(IDTR)
     if idtOffset > idtLimit:
       raise newException(EXP_GP, "idtOffset: $#, idtLimit: $#" % [
         $idtOffset, $idtLimit
       ])
 
-    ivt.raw = acs.mem.readMem32(idtBase + idtOffset)
-    cs = acs.getSegment(CS)
+    let ivt: IVT = cast[IVT](acs.mem.readMem32(idtBase + idtOffset))
+    let cs = acs.getSegment(CS)
     acs.setSegment(CS, ivt.segment)
     acs.saveRegs(this, false, cs)
     acs.cpu.setIp(ivt.offset)

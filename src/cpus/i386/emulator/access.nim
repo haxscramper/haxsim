@@ -38,8 +38,11 @@ type
   DataAccess* = object of Hardware
     tlb*: seq[ptr PTE]
 
-func logger*(ac: DataAccess): EmuLogger =
-  ac.mem.logger
+func logger*(acs: DataAccess): EmuLogger = acs.cpu.logger
+
+template log*(acs: DataAccess, event: EmuEvent, depth: int = -2): untyped =
+  acs.cpu.logger.log(event, depth)
+
 
 proc initDataAccess*(size: ESize, logger: EmuLogger): DataAccess =
   asgnAux[Hardware](result, initHardware(size, logger))
@@ -80,21 +83,18 @@ proc setSegment*(this: var DataAccess, reg: SgRegT, sel: uint16): void =
     cache.flags.AVL = gdt.AVL
     cache.flags.DB = gdt.DB
     cache.flags.G = gdt.G
-    INFO(
-      3,
-      "%s : dtBase=0x%04x, dtLimit=0x%02x, dtIndex=0x%02x {base=0x%08x, limit=0x%08x, flags=0x%04x}",
-      sgregName[reg], dtBase, dtLimit, dtIndex, cache.base,
-      cache.limit shl ((if cache.flags.G: 12 else: 0)), cache.flags.raw)
 
   else:
     cache.base = cast[uint32](sel) shl 4
 
+  this.log ev(eekSetSegment, evalue(sg.raw, 16), reg.uint8)
   this.cpu.setSgreg(reg, sg)
 
 proc getSegment*(this: var DataAccess, reg: SgRegT): uint16 =
   var sg: SGRegister
   this.cpu.getSgreg(reg, sg)
-  return sg.raw
+  result = sg.raw
+  this.log ev(eekGetSegment, evalue(result, 16), reg.uint8)
 
 proc transV2l*(this: var DataAccess, mode: acsmodeT, seg: SgRegT, vaddr: uint32): uint32 =
   var laddr: uint32
@@ -176,7 +176,11 @@ proc transV2p*(this: var DataAccess, mode: acsmodeT, seg: SgRegT, vaddr: uint32)
         pde,
         uint32(pdirBase + pdirIndex) * sizeof(PDE).uint32)
 
-      EXCEPTIONWITH(EXPPF, not(pde.P).bool, this.cpu.setCrn(2, laddr))
+      if not(pde.P).toBool():
+        this.cpu.setCrn(2, laddr)
+        raise newException(EXP_PF, "")
+
+      # EXCEPTIONWITH(EXPPF, not(pde.P).bool, )
       EXCEPTIONWITH(EXPPF, not(pde.RW).bool and mode == MODEWRITE, this.cpu.setCrn(2, laddr))
       EXCEPTIONWITH(EXPPF, not(pde.US).bool and cpl > 2, this.cpu.setCrn(2, laddr))
       ptblBase = pde.ptblBase shl 12
@@ -311,9 +315,8 @@ proc getCode32*(this: var DataAccess, index: cint): uint32 =
 
 
 proc push32*(this: var DataAccess, value: uint32): void =
-  var esp: uint32
   this.cpu.updateGpreg(ESP, -4)
-  esp = this.cpu.getGpreg(ESP)
+  var esp: uint32 = this.cpu.getGpreg(ESP)
   this.writeMem32Seg(SS, esp, value)
 
 proc pop32*(this: var DataAccess): uint32 =
@@ -324,9 +327,8 @@ proc pop32*(this: var DataAccess): uint32 =
   return value
 
 proc push16*(this: var DataAccess, value: uint16): void =
-  var sp: uint16
   this.cpu.updateGpreg(SP, -2)
-  sp = this.cpu.getGpreg(SP)
+  var sp: uint16 = this.cpu.getGpreg(SP)
   this.writeMem16Seg(SS, sp, value)
 
 proc pop16*(this: var DataAccess): uint16 =

@@ -12,6 +12,7 @@ export all
 import eventer
 export eventer
 import std/math
+export clformat
 
 template ASSERT*(expr: untyped): untyped =
   assert expr

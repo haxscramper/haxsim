@@ -146,6 +146,11 @@ proc addEchoHandler*(full: var FullImpl) =
         of eekGetReg8, eekSetReg8: res.add " " & $Reg8T(ev.memAddr)
         of eekGetReg16, eekSetReg16: res.add " " & $Reg16T(ev.memAddr)
         of eekGetReg32, eekSetReg32: res.add " " & $Reg32T(ev.memAddr)
+        of eekSetDtRegBase .. eekGetDtRegSelector:
+          res.add " " & $DtRegT(ev.memAddr)
+
+        of eekGetSegment, eekSetSegment: res.add " " & $SgRegT(ev.memAddr)
+
         of eekSetMem8 .. eekGetMem32:
           let s = log2(emu.mem.len().float()).int()
           res.add " 0x" & toHex(ev.memAddr)[^s .. ^1]

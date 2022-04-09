@@ -23,12 +23,29 @@ type
     eekSetIP = "set IP"
     eekSetEIP = "set EIP"
 
+    eekSetDtRegBase = "set DTREG base"
+    eekSetDtRegLimit = "set DTREG limit"
+    eekSetDtRegSelector = "set DTREG selector"
+    eekGetDtregBase = "get DTREG base"
+    eekGetDtregLimit = "get DTREG limit"
+    eekGetDtregSelector = "get DTREG selector"
+
+    eekGetSegment = "get sgreg"
+    eekSetSegment = "set sgreg"
+
     eekSetReg8 = "set reg 8"
     eekSetReg16 = "set reg 16"
     eekSetReg32 = "set reg 32"
     eekGetReg8 = "get reg 8"
     eekGetReg16 = "get reg 16"
     eekGetReg32 = "get reg 32"
+
+    eekPush32 = "push 32"
+    eekPush16 = "push 16"
+    eekPush8 = "push 8"
+    eekPop32 = "pop 32"
+    eekPop16 = "pop 16"
+    eekPop8 = "pop 8"
 
     eekSetMem8 = "set mem 8"
     eekSetMem16 = "set mem 16"

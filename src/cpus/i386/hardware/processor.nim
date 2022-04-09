@@ -193,13 +193,16 @@ proc getSgreg*(this: Processor, n: SgRegT, reg: var SGRegister): void =
   reg = this.sgregs[n]
 
 proc getDtregSelector*(this: Processor, n: DTregT): uint32 =
-  return this.dtregs[n].selector
+  result = this.dtregs[n].selector
+  this.log ev(eekGetDtRegSelector, evalue(result, 32), n.uint8)
 
 proc getDtregBase*(this: Processor, n: DTregT): uint32 =
-  return this.dtregs[n].base
+  result = this.dtregs[n].base
+  this.log ev(eekGetDtRegBase, evalue(result, 32), n.uint8)
 
 proc getDtregLimit*(this: Processor, n: DTregT): uint16 =
-  return this.dtregs[n].limit
+  result = this.dtregs[n].limit
+  this.log ev(eekGetDtRegLimit, evalue(result, 16), n.uint8)
 
 proc setEip*(this: var Processor, v: uint32): void =
   this.eip = v
