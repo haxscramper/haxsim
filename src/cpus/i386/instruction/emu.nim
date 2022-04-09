@@ -142,11 +142,10 @@ proc jmpf*(this: var ExecInstr, sel: uint16, eip: uint32): void =
 
 proc callf*(this: var ExecInstr, sel: uint16, eip: uint32): void =
   var cs: SGRegister
-  var RPL: uint8
   cs.raw = ACS.getSegment(CS)
-  RPL = uint8(sel and 3)
+  var RPL: uint8 = uint8(sel and 3)
   if toBool(cs.RPL xor RPL):
-    EXCEPTION(EXPGP, RPL < cs.RPL)
+    if RPL < cs.RPL: raise newException(EXPGP, "")
     ACS.push32(ACS.getSegment(SS))
     ACS.push32(CPU.getGpreg(ESP))
   
@@ -157,8 +156,7 @@ proc callf*(this: var ExecInstr, sel: uint16, eip: uint32): void =
 
 proc retf*(this: var ExecInstr): void =
   var cs: SGRegister
-  var CPL: uint8
-  CPL = uint8(ACS.getSegment(CS) and 3)
+  var CPL: uint8 = uint8(ACS.getSegment(CS) and 3)
   CPU.setEip(ACS.pop32())
   cs.raw = ACS.pop32().uint16
   if toBool(cs.RPL xor CPL):
@@ -174,9 +172,8 @@ proc retf*(this: var ExecInstr): void =
 proc iret*(this: var ExecInstr): void =
   if CPU.isMode32():
     var cs: SGRegister
-    var CPL: uint8
     var eflags: EFLAGS
-    CPL = uint8(ACS.getSegment(CS) and 3)
+    var CPL: uint8 = uint8(ACS.getSegment(CS) and 3)
     CPU.setEip(ACS.pop32())
     cs.raw = ACS.pop32().uint16
     eflags.eflags.reg32 = ACS.pop32()
@@ -188,14 +185,13 @@ proc iret*(this: var ExecInstr): void =
       MEM.readDataBlob(tss, base)
       this.switchTask(tss.prevSel)
     
-    else:
-      if cs.RPL > CPL:
-        var esp: uint32
-        var ss: uint16
-        esp = ACS.pop32()
-        ss = ACS.pop32().uint16
-        CPU.setGpreg(ESP, esp)
-        ACS.setSegment(SS, ss)
+    elif cs.RPL > CPL:
+      var esp: uint32
+      var ss: uint16
+      esp = ACS.pop32()
+      ss = ACS.pop32().uint16
+      CPU.setGpreg(ESP, esp)
+      ACS.setSegment(SS, ss)
 
     ACS.setSegment(CS, cs.raw)
     INFO(4, "iret (EIP : 0x%08x, CS : 0x%04x)", EMU.getEip(), EMU.getSegment(CS))

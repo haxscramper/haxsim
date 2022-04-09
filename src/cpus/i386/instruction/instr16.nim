@@ -636,7 +636,7 @@ proc idivDxAxRm16*(this: var InstrImpl): void =
   echov "w"
   if rm16S == 0:
     raise newException(EXP_DE, "divider was zero")
-  # EXCEPTION(EXPDE, not(rm16S.toBool()))
+  # if not(rm16S.toBool()): raise newException(EXPDE, "")
 
   var valS: int32 = int32((CPU.getGPreg(DX) shl 16) or CPU.getGPreg(AX))
   CPU.setGPreg(AX, uint16(valS div rm16S))
@@ -688,7 +688,7 @@ proc pushRm16*(this: var InstrImpl): void =
 
 proc lgdtM24*(this: var InstrImpl): void =
   var limit, m48, base: uint16
-  EXCEPTION(EXPGP, not(this.exec.chkRing(0)))
+  if not(this.exec.chkRing(0)): raise newException(EXPGP, "")
   m48 = this.exec.getM().uint16
   limit = READMEM16(m48)
   base = uint16(READMEM32(m48 + 2) and ((1 shl 24) - 1))
@@ -696,7 +696,7 @@ proc lgdtM24*(this: var InstrImpl): void =
 
 proc lidtM24*(this: var InstrImpl): void =
   var limit, base, m48: uint16
-  EXCEPTION(EXPGP, not(this.exec.chkRing(0)))
+  if not(this.exec.chkRing(0)): raise newException(EXPGP, "")
   m48 = this.exec.getM().uint16
   limit = READMEM16(m48)
   base = uint16(READMEM32(m48 + 2) and ((1 shl 24) - 1))

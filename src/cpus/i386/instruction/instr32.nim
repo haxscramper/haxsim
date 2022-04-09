@@ -611,7 +611,7 @@ proc divEdxEaxRm32*(this: var InstrImpl): void =
   var rm32: uint32
   var val: uint64
   rm32 = this.exec.getRm32().uint32()
-  EXCEPTION(EXPDE, not(rm32.toBool()))
+  if not(rm32.toBool()): raise newException(EXPDE, "")
   val = CPU.getGPreg(EDX)
   val = (val shl 32)
   val = (val or CPU.getGPreg(EAX))
@@ -620,7 +620,7 @@ proc divEdxEaxRm32*(this: var InstrImpl): void =
 
 proc idivEdxEaxRm32*(this: var InstrImpl): void =
   var rm32S: int32 = this.exec.getRm32().int32()
-  EXCEPTION(EXPDE, not(rm32S.toBool()))
+  if not(rm32S.toBool()): raise newException(EXPDE, "")
   var valS: int64 = CPU.getGPreg(EDX).int64
   valS = (valS shl 32)
   valS = (valS or CPU.getGPreg(EAX).int64)
@@ -677,7 +677,7 @@ proc pushRm32*(this: var InstrImpl): void =
 proc lgdtM32*(this: var InstrImpl): void =
   var base, m48: uint32
   var limit: uint16
-  EXCEPTION(EXPGP, not(this.exec.chkRing(0)))
+  if not(this.exec.chkRing(0)): raise newException(EXPGP, "")
   m48 = this.exec.getM()
   limit = READMEM16(m48)
   base = READMEM32(m48 + 2)
@@ -687,7 +687,7 @@ proc lgdtM32*(this: var InstrImpl): void =
 proc lidtM32*(this: var InstrImpl): void =
   var base, m48: uint32
   var limit: uint16
-  EXCEPTION(EXPGP, not(this.exec.chkRing(0)))
+  if not(this.exec.chkRing(0)): raise newException(EXPGP, "")
   m48 = this.exec.getM()
   limit = READMEM16(m48)
   base = READMEM32(m48 + 2)

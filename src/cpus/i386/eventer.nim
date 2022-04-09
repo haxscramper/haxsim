@@ -41,9 +41,13 @@ type
     eekOutIO = "io out"
     # value kind end
 
+    eekInterrupt = "interrupt"
+    eekInterruptHandler = "execute interrupt handler setup"
     eekEnd = "end"
 
   EmuEvent* = ref object of RootObj
+    stackTrace*: seq[StackTraceEntry]
+
     kind*: EmuEventKind
     memAddr*: uint64
     size*: uint64
@@ -60,8 +64,15 @@ type
   EmuEventHandler* = proc(event: EmuEvent)
 
   EmuLogger* = ref object
+    procStackTrace: seq[string]
+
     eventHandler*: EmuEventHandler
     buffer*: seq[EmuEvent]
+
+func getDeltaCalls*(
+  logger: var EmuLogger, event: EmuEvent): seq[StackTraceEntry] =
+
+  return event.stackTrace
 
 func `$`*(id: BackwardsIndex): string = "^" & $id.int
 
@@ -87,7 +98,7 @@ func evalue*(
 
 const
   eekStartKinds* = {
-    eekInitEmulator .. eekGetCode
+    eekInitEmulator .. eekGetCode, eekInterruptHandler
   }
 
   eekValueKinds* = {
@@ -102,7 +113,7 @@ const
 # func toStr*(ev: EmuEventKind): string {.magic: "EnumToStr".}
 # func `$`*(ev: EmuEventKind): string = toStr(ev).substr(3)
 
-proc ev*(kind: EmuEventKind): EmuEvent =
+func ev*(kind: EmuEventKind): EmuEvent =
   EmuEvent(kind: kind)
 
 func ev*(kind: EmuEventKind, value: EmuValue): EmuEvent =
@@ -111,11 +122,11 @@ func ev*(kind: EmuEventKind, value: EmuValue): EmuEvent =
 func ev*(kind: EmuEventKind, value: EmuValue, memAddr: uint): EmuEvent =
   EmuEvent(kind: kind, value: value, memAddr: memaddr)
 
-
-proc ev*[T](der: typedesc[T], kind: EmuEventKind): T =
+func ev*[T](der: typedesc[T], kind: EmuEventKind): T =
   T(kind: kind)
 
-func evEnd*(): EmuEvent = EmuEvent(kind: eekEnd)
+func evEnd*(): EmuEvent =
+  EmuEvent(kind: eekEnd)
 
 proc writeEvent(logger: EmuLogger, event: EmuEvent) =
   if logger.eventHandler.isNil():
@@ -131,17 +142,28 @@ proc writeEvent(logger: EmuLogger, event: EmuEvent) =
     logger.eventHandler(event)
 
 
+
+func getTrace(): seq[StackTraceEntry] =
+  {.cast(noSideEffect).}:
+    when compileOption"stacktrace":
+      result = getStackTraceEntries()
+      if 1 < result.len:
+        discard result.pop()
+
 template log*(
     logger: EmuLogger, event: EmuEvent, instDepth: int = -1): untyped =
   bind writeEvent
   var tmp = event
+  tmp.stackTrace = getTrace()
   tmp.info = instantiationInfo(instDepth, true)
   writeEvent(logger, tmp)
 
 
 template logScope*(
   logger: EmuLogger, event: EmuEvent, instDepth: int = -2): untyped =
-  logger.log(event, instDepth)
+  let tmp = event
+  assert tmp.kind in eekStartKinds, $tmp.kind
+  logger.log(tmp, instDepth)
   defer:
     logger.log(evEnd(), instDepth)
 

@@ -61,8 +61,11 @@ proc setSegment*(this: var DataAccess, reg: SgRegT, sel: uint16): void =
     dtIndex = sg.index shl 3
     dtBase = this.cpu.getDtregBase(if sg.TI.bool: LDTR else: GDTR)
     dtLimit = this.cpu.getDtregLimit(if sg.TI.bool: LDTR else: GDTR)
-    EXCEPTION(EXPGP, (reg == CS or reg == SS) and not(dtIndex).bool)
-    EXCEPTION(EXPGP, dtIndex > dtLimit)
+    if (reg == CS or reg == SS) and not(dtIndex).bool: raise newException(EXPGP, "")
+    if dtIndex > dtLimit:
+      raise newException(
+        EXP_GP, "dtIndex: $#, dtLimit: $#" % [$dtIndex, $dtLimit])
+
 
     this.mem.readDataBlob(gdt, dtBase + dtIndex)
 
@@ -108,22 +111,22 @@ proc transV2l*(this: var DataAccess, mode: acsmodeT, seg: SgRegT, vaddr: uint32)
       limit = (limit shl 12)
 
     if cache.flags.`type`.segc.bool:
-      EXCEPTION(EXPGP, mode == MODEWRITE)
-      EXCEPTION(EXPGP, mode == MODEREAD and not(cache.flags.`type`.code.r).bool)
-      EXCEPTION(
-        EXPGP,
-        CPL > cache.flags.DPL and
-        not((mode == MODEEXEC and cache.flags.`type`.code.cnf.bool)).bool)
+      if mode == MODEWRITE: raise newException(EXPGP, "")
+      if mode == MODEREAD and not(cache.flags.`type`.code.r).bool: raise newException(EXPGP, "")
+      if CPL > cache.flags.DPL and
+        not((mode == MODEEXEC and cache.flags.`type`.code.cnf.bool)).bool:
+
+        raise newException(EXP_GP, "")
 
     else:
-      EXCEPTION(EXPGP, mode == MODEEXEC)
-      EXCEPTION(EXPGP, mode == MODEWRITE and not(cache.flags.`type`.data.w).bool)
-      EXCEPTION(EXPGP, CPL > cache.flags.DPL)
+      if mode == MODEEXEC: raise newException(EXPGP, "")
+      if mode == MODEWRITE and not(cache.flags.`type`.data.w).bool: raise newException(EXPGP, "")
+      if CPL > cache.flags.DPL: raise newException(EXPGP, "")
       if cache.flags.`type`.data.exd.bool:
         base = (base - limit)
 
 
-    EXCEPTION(EXPGP, vaddr > limit)
+    if vaddr > limit: raise newException(EXPGP, "")
     laddr = base + vaddr
 
   else:
@@ -158,7 +161,7 @@ proc transV2p*(this: var DataAccess, mode: acsmodeT, seg: SgRegT, vaddr: uint32)
     var offset: uint16
     var cpl: uint8
     var pte: PTE
-    EXCEPTION(EXPGP, not(this.cpu.isProtected()))
+    if not(this.cpu.isProtected()): raise newException(EXPGP, "")
     cpl = this.getSegment(CS).uint8 and 3
     vpn = laddr shr 12
     offset = laddr.uint16 and ((1 shl 12) - 1)

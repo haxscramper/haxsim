@@ -14,7 +14,7 @@ let op = hdisplay(flags += { dfSplitNumbers, dfUseHex })
 setTestContextDisplayOpts op
 startHax()
 
-proc eval*(instr: openarray[string]): Emulator =
+proc eval*(instr: openarray[string], log: bool = false): Emulator =
   var compiled: seq[uint8]
   for i in instr:
     let dat = parseInstr(i)
@@ -23,7 +23,8 @@ proc eval*(instr: openarray[string]): Emulator =
 
   var eset = EmuSetting(memSize: ESize(compiled.len() + 12))
   var full = initFull(eset)
-
+  if log:
+    full.addEchoHandler()
   # Initial value of the EIP is `0xFFF0` - to make testing simpler we are
   # setting it here to `0`.
   full.emu.cpu.setEip(0)
@@ -53,12 +54,11 @@ suite "Register math":
 
 suite "Interrupts":
   test "Division by zero":
-    echov "Hello"
     let emu = eval([
       "mov ax, 2",
       "mov dx, 0",
       "div edx",
       "hlt"
-    ])
+    ], true)
 
     pprinte emu.cpu.gpregs

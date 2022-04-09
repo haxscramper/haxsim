@@ -1,6 +1,7 @@
 import instruction/exec
 import std/math
 import hmisc/algo/[clformat, clformat_interpolate]
+import hmisc/other/oswrap
 
 import common
 import emulator/[emulator, interrupt]
@@ -77,21 +78,27 @@ proc loop*(full: var FullImpl) =
 
   while not full.emu.cpu.isHalt():
     zeroMem(addr full.data[], sizeof(full.data[]))
-    if full.emu.accs.chkIrq(full.emu.intr):
-      full.emu.cpu.doHalt(false)
+    try:
+      if full.emu.accs.chkIrq(full.emu.intr):
+        full.emu.cpu.doHalt(false)
 
-    if full.emu.cpu.isHalt():
-      {.warning: "[FIXME] 'std.thisThread.sleepFor(std.chrono.milliseconds(10))'".}
-      continue
+      if full.emu.cpu.isHalt():
+        {.warning: "[FIXME] 'std.thisThread.sleepFor(std.chrono.milliseconds(10))'".}
+        continue
 
-    full.emu.accs.hundleInterrupt(full.emu.intr)
-    let prefix = fetch(full)
-    if full.emu.cpu.isMode32() xor toBool(prefix and CHSZOP):
-      discard exec(full.impl32)
+      full.emu.accs.handleInterrupt(full.emu.intr)
+      let prefix = fetch(full)
+      if full.emu.cpu.isMode32() xor toBool(prefix and CHSZOP):
+        discard exec(full.impl32)
 
-    else:
-      discard exec(full.impl16)
+      else:
+        discard exec(full.impl16)
 
+    except EmuCpuException as e:
+      full.log ev(EmuExceptionEvent, eekInterrupt).withIt do:
+        it.exception = e
+
+      full.emu.intr.queueInterrupt(e.kind.uint8, true)
 
     # except:
     #   # emu.queueInterrupt(n, true)
@@ -111,6 +118,17 @@ proc addEchoHandler*(full: var FullImpl) =
       return
 
     var res = clt(repeat("  ", ind))
+    for call in ev.stackTrace[^3 .. ^1]:
+      # let (procname, line, path) = call
+      let
+        procname = call.procname
+        line = call.line
+        path = call.filename
+
+      let (dir, name, _) = splitFile(AbsFile($path))
+      # echo clfmt"{    procname:>} {  name:>}:{line:<3}" |>> terminalWidth()
+
+    # let last = ev.stackTrace.last()
     res.add ($ev.kind + fgBlue |<< 16)
 
     if ev.kind == eekCallOpcodeImpl:
@@ -137,6 +155,13 @@ proc addEchoHandler*(full: var FullImpl) =
 
       res.add " = "
       res.add $ev.value + fgCyan
+
+    elif ev.kind == eekInterrupt:
+      let ev = EmuExceptionEvent(ev)
+      res.add " "
+      res.add hshow(ev.exception.kind.uint8, clShowHex)
+      res.add ", "
+      res.add ev.exception.msg
 
     echo res
     if ev.kind in eekStartKinds:

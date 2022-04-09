@@ -241,12 +241,12 @@ proc std*(this: var InstrImpl): void =
   CPU.eflags.setDirection(true)
 
 proc hlt*(this: var InstrImpl): void =
-  EXCEPTION(EXPGP, not(this.exec.chkRing(0)))
+  if not(this.exec.chkRing(0)): raise newException(EXPGP, "")
   CPU.doHalt(true)
 
 proc ltrRm16*(this: var InstrImpl): void =
   var rm16: uint16
-  EXCEPTION(EXPGP, not(this.exec.chkRing(0)))
+  if not(this.exec.chkRing(0)): raise newException(EXPGP, "")
   rm16 = this.exec.getRm16()
   this.exec.setTr(rm16)
 
@@ -258,7 +258,7 @@ proc movR32Crn*(this: var InstrImpl): void =
 
 proc movCrnR32*(this: var InstrImpl): void =
   var r32: uint32
-  EXCEPTION(EXPGP, not(this.exec.chkRing(0)))
+  if not(this.exec.chkRing(0)): raise newException(EXPGP, "")
   r32 = CPU.getGPreg(Reg32T(this.getModRmRM()))
   this.exec.setCrn(r32)
 

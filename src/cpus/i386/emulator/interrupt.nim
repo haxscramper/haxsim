@@ -6,9 +6,9 @@ import device/pic
 type
   IVT* {.bycopy, union.} = object
     raw*: uint32
-    field1*: IVT_field1
+    field1*: IVTField1
 
-  IVT_field1* {.bycopy.} = object
+  IVTField1* {.bycopy.} = object
     offset*: uint16
     segment*: uint16
 
@@ -19,22 +19,22 @@ proc `segment=`*(this: var IVT, value: uint16) = this.field1.segment = value
 
 type
   Interrupt* = object
-    intr_q*: Deque[(uint8, bool)]
-    pic_s*, pic_m*: PIC
+    intrQ*: Deque[(uint8, bool)]
+    picS*, picM*: PIC
 
-proc set_pic*(this: var Interrupt, pic: PIC, master: bool): void =
+proc setPic*(this: var Interrupt, pic: PIC, master: bool): void =
   assertRef(pic)
   if master:
-    this.pic_m = pic
+    this.picM = pic
 
   else:
-    this.pic_s = pic
+    this.picS = pic
 
-proc restore_regs*(this: var Interrupt): void =
+proc restoreRegs*(this: var Interrupt): void =
   discard
 
-proc queue_interrupt*(this: var Interrupt, n: uint8, hard: bool): void =
-  this.intr_q.addLast((n, hard))
+proc queueInterrupt*(this: var Interrupt, n: uint8, hard: bool): void =
+  this.intrQ.addLast((n, hard))
 
 proc iret*(this: var Interrupt): void =
   discard
@@ -55,7 +55,7 @@ proc saveRegs*(acs: var DataAccess, this: var Interrupt, chpl: bool, cs: uint16)
       var tss: TSS
       base = acs.cpu.getDtregBase(TR)
       limit = acs.cpu.getDtregLimit(TR)
-      EXCEPTION(EXPTS, limit < uint32(sizeof(TSS) - 1))
+      if limit < uint32(sizeof(TSS) - 1): raise newException(EXPTS, "")
       acs.mem.readDataBlob(tss, base)
       ss = acs.getSegment(SS)
       esp = acs.cpu.getGpreg(ESP)
@@ -78,7 +78,9 @@ proc saveRegs*(acs: var DataAccess, this: var Interrupt, chpl: bool, cs: uint16)
     acs.push16(acs.cpu.getIp().uint16)
 
 
-proc hundleInterrupt*(acs: var DataAccess, this: var Interrupt): void =
+proc handleInterrupt*(acs: var DataAccess, this: var Interrupt): void =
+  acs.logger.logScope ev(eekInterruptHandler)
+
   var intr: (uint8, bool)
   var n: uint8
   var cs: uint16
@@ -91,32 +93,31 @@ proc hundleInterrupt*(acs: var DataAccess, this: var Interrupt): void =
   hard = intr[1]
 
   if acs.cpu.isProtected():
-    var idt: IntGateDesc
-    var idtBase: uint32
-    var idtOffset, idtLimit: uint16
     var RPL, CPL: uint8
     CPL = uint8(acs.getSegment(CS) and 3)
-    idtBase = acs.cpu.getDtregBase(IDTR)
-    idtLimit = acs.cpu.getDtregLimit(IDTR)
-    idtOffset = n shl 3
-    EXCEPTION(EXPGP, idtOffset > idtLimit)
+    let idtBase: uint32 = acs.cpu.getDtregBase(IDTR)
+    let idtOffset: uint16 = n shl 3
+    let idtLimit: uint16 = acs.cpu.getDtregLimit(IDTR)
+    if idtOffset > idtLimit:
+      raise newException(EXP_GP, "idtOffset: $#, idtLimit: $#" % [
+        $idtOffset, $idtLimit])
+
+    var idt: IntGateDesc
     acs.mem.readDataBlob(idt, idtBase + idtOffset)
 
     {.warning: "[FIXME] 'RPL = idt.segSel.RPL'".}
-    INFO(
-      4, "int 0x%02x [CPL : %d, DPL : %d RPL : %d] (EIP : 0x%04x, CS : 0x%04x)",
-      n, CPL, idt.DPL, RPL, (idt.offsetH shl 16) + idt.offsetL, idt.segSel)
 
-    EXCEPTION(EXPNP, not(idt.P.toBool()))
-    EXCEPTION(EXPGP, CPL < RPL)
-    EXCEPTION(EXPGP, not(hard) and CPL > idt.DPL)
+    if not(idt.P.toBool()): raise newException(EXPNP, "")
+    if CPL < RPL:
+      raise newException(EXP_GP, "CPL: $#, RPL: $#" % [$CPL, $RPL])
+
+    if not(hard) and CPL > idt.DPL: raise newException(EXPGP, "")
     cs = acs.getSegment(CS)
     acs.setSegment(CS, idt.segSel)
     acs.saveRegs(this, toBool(CPL xor RPL), cs)
     acs.cpu.setEip((idt.offsetH shl 16) + idt.offsetL)
     if idt.Type == TYPEINTERRUPT:
       acs.cpu.eflags.setInterrupt(false)
-
 
   else:
     var idtBase: uint32
@@ -125,22 +126,23 @@ proc hundleInterrupt*(acs: var DataAccess, this: var Interrupt): void =
     idtBase = acs.cpu.getDtregBase(IDTR)
     idtLimit = acs.cpu.getDtregLimit(IDTR)
     idtOffset = n shl 2
-    EXCEPTION(EXPGP, idtOffset > idtLimit)
+    if idtOffset > idtLimit:
+      raise newException(EXP_GP, "idtOffset: $#, idtLimit: $#" % [
+        $idtOffset, $idtLimit
+      ])
+
     ivt.raw = acs.mem.readMem32(idtBase + idtOffset)
     cs = acs.getSegment(CS)
     acs.setSegment(CS, ivt.segment)
     acs.saveRegs(this, false, cs)
     acs.cpu.setIp(ivt.offset)
 
-    INFO(4, "int 0x%02x (IP : 0x%04x, CS : 0x%04x)", n, ivt.offset, ivt.segment)
-
-
 proc chkIrq*(acs: DataAccess, this: var Interrupt): bool =
   var nIntr: int8
   if not(acs.cpu.eflags.isInterrupt()):
     return false
 
-  if not(this.picM.toBool()) or not(this.picM.chk_intreq()):
+  if not(this.picM.toBool()) or not(this.picM.chkIntreq()):
     return false
 
   nIntr = this.picM.getNintr()
