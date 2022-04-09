@@ -1,7 +1,8 @@
 import common
 import hardware/[hardware, cr]
 type
-  PDE* {.bycopy.} = object
+  PDE* = object
+    ## Page directory entry. See section
     P* {.bitsize: 1.}: U32
     RW* {.bitsize: 1.}: U32
     US* {.bitsize: 1.}: U32
@@ -14,19 +15,19 @@ type
     field9* {.bitsize: 3.}: U32
     ptblBase* {.bitsize: 20.}: U32
 
-type
-  PTE* {.bycopy.} = object
-    P* {.bitsize: 1.}: U32
-    RW* {.bitsize: 1.}: U32
-    US* {.bitsize: 1.}: U32
+  PTE* = object
+    ## Page table entry. See figure 5-10 for format description
+    P* {.bitsize: 1.}: U32 ## 'Present'
+    RW* {.bitsize: 1.}: U32 ## 'Read/write'
+    US* {.bitsize: 1.}: U32 ## 'User/superuser'
     PWT* {.bitsize: 1.}: U32
     PCD* {.bitsize: 1.}: U32
     A* {.bitsize: 1.}: U32
-    D* {.bitsize: 1.}: U32
+    D* {.bitsize: 1.}: U32 ## 'dirty'
     PAT* {.bitsize: 1.}: U32
     G* {.bitsize: 1.}: U32
     field9* {.bitsize: 3.}: U32
-    pageBase* {.bitsize: 20.}: U32
+    pageBase* {.bitsize: 20.}: U32 ## PAge frame address
 
 type
   acsmodeT* {.size: sizeof(cint).} = enum
@@ -61,14 +62,14 @@ proc setSegment*(this: var DataAccess, reg: SgRegT, sel: U16): void =
     var dtBase: U32 = this.cpu.getDtregBase(if sg.TI.bool: LDTR else: GDTR)
     let dtLimit: U16 = this.cpu.getDtregLimit(if sg.TI.bool: LDTR else: GDTR)
 
-    if (reg == CS or reg == SS) and not(dtIndex).bool: raise newException(EXP_GP, "")
+    if (reg == CS or reg == SS) and not(dtIndex).bool:
+      raise newException(EXP_GP, "")
+
     if dtIndex > dtLimit:
       raise newException(
         EXP_GP, "dtIndex: $#, dtLimit: $#" % [$dtIndex, $dtLimit])
 
-
-    var gdt: SegDesc
-    this.mem.readDataBlob(gdt, dtBase + dtIndex)
+    var gdt = readDataBlob[SegDesc](this.mem, dtBase + dtIndex)
 
     sg.cache.base = (gdt.baseH shl 24) + (gdt.baseM shl 16) + gdt.baseL
     sg.cache.limit = (gdt.limitH shl 16) + gdt.limitL
@@ -173,34 +174,48 @@ proc transVirtualToPhysical*(
 
   let laddr: U32 = this.transVirtualToLinear(mode, seg, vaddr)
   if this.cpu.isEnaPaging():
+    # If paging is enabled linear address must be translated into physical
+    # one via page table lookup.
     var pte: PTE
     if not(this.cpu.isProtected()):
       raise newException(EXP_GP, "Ena paging requires protected mode")
 
     let cpl: U8 = this.getSegment(CS).U8 and 3
     let vpn: U32 = laddr shr 12
-    let offset: U16 = laddr.U16 and ((1 shl 12) - 1)
     if not(this.searchTlb(vpn, addr pte)):
-      let pdirIndex: U16 = U16(laddr shr 22)
-      let ptblIndex: U16 = U16((laddr shr 12) and ((1 shl 10) - 1))
-      let pdirBase: U32 = this.cpu.getPdirBase() shl 12
+      # /index/ of the page directory
+      let pdirIndex = laddr{22 .. 31}
+      # /index/ of a page in page table
+      let ptblIndex = laddr{12 .. 21}
+      # Get page directory base (upper 31..12 bits inclusive)
+      let pdirBase: U32 = this.cpu.getPdirBase(){31 .. 12}
 
-      var pde: PDE
-      this.mem.readDataBlob(
-        pde,
-        U32(pdirBase + pdirIndex) * sizeof(PDE).U32)
+      # `pdirIndex` is used to look up target page directory entry that
+      # will be used for subsequent computing information. This is a first
+      # level of table lookups.
+      let pde = this.mem.readDataBlob[:PDE](
+        pdirBase + (pdirIndex * sizeof(PDE).U32))
 
       if not(pde.P).toBool():
         this.cpu.setCrn(2, laddr)
-        raise newException(EXP_PF, "")
+        raise newException(
+          EXP_PF,
+          "Page directory entry not present. base: $#, index: $#" % [
+            $pdirIndex,
+            $ptblIndex
+        ])
 
       if not(pde.RW).bool and mode == MODEWRITE:
         this.cpu.setCrn(2, laddr)
-        raise newException(EXP_PF, "")
+        raise newException(
+          EXP_PF,
+          "requested write mode, but read-write is not enabled for page")
 
       if not(pde.US).bool and cpl > 2:
         this.cpu.setCrn(2, laddr)
-        raise newException(EXP_PF, "")
+        raise newException(
+          EXP_PF,
+          "Page requires superuser priviledge for access, but cpl was $#" % $cpl)
 
       let ptblBase: U32 = pde.ptblBase shl 12
       this.mem.readDataBlob(
@@ -211,19 +226,27 @@ proc transVirtualToPhysical*(
 
     if not(pte.P).bool:
       this.cpu.setCrn(2, laddr)
-      raise newException(EXP_PF, "")
+      raise newException(EXP_PF, "Page table entry not present")
 
     if not(pte.RW).bool and mode == MODEWRITE:
       this.cpu.setCrn(2, laddr)
-      raise newException(EXP_PF, "")
+      raise newException(EXP_PF, "Write mode is not enabled for page")
 
     if not(pte.US).bool and cpl > 2:
       this.cpu.setCrn(2, laddr)
-      raise newException(EXP_PF, "")
+      raise newException(
+        EXP_PF,
+        "Page requires superuser priviledge for access, but cpl was $#" % $cpl)
 
-    result = (pte.pageBase shl 12) + offset
+    # With paging enabled, final formula for computing address can be
+    # abbreviated into
+    #
+    # `[dir, page, offset] = <linear address>`
+    # `result = page-table[page-directory[dir], page] + offset`
+    result = (pte.pageBase shl 12) + laddr{0 .. 11}.U16
 
   else:
+    # If paging is not used, linear is equal to physical address
     result = laddr
 
   if not(this.mem.isEnaA20gate()):

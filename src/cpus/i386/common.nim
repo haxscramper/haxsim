@@ -1,5 +1,5 @@
 import instruction/[syntaxes, opcodes]
-import std/[strformat, enumutils]
+import std/[strformat, enumutils, bitops]
 export strformat
 import std/strutils
 export strutils
@@ -35,9 +35,15 @@ type
   U8* = uint8
   U16* = uint16
   U32* = uint32
+  U64* = uint64
   I8* = int8
   I16* = int16
   I32* = int32
+  I64* = int64
+
+func `{}`*[I](input: I, slice: HSlice[int, int]): I =
+  result = input
+  bitslice(result, slice)
 
 type
   EmuCpuExceptionKind* = enum

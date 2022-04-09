@@ -123,6 +123,8 @@ proc readDataBlob*[T](this: var Memory, dst: var T, srcAddr: EPointer) =
 
   fromMemBlob(dst, dstBlob)
 
+proc readDataBlob*[T](this: var Memory, srcAddr: EPointer): T =
+  readDataBlob[T](this, result, srcAddr)
 
 proc writeDataBlob*[T](this: var Memory, dstAddr: EPointer, src: T) =
   when compiles(memBlob[T]()):
