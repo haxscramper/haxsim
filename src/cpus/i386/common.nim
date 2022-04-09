@@ -110,11 +110,6 @@ func toBool*(i: SomeInteger): bool = i != 0
 func toBool*[T](i: ptr T): bool = not isNil(i)
 func toBool*[T](i: ref T): bool = not isNil(i)
 
-# proc preInc*[I: SomeInteger](v: var I): I {.discardable.} = discard
-# proc postInc*[I: SomeInteger](v: var I): I {.discardable.} = discard
-# proc preDec*[I: SomeInteger](v: var I): I {.discardable.} = discard
-# proc postDec*[I: SomeInteger](v: var I): I {.discardable.} = discard
-
 type
   ESize* = uint
   EPointer* = uint32
@@ -158,10 +153,6 @@ func fromMemBlob*[T](it: var T, blob: MemBlob[sizeof(T)]) =
 func len*(mem: MemPointer): int = mem.data[].len
 
 func checkRange[A, B](mem: MemPointer | MemData, slice: HSlice[A, B]) =
-  echov slice
-  echov mem.len
-  echov slice.a.int
-  echov slice.b.int
   if slice.a.int < 0 or mem.len < slice.b.int:
     raise newException(
       EmuRawMemError,
@@ -186,7 +177,6 @@ func copymem*(
     dest: var MemData, source: MemPointer, size: ESize = ESize(len(dest))) =
   assert 0 < size
   if 0 < source.data[].len:
-    echov size
     let rdest = 0 ..< size
     let rsrc = source.pos ..< source.pos + size
     checkRange(dest, rdest)

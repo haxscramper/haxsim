@@ -123,6 +123,7 @@ proc readDataBlob*[T](this: var Memory, dst: var T, srcAddr: EPointer) =
 
   fromMemBlob(dst, dstBlob)
   this.log ev(eekGetMemBlob).withIt do:
+    it.value = evalue(sizeof(T).uint, 32, evs10)
     it.memAddr = srcAddr
     it.msg = $typeof(T)
 

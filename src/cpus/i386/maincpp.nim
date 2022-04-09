@@ -146,6 +146,15 @@ proc addEchoHandler*(full: var FullImpl) =
         toBin(ev.instr.modrm.rm.uint, 3)
       ]
 
+
+    elif ev.kind == eekGetMemBlob:
+      res.add " "
+      res.add ev.msg + fgCyan
+      res.add " size "
+      res.add hshow(ev.value.value)
+      res.add " from "
+      res.add hshow(ev.memAddr, clShowHex)
+
     elif ev.kind in eekValueKinds:
       case ev.kind:
         of eekGetReg8, eekSetReg8: res.add " " & $Reg8T(ev.memAddr)
@@ -171,12 +180,6 @@ proc addEchoHandler*(full: var FullImpl) =
       res.add hshow(ev.exception.kind.uint8, clShowHex)
       res.add ", "
       res.add ev.exception.msg + fgRed
-
-    elif ev.kind == eekGetMemBlob:
-      res.add " "
-      res.add ev.msg + fgCyan
-      res.add " from "
-      res.add hshow(ev.memAddr, clShowHex)
 
     echo res
     if ev.kind in eekStartKinds:

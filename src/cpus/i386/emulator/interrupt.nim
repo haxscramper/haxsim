@@ -117,9 +117,7 @@ proc handleInterrupt*(acs: var DataAccess, this: var Interrupt): void =
 
     # read value from the interrupt descriptor table. IDTR stores interrupt
     # location in form of `[segment selector - 31:16, offset bits - 15:0]`
-    echov "read data blob IVT"
     let ivt: IVT = acs.mem.readDataBlob[:IVT](idtBase + idtOffset)
-    echov "asdfasdf?"
     # Get code segment location, store it
     let cs = acs.getSegment(CS)
     # Set location of the code segment

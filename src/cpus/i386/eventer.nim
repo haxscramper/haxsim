@@ -48,11 +48,11 @@ type
     eekGetMem32 = "get mem 32"
 
 
+    eekGetMemBlob = "read blob"
     eekInIO = "io in"
     eekOutIO = "io out"
     # value kind end
 
-    eekGetMemBlob = "read blob"
     eekInterrupt = "interrupt"
     eekInterruptHandler = "execute interrupt handler setup"
     eekScope = "scope"
