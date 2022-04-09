@@ -1,4 +1,5 @@
 import common
+import std/tables
 import hardware/[hardware, cr]
 type
   PDE* = object
@@ -37,7 +38,12 @@ type
 
 type
   DataAccess* = object of Hardware
-    tlb*: seq[ptr PTE]
+    tlb*: Table[U32, PTE] ## 'Translation Lookaside Buffer'. is a memory
+    ## cache that stores the recent translations of virtual memory to
+    ## physical memory. It is used to reduce the time taken to access a
+    ## user memory location.
+    ##
+    ## Maps local address paging indices to page table entry object
 
 func logger*(acs: DataAccess): EmuLogger = acs.cpu.logger
 
@@ -150,20 +156,16 @@ proc transVirtualToLinear*(
 
 
 
-proc searchTlb*(this: var DataAccess, vpn: U32, pte: ptr PTE): bool =
-  if vpn + 1 > U32(this.tlb.len() != 0 or not(this.tlb[vpn].isNil())):
+proc searchTlb*(this: var DataAccess, vpn: U32, pte: var PTE): bool =
+  if vpn notin this.tlb:
     return false
 
-  ASSERT(pte.isNil())
-  pte[] = this.tlb[vpn][]
-  return true
+  else:
+    pte = this.tlb[vpn]
+    return true
 
 proc cacheTlb*(this: var DataAccess, vpn: U32, pte: PTE): void =
-  if vpn + 1 > this.tlb.len().U32:
-    this.tlb.setLen(vpn + 1)
-
-  this.tlb[vpn] = cast[ptr PTE](alloc(sizeof(PTE)))
-  this.tlb[vpn][] = pte
+  this.tlb[vpn] = pte
 
 
 proc transVirtualToPhysical*(
@@ -176,19 +178,21 @@ proc transVirtualToPhysical*(
   if this.cpu.isEnaPaging():
     # If paging is enabled linear address must be translated into physical
     # one via page table lookup.
-    var pte: PTE
     if not(this.cpu.isProtected()):
       raise newException(EXP_GP, "Ena paging requires protected mode")
 
     let cpl: U8 = this.getSegment(CS).U8 and 3
-    let vpn: U32 = laddr shr 12
-    if not(this.searchTlb(vpn, addr pte)):
+    let vpn = laddr{31 .. 12}
+
+    var pte: PTE
+    # Try search ing cache table using page directory and table indices
+    if not(this.searchTlb(vpn, pte)):
       # /index/ of the page directory
-      let pdirIndex = laddr{22 .. 31}
+      let pdirIndex = laddr{31 .. 22}
       # /index/ of a page in page table
-      let ptblIndex = laddr{12 .. 21}
+      let ptblIndex = laddr{21 .. 22}
       # Get page directory base (upper 31..12 bits inclusive)
-      let pdirBase: U32 = this.cpu.getPdirBase(){31 .. 12}
+      let pdirBase: U32 = this.cpu.getPdirBase(){31 .. 22}
 
       # `pdirIndex` is used to look up target page directory entry that
       # will be used for subsequent computing information. This is a first
@@ -250,6 +254,7 @@ proc transVirtualToPhysical*(
     result = laddr
 
   if not(this.mem.isEnaA20gate()):
+    # https://en.wikipedia.org/wiki/A20_line TODO
     result = (result and (1 shl 20) - 1)
 
 proc readMem32Seg*(this: var DataAccess, seg: SgRegT, memAddr: U32): U32 =

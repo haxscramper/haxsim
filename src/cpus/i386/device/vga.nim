@@ -101,14 +101,14 @@ type
     HSP* {.bitsize: 1.}: uint8
     VSA* {.bitsize: 1.}: uint8
 
-  VGAMor* {.bycopy, union.} = object
+  VGAMor* {.union.} = object
     raw*: uint8
     field1*: VGAMorField1
 
   SequencerSarField1* = object
     INDX* {.bitsize: 3.}: uint8
 
-  SequencerSar* {.bycopy, union.} = object
+  SequencerSar* {.union.} = object
     raw*: uint8
     field1*: SequencerSarField1
 
@@ -120,7 +120,7 @@ type
     S4* {.bitsize: 1.}: uint8
     SO* {.bitsize: 1.}: uint8
 
-  SequencerCmr* {.bycopy, union.} = object
+  SequencerCmr* {.union.} = object
     raw*: uint8
     field1*: SequencerCmrField1
 
@@ -130,7 +130,7 @@ type
     MAP2E* {.bitsize: 1.}: uint8
     MAP3E* {.bitsize: 1.}: uint8
 
-  SequencerMapMr* {.bycopy, union.} = object
+  SequencerMapMr* {.union.} = object
     raw*: uint8
     field1*: SequencerMapMrField1
 
@@ -140,7 +140,7 @@ type
     CMBM* {.bitsize: 1.}: uint8
     CMAM* {.bitsize: 1.}: uint8
 
-  SequencerCmsr* {.bycopy, union.} = object
+  SequencerCmsr* {.union.} = object
     raw*: uint8
     field1*: SequencerCmsrField1
 
@@ -150,26 +150,26 @@ type
     OE* {.bitsize: 1.}: uint8
     C4* {.bitsize: 1.}: uint8
 
-  SequencerMemMr* {.bycopy, union.} = object
+  SequencerMemMr* {.union.} = object
     raw*: uint8
     field1*: SequencerMemMrField1
 
   CRTCrtcarField1* = object
     INDX* {.bitsize: 5.}: uint8
 
-  CRTCrtcar* {.bycopy, union.} = object
+  CRTCrtcar* {.union.} = object
     raw*: uint8
     field1*: CRTCrtcarField1
 
-  CRTHtr* {.bycopy, union.} = object
+  CRTHtr* {.union.} = object
     raw*: uint8
     HT*: uint8
 
-  CRTHdeer* {.bycopy, union.} = object
+  CRTHdeer* {.union.} = object
     raw*: uint8
     HDEE*: uint8
 
-  CRTShbr* {.bycopy, union.} = object
+  CRTShbr* {.union.} = object
     raw*: uint8
     SHB*: uint8
 
@@ -183,7 +183,7 @@ type
     LC9* {.bitsize: 1.}: uint8
     LC* {.bitsize: 1.}: uint8
 
-  CRTMslr* {.bycopy, union.} = object
+  CRTMslr* {.union.} = object
     raw*: uint8
     field1*: CRTMslrField1
 
@@ -191,7 +191,7 @@ type
     RSCB* {.bitsize: 5.}: uint8
     CO* {.bitsize: 1.}: uint8
 
-  CRTCsr* {.bycopy, union.} = object
+  CRTCsr* {.union.} = object
     raw*: uint8
     field1*: CRTCsrField1
 
@@ -199,31 +199,31 @@ type
     RSCE* {.bitsize: 5.}: uint8
     CSC* {.bitsize: 2.}: uint8
 
-  CRTCer* {.bycopy, union.} = object
+  CRTCer* {.union.} = object
     raw*: uint8
     field1*: CRTCerField1
 
-  CRTSahr* {.bycopy, union.} = object
+  CRTSahr* {.union.} = object
     raw*: uint8
     HBSA*: uint8
 
-  CRTSalr* {.bycopy, union.} = object
+  CRTSalr* {.union.} = object
     raw*: uint8
     LBSA*: uint8
 
-  CRTClhr* {.bycopy, union.} = object
+  CRTClhr* {.union.} = object
     raw*: uint8
     HBCL*: uint8
 
-  CRTCllr* {.bycopy, union.} = object
+  CRTCllr* {.union.} = object
     raw*: uint8
     LBCL*: uint8
 
-  CRTVdeer* {.bycopy, union.} = object
+  CRTVdeer* {.union.} = object
     raw*: uint8
     VDEE*: uint8
 
-  CRTOfsr* {.bycopy, union.} = object
+  CRTOfsr* {.union.} = object
     raw*: uint8
     LLWS*: uint8
 
@@ -237,7 +237,7 @@ type
     WBM* {.bitsize: 1.}: uint8
     HR* {.bitsize: 1.}: uint8
 
-  GraphicControllerGcar* {.bycopy, union.} = object
+  GraphicControllerGcar* {.union.} = object
     raw*: uint8
     field1*: GraphicControllerGcarField1
 
@@ -247,14 +247,14 @@ type
     SRM2* {.bitsize: 1.}: uint8
     SRM3* {.bitsize: 1.}: uint8
 
-  CRTCrtmcr* {.bycopy, union.} = object
+  CRTCrtmcr* {.union.} = object
     raw*: uint8
     field1*: CRTCrtmcrField1
 
   GraphicControllerGcarField1* = object
     INDX* {.bitsize: 4.}: uint8
 
-  GraphicControllerSr* {.bycopy, union.} = object
+  GraphicControllerSr* {.union.} = object
     raw*: uint8
     field1*: GraphicControllerSrField1
 
@@ -264,7 +264,7 @@ type
     ESRM2* {.bitsize: 1.}: uint8
     ESRM3* {.bitsize: 1.}: uint8
 
-  GraphicControllerEsr* {.bycopy, union.} = object
+  GraphicControllerEsr* {.union.} = object
     raw*: uint8
     field1*: GraphicControllerEsrField1
 
@@ -274,7 +274,7 @@ type
     CCM2* {.bitsize: 1.}: uint8
     CCM3* {.bitsize: 1.}: uint8
 
-  GraphicControllerCcr* {.bycopy, union.} = object
+  GraphicControllerCcr* {.union.} = object
     raw*: uint8
     field1*: GraphicControllerCcrField1
 
@@ -282,14 +282,14 @@ type
     RC* {.bitsize: 3.}: uint8
     FS* {.bitsize: 2.}: uint8
 
-  GraphicControllerDrr* {.bycopy, union.} = object
+  GraphicControllerDrr* {.union.} = object
     raw*: uint8
     field1*: GraphicControllerDrrField1
 
   GraphicControllerRmsrField1* = object
     MS* {.bitsize: 2.}: uint8
 
-  GraphicControllerRmsr* {.bycopy, union.} = object
+  GraphicControllerRmsr* {.union.} = object
     raw*: uint8
     field1*: GraphicControllerRmsrField1
 
@@ -301,7 +301,7 @@ type
     SRM* {.bitsize: 1.}: uint8
     f256CM* {.bitsize: 1.}: uint8
 
-  GraphicControllerGmr* {.bycopy, union.} = object
+  GraphicControllerGmr* {.union.} = object
     raw*: uint8
     field1*: GraphicControllerGmrField1
 
@@ -310,11 +310,11 @@ type
     OE* {.bitsize: 1.}: uint8
     MM* {.bitsize: 2.}: uint8
 
-  CRTEhbr* {.bycopy, union.} = object
+  CRTEhbr* {.union.} = object
     raw*: uint8
     field1*: CRTEhbrField1
 
-  GraphicControllerMr* {.bycopy, union.} = object
+  GraphicControllerMr* {.union.} = object
     raw*: uint8
     field1*: GraphicControllerMrField1
 
@@ -322,7 +322,7 @@ type
     INDX* {.bitsize: 5.}: uint8
     IPAS* {.bitsize: 1.}: uint8
 
-  AttributeAcar* {.bycopy, union.} = object
+  AttributeAcar* {.union.} = object
     raw*: uint8
     field1*: AttributeAcarField1
 
@@ -348,7 +348,7 @@ type
     PELW* {.bitsize: 1.}: uint8
     P54S* {.bitsize: 1.}: uint8
 
-  AttributeAmcr* {.bycopy, union.} = object
+  AttributeAmcr* {.union.} = object
     raw*: uint8
     field1*: AttributeAmcrField1
 
@@ -356,14 +356,14 @@ type
     ECP* {.bitsize: 4.}: uint8
     VSM* {.bitsize: 2.}: uint8
 
-  AttributeCper* {.bycopy, union.} = object
+  AttributeCper* {.union.} = object
     raw*: uint8
     field1*: AttributeCperField1
 
   AttributeHpelprField1* = object
     HPELP* {.bitsize: 4.}: uint8
 
-  AttributeHpelpr* {.bycopy, union.} = object
+  AttributeHpelpr* {.union.} = object
     raw*: uint8
     field1*: AttributeHpelprField1
 
@@ -371,7 +371,7 @@ type
     SC45* {.bitsize: 2.}: uint8
     SC67* {.bitsize: 2.}: uint8
 
-  AttributeCsr* {.bycopy, union.} = object
+  AttributeCsr* {.union.} = object
     raw*: uint8
     field1*: AttributeCsrField1
 
@@ -380,30 +380,30 @@ type
     G* {.bitsize: 6.}: uint8
     B* {.bitsize: 6.}: uint8
 
-  DACField2* {.bycopy, union.} = object
+  DACField2* {.union.} = object
     raw*: array[3, uint8]
     field1*: DACField2Field1
 
-  DACWPar* {.bycopy, union.} = object
+  DACWPar* {.union.} = object
     raw*: uint8
     index*: uint8
 
-  DACRPar* {.bycopy, union.} = object
+  DACRPar* {.union.} = object
     raw*: uint8
     index*: uint8
 
-  DACPdr* {.bycopy, union.} = object
+  DACPdr* {.union.} = object
     raw*: uint8
     color*: uint8
 
   DACDacsrField1* = object
     DACstate* {.bitsize: 2.}: uint8
 
-  DACDacsr* {.bycopy, union.} = object
+  DACDacsr* {.union.} = object
     raw*: uint8
     field1*: DACDacsrField1
 
-  DACPelmr* {.bycopy, union.} = object
+  DACPelmr* {.union.} = object
     raw*: uint8
     mask*: uint8
 

@@ -1,7 +1,7 @@
 import
   commonh
 type
-  IVT* {.bycopy.} = object
+  IVT* = object
     offset*: uint16
     segment*: uint16
   

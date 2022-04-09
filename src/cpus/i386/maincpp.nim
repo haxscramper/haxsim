@@ -172,6 +172,12 @@ proc addEchoHandler*(full: var FullImpl) =
       res.add ", "
       res.add ev.exception.msg + fgRed
 
+    elif ev.kind == eekGetMemBlob:
+      res.add " "
+      res.add ev.msg + fgCyan
+      res.add " from "
+      res.add hshow(ev.memAddr, clShowHex)
+
     echo res
     if ev.kind in eekStartKinds:
       inc ind

@@ -41,6 +41,7 @@ type
   I32* = int32
   I64* = int64
 
+
 func `{}`*[I](input: I, slice: HSlice[int, int]): I =
   result = input
   bitslice(result, slice)
@@ -78,6 +79,8 @@ type
     ## IO-related errors
     port*: uint16
 
+  EmuRawMemError* = object of CatchableError
+
   EmuExceptionEvent* = ref object of EmuEvent
     exception*: ref EmuCpuException
 
@@ -97,13 +100,6 @@ func newException*(
 # template EXCEPTION*(n: untyped, c: untyped, msg: string = ""): untyped {.deprecated: "[#########]".} =
 #   if c:
 #     raise newException(n, msg)
-
-
-template EXCEPTION_WITH*(n: untyped, c: untyped, e: untyped): untyped {.dirty.} =
-  if c:
-    assert false, "exception interrupt %d (%s)"
-    e
-    raise newException(n, "")
 
 
 const KB* = 1024
@@ -136,7 +132,8 @@ type
 func asMemPointer*(s: var MemData, pos: EPointer): MemPointer =
   MemPointer(pos: pos, data: addr s)
 
-func memBlob*(size: ESize): MemData = discard
+func memBlob*(size: ESize): MemData =
+  newSeq[EByte](size.int)
 
 func toMemBlob*[T](it: T, result: var MemData) =
   result = memBlob(ESize(sizeof(it)))
@@ -149,7 +146,8 @@ func fromMemBlob*[T](it: var T, blob: MemData) =
   for byt in 0 ..< sizeof(T):
     arr[][byt] = blob[byt]
 
-func memBlob*[T](): MemBlob[sizeof(T)] = discard
+func memBlob*[T](): MemBlob[sizeof(T)] =
+  assert 0 < len(result)
 
 func toMemBlob*[T](it: T, result: MemBlob[sizeof(T)]) =
   result = cast[MemBlob[sizeof(T)]](it)
@@ -157,27 +155,68 @@ func toMemBlob*[T](it: T, result: MemBlob[sizeof(T)]) =
 func fromMemBlob*[T](it: var T, blob: MemBlob[sizeof(T)]) =
   it = cast[T](blob)
 
+func len*(mem: MemPointer): int = mem.data[].len
+
+func checkRange[A, B](mem: MemPointer | MemData, slice: HSlice[A, B]) =
+  echov slice
+  echov mem.len
+  echov slice.a.int
+  echov slice.b.int
+  if slice.a.int < 0 or mem.len < slice.b.int:
+    raise newException(
+      EmuRawMemError,
+      "Raw memory access is out of range. Given range is $#..$#, reading range: $#..$#" % [
+        toHex(0),
+        toHex(mem.len),
+        toHex(slice.a.int),
+        toHex(slice.b.int)
+    ])
+
 func copymem*(dest: var MemPointer, source: MemPointer, size: ESize) =
   assertRef(dest.data)
   assertRef(source.data)
-  dest.data[][dest.pos ..< dest.pos + size] =
-    source.data[][source.pos ..< source.pos + size]
+  if 0 < source.data[].len:
+    let rdest = dest.pos ..< dest.pos + size
+    let rsrc = source.pos ..< source.pos + size
+    dest.checkRange(rdest)
+    source.checkRange(rsrc)
+    dest.data[][rdest] = source.data[][rsrc]
 
 func copymem*(
     dest: var MemData, source: MemPointer, size: ESize = ESize(len(dest))) =
-  dest[0 ..< size] = source.data[][source.pos ..< source.pos + size]
+  assert 0 < size
+  if 0 < source.data[].len:
+    echov size
+    let rdest = 0 ..< size
+    let rsrc = source.pos ..< source.pos + size
+    checkRange(dest, rdest)
+    checkRange(source, rsrc)
+    dest[rdest] = source.data[][rsrc]
 
 func copymem*(
     dest: var MemPointer, source: MemData, size: ESize = ESize(len(source))) =
-  dest.data[][dest.pos ..< dest.pos + size] = source[0 ..< size]
+  assert 0 < size
+  let rdest = dest.pos ..< dest.pos + size
+  let rsrc = 0 ..< size
+  dest.checkRange(rdest)
+  dest.checkRange(rsrc)
+  dest.data[][rdest] = source[rsrc]
 
 func copymem*[R](
     dest: var MemPointer, source: MemBlob[R], size: ESize = R) =
-  dest.data[][dest.pos ..< dest.pos + size] = source[0 ..< size]
+  assert 0 < size
+  let rdest = dest.pos ..< dest.pos + size
+  let rsrc = 0 ..< size
+  checkRange(dest, rdest)
+  checkRange(source, rsrc)
+  dest.data[][rdest] = source[rsrc]
 
 func copymem*[R](
     dest: var MemBlob[R], source: MemPointer, size: ESize = R) =
-  dest[0 ..< size] = source.data[][source.pos ..< source.pos + size]
+  assert 0 < size
+  let rsrc = source.pos ..< source.pos + size
+  checkRange(source, rsrc)
+  dest[0 ..< size] = source.data[][rsrc]
 
 func toBin*(u: uint, size: int): string =
   toBin(u.BiggestInt, size)

@@ -5,7 +5,7 @@ import
 import
   dev_iohpp
 type
-  DMA* {.bycopy.} = object
+  DMA* = object
     drq*: array[4, ptr DRQ]
     adrr*: array[4, uint16]    
     xpadrr*: array[4, uint8]    
@@ -24,7 +24,7 @@ proc out8*(this: var DMA, memAddr: uint16, v: uint8): void =
   discard 
 
 type
-  field1_Type* {.bycopy.} = object
+  field1_Type* = object
     NMT* {.bitsize: 1.}: uint8
     ADHE* {.bitsize: 1.}: uint8
     COND* {.bitsize: 1.}: uint8
@@ -83,12 +83,12 @@ proc `DACKP =`*(this: var DMA_cmnr_Type): uint8 =
   this.field1.DACKP
 
 type
-  DMA_cmnr_Type* {.bycopy, union.} = object
+  DMA_cmnr_Type* {.union.} = object
     raw*: uint8
     field1*: field1_Type
   
 type
-  field1_Type* {.bycopy.} = object
+  field1_Type* = object
     SEL* {.bitsize: 2.}: uint8
     TRA* {.bitsize: 2.}: uint8
     AUTO* {.bitsize: 1.}: uint8
@@ -126,12 +126,12 @@ proc `MOD =`*(this: var DMA_modr_Type): uint8 =
   this.field1.MOD
 
 type
-  DMA_modr_Type* {.bycopy, union.} = object
+  DMA_modr_Type* {.union.} = object
     raw*: uint8
     field1*: field1_Type
   
 type
-  field1_Type* {.bycopy.} = object
+  field1_Type* = object
     SEL* {.bitsize: 2.}: uint8
     REQ* {.bitsize: 1.}: uint8
   
@@ -148,12 +148,12 @@ proc `REQ =`*(this: var DMA_reqr_Type): uint8 =
   this.field1.REQ
 
 type
-  DMA_reqr_Type* {.bycopy, union.} = object
+  DMA_reqr_Type* {.union.} = object
     raw*: uint8
     field1*: field1_Type
   
 type
-  field1_Type* {.bycopy.} = object
+  field1_Type* = object
     SEL* {.bitsize: 2.}: uint8
     MASK* {.bitsize: 1.}: uint8
   
@@ -170,12 +170,12 @@ proc `MASK =`*(this: var DMA_scmr_Type): uint8 =
   this.field1.MASK
 
 type
-  DMA_scmr_Type* {.bycopy, union.} = object
+  DMA_scmr_Type* {.union.} = object
     raw*: uint8
     field1*: field1_Type
   
 type
-  field1_Type* {.bycopy.} = object
+  field1_Type* = object
     CH0* {.bitsize: 1.}: uint8
     CH1* {.bitsize: 1.}: uint8
     CH2* {.bitsize: 1.}: uint8
@@ -206,12 +206,12 @@ proc `CH3 =`*(this: var DMA_amr_Type): uint8 =
   this.field1.CH3
 
 type
-  DMA_amr_Type* {.bycopy, union.} = object
+  DMA_amr_Type* {.union.} = object
     raw*: uint8
     field1*: field1_Type
   
 type
-  field1_Type* {.bycopy.} = object
+  field1_Type* = object
     TC0* {.bitsize: 1.}: uint8
     TC1* {.bitsize: 1.}: uint8
     TC2* {.bitsize: 1.}: uint8
@@ -270,6 +270,6 @@ proc `CH3 =`*(this: var DMA_statr_Type): uint8 =
   this.field1.CH3
 
 type
-  DMA_statr_Type* {.bycopy, union.} = object
+  DMA_statr_Type* {.union.} = object
     raw*: uint8
     field1*: field1_Type

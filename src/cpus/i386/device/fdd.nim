@@ -24,7 +24,7 @@ const
   FDD_CONFIGURE*          = 0x13
 
 type
-  DRIVE* {.bycopy.} = object
+  DRIVE* = object
     disk*:               File
     cylinder* {.bitsize: 7.}: uint8
     head* {.bitsize:     1.}: uint8
@@ -32,7 +32,7 @@ type
     write*:              bool
     progress*:           uint16
 
-  QUEUE* {.bycopy.} = object
+  QUEUE* = object
     queue*: Deque[uint8]
     mtx*: Lock
     max*: uint16
@@ -58,27 +58,27 @@ type
     str3*: FDD_str3
     th*: Thread[int]
 
-  FDD_str3* {.bycopy, union.} = object
+  FDD_str3* {.union.} = object
     raw*: uint8
     field1*: FDD_str3_field1
 
   fddfunc_t* = proc(fdd: var FDD, arg0: void): void
 
-  FDD_conf_field1* {.bycopy.} = object
+  FDD_conf_field1* = object
     FIFOTHR* {.bitsize: 4.}: uint8
     POLL* {.bitsize: 1.}: uint8
     EFIFO* {.bitsize: 1.}: uint8
     EIS* {.bitsize: 1.}: uint8
 
-  FDD_st2* {.bycopy, union.} = object
+  FDD_st2* {.union.} = object
     raw*: uint8
     field1*: FDD_st2_field1
 
-  FDD_st1* {.bycopy, union.} = object
+  FDD_st1* {.union.} = object
     raw*: uint8
     field1*: FDD_st1_field1
 
-  FDD_st2_field1* {.bycopy.} = object
+  FDD_st2_field1* = object
     MD* {.bitsize: 1.}: uint8
     BC* {.bitsize: 1.}: uint8
     SN* {.bitsize: 1.}: uint8
@@ -87,11 +87,11 @@ type
     DD* {.bitsize: 1.}: uint8
     CM* {.bitsize: 1.}: uint8
 
-  FDD_st0* {.bycopy, union.} = object
+  FDD_st0* {.union.} = object
     raw*: uint8
     field1*: FDD_st0_field1
 
-  FDD_st1_field1* {.bycopy.} = object
+  FDD_st1_field1* = object
     MA* {.bitsize: 1.}: uint8
     NW* {.bitsize: 1.}: uint8
     ND* {.bitsize: 1.}: uint8
@@ -101,20 +101,20 @@ type
     field6* {.bitsize: 1.}: uint8
     EN* {.bitsize: 1.}: uint8
 
-  FDD_msr* {.bycopy, union.} = object
+  FDD_msr* {.union.} = object
     raw*: uint8
     field1*: FDD_msr_field1
 
-  FDD_dsr* {.bycopy, union.} = object
+  FDD_dsr* {.union.} = object
     raw*: uint8
 
-  FDD_ccr* {.bycopy, union.} = object
+  FDD_ccr* {.union.} = object
     raw*: uint8
 
-  FDD_dir* {.bycopy, union.} = object
+  FDD_dir* {.union.} = object
     raw*: uint8
 
-  FDD_st0_field1* {.bycopy.} = object
+  FDD_st0_field1* = object
     DS0* {.bitsize: 1.}: uint8
     DS1* {.bitsize: 1.}: uint8
     H* {.bitsize: 1.}: uint8
@@ -124,22 +124,22 @@ type
     IC0* {.bitsize: 1.}: uint8
     IC1* {.bitsize: 1.}: uint8
 
-  FDD_dor* {.bycopy, union.} = object
+  FDD_dor* {.union.} = object
     raw*: uint8
     field1*: FDD_dor_field1
 
-  FDD_tdr* {.bycopy, union.} = object
+  FDD_tdr* {.union.} = object
     raw*: uint8
 
-  FDD_srb* {.bycopy, union.} = object
+  FDD_srb* {.union.} = object
     raw*: uint8
     field1*: FDD_srb_field1
 
-  FDD_conf* {.bycopy, union.} = object
+  FDD_conf* {.union.} = object
     raw*: uint8
     field1*: FDD_conf_field1
 
-  FDD_sra_field1* {.bycopy.} = object
+  FDD_sra_field1* = object
     DIR* {.bitsize: 1.}: uint8
     nWP* {.bitsize: 1.}: uint8
     nINDX* {.bitsize: 1.}: uint8
@@ -149,11 +149,11 @@ type
     nDRV2* {.bitsize: 1.}: uint8
     INT* {.bitsize: 1.}: uint8
 
-  FDD_sra* {.bycopy, union.} = object
+  FDD_sra* {.union.} = object
     raw*: uint8
     field1*: FDD_sra_field1
 
-  FDD_srb_field1* {.bycopy.} = object
+  FDD_srb_field1* = object
     MOT0* {.bitsize: 1.}: uint8
     MOT1* {.bitsize: 1.}: uint8
     WE* {.bitsize: 1.}: uint8
@@ -161,21 +161,21 @@ type
     WR* {.bitsize: 1.}: uint8
     SEL0* {.bitsize: 1.}: uint8
 
-  FDD_dor_field1* {.bycopy.} = object
+  FDD_dor_field1* = object
     SEL0* {.bitsize: 1.}: uint8
     SEL1* {.bitsize: 1.}: uint8
     nRESET* {.bitsize: 1.}: uint8
     nDMA* {.bitsize: 1.}: uint8
     MOT* {.bitsize: 4.}: uint8
 
-  FDD_msr_field1* {.bycopy.} = object
+  FDD_msr_field1* = object
     DRV_BSY* {.bitsize: 4.}: uint8
     CMD_BSY* {.bitsize: 1.}: uint8
     NON_DMA* {.bitsize: 1.}: uint8
     DIO* {.bitsize: 1.}: uint8
     RQM* {.bitsize: 1.}: uint8
 
-  FDD_str3_field1* {.bycopy.} = object
+  FDD_str3_field1* = object
     DS0* {.bitsize: 1.}: uint8
     DS1* {.bitsize: 1.}: uint8
     HD* {.bitsize: 1.}: uint8

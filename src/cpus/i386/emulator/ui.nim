@@ -21,7 +21,7 @@ type
     image*: seq[uint8]
     field7*: UI_field7_Type    
 
-  UI_field7_Type* {.bycopy.} = object
+  UI_field7_Type* = object
     X*, Y*: int16
     click*: array[2, bool]
 

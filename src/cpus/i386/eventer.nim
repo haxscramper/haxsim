@@ -47,10 +47,12 @@ type
     eekGetMem16 = "get mem 16"
     eekGetMem32 = "get mem 32"
 
+
     eekInIO = "io in"
     eekOutIO = "io out"
     # value kind end
 
+    eekGetMemBlob = "read blob"
     eekInterrupt = "interrupt"
     eekInterruptHandler = "execute interrupt handler setup"
     eekScope = "scope"
@@ -166,10 +168,12 @@ func getTrace(): seq[StackTraceEntry] =
 template log*(
     logger: EmuLogger, event: EmuEvent, instDepth: int = -1): untyped =
   bind writeEvent
-  var tmp = event
-  tmp.stackTrace = getTrace()
-  tmp.info = instantiationInfo(instDepth, true)
-  writeEvent(logger, tmp)
+  const iinfo = instantiationInfo(instDepth, true)
+  {.line: iinfo.}:
+    var tmp = event
+    tmp.stackTrace = getTrace()
+    tmp.info = iinfo
+    writeEvent(logger, tmp)
 
 
 template logScope*(

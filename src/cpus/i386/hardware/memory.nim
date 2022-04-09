@@ -68,7 +68,7 @@ proc readMem16*(this: var Memory, memAddr: uint32): uint16 =
   this.log ev(eekGetMem16, evalue(result, 16), memAddr)
 
 proc readMem8*(this: var Memory, memAddr: uint32): uint8 =
-  assert(INRANGE(memAddr, 1), "OOM - $# is not in 0..$#" % [$memAddr, $this.memory.high])
+  assertRange(memAddr, 1)
   result = this.memory[memAddr]
   this.log ev(eekGetMem8, evalue(result, 8), memAddr)
 
@@ -122,6 +122,9 @@ proc readDataBlob*[T](this: var Memory, dst: var T, srcAddr: EPointer) =
   )
 
   fromMemBlob(dst, dstBlob)
+  this.log ev(eekGetMemBlob).withIt do:
+    it.memAddr = srcAddr
+    it.msg = $typeof(T)
 
 proc readDataBlob*[T](this: var Memory, srcAddr: EPointer): T =
   readDataBlob[T](this, result, srcAddr)

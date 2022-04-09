@@ -3,19 +3,19 @@ import dev_irq
 import dev_io
 
 type
-  Timer* {.bycopy.} = object
+  Timer* = object
     mode*: uint8
     count*: uint16
     def*: uint16
     running*: bool
     # th*: std_thread
 
-  PIT* {.bycopy.} = object of IRQ
+  PIT* = object of IRQ
     portio*: PortIO
     cwr*: PIT_cwr_Type    
     timer*: array[3, Timer]
   
-  field1_Type* {.bycopy.} = object
+  field1_Type* = object
     BCD* {.bitsize: 1.}: uint8
     mode* {.bitsize: 3.}: uint8
     RL* {.bitsize: 2.}: uint8

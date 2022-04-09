@@ -5,7 +5,7 @@ import hmisc/algo/clformat
 
 import compiler/[assembler]
 import hardware/[processor]
-import emulator/[emulator]
+import emulator/[emulator, access]
 import instruction/[syntaxes]
 import maincpp
 
@@ -14,22 +14,32 @@ let op = hdisplay(flags += { dfSplitNumbers, dfUseHex })
 setTestContextDisplayOpts op
 startHax()
 
-proc eval*(instr: openarray[string], log: bool = false): Emulator =
-  var compiled: seq[uint8]
+proc compile*(instr: openarray[string]): seq[EByte] =
   for i in instr:
-    let dat = parseInstr(i)
-    let bin = dat.compileInstr()
-    compiled.add bin
+    result.add i.parseInstr().compileInstr()
 
-  var eset = EmuSetting(memSize: ESize(compiled.len() + 12))
+proc loadAt*(full: var FullImpl, memAddr: EPointer, instr: openarray[string]) =
+  var compiled = compile(instr)
+  full.emu.loadBlob(compiled, memAddr)
+
+proc init*(instr: openarray[string], log: bool = false, memsize: ESize = 0): FullImpl =
+  var compiled = compile(instr)
+  var eset = EmuSetting(memSize: tern(
+    memsize == 0,
+    ESize(compiled.len() + 12),
+    memsize))
+
   var full = initFull(eset)
   if log:
     full.addEchoHandler()
   # Initial value of the EIP is `0xFFF0` - to make testing simpler we are
   # setting it here to `0`.
   full.emu.cpu.setEip(0)
-
   full.emu.loadBlob(compiled)
+  return full
+
+proc eval*(instr: openarray[string], log: bool = false): Emulator =
+  var full = init(instr, log)
   full.loop()
   return full.emu
 
@@ -54,11 +64,22 @@ suite "Register math":
 
 suite "Interrupts":
   test "Division by zero":
-    let emu = eval([
+    let max = 0x84.ESize
+    var full = init([], log = true, memsize = max)
+    # Load instructions starting from zero
+    full.loadAt(0): [
       "mov ax, 2",
       "mov dx, 0",
       "div edx",
       "hlt"
-    ], true)
+    ]
 
-    pprinte emu.cpu.gpregs
+    # Interrupt descritor table starts at `0x80`
+    full.emu.cpu.setDtreg(IDTR, 0, 0x80, max.U16)
+    # Stack pointer starts at `0xFF` and decreases as elements are added.
+    # Stack is used when interrupt implementation is executed.
+    full.emu.cpu.setGpreg(SP, max.U16)
+
+    full.loop()
+
+    # pprinte emu.cpu.gpregs

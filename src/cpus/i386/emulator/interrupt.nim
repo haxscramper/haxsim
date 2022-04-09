@@ -88,8 +88,7 @@ proc handleInterrupt*(acs: var DataAccess, this: var Interrupt): void =
       raise newException(EXP_GP, "idtOffset: $#, idtLimit: $#" % [
         $idtOffset, $idtLimit])
 
-    var idt: IntGateDesc
-    acs.mem.readDataBlob(idt, idtBase + idtOffset)
+    var idt = acs.mem.readDataBlob[:IntGateDesc](idtBase + idtOffset)
 
     var segSel = addr idt.seg_sel
     RPL = cast[ptr SGregister](segSel)[].RPL.uint8()
@@ -118,7 +117,9 @@ proc handleInterrupt*(acs: var DataAccess, this: var Interrupt): void =
 
     # read value from the interrupt descriptor table. IDTR stores interrupt
     # location in form of `[segment selector - 31:16, offset bits - 15:0]`
-    let ivt: IVT = cast[IVT](acs.mem.readMem32(idtBase + idtOffset))
+    echov "read data blob IVT"
+    let ivt: IVT = acs.mem.readDataBlob[:IVT](idtBase + idtOffset)
+    echov "asdfasdf?"
     # Get code segment location, store it
     let cs = acs.getSegment(CS)
     # Set location of the code segment

@@ -101,7 +101,7 @@ type
     field0*: TSSDesc_field3_field0
     field1*: TSSDesc_field3_field1
 
-  TSSDesc* {.bycopy.} = object
+  TSSDesc* = object
     limit_l*:        uint16
     base_l*:        uint16
     base_m*:        uint8
@@ -112,11 +112,11 @@ type
     G* {.bitsize: 1.}: uint8
     base_h*:        uint8
 
-  TSSDesc_field3_field0* {.bycopy.} = object
+  TSSDesc_field3_field0* = object
     field0* {.bitsize: 1.}: uint8
     B* {.bitsize: 1.}: uint8
 
-  TSSDesc_field3_field1* {.bycopy.} = object
+  TSSDesc_field3_field1* = object
     Type* {.bitsize: 3.}: uint8
     D* {.bitsize: 1.}: uint8
     S* {.bitsize: 1.}: uint8
@@ -150,7 +150,7 @@ proc P*(this: TSSDesc): uint8 = this.field3.field1.P
 proc `P=`*(this: var TSSDesc, value: uint8) = this.field3.field1.P = value
 
 type
-  LDTDesc* {.bycopy.} = object
+  LDTDesc* = object
     limit_l*:        uint16
     base_l*:        uint16
     base_m*:        uint8
@@ -167,7 +167,7 @@ type
 
 
 type
-  CallGateDesc* {.bycopy.} = object
+  CallGateDesc* = object
     offset_l*:        uint16
     seg_sel*:        uint16
     pc* {.bitsize: 5.}: uint8
@@ -180,7 +180,7 @@ type
     offset_h*:        uint16
 
 type
-  TaskGateDesc* {.bycopy.} = object
+  TaskGateDesc* = object
     field0* {.bitsize: 16.}: uint16
     tss_sel*:        uint16
     field2* {.bitsize: 8.}: uint8
@@ -204,7 +204,7 @@ type
     offset_h*:        uint16
 
 type
-  TrapGateDesc* {.bycopy.} = object
+  TrapGateDesc* = object
     offset_l*:        uint16
     seg_sel*:        uint16
     field2* {.bitsize: 8.}: uint8
@@ -216,7 +216,7 @@ type
     offset_h*:        uint16
 
 type
-  TSS* {.bycopy.} = object
+  TSS* = object
     prev_sel*:          uint16
     field1*  {.bitsize: 16.}: uint16
     esp0*:              uint32
