@@ -168,10 +168,12 @@ proc getIp*(this: var Processor): uint32 =
     it.value = evalue(result, 32)
 
 proc getGpreg*(this: Processor, n: Reg32T): uint32 =
-  return this.gpregs[n].reg32
+  result = this.gpregs[n].reg32
+  this.log ev(eekGetReg32, evalue(result, 32), n.uint8)
 
 proc getGpreg*(this: Processor, n: Reg16T): uint16 =
-  return this.gpregs[Reg32T(n.int)].reg16
+  result = this.gpregs[Reg32T(n.int)].reg16
+  this.log ev(eekGetReg16, evalue(result, 16), n.uint8)
 
 proc getGpreg*(this: Processor, n: Reg8T): uint8 =
   if n < AH:

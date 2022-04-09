@@ -128,8 +128,13 @@ proc addEchoHandler*(full: var FullImpl) =
       let (dir, name, _) = splitFile(AbsFile($path))
       # echo clfmt"{    procname:>} {  name:>}:{line:<3}" |>> terminalWidth()
 
-    # let last = ev.stackTrace.last()
-    res.add ($ev.kind + fgBlue |<< 16)
+
+    if ev.kind == eekScope:
+      res.add "> " + fgYellow
+      res.add ev.msg + fgRed
+
+    else:
+      res.add ($ev.kind + fgBlue |<< 16)
 
     if ev.kind == eekCallOpcodeImpl:
       let ev = EmuInstrEvent(ev)
@@ -150,7 +155,6 @@ proc addEchoHandler*(full: var FullImpl) =
           res.add " " & $DtRegT(ev.memAddr)
 
         of eekGetSegment, eekSetSegment: res.add " " & $SgRegT(ev.memAddr)
-
         of eekSetMem8 .. eekGetMem32:
           let s = log2(emu.mem.len().float()).int()
           res.add " 0x" & toHex(ev.memAddr)[^s .. ^1]
@@ -166,7 +170,7 @@ proc addEchoHandler*(full: var FullImpl) =
       res.add " "
       res.add hshow(ev.exception.kind.uint8, clShowHex)
       res.add ", "
-      res.add ev.exception.msg
+      res.add ev.exception.msg + fgRed
 
     echo res
     if ev.kind in eekStartKinds:

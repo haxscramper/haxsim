@@ -39,6 +39,7 @@ import emulator/descriptor
 import emulator/access
 
 proc saveRegs*(acs: var DataAccess, this: var Interrupt, chpl: bool, cs: uint16): void =
+  ## Store values of the current register, code segment on stack
   if acs.cpu.isProtected():
     if chpl:
       var base, limit, esp: uint32
@@ -106,6 +107,7 @@ proc handleInterrupt*(acs: var DataAccess, this: var Interrupt): void =
       acs.cpu.eflags.setInterrupt(false)
 
   else:
+    # Get values from `Interupt Descriptor Table Register` (IDTR for short)
     let idtBase: uint32 = acs.cpu.getDtregBase(IDTR)
     let idtOffset: uint16 = n shl 2
     let idtLimit: uint16 = acs.cpu.getDtregLimit(IDTR)
@@ -114,10 +116,16 @@ proc handleInterrupt*(acs: var DataAccess, this: var Interrupt): void =
         $idtOffset, $idtLimit
       ])
 
+    # read value from the interrupt descriptor table. IDTR stores interrupt
+    # location in form of `[segment selector - 31:16, offset bits - 15:0]`
     let ivt: IVT = cast[IVT](acs.mem.readMem32(idtBase + idtOffset))
+    # Get code segment location, store it
     let cs = acs.getSegment(CS)
+    # Set location of the code segment
     acs.setSegment(CS, ivt.segment)
+    # Store registers, flags, instruction pointer, code segment value on stack
     acs.saveRegs(this, false, cs)
+    # Set instruction pointer location using entry from IDTR table
     acs.cpu.setIp(ivt.offset)
 
 proc chkIrq*(acs: DataAccess, this: var Interrupt): bool =

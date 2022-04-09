@@ -40,13 +40,6 @@ type
     eekGetReg16 = "get reg 16"
     eekGetReg32 = "get reg 32"
 
-    eekPush32 = "push 32"
-    eekPush16 = "push 16"
-    eekPush8 = "push 8"
-    eekPop32 = "pop 32"
-    eekPop16 = "pop 16"
-    eekPop8 = "pop 8"
-
     eekSetMem8 = "set mem 8"
     eekSetMem16 = "set mem 16"
     eekSetMem32 = "set mem 32"
@@ -60,6 +53,7 @@ type
 
     eekInterrupt = "interrupt"
     eekInterruptHandler = "execute interrupt handler setup"
+    eekScope = "scope"
     eekEnd = "end"
 
   EmuEvent* = ref object of RootObj
@@ -69,6 +63,7 @@ type
     memAddr*: uint64
     size*: uint64
     value*: EmuValue
+    msg*: string
     info*: typeof(instantiationInfo())
 
   EmuValueSystem* = enum evs2, evs8, evs10, evs16
@@ -115,7 +110,8 @@ func evalue*(
 
 const
   eekStartKinds* = {
-    eekInitEmulator .. eekGetCode, eekInterruptHandler
+    eekInitEmulator .. eekGetCode, eekInterruptHandler,
+    eekScope
   }
 
   eekValueKinds* = {
@@ -183,6 +179,11 @@ template logScope*(
   logger.log(tmp, instDepth)
   defer:
     logger.log(evEnd(), instDepth)
+
+template scope*(logger: EmuLogger, name: string, depth: int = -3): untyped =
+  var event = ev(eekScope)
+  event.msg = name
+  logScope(logger, event, depth)
 
 func setHook*(emu: var EmuLogger, handler: EmuEventHandler) =
   emu.eventHandler = handler
