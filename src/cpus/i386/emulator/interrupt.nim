@@ -5,10 +5,10 @@ import device/pic
 
 type
   IVT* = object
+    ## Interrupt descriptor table entry - 'Interrupt Vector'
     offset*: U16
     segment*: U16
 
-type
   Interrupt* = object
     intrQ*: Deque[(U8, bool)]
     picS*, picM*: PIC
@@ -78,11 +78,11 @@ proc handleInterrupt*(acs: var DataAccess, this: var Interrupt): void =
   let (n, hard) = this.intrQ.popFirst()
 
   if acs.cpu.isProtected():
-    var RPL: U8
-    var CPL: U8 = U8(acs.getSegment(CS) and 3)
+    let CPL: U8 = U8(acs.getSegment(CS) and 3)
     let idtBase: U32 = acs.cpu.getDtregBase(IDTR)
-    let idtOffset: U16 = n shl 3
+    let idtOffset: U16 = n * 8 # size of the single interrupt vector in 32-bit mode
     let idtLimit: U16 = acs.cpu.getDtregLimit(IDTR)
+
     if idtOffset > idtLimit:
       raise newException(EXP_GP, "idtOffset: $#, idtLimit: $#" % [
         $idtOffset, $idtLimit])
@@ -90,7 +90,7 @@ proc handleInterrupt*(acs: var DataAccess, this: var Interrupt): void =
     var idt = acs.mem.readDataBlob[:IntGateDesc](idtBase + idtOffset)
 
     var segSel = addr idt.seg_sel
-    RPL = cast[ptr SGregister](segSel)[].RPL.U8()
+    let RPL: U8 = cast[ptr SGregister](segSel)[].RPL.U8()
 
     if not(idt.P.toBool()): raise newException(EXPNP, "")
     if CPL < RPL:
@@ -107,7 +107,9 @@ proc handleInterrupt*(acs: var DataAccess, this: var Interrupt): void =
   else:
     # Get values from `Interupt Descriptor Table Register` (IDTR for short)
     let idtBase: U32 = acs.cpu.getDtregBase(IDTR)
-    let idtOffset: U16 = n shl 2
+    # Compute offset from the table base using size of the single interrupt
+    # vector (4 bytes for 16-bit mode, 8 bytes for 32-bit mode)
+    let idtOffset: U16 = n * 4
     let idtLimit: U16 = acs.cpu.getDtregLimit(IDTR)
     if idtOffset > idtLimit:
       raise newException(EXP_GP, "idtOffset: $#, idtLimit: $#" % [

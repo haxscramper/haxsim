@@ -7,18 +7,18 @@ export Reg32T, Reg16T, Reg8T, SgRegT, DTregT
 type
   GPRegister* {.union.} = object
     ## General-purpose register
-    reg32*: uint32 ## Full (extended, 32-bit) value of the regsiters
-    reg16*: uint16 ## Lower word of the registers
+    reg32*: U32 ## Full (extended, 32-bit) value of the regsiters
+    reg16*: U16 ## Lower word of the registers
     regLH*: RegLH ## Two lower bytes of the register
 
   RegLH* = object
-    reg8L*: uint8
-    reg8H*: uint8
+    reg8L*: U8
+    reg8H*: U8
 
-proc reg8L*(this: GPRegister): uint8 = this.regLH.reg8L
-proc `reg8L=`*(this: var GPRegister, value: uint8) = this.regLH.reg8L = value
-proc reg8H*(this: GPRegister): uint8 = this.regLH.reg8H
-proc `reg8H=`*(this: var GPRegister, value: uint8) = this.regLH.reg8H = value
+proc reg8L*(this: GPRegister): U8 = this.regLH.reg8L
+proc `reg8L=`*(this: var GPRegister, value: U8) = this.regLH.reg8L = value
+proc reg8H*(this: GPRegister): U8 = this.regLH.reg8H
+proc `reg8H=`*(this: var GPRegister, value: U8) = this.regLH.reg8H = value
 
 type
   SGRegCache* = object
@@ -26,55 +26,55 @@ type
     ## keeps a copy of each segment descriptor in a special descriptor
     ## cache. This saves the processor from accessing the GDT for every
     ## memory access made
-    base*:        uint32
-    limit* {.bitsize: 20.}: uint32
+    base*:        U32
+    limit* {.bitsize: 20.}: U32
     flags*:        SGRegCacheFlags
 
   data* = object
-    field0* {.bitsize: 1.}: uint8
-    w*      {.bitsize: 1.}: uint8
-    exd*    {.bitsize: 1.}: uint8
-    field3* {.bitsize: 1.}: uint8
+    field0* {.bitsize: 1.}: U8
+    w*      {.bitsize: 1.}: U8
+    exd*    {.bitsize: 1.}: U8
+    field3* {.bitsize: 1.}: U8
 
   code* = object
-    field0* {.bitsize: 1.}: uint8
-    r*      {.bitsize: 1.}: uint8
-    cnf*    {.bitsize: 1.}: uint8
-    field3* {.bitsize: 1.}: uint8
+    field0* {.bitsize: 1.}: U8
+    r*      {.bitsize: 1.}: U8
+    cnf*    {.bitsize: 1.}: U8
+    field3* {.bitsize: 1.}: U8
 
   typeField2* = object
-    A*      {.bitsize: 1.}: uint8
-    field1* {.bitsize: 2.}: uint8
-    segc*   {.bitsize: 1.}: uint8
+    A*      {.bitsize: 1.}: U8
+    field1* {.bitsize: 2.}: U8
+    segc*   {.bitsize: 1.}: U8
 
   SGRegCacheFlagsField2* = object
-    field0* {.bitsize: 4.}: uint8
-    S*      {.bitsize: 1.}: uint8
-    DPL*    {.bitsize: 2.}: uint8
-    P*      {.bitsize: 1.}: uint8
-    AVL*    {.bitsize: 1.}: uint8
-    field5* {.bitsize: 1.}: uint8
-    DB*     {.bitsize: 1.}: uint8
-    G*      {.bitsize: 1.}: uint8
+    field0* {.bitsize: 4.}: U8
+    S*      {.bitsize: 1.}: U8
+    DPL*    {.bitsize: 2.}: U8
+    P*      {.bitsize: 1.}: U8
+    AVL*    {.bitsize: 1.}: U8
+    field5* {.bitsize: 1.}: U8
+    DB*     {.bitsize: 1.}: U8
+    G*      {.bitsize: 1.}: U8
 
   SGRegCacheFlags* {.union.} = object
-    raw* {.bitsize: 12.}: uint16
+    raw* {.bitsize: 12.}: U16
     typ*:        typ
     field2*:        SGRegCacheFlagsField2
 
   SGRegister* = object
-    field0*: SGRegisterField0
-    cache*:  SGRegCache
+    ## Segment register object
+    data*: SGRegisterData ## Actual value of the segment register
+    cache*:  SGRegCache ## Segment register access cache
 
-  SGRegisterField0* {.union.} = object
-    raw*:    uint16
-    field1*: SGRegisterField0Field1
+  # SGRegisterData* {.union.} = object
+  #   raw*:    U16
+  #   impl*: SGRegisterDataImpl
 
-
-  SGRegisterField0Field1* = object
-    RPL*   {.bitsize: 2.}: uint16
-    TI*    {.bitsize: 1.}: uint16
-    index* {.bitsize: 13.}: uint16
+  SGRegisterData* = object
+    RPL*   {.bitsize: 2.}: U16
+    TI*    {.bitsize: 1.}: U16
+    index* {.bitsize: 13.}: U16
 
   typ* {.union.} = object
     data*:   data
@@ -82,43 +82,44 @@ type
     field2*: typeField2
 
 
-proc A*(this: typ): uint8 = this.field2.A
-proc `A=`*(this: var typ, value: uint8) = this.field2.A = value
-proc segc*(this: typ): uint8 = this.field2.segc
-proc `segc=`*(this: var typ, value: uint8) = this.field2.segc = value
-proc S*(this: SGRegCacheFlags): uint8 = this.field2.S
-proc `S=`*(this: var SGRegCacheFlags, value: uint8) = this.field2.S = value
-proc DPL*(this: SGRegCacheFlags): uint8 = this.field2.DPL
-proc `DPL=`*(this: var SGRegCacheFlags, value: uint8) = this.field2.DPL = value
-proc P*(this: SGRegCacheFlags): uint8 = this.field2.P
-proc `P=`*(this: var SGRegCacheFlags, value: uint8) = this.field2.P = value
-proc AVL*(this: SGRegCacheFlags): uint8 = this.field2.AVL
-proc `AVL=`*(this: var SGRegCacheFlags, value: uint8) = this.field2.AVL = value
-proc DB*(this: SGRegCacheFlags): uint8 = this.field2.DB
-proc `DB=`*(this: var SGRegCacheFlags, value: uint8) = this.field2.DB = value
-proc G*(this: SGRegCacheFlags): uint8 = this.field2.G
-proc `G=`*(this: var SGRegCacheFlags, value: uint8) = this.field2.G = value
-proc RPL*(this: SGRegisterField0): uint16 = this.field1.RPL
-proc `RPL=`*(this: var SGRegisterField0, value: uint16) = this.field1.RPL = value
-proc TI*(this: SGRegisterField0): uint16 = this.field1.TI
-proc `TI=`*(this: var SGRegisterField0, value: uint16) = this.field1.TI = value
-proc index*(this: SGRegisterField0): uint16 = this.field1.index
-proc `index=`*(this: var SGRegisterField0, value: uint16) = this.field1.index = value
-proc raw*(this: SGRegister): uint16 = this.field0.raw
-proc `raw=`*(this: var SGRegister, value: uint16) = this.field0.raw = value
-proc RPL*(this: SGRegister): uint16 = this.field0.field1.RPL
-proc `RPL=`*(this: var SGRegister, value: uint16) = this.field0.field1.RPL = value
-proc TI*(this: SGRegister): uint16 = this.field0.field1.TI
-proc `TI=`*(this: var SGRegister, value: uint16) = this.field0.field1.TI = value
-proc index*(this: SGRegister): uint16 = this.field0.field1.index
-proc `index=`*(this: var SGRegister, value: uint16) = this.field0.field1.index = value
+proc A*(this: typ): U8 = this.field2.A
+proc `A=`*(this: var typ, value: U8) = this.field2.A = value
+proc segc*(this: typ): U8 = this.field2.segc
+proc `segc=`*(this: var typ, value: U8) = this.field2.segc = value
+proc S*(this: SGRegCacheFlags): U8 = this.field2.S
+proc `S=`*(this: var SGRegCacheFlags, value: U8) = this.field2.S = value
+proc DPL*(this: SGRegCacheFlags): U8 = this.field2.DPL
+proc `DPL=`*(this: var SGRegCacheFlags, value: U8) = this.field2.DPL = value
+proc P*(this: SGRegCacheFlags): U8 = this.field2.P
+proc `P=`*(this: var SGRegCacheFlags, value: U8) = this.field2.P = value
+proc AVL*(this: SGRegCacheFlags): U8 = this.field2.AVL
+proc `AVL=`*(this: var SGRegCacheFlags, value: U8) = this.field2.AVL = value
+proc DB*(this: SGRegCacheFlags): U8 = this.field2.DB
+proc `DB=`*(this: var SGRegCacheFlags, value: U8) = this.field2.DB = value
+proc G*(this: SGRegCacheFlags): U8 = this.field2.G
+proc `G=`*(this: var SGRegCacheFlags, value: U8) = this.field2.G = value
+# proc RPL*(this: SGRegisterData): U16 = this.impl.RPL
+# proc `RPL=`*(this: var SGRegisterData, value: U16) = this.impl.RPL = value
+# proc TI*(this: SGRegisterData): U16 = this.impl.TI
+# proc `TI=`*(this: var SGRegisterData, value: U16) = this.impl.TI = value
+# proc index*(this: SGRegisterData): U16 = this.impl.index
+# proc `index=`*(this: var SGRegisterData, value: U16) = this.impl.index = value
+proc raw*(this: SGRegister): U16 = cast[U16](this.data)
+proc `raw=`*(this: var SGRegister, value: U16) = this.data = cast[SgRegisterData](value)
+
+proc RPL*(this: SGRegister): U16 = this.data.RPL
+proc `RPL=`*(this: var SGRegister, value: U16) = this.data.RPL = value
+proc TI*(this: SGRegister): U16 = this.data.TI
+proc `TI=`*(this: var SGRegister, value: U16) = this.data.TI = value
+proc index*(this: SGRegister): U16 = this.data.index
+proc `index=`*(this: var SGRegister, value: U16) = this.data.index = value
 
 type
   DTRegister* = object
     ## Data register object
-    selector*: uint16
-    base*: uint32
-    limit*: uint16
+    selector*: U16
+    base*: U32
+    limit*: U16
 
   InstructionPointer* {.union.} = object
     ## The instruction pointer register (EIP) contains the offset address,
@@ -126,8 +127,8 @@ type
     ## sequential instruction to be executed. The instruction pointer is
     ## not directly visible to the programmer; it is controlled implicitly
     ## by control-transfer instructions, interrupts, and exceptions.
-    eip*: uint32 ## Extended instruction pointer
-    ip*: uint16 ## Base instruction pointer
+    eip*: U32 ## Extended instruction pointer
+    ip*: U16 ## Base instruction pointer
 
   ProcessorObj* =  object of CR
     ## Current state of the CPU
@@ -147,10 +148,10 @@ type
 template log*(p: Processor, ev: EmuEvent, depth: int = -2): untyped =
   p.logger.log(ev, depth)
 
-proc eip*(this: Processor): uint32 = this.field0.eip
-proc `eip=`*(this: var Processor, value: uint32) = this.field0.eip = value
-proc ip*(this: Processor): uint16 = this.field0.ip
-proc `ip=`*(this: var Processor, value: uint16) = this.field0.ip = value
+proc eip*(this: Processor): U32 = this.field0.eip
+proc `eip=`*(this: var Processor, value: U32) = this.field0.eip = value
+proc ip*(this: Processor): U16 = this.field0.ip
+proc `ip=`*(this: var Processor, value: U16) = this.field0.ip = value
 
 proc isMode32*(this: var Processor): bool =
   return this.sgregs[CS].cache.flags.DB.bool
@@ -161,25 +162,25 @@ proc isProtected*(this: var Processor): bool =
   # implementation.
   return CR(this).isProtected()
 
-proc getEip*(this: var Processor): uint32 =
+proc getEip*(this: var Processor): U32 =
   result = this.eip
   this.log ev(eekGetEIP).withIt do:
     it.value = evalue(result, 32)
 
-proc getIp*(this: var Processor): uint32 =
+proc getIp*(this: var Processor): U32 =
   result = this.ip
   this.log ev(eekGetIP).withIt do:
     it.value = evalue(result, 32)
 
-proc getGpreg*(this: Processor, n: Reg32T): uint32 =
+proc getGpreg*(this: Processor, n: Reg32T): U32 =
   result = this.gpregs[n].reg32
-  this.log ev(eekGetReg32, evalue(result, 32), n.uint8)
+  this.log ev(eekGetReg32, evalue(result, 32), n.U8)
 
-proc getGpreg*(this: Processor, n: Reg16T): uint16 =
+proc getGpreg*(this: Processor, n: Reg16T): U16 =
   result = this.gpregs[Reg32T(n.int)].reg16
-  this.log ev(eekGetReg16, evalue(result, 16), n.uint8)
+  this.log ev(eekGetReg16, evalue(result, 16), n.U8)
 
-proc getGpreg*(this: Processor, n: Reg8T): uint8 =
+proc getGpreg*(this: Processor, n: Reg8T): U8 =
   if n < AH:
     result = this.gpregs[Reg32T(n.int)].reg8L
 
@@ -190,45 +191,45 @@ proc getGpreg*(this: Processor, n: Reg8T): uint8 =
     it.memAddr = n.uint64
     it.value = evalue(result, sizeof(result))
 
-proc `[]`*(this: Processor, reg: Reg8T): uint8 = this.getGPreg(reg)
-proc `[]`*(this: Processor, reg: Reg16T): uint16 = this.getGPreg(reg)
-proc `[]`*(this: Processor, reg: Reg32T): uint32 = this.getGPreg(reg)
+proc `[]`*(this: Processor, reg: Reg8T): U8 = this.getGPreg(reg)
+proc `[]`*(this: Processor, reg: Reg16T): U16 = this.getGPreg(reg)
+proc `[]`*(this: Processor, reg: Reg32T): U32 = this.getGPreg(reg)
 
 
 proc getSgreg*(this: Processor, n: SgRegT): SgRegister =
   result = this.sgregs[n]
 
-proc getDtregSelector*(this: Processor, n: DTregT): uint32 =
+proc getDtregSelector*(this: Processor, n: DTregT): U32 =
   result = this.dtregs[n].selector
-  this.log ev(eekGetDtRegSelector, evalue(result, 32), n.uint8)
+  this.log ev(eekGetDtRegSelector, evalue(result, 32), n.U8)
 
-proc getDtregBase*(this: Processor, n: DTregT): uint32 =
+proc getDtregBase*(this: Processor, n: DTregT): U32 =
   result = this.dtregs[n].base
-  this.log ev(eekGetDtRegBase, evalue(result, 32), n.uint8)
+  this.log ev(eekGetDtRegBase, evalue(result, 32), n.U8)
 
-proc getDtregLimit*(this: Processor, n: DTregT): uint16 =
+proc getDtregLimit*(this: Processor, n: DTregT): U16 =
   result = this.dtregs[n].limit
-  this.log ev(eekGetDtRegLimit, evalue(result, 16), n.uint8)
+  this.log ev(eekGetDtRegLimit, evalue(result, 16), n.U8)
 
-proc setEip*(this: var Processor, v: uint32): void =
+proc setEip*(this: var Processor, v: U32): void =
   this.eip = v
   assertRef(this.logger)
   this.log ev(eekSetEIP).withIt do:
     it.value = evalue(v, 32)
 
-proc setIp*(this: var Processor, v: uint16): void =
+proc setIp*(this: var Processor, v: U16): void =
   this.ip = v
   assertRef(this.logger)
   this.log ev(eekSetIP).withIt do:
     it.value = evalue(v, 16)
 
-proc setGpreg*(this: var Processor, n: Reg32T, v: uint32): void =
+proc setGpreg*(this: var Processor, n: Reg32T, v: U32): void =
   this.gpregs[n].reg32 = v
 
-proc setGpreg*(this: var Processor, n: Reg16T, v: uint16): void =
+proc setGpreg*(this: var Processor, n: Reg16T, v: U16): void =
   this.gpregs[Reg32T(n.int)].reg16 = v
 
-proc setGpreg*(this: var Processor, n: Reg8T, v: uint8): void =
+proc setGpreg*(this: var Processor, n: Reg8T, v: U8): void =
   if n < AH:
     this.gpregs[Reg32T(n.int)].reg8L = v
 
@@ -238,28 +239,28 @@ proc setGpreg*(this: var Processor, n: Reg8T, v: uint8): void =
 proc setSgreg*(this: var Processor, n: SgRegT, reg: SGRegister): void =
   this.sgregs[n] = reg
 
-proc setDtreg*(this: var Processor, n: DTregT, sel: uint16, base: uint32, limit: uint16): void =
+proc setDtreg*(this: var Processor, n: DTregT, sel: U16, base: U32, limit: U16): void =
   this.dtregs[n].selector = sel
   this.dtregs[n].base = base
   this.dtregs[n].limit = limit
 
 proc updateEip*(this: var Processor, v: int32) =
-  this.setEIp(this.eip + v.uint32)
+  this.setEIp(this.eip + v.U32)
 
 proc updateIp*(this: var Processor, v: int32) =
-  this.setIP(this.ip + v.uint16)
+  this.setIP(this.ip + v.U16)
 
 proc updateGpreg*(this: var Processor, n: Reg32T, v: int32) =
-  this.gpregs[n].reg32 = (this.gpregs[n].reg32 + v.uint32)
+  this.gpregs[n].reg32 = (this.gpregs[n].reg32 + v.U32)
 
 proc updateGpreg*(this: var Processor, n: Reg16T, v: int16) =
-  this.gpregs[Reg32T(n.int)].reg16 = (this.gpregs[Reg32T(n.int)].reg16 + v.uint16)
+  this.gpregs[Reg32T(n.int)].reg16 = (this.gpregs[Reg32T(n.int)].reg16 + v.U16)
 
 proc updateGpreg*(this: var Processor, n: Reg8T, v: int8) =
   let rhs = if n < AH:
-              this.gpregs[Reg32T(n.int)].reg8L + v.uint8
+              this.gpregs[Reg32T(n.int)].reg8L + v.U8
             else:
-              this.gpregs[Reg32T(n.int - AH.int)].reg8H + v.uint8
+              this.gpregs[Reg32T(n.int - AH.int)].reg8H + v.U8
 
   if n < AH:
     this.gpregs[Reg32T(n.int)].reg8L = rhs
@@ -288,7 +289,7 @@ proc initProcessor*(logger: EmuLogger): Processor =
   result.set_eip(0x0000fff0)
   result.set_crn(0, 0x60000010)
   result.eflags.set_eflags(0x00000002)
-  result.sgregs[CS].raw = 0xf000
+  result.sgregs[CS].data = cast[SgRegisterData](0xf000)
   result.sgregs[CS].cache.base = 0xffff0000u32
   result.sgregs[CS].cache.flags.typ.segc = 1
   for i in ES .. GS:
