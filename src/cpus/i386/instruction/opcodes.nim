@@ -309,7 +309,7 @@ type
     opINT_Three_B_EFLAGS_D         = (0xCC_00_00'u64, "INT 3 eFlags")
     opINT_Imm_B_EFLAGS_D           = (0xCD_00_00'u64, "INT imm8 eFlags")
     opINTO_EFLAGS_D                = (0xCE_00_00'u64, "INTO eFlags")
-    opIRET_EFLAGS_D                = (0xCF_00_00'u64, "IRET eFlags")
+    opIRET                         = (0xCF_00_00'u64, "IRET")
     opROL_RegMem_B_One_B           = (0xD0_00_00'u64, "ROL r/m8 1")
     opROR_RegMem_B_One_B           = (0xD0_00_01'u64, "ROR r/m8 1")
     opRCL_RegMem_B_One_B           = (0xD0_00_02'u64, "RCL r/m8 1")
@@ -615,7 +615,7 @@ func getOpcodes*(code: ICodeMnemonic): seq[ICode] =
     of opMneLODS        : @[ opLODS_AL_B_Mem_B, opLODS_EAX_D_Mem_V ]
     of opMneJG          : @[ opJG_Imm_B ]
     of opMneROR         : @[ opROR_RegMem_B_Imm_B, opROR_RegMem_V_Imm_B, opROR_RegMem_B_One_B, opROR_RegMem_V_One_B, opROR_RegMem_B_CL_B, opROR_RegMem_V_CL_B ]
-    of opMneIRET        : @[ opIRET_EFLAGS_D ]
+    of opMneIRET        : @[ opIRET ]
     of opMneJNP         : @[ opJNP_Imm_V, opJNP_Imm_B ]
     of opMneSBB         : @[ opSBB_RegMem_B_Reg_B, opSBB_RegMem_V_Reg_V, opSBB_Reg_B_RegMem_B, opSBB_Reg_V_RegMem_V, opSBB_AL_B_Imm_B, opSBB_EAX_D_Imm_V, opSBB_RegMem_B_Imm_B, opSBB_RegMem_V_Imm_V ]
     of opMneLES         : @[ opLES_ES_W_Reg_V_Mem_P ]
@@ -1075,7 +1075,7 @@ func getTestedFlags*(code: ICode): set[OpFlagIO] =
     of opINT_Three_B_EFLAGS_D        : set[OpFlagIO]({})
     of opINT_Imm_B_EFLAGS_D          : set[OpFlagIO]({})
     of opINTO_EFLAGS_D               : set[OpFlagIO]({opfOverflow, })
-    of opIRET_EFLAGS_D               : set[OpFlagIO]({})
+    of opIRET                        : set[OpFlagIO]({})
     of opROL_RegMem_B_One_B          : set[OpFlagIO]({})
     of opROR_RegMem_B_One_B          : set[OpFlagIO]({})
     of opRCL_RegMem_B_One_B          : set[OpFlagIO]({opfCarry, })
@@ -1475,7 +1475,7 @@ func getModifiedFlags*(code: ICode): set[OpFlagIO] =
     of opINT_Three_B_EFLAGS_D        : set[OpFlagIO]({opfInterrupt, })
     of opINT_Imm_B_EFLAGS_D          : set[OpFlagIO]({opfInterrupt, })
     of opINTO_EFLAGS_D               : set[OpFlagIO]({opfInterrupt, })
-    of opIRET_EFLAGS_D               : set[OpFlagIO]({})
+    of opIRET                        : set[OpFlagIO]({})
     of opROL_RegMem_B_One_B          : set[OpFlagIO]({opfOverflow, opfSigned, opfZero, opfAbove, opfParity, opfCarry, })
     of opROR_RegMem_B_One_B          : set[OpFlagIO]({opfOverflow, opfSigned, opfZero, opfAbove, opfParity, opfCarry, })
     of opRCL_RegMem_B_One_B          : set[OpFlagIO]({opfOverflow, opfSigned, opfZero, opfAbove, opfParity, opfCarry, })
@@ -1932,7 +1932,7 @@ func getUsedOperands*(code: ICode): array[4, Option[(OpAddrKind, OpDataKind)]] =
     of opINT_Three_B_EFLAGS_D        : [some((AdThree, DaB))    , some((AdEFLAGS, DaD))   , nop                     , nop                     , ]
     of opINT_Imm_B_EFLAGS_D          : [some((AdImm, DaB))      , some((AdEFLAGS, DaD))   , nop                     , nop                     , ]
     of opINTO_EFLAGS_D               : [some((AdEFLAGS, DaD))   , nop                     , nop                     , nop                     , ]
-    of opIRET_EFLAGS_D               : [some((AdEFLAGS, DaD))   , nop                     , nop                     , nop                     , ]
+    of opIRET                        : [nop                     , nop                     , nop                     , nop                     , ]
     of opROL_RegMem_B_One_B          : [some((AdRegMem, DaB))   , some((AdOne, DaB))      , nop                     , nop                     , ]
     of opROR_RegMem_B_One_B          : [some((AdRegMem, DaB))   , some((AdOne, DaB))      , nop                     , nop                     , ]
     of opRCL_RegMem_B_One_B          : [some((AdRegMem, DaB))   , some((AdOne, DaB))      , nop                     , nop                     , ]

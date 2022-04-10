@@ -35,7 +35,8 @@ import hardware/[processor, memory, eflags, hardware]
 import emulator/descriptor
 import emulator/access
 
-proc saveRegs*(acs: var DataAccess, this: var Interrupt, chpl: bool, cs: U16): void =
+proc saveRegs*(
+    acs: var DataAccess, this: var Interrupt, chpl: bool, cs: U16): void =
   ## Store values of the current register, code segment on stack. Values
   ## are put on stack in order `(E)FLAGS -> CS -> (E)IP`. Values are popped
   ## back when `iret` (interrupt return) instruction is called.
@@ -70,12 +71,14 @@ proc saveRegs*(acs: var DataAccess, this: var Interrupt, chpl: bool, cs: U16): v
 
 
 proc handleInterrupt*(acs: var DataAccess, this: var Interrupt): void =
-  acs.logger.logScope ev(eekInterruptHandler)
-
   if this.intrQ.len() == 0:
     return
 
+  echov this.intrQ
   let (n, hard) = this.intrQ.popFirst()
+
+  acs.logger.logScope ev(eekInterruptHandler).withIt do:
+    it.memAddr = n.U32
 
   if acs.cpu.isProtected():
     let CPL: U8 = U8(acs.getSegment(CS) and 3)

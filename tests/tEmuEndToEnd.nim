@@ -65,6 +65,7 @@ suite "Register math":
 suite "Interrupts":
   test "Division by zero":
     let max = 0x84.ESize
+    let idt = 0x80.ESize
     var full = init([], log = true, memsize = max)
     # Load instructions starting from zero
     full.loadAt(0): [
@@ -75,11 +76,31 @@ suite "Interrupts":
     ]
 
     # Interrupt descritor table starts at `0x80`
-    full.emu.cpu.setDtreg(IDTR, 0, 0x80, max.U16)
+    full.emu.cpu.setDtreg(IDTR, 0, idt.U32, max.U16)
+
+    let div0impl = 0x60.ESize
+    # Create entry for the IDT. Technically it should have 256 entries, but
+    # the divide-by-zero exception has index 0, so one will be sufficient
+    full.emu.loadBlob(asVar @[
+      0x00u8,
+      0x00u8, # Offset from the start of the segment used for interrupt
+              # routine implementation. In this case implementation starts
+              # immediately, so offset is zero.
+      0x00u8,
+      div0impl.U8 # start of the code segment for interrupt routime
+                  # implementation.
+    ], idt.U32)
+
+    full.loadAt(div0Impl.U32): [
+      "mov bx, 0x13", # for latter `check` call
+      "iret" # Don't perform any additional operations, return from
+             # interrupt immediately after setting check flag.
+    ]
+
     # Stack pointer starts at `0xFF` and decreases as elements are added.
     # Stack is used when interrupt implementation is executed.
     full.emu.cpu.setGpreg(SP, max.U16)
 
     full.loop()
 
-    # pprinte emu.cpu.gpregs
+    pprinte full.emu.cpu.gpregs

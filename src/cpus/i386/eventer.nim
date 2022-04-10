@@ -1,4 +1,5 @@
 import std/[strutils, math]
+import membase
 import hmisc/core/all
 
 type
@@ -58,9 +59,14 @@ type
     eekScope = "scope"
     eekEnd = "end"
 
+  EmuEventCategory* = enum
+    eecNone
+    eecLowLevelMemory
+
   EmuEvent* = ref object of RootObj
     stackTrace*: seq[StackTraceEntry]
 
+    category*: EmuEventCategory
     kind*: EmuEventKind
     memAddr*: uint64
     size*: uint64
@@ -71,7 +77,7 @@ type
   EmuValueSystem* = enum evs2, evs8, evs10, evs16
 
   EmuValue* = object
-    value*: uint64
+    value*: MemData
     size*: int
     system*: EmuValueSystem
 
@@ -91,15 +97,19 @@ func getDeltaCalls*(
 func `$`*(id: BackwardsIndex): string = "^" & $id.int
 
 func toString*(value: EmuValue): string =
-  # echov value.value.toHex(), value.system
-  case value.system:
-    of evs2: result = toBin(value.value.BiggestInt, value.size)
-    of evs8: result = toHex(value.value, 8)[^((value.size div 3) + 2) .. ^1]
-    of evs10: result = ($value.value)[
-      ^(log10(float(2 ^ value.size)).int + 2) .. ^1]
-    of evs16:
-      let slice = ^((value.size div 4) + 2) .. ^1
-      result = toHex(value.value)[slice]
+  var total = value.size
+  var bytes = value.value
+  while 0 < total:
+    # echov bytes.len()
+    let size = tern(8 <= total, 8, total)
+    let byte = bytes.pop()
+    case value.system:
+      of evs2: result &= toBin(BiggestInt(byte), size)
+      of evs8: result &= toHex(byte, 8)[^((size div 3) + 2) .. ^1]
+      of evs10: result &= ($byte)[^(log10(float(2 ^ size)).int + 2) .. ^1]
+      of evs16: result &= toHex(byte)[^(size div 4) .. ^1]
+
+    total -= size
 
 func `$`*(va: EmuValue): string = toString(va)
 
@@ -108,7 +118,21 @@ func evalue*(
     size: int,
     sys: EmuValueSystem = evs16): EmuValue =
 
-  EmuValue(value: value.uint64, size: size, system: sys)
+  result = EmuValue(value: toMemData(value), size: size, system: sys)
+  assert result.value.len < 100
+
+func evalue*(
+    value: SomeUnsignedInt,
+    sys: EmuValueSystem = evs16): EmuValue =
+
+  result = EmuValue(value: toMemData(value), size: sizeof(value) * 8, system: sys)
+  assert result.value.len < 100
+
+
+func evalueBlob*[T](
+    value: T, size: int = sizeof(T) * 8, sys: EmuValueSystem = evs16): EmuValue =
+  result = EmuValue(value: toMemData(value), size: size, system: sys)
+  assert result.value.len < 100
 
 const
   eekStartKinds* = {

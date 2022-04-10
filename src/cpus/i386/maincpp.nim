@@ -111,13 +111,18 @@ proc loop*(full: var FullImpl) =
 
 proc addEchoHandler*(full: var FullImpl) =
   var emu = full.emu
-  var ind = 0
+  var stack: seq[EmuEventKind]
+  var show = true
+  let hideList = { eekStartInstructionFetch }
   proc echoHandler(ev: EmuEvent) =
     if ev.kind in eekEndKinds:
-      dec ind
+      if stack.pop() in hideList:
+        show = true
+
       return
 
-    var res = clt(repeat("  ", ind))
+
+    var res = &"[{stack.len():^3}]" & clt(repeat("  ", stack.len()))
     for call in ev.stackTrace[^3 .. ^1]:
       # let (procname, line, path) = call
       let
@@ -139,7 +144,7 @@ proc addEchoHandler*(full: var FullImpl) =
     if ev.kind == eekCallOpcodeImpl:
       let ev = EmuInstrEvent(ev)
       res.add " "
-      res.add formatOpcode(ev.value.value.uint16) + fgGreen
+      res.add formatOpcode(fromMemBlob[U16](ev.value.value)) + fgGreen
       res.add " mod:$# reg:$# rm:$#" % [
         toBin(ev.instr.modrm.mod.uint, 2),
         toBin(ev.instr.modrm.reg.uint, 3),
@@ -150,8 +155,8 @@ proc addEchoHandler*(full: var FullImpl) =
     elif ev.kind == eekGetMemBlob:
       res.add " "
       res.add ev.msg + fgCyan
-      res.add " size "
-      res.add hshow(ev.value.value)
+      res.add " value "
+      res.add $ev.value
       res.add " from "
       res.add hshow(ev.memAddr, clShowHex)
 
@@ -177,13 +182,26 @@ proc addEchoHandler*(full: var FullImpl) =
     elif ev.kind == eekInterrupt:
       let ev = EmuExceptionEvent(ev)
       res.add " "
+      let ind = res.len
       res.add hshow(ev.exception.kind.uint8, clShowHex)
       res.add ", "
       res.add ev.exception.msg + fgRed
+      res.add "\n"
+      for part in getStackTraceEntries(ev.exception):
+        res.add "\n"
+        res.add repeat(" ", ind)
+        let (dir, name, ext) = splitFile(AbsFile $part.filename)
+        res.add clfmt"|{name:>20}:{part.line:<4,fg-red} {part.procname:,fg-cyan}"
 
-    echo res
+      res.add "\n"
+
+    if show:
+      echo res
+
     if ev.kind in eekStartKinds:
-      inc ind
+      if ev.kind in hideList:
+        show = false
+      stack.add ev.kind
 
   emu.logger.setHook(echoHandler)
 

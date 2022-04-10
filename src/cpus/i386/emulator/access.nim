@@ -1,6 +1,7 @@
 import common
 import std/tables
 import hardware/[hardware, cr]
+
 type
   PDE* = object
     ## Page directory entry. See section

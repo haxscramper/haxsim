@@ -1,5 +1,7 @@
 import instruction/[syntaxes, opcodes]
 import std/[strformat, enumutils, bitops]
+import membase
+export membase
 export strformat
 import std/strutils
 export strutils
@@ -79,8 +81,6 @@ type
     ## IO-related errors
     port*: uint16
 
-  EmuRawMemError* = object of CatchableError
-
   EmuExceptionEvent* = ref object of EmuEvent
     exception*: ref EmuCpuException
 
@@ -110,103 +110,6 @@ func toBool*(i: SomeInteger): bool = i != 0
 func toBool*[T](i: ptr T): bool = not isNil(i)
 func toBool*[T](i: ref T): bool = not isNil(i)
 
-type
-  ESize* = uint
-  EPointer* = uint32
-  EByte* = uint8
-  EWord* = uint16
-  EDWord* = uint32
-
-  MemData* = seq[EByte]
-  MemBlob*[R: static[int]] = array[R, EByte]
-
-  MemPointer* = object
-    data*: ptr MemData
-    pos*: EPointer
-
-func asMemPointer*(s: var MemData, pos: EPointer): MemPointer =
-  MemPointer(pos: pos, data: addr s)
-
-func memBlob*(size: ESize): MemData =
-  newSeq[EByte](size.int)
-
-func toMemBlob*[T](it: T, result: var MemData) =
-  result = memBlob(ESize(sizeof(it)))
-  var arr = cast[PUarray[EByte]](unsafeAddr it)
-  for byt in 0 ..< sizeof(T):
-    result[byt] = arr[][byt]
-
-func fromMemBlob*[T](it: var T, blob: MemData) =
-  var arr = cast[PUArray[EByte]](addr it)
-  for byt in 0 ..< sizeof(T):
-    arr[][byt] = blob[byt]
-
-func memBlob*[T](): MemBlob[sizeof(T)] =
-  assert 0 < len(result)
-
-func toMemBlob*[T](it: T, result: MemBlob[sizeof(T)]) =
-  result = cast[MemBlob[sizeof(T)]](it)
-
-func fromMemBlob*[T](it: var T, blob: MemBlob[sizeof(T)]) =
-  it = cast[T](blob)
-
-func len*(mem: MemPointer): int = mem.data[].len
-
-func checkRange[A, B](mem: MemPointer | MemData, slice: HSlice[A, B]) =
-  if slice.a.int < 0 or mem.len < slice.b.int:
-    raise newException(
-      EmuRawMemError,
-      "Raw memory access is out of range. Given range is $#..$#, reading range: $#..$#" % [
-        toHex(0),
-        toHex(mem.len),
-        toHex(slice.a.int),
-        toHex(slice.b.int)
-    ])
-
-func copymem*(dest: var MemPointer, source: MemPointer, size: ESize) =
-  assertRef(dest.data)
-  assertRef(source.data)
-  if 0 < source.data[].len:
-    let rdest = dest.pos ..< dest.pos + size
-    let rsrc = source.pos ..< source.pos + size
-    dest.checkRange(rdest)
-    source.checkRange(rsrc)
-    dest.data[][rdest] = source.data[][rsrc]
-
-func copymem*(
-    dest: var MemData, source: MemPointer, size: ESize = ESize(len(dest))) =
-  assert 0 < size
-  if 0 < source.data[].len:
-    let rdest = 0 ..< size
-    let rsrc = source.pos ..< source.pos + size
-    checkRange(dest, rdest)
-    checkRange(source, rsrc)
-    dest[rdest] = source.data[][rsrc]
-
-func copymem*(
-    dest: var MemPointer, source: MemData, size: ESize = ESize(len(source))) =
-  assert 0 < size
-  let rdest = dest.pos ..< dest.pos + size
-  let rsrc = 0 ..< size
-  dest.checkRange(rdest)
-  dest.checkRange(rsrc)
-  dest.data[][rdest] = source[rsrc]
-
-func copymem*[R](
-    dest: var MemPointer, source: MemBlob[R], size: ESize = R) =
-  assert 0 < size
-  let rdest = dest.pos ..< dest.pos + size
-  let rsrc = 0 ..< size
-  checkRange(dest, rdest)
-  checkRange(source, rsrc)
-  dest.data[][rdest] = source[rsrc]
-
-func copymem*[R](
-    dest: var MemBlob[R], source: MemPointer, size: ESize = R) =
-  assert 0 < size
-  let rsrc = source.pos ..< source.pos + size
-  checkRange(source, rsrc)
-  dest[0 ..< size] = source.data[][rsrc]
 
 func toBin*(u: uint, size: int): string =
   toBin(u.BiggestInt, size)
