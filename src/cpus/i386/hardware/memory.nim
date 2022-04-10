@@ -24,7 +24,7 @@ template INRANGE*(memAddr: untyped, memLen: untyped): untyped {.dirty.} =
 type
   Memory* = ref object
     logger*: EmuLogger
-    memory*: seq[uint8]
+    memory*: seq[U8]
     a20gate*: bool
 
 template log*(mem: Memory, ev: EmuEvent) =
@@ -38,42 +38,42 @@ proc setA20gate*(this: var Memory, ena: bool): void =
 proc isEnaA20gate*(this: Memory): bool =
   return this.a20gate
 
-proc writeMem8*(this: var Memory, memAddr: uint32, v: uint8): void =
+proc writeMem8*(this: var Memory, memAddr: U32, v: U8): void =
   assertRange(memAddr, 1)
   this.log ev(eekSetMem8, evalue(v, 8), memAddr)
   this.memory[memAddr] = v
 
 
-proc writeMem16*(this: var Memory, memAddr: uint32, v: uint16): void =
+proc writeMem16*(this: var Memory, memAddr: U32, v: U16): void =
   assertRange(memAddr, 2)
   this.log ev(eekSetMem16, evalue(v, 16), memAddr)
-  (cast[ptr uint16](addr this.memory[memAddr]))[] = v
+  (cast[ptr U16](addr this.memory[memAddr]))[] = v
 
 
-proc writeMem32*(this: var Memory, memAddr: uint32, v: uint32): void =
+proc writeMem32*(this: var Memory, memAddr: U32, v: U32): void =
   assertRange(memAddr, 4)
   this.log ev(eekSetMem32, evalue(v, 32), memAddr)
-  (cast[ptr uint32](addr this.memory[memAddr]))[] = v
+  (cast[ptr U32](addr this.memory[memAddr]))[] = v
 
 
-proc readMem32*(this: var Memory, memAddr: uint32): uint32 =
+proc readMem32*(this: var Memory, memAddr: U32): U32 =
   assertRange(memAddr, 4)
-  result = (cast[ptr uint32](addr this.memory[memAddr]))[]
+  result = (cast[ptr U32](addr this.memory[memAddr]))[]
   this.log ev(eekGetMem32, evalue(result, 32), memAddr)
 
 
-proc readMem16*(this: var Memory, memAddr: uint32): uint16 =
+proc readMem16*(this: var Memory, memAddr: U32): U16 =
   assertRange(memAddr, 2)
-  result = (cast[ptr uint16](addr this.memory[memAddr]))[]
+  result = (cast[ptr U16](addr this.memory[memAddr]))[]
   this.log ev(eekGetMem16, evalue(result, 16), memAddr)
 
-proc readMem8*(this: var Memory, memAddr: uint32): uint8 =
+proc readMem8*(this: var Memory, memAddr: U32): U8 =
   assertRange(memAddr, 1)
   result = this.memory[memAddr]
   this.log ev(eekGetMem8, evalue(result, 8), memAddr)
 
 proc initMemory*(size: ESize, logger: EmuLogger): Memory =
-  Memory(memory: newSeq[uint8](size), a20gate: false, logger: logger)
+  Memory(memory: newSeq[U8](size), a20gate: false, logger: logger)
 
 proc destroyMemory*(this: var Memory): void =
   discard
@@ -86,7 +86,7 @@ proc dumpMem*(
     size: ESize = ESize(this.len())
   ): void =
 
-  let memAddr = (memAddr and not((0x10 - 1)).uint32())
+  let memAddr = (memAddr and not((0x10 - 1)).U32())
   for line in ceil(memAddr.float / 8).int ..< ceil(float(memAddr + size) / 8).int:
     var buf = toHex(line * 8)[^int(ceil(log10(float(memAddr + size)))) .. ^1] & ": "
     for cell in (line * 8) ..< (line + 1) * 8:

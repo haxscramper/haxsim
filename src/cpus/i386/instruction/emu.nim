@@ -4,9 +4,9 @@ import instruction/instruction
 import emulator/[access, descriptor]
 import hardware/[processor, memory, cr, eflags]
 
-proc typeDescriptor*(this: var ExecInstr, sel: uint16): uint8 =
-  var gdtBase: uint32
-  var gdtLimit: uint16
+proc typeDescriptor*(this: var ExecInstr, sel: U16): U8 =
+  var gdtBase: U32
+  var gdtLimit: U16
   var desc: Descriptor
   gdtBase = CPU.getDtregBase(GDTR)
   gdtLimit = CPU.getDtregLimit(GDTR)
@@ -31,9 +31,9 @@ proc typeDescriptor*(this: var ExecInstr, sel: uint16): uint8 =
   
   return desc.Type
 
-proc setLdtr*(this: var ExecInstr, sel: uint16): void =
-  var base, gdtBase: uint32
-  var limit, gdtLimit: uint16
+proc setLdtr*(this: var ExecInstr, sel: U16): void =
+  var base, gdtBase: U32
+  var limit, gdtLimit: U16
   var ldt: LDTDesc
   gdtBase = CPU.getDtregBase(GDTR)
   gdtLimit = CPU.getDtregLimit(GDTR)
@@ -46,9 +46,9 @@ proc setLdtr*(this: var ExecInstr, sel: uint16): void =
   limit = (ldt.limitH shl 16) + ldt.limitL
   CPU.setDtreg(LDTR, sel, base, limit)
 
-proc setTr*(this: var ExecInstr, sel: uint16): void =
-  var base, gdtBase: uint32
-  var limit, gdtLimit: uint16
+proc setTr*(this: var ExecInstr, sel: U16): void =
+  var base, gdtBase: U32
+  var limit, gdtLimit: U16
   var tssdesc: TSSDesc
   gdtBase = CPU.getDtregBase(GDTR)
   gdtLimit = CPU.getDtregLimit(GDTR)
@@ -63,14 +63,14 @@ proc setTr*(this: var ExecInstr, sel: uint16): void =
   limit = (tssdesc.limitH shl 16) + tssdesc.limitL
   CPU.setDtreg(TR, sel, base, limit)
 
-proc switchTask*(this: var ExecInstr, sel: uint16): void =
-  var base: uint32
-  var limit, prev: uint16
+proc switchTask*(this: var ExecInstr, sel: U16): void =
+  var base: U32
+  var limit, prev: U16
   var newTss, oldTss: TSS
-  prev = CPU.getDtregSelector(TR).uint16
+  prev = CPU.getDtregSelector(TR).U16
   base = CPU.getDtregBase(TR)
   limit = CPU.getDtregLimit(TR)
-  if limit < (sizeof(TSS) - 1).uint16:
+  if limit < (sizeof(TSS) - 1).U16:
     raise newException(EXP_GP, "limit: $#" % [$limit])
 
   MEM.readDataBlob(oldTss, base)
@@ -91,12 +91,12 @@ proc switchTask*(this: var ExecInstr, sel: uint16): void =
   oldTss.ds = ACS.getSegment(DS)
   oldTss.fs = ACS.getSegment(FS)
   oldTss.gs = ACS.getSegment(GS)
-  oldTss.ldtr = CPU.getDtregSelector(LDTR).uint16
+  oldTss.ldtr = CPU.getDtregSelector(LDTR).U16
   MEM.writeDataBlob(base, oldTss)
   this.setTr(sel)
   base = CPU.getDtregBase(TR)
   limit = CPU.getDtregLimit(TR)
-  if limit < (sizeof(TSS) - 1).uint16:
+  if limit < (sizeof(TSS) - 1).U16:
     raise newException(EXP_GP, "limit: $#" % [$limit])
 
   MEM.readDataBlob(newTss, base)
@@ -121,7 +121,7 @@ proc switchTask*(this: var ExecInstr, sel: uint16): void =
   ACS.setSegment(GS, newTss.gs)
   this.setLdtr(newTss.ldtr)
 
-proc jmpf*(this: var ExecInstr, sel: uint16, eip: uint32): void =
+proc jmpf*(this: var ExecInstr, sel: U16, eip: U32): void =
   if CPU.isProtected():
     case this.typeDescriptor(sel):
       of TYPECODE:
@@ -140,10 +140,10 @@ proc jmpf*(this: var ExecInstr, sel: uint16, eip: uint32): void =
     ACS.setSegment(CS, sel)
     CPU.setEip(eip)
 
-proc callf*(this: var ExecInstr, sel: uint16, eip: uint32): void =
+proc callf*(this: var ExecInstr, sel: U16, eip: U32): void =
   var cs: SGRegister
   cs.raw = ACS.getSegment(CS)
-  var RPL: uint8 = uint8(sel and 3)
+  var RPL: U8 = U8(sel and 3)
   if toBool(cs.RPL xor RPL):
     if RPL < cs.RPL: raise newException(EXPGP, "")
     ACS.push32(ACS.getSegment(SS))
@@ -156,14 +156,14 @@ proc callf*(this: var ExecInstr, sel: uint16, eip: uint32): void =
 
 proc retf*(this: var ExecInstr): void =
   var cs: SGRegister
-  var CPL: uint8 = uint8(ACS.getSegment(CS) and 3)
+  var CPL: U8 = U8(ACS.getSegment(CS) and 3)
   CPU.setEip(ACS.pop32())
-  cs.raw = ACS.pop32().uint16
+  cs.raw = ACS.pop32().U16
   if toBool(cs.RPL xor CPL):
-    var esp: uint32
-    var ss: uint16
+    var esp: U32
+    var ss: U16
     esp = ACS.pop32()
-    ss = ACS.pop32().uint16
+    ss = ACS.pop32().U16
     CPU.setGpreg(ESP, esp)
     ACS.setSegment(SS, ss)
   
@@ -173,39 +173,36 @@ proc iret*(this: var ExecInstr): void =
   if CPU.isMode32():
     var cs: SGRegister
     var eflags: EFLAGS
-    var CPL: uint8 = uint8(ACS.getSegment(CS) and 3)
+    var CPL: U8 = U8(ACS.getSegment(CS) and 3)
     CPU.setEip(ACS.pop32())
-    cs.raw = ACS.pop32().uint16
+    cs.raw = ACS.pop32().U16
     eflags.eflags.reg32 = ACS.pop32()
     CPU.eflags.setEflags(eflags.eflags.reg32)
     if toBool(eflags.eflags.NT):
-      var base: uint32
+      var base: U32
       var tss: TSS
       base = CPU.getDtregBase(TR)
       MEM.readDataBlob(tss, base)
       this.switchTask(tss.prevSel)
     
     elif cs.RPL > CPL:
-      var esp: uint32
-      var ss: uint16
+      var esp: U32
+      var ss: U16
       esp = ACS.pop32()
-      ss = ACS.pop32().uint16
+      ss = ACS.pop32().U16
       CPU.setGpreg(ESP, esp)
       ACS.setSegment(SS, ss)
 
     ACS.setSegment(CS, cs.raw)
-    INFO(4, "iret (EIP : 0x%08x, CS : 0x%04x)", EMU.getEip(), EMU.getSegment(CS))
-  
+
   else:
-    var cs: uint16
+    var cs: U16
     CPU.setIp(ACS.pop16())
     cs = ACS.pop16()
     CPU.eflags.setFlags(ACS.pop16())
     ACS.setSegment(CS, cs)
-    INFO(4, "iret (IP : 0x%04x, CS : 0x%04x)", EMU.getIp(), EMU.getSegment(CS))
-  
 
-proc chkRing*(this: var ExecInstr, DPL: uint8): bool =
-  var CPL: uint8
-  CPL = uint8(ACS.getSegment(CS) and 3)
+proc chkRing*(this: var ExecInstr, DPL: U8): bool =
+  var CPL: U8
+  CPL = U8(ACS.getSegment(CS) and 3)
   return CPL <= DPL
