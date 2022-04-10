@@ -14,7 +14,7 @@ proc exec*(this: var InstrImpl): bool =
   
   
   if this.exec.instrfuncs[opcode].isNil():
-    assert(false, "not implemented OPCODE " & pstring(INSTR.opcodeData))
+    assert(false, $("not implemented OPCODE " & hshow(INSTR.opcode, clShowHex)))
     return false
 
   this.log ev(EmuInstrEvent, eekCallOpcodeImpl).withIt do:

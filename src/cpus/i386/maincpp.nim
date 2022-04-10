@@ -159,6 +159,7 @@ proc addEchoHandler*(full: var FullImpl) =
       res.add $ev.value
       res.add " from "
       res.add hshow(ev.memAddr, clShowHex)
+      # emu.mem.dumpMem()
 
     elif ev.kind in eekValueKinds:
       case ev.kind:

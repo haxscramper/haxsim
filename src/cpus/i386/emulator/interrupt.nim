@@ -77,6 +77,9 @@ proc handleInterrupt*(acs: var DataAccess, this: var Interrupt): void =
   echov this.intrQ
   let (n, hard) = this.intrQ.popFirst()
 
+  assert globalTick() < 2
+
+
   acs.logger.logScope ev(eekInterruptHandler).withIt do:
     it.memAddr = n.U32
 

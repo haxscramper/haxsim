@@ -4,7 +4,7 @@ import hmisc/preludes/unittest
 import hmisc/algo/clformat
 
 import compiler/[assembler]
-import hardware/[processor]
+import hardware/[processor, memory]
 import emulator/[emulator, access]
 import instruction/[syntaxes]
 import maincpp
@@ -65,7 +65,7 @@ suite "Register math":
 suite "Interrupts":
   test "Division by zero":
     let max = 0x84.ESize
-    let idt = 0x80.ESize
+    let idt = 0x50.ESize
     var full = init([], log = true, memsize = max)
     # Load instructions starting from zero
     full.loadAt(0): [
@@ -82,17 +82,21 @@ suite "Interrupts":
     # Create entry for the IDT. Technically it should have 256 entries, but
     # the divide-by-zero exception has index 0, so one will be sufficient
     full.emu.loadBlob(asVar @[
+      # CPU is little endian, storing first byte of address at the start of
+      # a segment value
+      div0impl.U8, # start of the code segment for interrupt routime
+                   # implementation.
+      0x00u8,
       0x00u8,
       0x00u8, # Offset from the start of the segment used for interrupt
               # routine implementation. In this case implementation starts
               # immediately, so offset is zero.
-      0x00u8,
-      div0impl.U8 # start of the code segment for interrupt routime
-                  # implementation.
+
+
     ], idt.U32)
 
     full.loadAt(div0Impl.U32): [
-      "mov bx, 0x13", # for latter `check` call
+      "mov bl, 0x13", # for latter `check` call
       "iret" # Don't perform any additional operations, return from
              # interrupt immediately after setting check flag.
     ]
@@ -102,5 +106,6 @@ suite "Interrupts":
     full.emu.cpu.setGpreg(SP, max.U16)
 
     full.loop()
+    full.emu.mem.dumpMem()
 
-    pprinte full.emu.cpu.gpregs
+    pprinte(full.emu.cpu.gpregs)

@@ -1,6 +1,6 @@
 import common
 import eventer
-import std/math
+import std/[math, strutils, sequtils]
 
 type
   EmuMemoryError* = object of EmuImplError
@@ -86,14 +86,22 @@ proc dumpMem*(
     size: ESize = ESize(this.len())
   ): void =
 
+  const perRow = 16
   let memAddr = (memAddr and not((0x10 - 1)).U32())
-  for line in ceil(memAddr.float / 8).int ..< ceil(float(memAddr + size) / 8).int:
-    var buf = toHex(line * 8)[^int(ceil(log10(float(memAddr + size)))) .. ^1] & ": "
-    for cell in (line * 8) ..< (line + 1) * 8:
-      buf.add toHex(this.memory[cell])
-      buf.add " "
+  let numLen = int(ceil(log10(float(memAddr + size))))
+  echo repeat(" ", numLen), "  ", mapIt(0 ..< perRow, toHex(it)[^1..^1].align(2)).join(" ")
 
-    echo buf
+  for line in ceil(memAddr.float / perRow).int .. ceil(float(memAddr + size) / perRow).int:
+    var buf = toHex(line * perRow)[^numLen .. ^1] & ": "
+    var hasValue = false
+    for cell in (line * perRow) ..< (line + 1) * perRow:
+      if cell < this.memory.len:
+        hasValue = true
+        buf.add toHex(this.memory[cell])
+        buf.add " "
+
+    if hasValue:
+      echo buf
 
 proc readData*(
   this: var Memory, dst: EPointer, srcAddr: EPointer, size: ESize): ESize =

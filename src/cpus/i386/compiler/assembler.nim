@@ -113,7 +113,8 @@ let
     # counterparts.
     opMOV_EAX_D_Imm_V: opMOV_RegMem_V_Imm_V,
     opMOV_AH_B_Imm_B: opMOV_RegMem_B_Imm_B,
-    opMOV_AL_B_Imm_B: opMOV_RegMem_B_Imm_B
+    opMOV_AL_B_Imm_B: opMOV_RegMem_B_Imm_B,
+    opMOV_BL_B_Imm_B: opMOV_RegMem_B_Imm_B
   })
 
 func dedupOpcodes*(code: ICode): ICode =
