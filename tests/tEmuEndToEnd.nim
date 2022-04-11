@@ -45,7 +45,7 @@ proc eval*(instr: openarray[string], log: bool = false): Emulator =
 
 suite "Register math":
   test "8-bit":
-    check eval(["inc ah", "hlt"]).cpu[AH] == 1
+    check eval(["inc ah", "hlt"]).cpu[AH] == 1'u8
     check eval([
       "mov ax, 2", "imul ax, -0x2", "hlt"
     ]).cpu[AX] == cast[uint16](-0x4'i16)
@@ -108,4 +108,5 @@ suite "Interrupts":
     full.loop()
     full.emu.mem.dumpMem()
 
-    pprinte(full.emu.cpu.gpregs)
+    check full.emu.cpu[BL] == 0x13'u8
+    # pprinte(full.emu.cpu.gpregs)
