@@ -1,4 +1,5 @@
 import common
+import std/bitops
 import dev_irq
 import dev_io
 
@@ -203,7 +204,7 @@ proc chk_intreq*(this: var PIC): bool =
     if # Check IRQ device is not nil
        this.irq[i].isNil().not() and
        # Check if IMR bit is set and interrupt can be used.
-       toBool((this.imr shr i) and 0b1'u) and
+       this.imr.testBit(i) and
        # Check if interruptis actually present
        this.irq[i].chkIntreq():
       firstInterrupt = some i

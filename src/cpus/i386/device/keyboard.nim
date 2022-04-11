@@ -3,46 +3,48 @@ import dev_irq
 import dev_io
 import hardware/memory
 
+## https://d1.amobbs.com/bbs_upload782111/files_32/ourdev_576549.pdf
+##
+## https://www.win.tue.nl/~aeb/linux/kbd/scancodes-11.html
+
 type
   Mouse* = ref object of IRQ
-    portio*: PortIO
-    keyboard*: Keyboard
-    enable*: bool
+    portio*: PortIO ## Port for communicating with mouse
+    keyboard*: Keyboard ## Reference to main memory
+    enable*: bool ## Mouse enabled?
 
   CCB* = object
-    KIE* {.bitsize: 1.}: uint8
-    MIE* {.bitsize: 1.}: uint8
+    KIE* {.bitsize: 1.}: uint8 ## Keyboard interrupt enabled?
+    MIE* {.bitsize: 1.}: uint8 ## Mouse interrupt enabled?
     SYSF* {.bitsize: 1.}: uint8
-    IGNLK* {.bitsize: 1.}: uint8
-    KE* {.bitsize: 1.}: uint8
-    ME* {.bitsize: 1.}: uint8
-    XLATE* {.bitsize: 1.}: uint8
+    IGNLK* {.bitsize: 1.}: uint8 ##
+    KE* {.bitsize: 1.}: uint8 ## Keyboard enabled?
+    ME* {.bitsize: 1.}: uint8 ## Mouse enabled?
+    XLATE* {.bitsize: 1.}: uint8 ## Translate scan codes?
 
   Keyboard* = ref object of IRQ
-    portio*: PortIO
-    mouse*: Mouse
-    mem*: Memory
+    portio*: PortIO ## Port for communicating with keyboard
+    mouse*: Mouse ## Mouse device
+    mem*: Memory ## Reference to main emulator memory
     mode*: uint8
-    kcsr*: Keyboard_kcsr_Type
+    kcsr*: KeyboardKcsr ## Keyboard controller status register
     out_buf*: uint8
     in_buf*: uint8
     controller_ram*: array[32, uint8]
     ccb*: ref CCB
 
-  field1_Type* {.bycopy.} = object
-    OBF* {.bitsize: 1.}: uint8
-    IBF* {.bitsize: 1.}: uint8
+  KeyboardKcsr* = object
+    OBF* {.bitsize: 1.}: uint8 ## Output buffer full. Indicates whether
+    ## output buffer is full.
+    IBF* {.bitsize: 1.}: uint8 ## Input buffer is full
     F0* {.bitsize: 1.}: uint8
-    F1* {.bitsize: 1.}: uint8
+    F1* {.bitsize: 1.}: uint8 ## Command/data (0 = data written to input
+    ## buffer is data for PS/2 device, 1 = data written to input buffer is
+    ## data for PS/2 controller command)
     ST4* {.bitsize: 1.}: uint8
     ST5* {.bitsize: 1.}: uint8
     ST6* {.bitsize: 1.}: uint8
     ST7* {.bitsize: 1.}: uint8
-
-  Keyboard_kcsr_Type* {.bycopy, union.} = object
-    raw*: uint8
-    field1*: field1_Type
-
 
 proc initMouse*(kb: Keyboard): Mouse =
   Mouse(keyboard: kb, enable: false)
@@ -51,29 +53,11 @@ proc initKeyboard*(m: Memory): Keyboard =
   new(result)
   new(result.mouse)
   result.mouse = initMouse(result)
-  result.kcsr.raw = 0
+  result.kcsr = cast[KeyboardKcsr](0'u8)
   result.mem = m
 
 proc get_mouse*(this: var Keyboard): Mouse =
   return this.mouse
-
-proc OBF*(this: Keyboard_kcsr_Type): uint8 = this.field1.OBF
-proc `OBF=`*(this: var Keyboard_kcsr_Type, value: uint8) = this.field1.OBF = value
-proc IBF*(this: Keyboard_kcsr_Type): uint8 = this.field1.IBF
-proc `IBF=`*(this: var Keyboard_kcsr_Type, value: uint8) = this.field1.IBF = value
-proc F0*(this: Keyboard_kcsr_Type): uint8 = this.field1.F0
-proc `F0=`*(this: var Keyboard_kcsr_Type, value: uint8) = this.field1.F0 = value
-proc F1*(this: Keyboard_kcsr_Type): uint8 = this.field1.F1
-proc `F1=`*(this: var Keyboard_kcsr_Type, value: uint8) = this.field1.F1 = value
-proc ST4*(this: Keyboard_kcsr_Type): uint8 = this.field1.ST4
-proc `ST4=`*(this: var Keyboard_kcsr_Type, value: uint8) = this.field1.ST4 = value
-proc ST5*(this: Keyboard_kcsr_Type): uint8 = this.field1.ST5
-proc `ST5=`*(this: var Keyboard_kcsr_Type, value: uint8) = this.field1.ST5 = value
-proc ST6*(this: Keyboard_kcsr_Type): uint8 = this.field1.ST6
-proc `ST6=`*(this: var Keyboard_kcsr_Type, value: uint8) = this.field1.ST6 = value
-proc ST7*(this: Keyboard_kcsr_Type): uint8 = this.field1.ST7
-proc `ST7=`*(this: var Keyboard_kcsr_Type, value: uint8) = this.field1.ST7 = value
-
 
 proc command*(this: var Mouse, v: uint8): void =
   case v:
@@ -113,17 +97,19 @@ proc read_outbuf*(this: var Keyboard): uint8 =
 proc in8*(this: var Keyboard, memAddr: uint16): uint8 =
   case memAddr:
     of 0x60:
+      # Read output buffer
       return this.read_outbuf()
     of 0x64:
-      return this.kcsr.raw
+      # Read status register
+      return cast[U8](this.kcsr)
     else:
       discard
 
   return uint8(255)
 
 proc write_outbuf*(this: var Keyboard, v: uint8): void =
-  while this.kcsr.OBF.toBool():
-    discard
+  # FIXME - required threaded access: while this.kcsr.OBF.toBool(): discard
+
   this.kcsr.OBF = 1
   this.out_buf = v
   if this.ccb.KIE.toBool():
@@ -147,56 +133,84 @@ proc swt_a20gate*(this: var Keyboard, v: uint8): void =
 
 proc command*(this: var Keyboard, v: uint8): void =
   if not(this.kcsr.ST6.toBool()):
+    # Check if input data is meant for controller command
     if this.kcsr.F1.toBool():
       case v:
         of 0xa7:
+          # Disable mouse interface
           this.ccb.ME = 0
           return
         of 0xa8:
+          # Enable mouse interface
           this.ccb.ME = 1
           return
         of 0xad:
+          # Disable keyboard interface
           this.ccb.KE = 0
           return
         of 0xae:
+          # Enable keyboard interface
           this.ccb.KE = 1
           return
-        else:
-          if v < 0x40:
-            write_outbuf(this, this.controller_ram[v mod 0x20])
-            return
 
-    else:
-      discard
+        of 0x20 .. 0x3F:
+          # Read "byte N" from internal RAM (where 'N' is the command byte
+          # & 0x1F). The read data is placed into the output buffer, and
+          # can be read by reading port 0x60.
+          write_outbuf(this, this.controller_ram[v mod 0x20])
+          return
+
+        else:
+          discard
 
     this.mode = v
     this.kcsr.ST6 = 1
 
   elif this.kcsr.F1.toBool():
+    # Data meant for PS/2 device, not for controller. Skipping execution.
     discard
 
   else:
+    # Executing controller command
     case this.mode:
       of 0xd1:
+        # Write next byte to Controller Output Port (see below)
         this.swt_a20gate(v)
+
       of 0xd2:
+        # Write keyboard output buffer
         this.send_code(v)
+
       of 0xd3:
+        # write mouse output buffer
         this.mouse.send_code(v)
+
       of 0xd4:
+        # Write mouse input buffer
         this.mouse.command(v)
+
+      of 0x40 .. 0x7F:
+        # Write keyboard controller RAM
+        this.controller_ram[(this.mode - 0x40) mod 0x20] = v
+
       else:
-        if this.mode >= 0x40 and this.mode < 0x80:
-          this.controller_ram[(this.mode - 0x40) mod 0x20] = v
+        discard
 
   this.kcsr.ST6 = 0
 
 
 proc out8*(this: var Keyboard, memAddr: uint16, v: uint8): void =
   case memAddr:
-    of 0x60: this.kcsr.F1 = 0
-    of 0x64: this.kcsr.F1 = 1
-    else: discard
+    of 0x60:
+      # Write command byte
+      this.kcsr.F1 = 0
+
+    of 0x64:
+      # Write to status register
+      this.kcsr.F1 = 1
+
+    else:
+      discard
 
   command(this, v)
 
