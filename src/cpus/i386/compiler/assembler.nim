@@ -56,6 +56,9 @@ type
 proc matchingTarget(given: InstrOperand, expect: OpAddrKind): bool =
   let k = given.target.kind
   let t = given.target
+  # echov "----"
+  # echov expect
+  # echov given
   const regs = { iokReg8, iokReg16, iokReg32 }
   case expect:
     of opAddrReg:
@@ -70,7 +73,9 @@ proc matchingTarget(given: InstrOperand, expect: OpAddrKind): bool =
       result = k in { iokImmediate }
 
     of opAddr32Kinds:
-      result = k == iokReg32 and t.reg32 == opAddrToReg32[expect].get()
+      result =
+         (k == iokReg32 and t.reg32 == opAddrToReg32[expect].get()) or
+         (k == iokReg16 and t.reg16 == Reg16T(opAddrToReg32[expect].get().uint8()))
 
     of opAddr16Kinds:
       result = k == iokReg16 and t.reg16 == opAddrToReg16[expect].get()
@@ -111,7 +116,7 @@ let
   opMoreSpecialized* = toTable({
     # Map from more specialied instructions into their generalized
     # counterparts.
-    opMOV_EAX_D_Imm_V: opMOV_RegMem_V_Imm_V,
+    opMOV_EAX_V_Imm_V: opMOV_RegMem_V_Imm_V,
     opMOV_AH_B_Imm_B: opMOV_RegMem_B_Imm_B,
     opMOV_AL_B_Imm_B: opMOV_RegMem_B_Imm_B,
     opMOV_BL_B_Imm_B: opMOV_RegMem_B_Imm_B
@@ -176,6 +181,30 @@ proc skippedOperands(desc: InstrDesc): seq[InstrOperand] =
     else:
       discard
 
+func usedSize(instr: InstrDesc): uint8 =
+  ## Size of values used for this particular instruction.
+  for op in instr.operands:
+    if op.isSome():
+      let op = op.get()
+      if op.indirect:
+        # If indirect addressing is used, operand sizes depend on the
+        # explicitly specified data size, such as `byte [ebx]`, `word
+        # [eax]` and so on
+        case op.dataKind.get():
+          of opData8: return 1
+          of opData16: return 2
+          of opData32: return 4
+          else: assert false, $op.dataKind
+
+      else:
+        # If direct qddressing is used, operand size depends on the size of
+        # the register.
+        case op.target.kind:
+          of iokReg8: return 1
+          of iokReg16: return 2
+          of iokReg32: return 4
+          else: discard
+
 proc selectOpcode*(instr: var InstrDesc) =
   var match: HashSet[ICode]
 
@@ -225,9 +254,11 @@ proc selectOpcode*(instr: var InstrDesc) =
           allMatch = false
 
         elif not matchingTarget(given, expectAddr):
-          failDesc.add format(
+          let msg = format(
             "Target mismatch - wanted '$#' for '$#', but got '$#'",
             $toGreen($expectAddr), idx, $toRed($given))
+          # echov msg
+          failDesc.add msg
 
           allMatch = false
 
@@ -236,6 +267,10 @@ proc selectOpcode*(instr: var InstrDesc) =
 
       else:
         failures.add(op, failDesc.join("\n"))
+
+  # for (a, b) in failures:
+  #   echo a
+  #   echo "    ", b
 
   # Some instructions have more specialized versions implemented - for
   # example general `mov r/m16/32 imm16/32` can be encoded using operand
@@ -248,6 +283,7 @@ proc selectOpcode*(instr: var InstrDesc) =
       toRemove.add opMoreSpecialized[item]
 
   for item in toRemove:
+    # echov "remove", item, item.opIdx().toHex()
     match.excl item
 
   if match.len == 0:
@@ -261,7 +297,6 @@ proc selectOpcode*(instr: var InstrDesc) =
       ])
 
   else:
-
     assert match.len == 1, $match
     instr.opcode = toSeq(match)[0]
 
@@ -324,11 +359,17 @@ proc compileInstr*(instr: InstrDesc): seq[uint8] =
     result.add trail
 
   if instr.operands[1].canGet(src):
-    if opc.hasImm8():
-      result.add cast[EByte](src.target.value.uint8)
+    # TODO remove hardcoded indices, or check if there are no instructions
+    # that would break this code.
+    if opc.hasImm8() or opc.hasImm1632():
+      # If instruction requires encoding immediate values, determine target
+      # size and cast provided value.
+      case instr.usedSize():
+        of 1: result.add cast[EByte](src.target.value.uint8)
+        of 2: result.add cast[array[2, EByte]](src.target.value.uint16)
+        of 4: result.add cast[array[4, EByte]](src.target.value.uint32)
+        else: assert false
 
-    elif opc.hasImm16_32():
-      result.add cast[array[2, EByte]](src.target.value.uint16)
 
 
 proc enumNames[E: enum](): seq[string] =

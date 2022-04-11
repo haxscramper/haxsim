@@ -282,7 +282,7 @@ func getDataKind*(en: OpKind): OpDataKind =
     of opkGRegEAX, opkGRegEBP, opkGRegECX, opkGRegEBX,
        opkGRegEDI, opkGREgEDX, opkGRegESI, opkGRegESP,
        opkEFlags:
-      opData32
+      opData1632
 
     of opkMem48, opkMem32_48, opkPtr32_48:
       opData48

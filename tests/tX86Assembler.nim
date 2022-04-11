@@ -17,7 +17,7 @@ suite "Primitive instructions":
       "mov ah, al",
       "mov AH,al",
       "mov [eax], 17",
-      "mul edx, eax, ecx",
+      "mul edx",
       "sub BYTE [eax], 17",
       "sub BYTE [ebx], 17",
       "sub BYTE [ecx], 17",
@@ -50,6 +50,16 @@ suite "Primitive instructions":
     }:
       let instrDat = parseInstr(instr)
       # pprinte instrDat
+      # echov instr
       let compiled = compileInstr(instrDat)
       check:
         compiled == bin
+
+  test "Integer encoding":
+    for (instr, bin) in {
+      "mov al, 0xAB": u8 [0xB0, 0xAB],
+      "mov ax, 0xABCD": u8 [0xB8, 0xCD, 0xAB],
+      "mov eax, 0x89ABCDEF": u8 [0xB8, 0xEF, 0xCD, 0xAB, 0x89]
+    }:
+      # echov instr, bin
+      check parseInstr(instr).compileInstr() == bin
