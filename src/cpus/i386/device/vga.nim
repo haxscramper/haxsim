@@ -59,6 +59,8 @@ type
                                   ## itself.
 
   GraphicController* = ref object
+    ## The Graphics Controller (Abbreviated to GC) is responsible for
+    ## directing memory reads and writes to and from video memory.
     vga*: VGA
     portio*: PortIO
     gcar*: GraphicControllerGcar
@@ -740,21 +742,6 @@ proc `P4=`*(this: var AttributeField2, value: U8) = this.field1.P4 = value
 proc P5*(this: AttributeField2): U8 = this.field1.P5
 proc `P5=`*(this: var AttributeField2, value: U8) = this.field1.P5 = value
 
-# proc raw*(this: Attribute): U8 = this.ipr.raw
-# proc `raw=`*(this: var AttributeField2, value: U8) = this.raw = value
-# proc P0*(this: AttributeField2): U8 = this.field1.P0
-# proc `P0=`*(this: var AttributeField2, value: U8) = this.field1.P0 = value
-# proc P1*(this: AttributeField2): U8 = this.field1.P1
-# proc `P1=`*(this: var AttributeField2, value: U8) = this.field1.P1 = value
-# proc P2*(this: AttributeField2): U8 = this.field1.P2
-# proc `P2=`*(this: var AttributeField2, value: U8) = this.field1.P2 = value
-# proc P3*(this: AttributeField2): U8 = this.field1.P3
-# proc `P3=`*(this: var AttributeField2, value: U8) = this.field1.P3 = value
-# proc P4*(this: AttributeField2): U8 = this.field1.P4
-# proc `P4=`*(this: var AttributeField2, value: U8) = this.field1.P4 = value
-# proc P5*(this: AttributeField2): U8 = this.field1.P5
-# proc `P5=`*(this: var AttributeField2, value: U8) = this.field1.P5 = value
-
 proc GAM*(this: AttributeAmcr): U8 = this.field1.GAM
 proc `GAM=`*(this: var AttributeAmcr, value: U8) = this.field1.GAM = value
 proc ME*(this: AttributeAmcr): U8 = this.field1.ME
@@ -785,14 +772,6 @@ proc G*(this: DACField2): U8 = this.field1.G
 proc `G=`*(this: var DACField2, value: U8) = this.field1.G = value
 proc B*(this: DACField2): U8 = this.field1.B
 proc `B=`*(this: var DACField2, value: U8) = this.field1.B = value
-# proc raw*(this: DAC): array[3, U8] = this.field2.raw
-# proc `raw=`*(this: var DAC, value: array[3, U8]) = this.field2.raw = value
-# proc R*(this: DAC): U8 = this.field2.field1.R
-# proc `R=`*(this: var DAC, value: U8) = this.field2.field1.R = value
-# proc G*(this: DAC): U8 = this.field2.field1.G
-# proc `G=`*(this: var DAC, value: U8) = this.field2.field1.G = value
-# proc B*(this: DAC): U8 = this.field2.field1.B
-# proc `B=`*(this: var DAC, value: U8) = this.field2.field1.B = value
 proc DACstate*(this: DACDacsr): U8 = this.field1.DACstate
 proc `DACstate=`*(this: var DACDacsr, value: U8) = this.field1.DACstate = value
 

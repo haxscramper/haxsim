@@ -2,7 +2,6 @@ import common
 import hmisc/core/all
 import access
 import interrupt
-import ui
 import hardware/[
   io,
   memory,
@@ -21,15 +20,12 @@ import device/[
 type
   EmuSetting* = object
     memSize*: ESize
-    uiset*: UISetting
-  
+
   Emulator* = ref object
     logger*: EmuLogger
     accs*: DataAccess
     intr*: Interrupt
-    ui*: UI
     fdd*: FDD
-
 
 func io*(emu: Emulator): IO = emu.accs.io
 func io*(emu: var Emulator): var IO = emu.accs.io
@@ -44,13 +40,6 @@ template log*(emu: Emulator, event: EmuEvent): untyped =
 proc ejectFloppy*(this: var Emulator, slot: uint8): bool =
   return (if not this.fdd.isNIl(): this.fdd.ejectDisk(slot) else: false)
 
-proc isRunning*(this: var Emulator): bool =
-  return (if not this.ui.isNil(): this.ui.getStatus() else: false)
-
-proc stop*(this: var Emulator): void = 
-   # ui
-  this.ui = nil
-
 proc insertFloppy*(this: var Emulator, slot: uint8, disk: cstring, write: bool): bool =
   return (if not this.fdd.isNil(): this.fdd.insertDisk(slot, disk, write) else: false)
 
@@ -60,19 +49,16 @@ proc initEmulator*(set: EmuSetting, logger: EmuLogger): Emulator =
   var pit: ref PIT
   var syscon: ref SysControl
   var com: ref COM
-  var vga: VGA
-  var kb: Keyboard
   picM = initPIC()
   picS = initPIC(picM)
   result.intr.setPic(picM, true)
   result.intr.setPic(picS, false)
-  result.ui = initUI(result.accs.mem, set.uiset).asRef()
   pit = initPIT().asRef()
   result.fdd = initFDD().asReF()
   syscon = initSysControl(result.accs.mem).asRef()
   com = (ref COM)()
-  vga = result.ui.getVga()
-  kb = result.ui.getKeyboard()
+  var vga = initVGA()
+  var kb = initKeyboard(result.accs.mem)
   picM.setIrq(0, pit)
   picM.setIrq(1, kb)
   picM.setIrq(2, picS)

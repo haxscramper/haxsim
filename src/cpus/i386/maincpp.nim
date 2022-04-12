@@ -26,9 +26,6 @@ type
     imageName*: cstring
     loadAddr*: uint32
     loadSize*: csizeT
-    uiEnable*: bool
-    uiFull*: bool
-    uiVm*: bool
 
   FullImpl* = ref object
     ## Full implementation of the emulator
@@ -224,9 +221,6 @@ proc initFull*(emuset: var EmuSetting, logger: EmuLogger = initEmuLogger()): Ful
 proc runEmulator*(eset: Setting): void =
   var emuset: EmuSetting
   emuset.memSize = eset.memSize
-  emuset.uiset.enable = eset.uiEnable
-  emuset.uiset.full = eset.uiFull
-  emuset.uiset.vm = eset.uiVm
 
   var full = initFull(emuset)
   if not(full.emu.insertFloppy(0, eset.imageName, false)):
@@ -245,10 +239,7 @@ proc main*(): cint =
     memSize: MEMORYSIZE,
     imageName: "sample/kernel.img",
     loadAddr: 0x0,
-    loadSize: cast[csizeT](-1),
-    uiEnable: true,
-    uiFull: false,
-    uiVm: false)
+    loadSize: cast[csizeT](-1))
 
   var opt: char
   runEmulator(eset)
