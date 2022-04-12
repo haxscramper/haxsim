@@ -810,18 +810,17 @@ proc attrIndexGraphic*(this: var GraphicController, n: U32): U8 =
 proc getFont*(this: var Sequencer, att: U8): ptr U8 =
   var v: U8
   var fontOfst: U16 = 0
-  v = (if toBool(att and 0x8):
-        (this.cmsr.CMAM shl 2) + this.cmsr.CMA
+  if toBool(att and 0x8):
+    v = (this.cmsr.CMAM shl 2) + this.cmsr.CMA
+  else:
+    v = (this.cmsr.CMBM shl 2) + this.cmsr.CMB
 
-      else:
-        (this.cmsr.CMBM shl 2) + this.cmsr.CMB
-      )
-  fontOfst = (if toBool(v and 4):
-        (v and (not(4'u8))) * 2 + 1
+  if toBool(v and 4):
+    fontOfst = (v and (not(4'u8))) * 2 + 1
 
-      else:
-        v * 2
-      )
+  else:
+    fontOfst = v * 2
+
   if not(this.memMr.EM.toBool()):
     fontOfst = (fontOfst and (1 shl 16) - 1)
 
@@ -830,23 +829,27 @@ proc getFont*(this: var Sequencer, att: U8): ptr U8 =
 
 
 proc attrIndexText*(this: var CRT, n: U32): U8 =
-  var att, chr: U8
-  var font: ptr U8
-  var bits: U8
-  var y, x, idx: U16
-  x = U16(n mod (8 * this.hdeer.HDEE))
-  y = U16(n div (8 * this.hdeer.HDEE))
-  idx = y div (this.mslr.MSL + 1) * this.hdeer.HDEE + x div 8
-  chr = this.vga.readPlane(0, U32(idx * 2))
-  att = this.vga.readPlane(1, U32(idx * 2))
-  font = getFont(this.vga.seq, att)
-  bits = (font + chr * 0x10 + y mod (this.mslr.MSL + 1))[]
-  return (if toBool((bits shr (x mod 8)) and 1):
-            att and 0x0f
+  let
+    # Compute column based on the display width
+    x    = U16(n mod (8 * this.hdeer.HDEE))
+    # Compute row
+    y    = U16(n div (8 * this.hdeer.HDEE))
+    idx  = (y div (this.mslr.MSL + 1) * this.hdeer.HDEE) + x div 8
+    # Read character codepoint from plane zero
+    chr  = this.vga.readPlane(0, U32(idx * 2))
+    # Read character attributes from plane one
+    att  = this.vga.readPlane(1, U32(idx * 2))
 
-          else:
-            (att and 0xf0) shr 4
-          )
+    font = getFont(this.vga.seq, att)
+    bits = (font + chr * 0x10 + y mod (this.mslr.MSL + 1))[]
+
+
+  if toBool((bits shr (x mod 8)) and 1):
+    return att and 0x0f
+
+  else:
+    return (att and 0xf0) shr 4
+
 
 proc dacIndex*(this: var Attribute, index: U8): U8 =
   var dacIdx: U8
@@ -933,29 +936,32 @@ proc out8*(this: var DAC, memAddr: U16, v: U8): void =
 
 
 
-proc rgbImage*(this: var VGA, buffer: ptr U8, size: U32): void =
+proc rgbImage*(this: var VGA, buffer: var seq[U8], size: int): void =
+  ## Fill image buffer of `size*3` with `R,G,B` value triples
   var mode: gmodeT = this.gc.graphicMode()
+  var idx = 0
   for i in 0 ..< size:
-    var dacIdx, attrIdx: U8
-    var rgb: U32
-    attrIdx = (if toBool(mode.int xor MODETEXT.int):
-          this.gc.attrIndexGraphic(i)
+    let attrIdx: U8 =
+      if toBool(mode.int xor MODETEXT.int):
+        this.gc.attrIndexGraphic(i.U32)
 
-        else:
-          this.crt.attrIndexText(i)
-        )
-    dacIdx = (if toBool(mode.int xor MODEGRAPHIC256.int):
-          this.attr.dacIndex(attrIdx)
+      else:
+        this.crt.attrIndexText(i.U32)
 
-        else:
-          attrIdx
-        )
+    let dacIdx: U8 =
+      if toBool(mode.int xor MODEGRAPHIC256.int):
+        this.attr.dacIndex(attrIdx)
+      else:
+        attrIdx
 
-    var buffer = buffer
-    rgb = this.dac.translateRgb(dacIdx)
-    inc buffer ; buffer[] = U8(rgb and 0xff)
-    inc buffer ; buffer[] = U8((rgb shr 8) and 0xff)
-    inc buffer ; buffer[] = U8((rgb shr 16) and 0xff)
+    let rgb: U32 = this.dac.translateRgb(dacIdx)
+
+    buffer[idx] = U8(rgb and 0xff)
+    inc idx
+    buffer[idx] = U8((rgb shr 8) and 0xff)
+    inc idx
+    buffer[idx] = U8((rgb shr 16) and 0xff)
+    inc idx
 
 proc in8*(this: var VGA, memAddr: U16): U8 =
   case memAddr:

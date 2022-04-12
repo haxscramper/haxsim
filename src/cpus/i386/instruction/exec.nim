@@ -31,7 +31,7 @@ proc calcModrm16*(this: var ExecInstr): uint32 =
   case this.getModRmMod():
     of modDispByte: memAddr = (memAddr + this.disp8.uint32)
     of modDispDWord: memAddr = (memAddr + this.disp16.uint32)
-    else: assert false
+    else: assert false, $this.getModRmMod()
 
   case this.getModRmRM():
     of 0, 1, 7:

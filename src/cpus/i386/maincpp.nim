@@ -5,6 +5,7 @@ import hmisc/other/oswrap
 
 import common
 import emulator/[emulator, interrupt]
+import compiler/[assembler]
 import hardware/[processor, memory, io]
 import device/[dev_io]
 import instruction/[
@@ -234,7 +235,7 @@ proc runEmulator*(eset: Setting): void =
 
   full.loop()
 
-proc main*(): cint =
+proc main(): cint =
   var eset = Setting(
     memSize: MEMORYSIZE,
     imageName: "sample/kernel.img",
@@ -243,6 +244,37 @@ proc main*(): cint =
 
   var opt: char
   runEmulator(eset)
+
+proc compile*(instr: openarray[string]): seq[EByte] =
+  for i in instr:
+    result.add i.parseInstr().compileInstr()
+
+proc loadAt*(full: var FullImpl, memAddr: EPointer, instr: openarray[string]) =
+  var compiled = compile(instr)
+  full.emu.loadBlob(compiled, memAddr)
+
+proc init*(
+    instr: openarray[string], log: bool = false, memsize: ESize = 0): FullImpl =
+  var compiled = compile(instr)
+  var eset = EmuSetting(memSize: tern(
+    memsize == 0,
+    ESize(compiled.len() + 12),
+    memsize))
+
+  var full = initFull(eset)
+  if log:
+    full.addEchoHandler()
+  # Initial value of the EIP is `0xFFF0` - to make testing simpler we are
+  # setting it here to `0`.
+  full.emu.cpu.setEip(0)
+  full.emu.loadBlob(compiled)
+  return full
+
+proc eval*(instr: openarray[string], log: bool = false): Emulator =
+  var full = init(instr, log)
+  full.loop()
+  return full.emu
+
 
 let basic = @[
   # `mov al, 4`
