@@ -6,13 +6,23 @@ import hmisc/algo/clformat
 import compiler/[assembler]
 import hardware/[processor, memory]
 import emulator/[emulator, access]
-import instruction/[syntaxes]
+import instruction/[syntaxes, instruction]
 import maincpp
 
 let op = hdisplay(flags += { dfSplitNumbers, dfUseHex })
 
 setTestContextDisplayOpts op
 startHax()
+
+let ppconf = defaultPPrintConf.withIt do:
+  it.showErrorTrace = true
+  # it.extraFields = @[
+  #   pprintExtraField(OpcodeData, "code", newPPrintConst(it.code.formatOpcode()))
+  # ]
+  # it.overridePaths = @[
+  #   pprintOverride(int, matchTypeField("OpcodeData", "code")) do:
+  #     return newPPrintConst(toHex(it))
+  # ]
 
 
 suite "Register math":
@@ -82,3 +92,16 @@ suite "Interrupts":
 
     check full.emu.cpu[BL] == 0x13'u8
     # pprinte(full.emu.cpu.gpregs)
+
+suite "Full instruction parser":
+  test "1":
+    var full = init([
+      "mov edi, 0xB800",
+      # "mov byte [edi], 65",
+      # "mov byte [edi+1], 0x7",
+      "hlt"
+    ])
+
+    let cmds = full.parseCommands()
+    pprinte(cmds, pconf = ppconf)
+    full.emu.mem.dumpMem()

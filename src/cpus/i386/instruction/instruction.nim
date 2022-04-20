@@ -68,12 +68,16 @@ type
     REPZ
     REPNZ
 
-  OpcodeData* {.union.} = object
+  OpcodeData* = object
     code*: uint16
 
   InstrData* = ref object
-    prefix*: uint16
-    preSegment*: SgRegT
+    preSegment*: Option[SgRegT] ## Segment override (which one?) prefix was
+                                ## used for the instruction.
+    opSizeOverride*: bool ## "Operand size change" prefix was used for this
+                        ## instruction?
+    addrSizeOverride*: bool ## "Address size change" prefix was used for this
+                          ## instruction?
     preRepeat*: repT
     segment*: SgRegT
     opcodeData*: OpcodeData
@@ -83,6 +87,8 @@ type
     fieldImm*: InstrDataImm
     ptr16*: int16
     moffs*: uint32
+
+    startsFrom*: EPointer
 
   InstrDataDSib* {.union.} = object
     dsib*: uint8
@@ -176,8 +182,12 @@ proc isMode32*(this: ExecInstr): bool =
   return this.mode32
 
 proc selectSegment*(this: var ExecInstr): SgRegT =
-  if this.idata.prefix.toBool():
-    this.idata.preSegment
+  ## Get memory segment used for execution of this instruction. If segment
+  ## override prefix was used, return selected segment, otherwise fall back
+  ## to the current active segment.
+  if this.idata.preSegment.canGet(segment):
+    segment
+
   else:
     this.idata.segment
 

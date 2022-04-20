@@ -8,6 +8,7 @@ type
     eekInitEmulator = "init emulator"
     eekInitCPU = "init cpu"
 
+    eekStartLoopRun = "loop run"
     eekStartInstructionFetch = "fetch instruction"
     eekCallOpcodeImpl = "call opcode"
 
@@ -48,6 +49,7 @@ type
     eekGetMem16 = "get mem 16"
     eekGetMem32 = "get mem 32"
 
+    eekCodePrefix = "code prefix"
 
     eekGetMemBlob = "read blob"
     eekInIO = "io in"
@@ -86,6 +88,7 @@ type
   EmuLogger* = ref object
     procStackTrace: seq[string]
 
+    enabled*: bool
     eventHandler*: EmuEventHandler
     buffer*: seq[EmuEvent]
 
@@ -216,5 +219,15 @@ template scope*(logger: EmuLogger, name: string, depth: int = -3): untyped =
 func setHook*(emu: var EmuLogger, handler: EmuEventHandler) =
   emu.eventHandler = handler
 
+template noLog*(logger: var EmuLogger, body: untyped): untyped =
+  ## Temporarily disable logging for `body` code block
+  block:
+    let old = logger.enabled
+    logger.enabled = false
+
+    body
+
+    logger.enabled = old
+  
 func initEmuLogger*(handler: EmuEventHandler = nil): EmuLogger =
-  EmuLogger(eventHandler: handler)
+  EmuLogger(eventHandler: handler, enabled: true)

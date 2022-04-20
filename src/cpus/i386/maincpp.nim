@@ -46,66 +46,75 @@ proc init*(): void =
     setbuf(stdout, nil)
     setbuf(stderr, nil)
 
-proc fetch*(full: var FullImpl): uint8 =
+proc fetch*(full: var FullImpl) =
+  ## Fetch single instruction with it's associated prefixes, return true or
+  ## false based on the presence of `0x66`-operand-override prefix.
   full.log ev(eekStartInstructionFetch)
 
   let isMode32 = full.emu.cpu.isMode32()
-  let prefix =
-    if isMode32:
-      full.impl32.parsePrefix()
+  # Instruction prefix parsing is not affected by the current mode of
+  # operation, `if` is used in order to use correct implementation object.
+  if isMode32:
+    full.impl32.parsePrefix()
 
-    else:
-      full.impl16.parsePrefix()
+  else:
+    full.impl16.parsePrefix()
 
-  let chszOp = toBool(prefix and CHSZOP)
-  let chszAd = toBool(prefix and CHSZAD)
-  if isMode32 xor chszOp:
-    full.impl32.setChszAd(not((isMode32 xor chszAd)))
+  if isMode32 xor full.data.opSizeOverride:
+    # Parse instruction as a 32-bit one if in the 32-bit mode *or* specific
+    # instruction changed size.
+    full.impl32.setChszAd(not(isMode32 xor full.data.addrSizeOverride))
     parse(full.impl32)
 
   else:
-    full.impl16.setChszAd(isMode32 xor chszAd)
+    # Otherwise parse instruction as in 16-bit mode
+    full.impl16.setChszAd(isMode32 xor full.data.addrSizeOverride)
     parse(full.impl16)
 
   full.log evEnd()
-  return prefix
+
+proc parseCommands*(full: var FullImpl): seq[InstrData] =
+  while full.data.opcode() != 0xF4:
+    zeroMem(addr full.data[], sizeof(full.data[]))
+    fetch(full)
+    var tmp = InstrData()
+    tmp[] = full.data[]
+    result.add tmp
+
 
 proc loop*(full: var FullImpl) =
   assertRef(full.impl16.get_emu())
   assertRef(full.impl16.get_emu())
 
   while not full.emu.cpu.isHalt():
+    full.emu.logger.logScope(ev(eekStartLoopRun))
+    # Reset current instruction data to a new state
     zeroMem(addr full.data[], sizeof(full.data[]))
     try:
+      # Check if any device queued in new interupts
       if full.emu.accs.chkIrq(full.emu.intr):
         full.emu.cpu.doHalt(false)
 
-      if full.emu.cpu.isHalt():
-        {.warning: "[FIXME] 'std.thisThread.sleepFor(std.chrono.milliseconds(10))'".}
-        continue
-
+      # Handle existing interrupts, if any
       full.emu.accs.handleInterrupt(full.emu.intr)
-      let prefix = fetch(full)
-      if full.emu.cpu.isMode32() xor toBool(prefix and CHSZOP):
+
+      # Fetch instruction data into `full.data` field
+      fetch(full)
+
+      # Depending on the current mode of operation and optional operand
+      # size override, select instruction implementation operation.
+      if full.emu.cpu.isMode32() xor full.data.opSizeOverride:
         discard exec(full.impl32)
 
       else:
         discard exec(full.impl16)
 
     except EmuCpuException as e:
+      # CPU exception occurred, queue in new interrupt
       full.log ev(EmuExceptionEvent, eekInterrupt).withIt do:
         it.exception = e
 
       full.emu.intr.queueInterrupt(e.kind.uint8, true)
-
-    # except:
-    #   # emu.queueInterrupt(n, true)
-    #   raise
-      # ERROR("Exception %d", n)
-
-    # except:
-    #   emu.dumpRegs()
-    #   emu.stop()
 
 proc addEchoHandler*(full: var FullImpl) =
   var emu = full.emu

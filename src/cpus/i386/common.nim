@@ -74,6 +74,14 @@ type
     ## CPU exception - part of the CPU operation
     kind*: EmuCpuExceptionKind
 
+  EmuUserError* = object of CatchableError
+
+  OomInstrReadError* = object of EmuUserError
+    ## Attempt to read instruction (or part of the instruction) from
+    ## non-existent memory location. Might be caused by misconfigured
+    ## `(E)IP` register or lack of `hlt` instruction at the end of the
+    ## program.
+
   EmuImplError* = object of CatchableError
     ## Error in the CPU implementation
 
@@ -134,8 +142,8 @@ func opExt*(icode: ICode): uint8 =
 
 func toOpcode*(code: uint16, ext: uint8 = 0): ICode =
   tern(toBool((code and 0xF0_FF) and 0x0F_00),
-       ICode((code.uint64 shl 12) and ext),
-       ICode((code.uint64 shl 16) and ext))
+       ICode((code.uint64 shl 12) or ext),
+       ICode((code.uint64 shl 16) or ext))
 
 func formatOpcode*(code: uint16, ext: uint8 = 0): string =
   let is2 = toBool(code and 0x0F00)
@@ -148,3 +156,7 @@ func formatOpcode*(code: uint16, ext: uint8 = 0): string =
 func toInt*(u: uint8): int8 = cast[int8](u)
 func toInt*(u: uint16): int16 = cast[int16](u)
 func toInt*(u: uint32): int32 = cast[int32](u)
+
+func `u8`*(arg: openarray[int]): seq[uint8] =
+  for i in arg:
+    result.add uint8(i)

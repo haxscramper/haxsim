@@ -1,33 +1,89 @@
 import instruction/instruction
 import common
 import emulator/[access, emulator]
-import hardware/processor
+import hardware/[processor, memory]
+
+
 
 proc getEmu*(this: var InstrImpl): Emulator =
   result = this.exec.getEmu()
   assertRef(result)
 
-proc parsePrefix*(this: var InstrImpl): uint8 =
-  var chsz, code: uint8 = 0
+
+proc assertCodeAhead*(this: var InstrImpl, ahead: int, part: string) =
+  this.cpu.logger.noLog():
+    let pos = ACS.transVirtualToPhysical(MODEEXEC, CS, this.cpu.getEIP())
+    if ACS.mem.len() < pos.int + ahead:
+      raise newException(
+        OomInstrReadError,
+        "Cannot read '$#' starting from 0x$# (EIP: 0x$#). Part len $#" % [
+          $part,
+          toHex(pos),
+          toHex(this.cpu.getEIP()),
+          $ahead,
+        ]
+      )
+
+
+proc parsePrefix*(this: var InstrImpl) =
+
+  ## Parse opcode prefix for the command. Change
   while (true):
-    code = this.getEmu().accs.getCode8(0)
-    var setPre = false
+    assertCodeAhead(this, 1, "instruction prefix")
+    let code = this.getEmu().accs.getCode8(0).U8
+
+
+    var ev = ev(eekCodePrefix, evalue(code))
     case code:
-      of 0x26: this.idata.preSegment = ES ; setPre = true
-      of 0x2e: this.idata.preSegment = CS ; setPre = true
-      of 0x36: this.idata.preSegment = SS ; setPre = true
-      of 0x3e: this.idata.preSegment = DS ; setPre = true
-      of 0x64: this.idata.preSegment = FS ; setPre = true
-      of 0x65: this.idata.preSegment = GS ; setPre = true
-      of 0x66: chsz = (chsz or CHSZOP)
-      of 0x67: chsz = (chsz or CHSZAD)
-      of 0xf2: this.idata.preRepeat = REPNZ
-      of 0xf3: this.idata.preRepeat = REPZ
-      else: return chsz
+      # Override segments for addresses
+      of 0x26:
+        this.idata.preSegment = some ES
+        ev.msg = "overide segment to ES"
 
-    if setPre:
-      this.idata.prefix = code
+      of 0x2e:
+        this.idata.preSegment = some CS
+        ev.msg = "override segment to CS"
 
+      of 0x36:
+        this.idata.preSegment = some SS
+        ev.msg = "override segment to SS"
+
+      of 0x3e:
+        this.idata.preSegment = some DS
+        ev.msg = "override segment to DS"
+
+      of 0x64:
+        this.idata.preSegment = some FS
+        ev.msg = "override segment to FS"
+
+      of 0x65:
+        this.idata.preSegment = some GS
+        ev.msg = "override segment to GS"
+
+      # Switch operand size to the opposite one
+      of 0x66:
+        this.idata.opSizeOverride = true
+        ev.msg = "operand side override"
+
+      # Switch address size to the opposite
+      of 0x67:
+        this.idata.addrSizeOverride = true
+        ev.msg = "address size override"
+
+      # Repeat string operations until non-zero
+      of 0xf2:
+        this.idata.preRepeat = REPNZ
+        ev.msg = "repnz prefix"
+
+      # Repeat string operations until zero
+      of 0xf3:
+        this.idata.preRepeat = REPZ
+        ev.msg = "repz prefix"
+
+      else:
+        return
+
+    this.cpu.logger.log(ev)
     CPU.updateEIp(1)
 
 proc parseOpcode*(this: var InstrImpl): void =
@@ -110,7 +166,7 @@ proc parse*(this: var InstrImpl): void =
   ## - SIB (1 byte, if required)
   ## - Displacement (1, 2 or 4 bytes, if required)
   ## - Immediate (1, 2 or 4 bytes, if required)
-
+  this.idata.startsFrom = this.cpu.eip()
   this.parseOpcode()
   var op = this.idata.opcode
   # REVIEW not sure if this bithack is really necessary - implementation
@@ -124,19 +180,30 @@ proc parse*(this: var InstrImpl): void =
     # flags, this information is not available from the opcode alone.
     this.parseModrmSibDisp()
 
-  if iParseImm32 in this.chk[op]:
+  if (iParseImm32 in this.chk[op] and not this.idata.opSizeOverride) or
+     (iParseImm16 in this.chk[op] and this.idata.opSizeOverride):
+    # Instruction uses 32-bit immediate operand, *or* it uses 16-bit one by
+    # default, and override was in order to access 32-bit data blob.
+    this.assertCodeAhead(4, "4-byte immediate" & tern(
+      this.idata.opSizeOverride, " due to override", ""))
     this.idata.imm32 = cast[int32](ACS.getCode32(0))
     CPU.updateEIp(4)
 
-  elif iParseImm16 in this.chk[op]:
+  elif (iParseImm16 in this.chk[op] and not this.idata.opSizeOverride) or
+       (iParseImm32 in this.chk[op] and this.idata.opSizeOverride):
+    this.assertCodeAhead(2, "2-byte immediate" & tern(
+      this.idata.opSizeOverride, " due to override", ""))
+
     this.idata.imm16 = cast[int16](ACS.getCode16(0))
     CPU.updateEIp(2)
 
   elif iParseImm8 in this.chk[op]:
+    this.assertCodeAhead(1, "1-byte immediate")
     this.idata.imm8 = cast[int8](ACS.getCode8(0))
     CPU.updateEIp(1)
 
   if iParsePtr16 in this.chk[op]:
+    this.assertCodeAhead(2, "2-byte ptr")
     ptr16(this) = ACS.getCode16(0).int8()
     CPU.updateEIp(2)
 

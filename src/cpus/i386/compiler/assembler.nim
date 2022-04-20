@@ -120,6 +120,7 @@ let
     opMOV_EDX_V_Imm_V: opMOV_RegMem_V_Imm_V,
     opMOV_EBX_V_Imm_V: opMOV_RegMem_V_Imm_V,
     opMOV_ECX_V_Imm_V: opMOV_RegMem_V_Imm_V,
+    opMOV_EDI_V_Imm_V: opMOV_RegMem_V_Imm_V,
 
     opMOV_AH_B_Imm_B: opMOV_RegMem_B_Imm_B,
     opMOV_AL_B_Imm_B: opMOV_RegMem_B_Imm_B,

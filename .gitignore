@@ -4,3 +4,4 @@ tests/*
 *.bin
 *.ods#
 **/htmldocs/*
+TAGS
