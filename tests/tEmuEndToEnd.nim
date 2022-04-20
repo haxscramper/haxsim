@@ -117,4 +117,6 @@ suite "Full instruction parser":
         cmds.len == 4
 
     block execute:
-      var full = eval(text)
+      var full = eval(text, log = true)
+      check:
+        full.cpu[EDI] == 0xFF56u32

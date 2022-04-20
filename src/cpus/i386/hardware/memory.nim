@@ -39,6 +39,7 @@ proc isEnaA20gate*(this: Memory): bool =
   return this.a20gate
 
 proc writeMem8*(this: var Memory, memAddr: U32, v: U8): void =
+  # assert memAddr == 0xFF56, toHex(memAddr)
   assertRange(memAddr, 1)
   this.log ev(eekSetMem8, evalue(v, 8), memAddr)
   this.memory[memAddr] = v

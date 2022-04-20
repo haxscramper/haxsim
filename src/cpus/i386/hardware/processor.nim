@@ -225,9 +225,11 @@ proc setIp*(this: var Processor, v: U16): void =
 
 proc setGpreg*(this: var Processor, n: Reg32T, v: U32): void =
   this.gpregs[n].reg32 = v
+  this.log ev(eekSetReg32, evalue(v), n.U8)
 
 proc setGpreg*(this: var Processor, n: Reg16T, v: U16): void =
   this.gpregs[Reg32T(n.int)].reg16 = v
+  this.log ev(eekSetReg16, evalue(v), n.U8)
 
 proc setGpreg*(this: var Processor, n: Reg8T, v: U8): void =
   if n < AH:

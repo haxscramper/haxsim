@@ -30,9 +30,6 @@ template WRITEMEM32*(addrD: untyped, v: untyped): untyped {.dirty.} =
 template WRITEMEM16*(addrD: untyped, v: untyped): untyped {.dirty.} =
   EMU.accs.putData16(this.selectSegment(), addrD, v)
 
-template WRITEMEM8*(addrD: untyped, v: untyped): untyped {.dirty.} =
-  EMU.accs.putData8(this.selectSegment(), addrD, v)
-
 const MAXOPCODE* = 0x200
 type
   InstrModFlags* = enum

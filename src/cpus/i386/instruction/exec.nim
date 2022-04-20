@@ -5,6 +5,9 @@ import common
 
 template INSTR(): untyped = this.exec.idata
 
+proc writeMem8*(this: var ExecInstr, addrD: EPointer, v: U8) =
+  ACS.putData8(this.selectSegment(), addrD, v)
+
 proc exec*(this: var InstrImpl): bool =
   var opcode: U16 = INSTR.opcode
   var size = 8
@@ -174,7 +177,7 @@ proc setRm8*(this: var ExecInstr, value: U8): void =
     CPU.setGPreg(Reg8T(this.getModRmRM()), value)
   
   else:
-    WRITEMEM8(this.calcModrm(), value)
+    writeMem8(this, this.calcModrm(), value)
   
 
 proc getRm8*(this: var ExecInstr): U8 =
@@ -190,7 +193,7 @@ proc setR8*(this: var ExecInstr, value: U8): void =
 
 proc setMoffs8*(this: var ExecInstr, value: U8): void =
   this.idata.segment = DS
-  WRITEMEM8(this.moffs, value)
+  writeMem8(this, this.moffs, value)
 
 proc getMoffs8*(this: var ExecInstr): U8 =
   this.idata.segment = DS
