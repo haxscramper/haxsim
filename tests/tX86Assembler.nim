@@ -67,7 +67,11 @@ suite "Primitive instructions":
 
   test "Indirect addressing":
     for (instr, bin) in {
-      "mov edi, 0xB800": u8 [0xBF, 0x00, 0xB8, 0x00, 0x00],
+      # Not in protected mode, add 0x66 prefix in order to change operand
+      # size.
+      "mov edi, 0xB800": u8 [0x66, 0xBF, 0x00, 0xB8, 0x00, 0x00],
+      # 16-bit register used, no need for operand size change prefix.
+      "mov di, 0xB800": u8 [0xBF, 0x00, 0xB8],
       "mov byte [edi], 65": u8 [0xC6, 0x07, 0x41],
       "mov byte [edi+1], 0x7": u8 [0xC6, 0x47, 0x01, 0x07]
     }:

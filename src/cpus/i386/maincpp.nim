@@ -60,20 +60,25 @@ proc fetch*(full: var FullImpl) =
   else:
     full.impl16.parsePrefix()
 
+  # Parse instruction as a 32-bit one if in the 32-bit mode *or* specific
+  # instruction changed size (Otherwise parse instruction as in 16-bit
+  # mode). Switch between different implementations in order to seelct
+  # proper set of flags for parsing. Opcode implementation is not triggered
+  # here.
+
   if isMode32 xor full.data.opSizeOverride:
-    # Parse instruction as a 32-bit one if in the 32-bit mode *or* specific
-    # instruction changed size.
     full.impl32.setChszAd(not(isMode32 xor full.data.addrSizeOverride))
     parse(full.impl32)
 
   else:
-    # Otherwise parse instruction as in 16-bit mode
     full.impl16.setChszAd(isMode32 xor full.data.addrSizeOverride)
     parse(full.impl16)
 
   full.log evEnd()
 
 proc parseCommands*(full: var FullImpl): seq[InstrData] =
+  ## Parse all commands from current memory position, without executing
+  ## them. Used for testing purposes.
   while full.data.opcode() != 0xF4:
     zeroMem(addr full.data[], sizeof(full.data[]))
     fetch(full)

@@ -88,7 +88,7 @@ type
     ptr16*: int16
     moffs*: uint32
 
-    startsFrom*: EPointer
+    instrRange*: tuple[start, final: EPointer]
 
   InstrDataDSib* {.union.} = object
     dsib*: uint8
@@ -123,8 +123,9 @@ type
   InstrImpl* = object
     ## Instruction caller implementation.
     exec*: ExecInstr ## Executed instruction
-    chk*: array[MAXOPCODE, set[InstrParseFlag]] ## Configuration for parsing
-    ## different opcodes.
+    chk*: array[MAXOPCODE, set[InstrParseFlag]] ## Configuration for
+    ## parsing different opcodes. Varies between 16-bit and 32-bit modes
+    ## due to different handling of the immediate values etc.
 
 
   EmuInstrEvent* = ref object of EmuEvent

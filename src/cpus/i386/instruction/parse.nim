@@ -5,24 +5,27 @@ import hardware/[processor, memory]
 
 
 
-proc getEmu*(this: var InstrImpl): Emulator =
+proc getEmu*(this: InstrImpl): Emulator =
   result = this.exec.getEmu()
   assertRef(result)
 
 
-proc assertCodeAhead*(this: var InstrImpl, ahead: int, part: string) =
+proc getCodePos*(this: var InstrImpl): EPointer =
   this.cpu.logger.noLog():
-    let pos = ACS.transVirtualToPhysical(MODEEXEC, CS, this.cpu.getEIP())
-    if ACS.mem.len() < pos.int + ahead:
-      raise newException(
-        OomInstrReadError,
-        "Cannot read '$#' starting from 0x$# (EIP: 0x$#). Part len $#" % [
-          $part,
-          toHex(pos),
-          toHex(this.cpu.getEIP()),
-          $ahead,
-        ]
-      )
+    result = ACS.transVirtualToPhysical(MODEEXEC, CS, this.cpu.getEIP())
+
+proc assertCodeAhead*(this: var InstrImpl, ahead: int, part: string) =
+  let pos = getCodePos(this)
+  if ACS.mem.len() < pos.int + ahead:
+    raise newException(
+      OomInstrReadError,
+      "Cannot read '$#' starting from 0x$# (EIP: 0x$#). Part len $#" % [
+        $part,
+        toHex(pos),
+        toHex(this.cpu.getEIP()),
+        $ahead,
+      ]
+    )
 
 
 proc parsePrefix*(this: var InstrImpl) =
@@ -166,7 +169,7 @@ proc parse*(this: var InstrImpl): void =
   ## - SIB (1 byte, if required)
   ## - Displacement (1, 2 or 4 bytes, if required)
   ## - Immediate (1, 2 or 4 bytes, if required)
-  this.idata.startsFrom = this.cpu.eip()
+  this.idata.instrRange.start = this.getCodePos()
   this.parseOpcode()
   var op = this.idata.opcode
   # REVIEW not sure if this bithack is really necessary - implementation
@@ -180,19 +183,18 @@ proc parse*(this: var InstrImpl): void =
     # flags, this information is not available from the opcode alone.
     this.parseModrmSibDisp()
 
-  if (iParseImm32 in this.chk[op] and not this.idata.opSizeOverride) or
-     (iParseImm16 in this.chk[op] and this.idata.opSizeOverride):
+  let ovrrd = this.idata.opSizeOverride
+  if iParseImm32 in this.chk[op]:
     # Instruction uses 32-bit immediate operand, *or* it uses 16-bit one by
     # default, and override was in order to access 32-bit data blob.
     this.assertCodeAhead(4, "4-byte immediate" & tern(
-      this.idata.opSizeOverride, " due to override", ""))
+      ovrrd, " due to override", ""))
     this.idata.imm32 = cast[int32](ACS.getCode32(0))
     CPU.updateEIp(4)
 
-  elif (iParseImm16 in this.chk[op] and not this.idata.opSizeOverride) or
-       (iParseImm32 in this.chk[op] and this.idata.opSizeOverride):
+  elif iParseImm16 in this.chk[op]:
     this.assertCodeAhead(2, "2-byte immediate" & tern(
-      this.idata.opSizeOverride, " due to override", ""))
+      ovrrd, " due to override", ""))
 
     this.idata.imm16 = cast[int16](ACS.getCode16(0))
     CPU.updateEIp(2)
@@ -209,3 +211,5 @@ proc parse*(this: var InstrImpl): void =
 
   if iParseMoffs in this.chk[op]:
     this.parseMoffs()
+
+  this.idata.instrRange.final = this.getCodePos()

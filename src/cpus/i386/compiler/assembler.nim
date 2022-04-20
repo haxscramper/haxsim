@@ -312,7 +312,7 @@ proc regCode*(target: InstrOperandTarget): uint8 =
     of iokReg32: uint8(target.reg32)
     else: assert false; 0'u8
 
-proc compileInstr*(instr: InstrDesc): seq[uint8] =
+proc compileInstr*(instr: InstrDesc, protMode: bool = false): seq[uint8] =
   let opc = instr.opcode
   # echov "------------"
   # echov opc
@@ -375,6 +375,11 @@ proc compileInstr*(instr: InstrDesc): seq[uint8] =
         of 4: result.add cast[array[4, EByte]](src.target.value.uint32)
         else: assert false
 
+  if (instr.usedSize() == 4 and not protMode) or
+     (instr.usedSize() == 2 and protMode):
+    # If instruction used size is different from currently selected
+    # bitness, add operand size override prefix.
+    result.insert 0x66
 
 
 proc enumNames[E: enum](): seq[string] =
