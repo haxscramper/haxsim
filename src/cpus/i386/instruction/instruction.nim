@@ -135,6 +135,8 @@ template log*(instr: InstrImpl, ev: EmuEvent): untyped =
 template log*(instr: ExecInstr, ev: EmuEvent, depth: int = -2): untyped =
   instr.emu.logger.log(ev, depth)
 
+func logger*(i: ExecInstr): EmuLogger = i.emu.logger
+
 proc toPPrintTree*(
     val: OpcodeData, conf: var PPrintConf, path: PPrintPath): PPrintTree =
   result = newPPrintConst(

@@ -30,35 +30,31 @@ proc exec*(this: var InstrImpl): bool =
   return true
 
 proc calcModrm16*(this: var ExecInstr): U32 =
-  var memAddr: U32 = 0
   case this.getModRmMod():
-    of modDispByte: memAddr += this.disp8.U32
-    of modDispDWord: memAddr += this.disp16.U32
+    of modDispByte: result += this.disp8.U32
+    of modDispDWord: result += this.disp16.U32
     else: discard
 
   case this.getModRmRM():
     of 0, 1, 7:
-      memAddr += CPU.getGPreg(BX)
+      result += CPU[BX]
     of 2, 3, 6:
       if this.getModRmMod() == modIndSib and this.getModRmRM() == 6:
-        memAddr += this.disp16.U32
+        result += this.disp16.U32
 
       else:
-        memAddr += CPU.getGPreg(BP)
+        result += CPU[BP]
         this.idata.segment = SS
 
     else:
-      assert false
+      discard
 
   if this.getModRmRM() < 6:
     if toBool(this.getModRmRM() mod 2):
-      memAddr += CPU.getGPreg(DI)
+      result += CPU[DI]
 
     else:
-      memAddr += CPU.getGPreg(SI)
-
-
-  return memAddr
+      result += CPU[SI]
 
 proc calcSib*(this: var ExecInstr): U32 =
   var base: U32
@@ -83,30 +79,29 @@ proc calcSib*(this: var ExecInstr): U32 =
 
 
 proc calcModrm32*(this: var ExecInstr): U32 =
-  var memAddr: U32 = 0
   case this.getModRmMod():
-    of modDispByte: memAddr += this.disp8.U32
-    of modDispDWord: memAddr += this.disp32.U32
+    of modDispByte: result += this.disp8.U32
+    of modDispDWord: result += this.disp32.U32
     else: discard
 
   case this.getModRmRM():
     of 4:
-      memAddr += this.calcSib()
+      result += this.calcSib()
     of 5:
       if this.getModRmMod() == modIndSib:
-        memAddr  += this.disp32.U32
+        result  += this.disp32.U32
 
     else:
       this.idata.segment = (if (this.getModRmRM() == 5): SS else: DS)
-      memAddr += CPU.getGPreg(Reg32T(this.getModRmRM()))
-
-  return memAddr
+      result += CPU.getGPreg(Reg32T(this.getModRmRM()))
 
 
 proc calcModrm*(this: var ExecInstr): U32 =
   assert(this.getModRmMod() != modRegAddr)
+  let is32 = this.isMode32() xor this.idata.addrSizeOverride
+  this.logger.scope("Calc modrm " & tern(is32, "32", "16"))
   this.idata.segment = DS
-  if this.isMode32() xor this.idata.addrSizeOverride:
+  if is32:
     return this.calcModrm32()
 
   else:
