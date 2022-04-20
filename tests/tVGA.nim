@@ -18,7 +18,7 @@ suite "Write character to VGA":
   test "Write single character":
     var emu = eval([
       "mov edi, 0xB800",
-      "mov [edi], 65", # Codepoint 'A', code is `65`
-      "mov [edi+1], 0x7", # Character attribute `0b111`
+      "mov byte [edi], 65", # Codepoint 'A', code is `65`
+      "mov byte [edi+1], 0x7", # Character attribute `0b111`
       "hlt"
     ])

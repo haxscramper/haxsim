@@ -115,7 +115,6 @@ type
 
   ExecInstr* = object
     idata*: InstrData
-    chszAd*: bool
     emu*: Emulator
     mode32*: bool
     instrfuncs*: array[MAXOPCODE, instrfuncT]

@@ -141,16 +141,14 @@ proc parseModrmSibDisp*(this: var InstrImpl): void =
   ## Parse MODRM byte and potential subsequent SIB and displacement bytes
   this.idata.modrm = cast[ModRM](ACS.getCode8(0))
   CPU.updateEIp(1)
-  if CPU.isMode32() xor this.exec.chszAd:
+  if CPU.isMode32() xor this.idata.addrSizeOverride:
     this.parseModrm32()
 
   else:
     this.parseModrm16()
 
-  
-
 proc parseMoffs*(this: var InstrImpl): void =
-  if CPU.isMode32() xor this.exec.chszAd:
+  if CPU.isMode32() xor this.idata.addrSizeOverride:
     this.idata.moffs = ACS.getCode32(0)
     CPU.updateEIp(4)
   

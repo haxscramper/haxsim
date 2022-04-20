@@ -67,11 +67,11 @@ proc fetch*(full: var FullImpl) =
   # here.
 
   if isMode32 xor full.data.opSizeOverride:
-    full.impl32.setChszAd(not(isMode32 xor full.data.addrSizeOverride))
+    full.data.addrSizeOverride = not(isMode32 xor full.data.addrSizeOverride)
     parse(full.impl32)
 
   else:
-    full.impl16.setChszAd(isMode32 xor full.data.addrSizeOverride)
+    full.data.addrSizeOverride = isMode32 xor full.data.addrSizeOverride
     parse(full.impl16)
 
   full.log evEnd()

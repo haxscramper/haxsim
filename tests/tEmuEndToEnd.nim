@@ -94,25 +94,27 @@ suite "Interrupts":
     # pprinte(full.emu.cpu.gpregs)
 
 suite "Full instruction parser":
-  test "1":
-    var full = init([
-      "mov edi, 0xB800",
+  test "Parse and execute commands":
+    const text = [
+      "mov edi, 0xFF56",
       "mov byte [edi], 65",
       "mov byte [edi+1], 0x7",
       "hlt"
-    ])
+    ]
 
-    # full.emu.mem.dumpMem()
-    let cmds = full.parseCommands()
-    # pprinte(cmds, pconf = ppconf)
-    # full.emu.mem.dumpMem()
+    block only_parse:
+      var full = init(text)
+      let cmds = full.parseCommands()
 
-    check:
-      cmds[0].imm32.U32 == 0xB800u32
-      cmds[0].opcode.U16 == 0xBFu16
+      check:
+        cmds[0].imm32.U32 == 0xFF56u32
+        cmds[0].opcode.U16 == 0xBFu16
 
-      cmds[0].instrRange == (1u32, 6u32)
-      cmds[1].instrRange == (6u32, 9u32)
-      cmds[2].instrRange == (9u32, 13u32)
+        cmds[0].instrRange == (1u32, 6u32)
+        cmds[1].instrRange == (6u32, 9u32)
+        cmds[2].instrRange == (9u32, 13u32)
 
-      cmds.len == 4
+        cmds.len == 4
+
+    block execute:
+      var full = eval(text)
