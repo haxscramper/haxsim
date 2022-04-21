@@ -9,16 +9,19 @@ type
     eekInitCPU = "init cpu"
 
     eekStartLoopRun = "loop run"
-    eekStartInstructionFetch = "fetch instruction"
+    eekStartInstructionFetch = "start intruction fetch"
     eekCallOpcodeImpl = "call opcode"
 
     eekGetCode = "get code"
     # starter kind end
 
     # value kind start
+
     eekGetModrmReg = "get modrm.reg"
     eekGetModrmMod = "get modrm.mod"
     eekGetModrmRM = "get modrm.rm"
+
+    eekEndInstructionFetch = "end fetch instruction"
 
     eekGetIP = "get IP"
     eekGetEIP = "get EIP"
@@ -171,6 +174,7 @@ func evEnd*(): EmuEvent =
   EmuEvent(kind: eekEnd)
 
 proc writeEvent(logger: EmuLogger, event: EmuEvent) =
+  # echov "write event ", event[]
   if logger.eventHandler.isNil():
     logger.buffer.add event
 
@@ -224,9 +228,7 @@ template noLog*(logger: var EmuLogger, body: untyped): untyped =
   block:
     let old = logger.enabled
     logger.enabled = false
-
     body
-
     logger.enabled = old
   
 func initEmuLogger*(handler: EmuEventHandler = nil): EmuLogger =

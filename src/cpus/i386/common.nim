@@ -1,5 +1,5 @@
 import instruction/[syntaxes, opcodes]
-import std/[strformat, enumutils, bitops]
+import std/[strformat, enumutils, bitops, parseutils]
 import membase
 export membase
 export strformat
@@ -160,3 +160,7 @@ func toInt*(u: uint32): int32 = cast[int32](u)
 func `u8`*(arg: openarray[int]): seq[uint8] =
   for i in arg:
     result.add uint8(i)
+
+func toHexTrim*(i: SomeInteger): string =
+  let tmp = toHex(i)
+  return tmp[tmp.skipWhile({'0'}) .. ^1]

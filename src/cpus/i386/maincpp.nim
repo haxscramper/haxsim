@@ -1,5 +1,5 @@
 import instruction/exec
-import std/math
+import std/[math, sequtils]
 import hmisc/algo/[clformat, clformat_interpolate]
 import hmisc/other/oswrap
 
@@ -65,7 +65,6 @@ proc fetch*(full: var FullImpl) =
   # mode). Switch between different implementations in order to seelct
   # proper set of flags for parsing. Opcode implementation is not triggered
   # here.
-
   if isMode32 xor full.data.opSizeOverride:
     full.data.addrSizeOverride = not(isMode32 xor full.data.addrSizeOverride)
     parse(full.impl32)
@@ -75,6 +74,16 @@ proc fetch*(full: var FullImpl) =
     parse(full.impl16)
 
   full.log evEnd()
+
+  full.log ev(eekEndInstructionFetch).withIt do:
+    # full.emu.logger.noLog():
+    let r = full.data.instrRange
+    var p = full.emu.mem.memory.asMemPointer(r.start)
+    let size = r.final - r.start
+    it.value.value.setLen(size)
+    it.msg.addf("$#..$#", toHexTrim(r.start), toHexTrim(r.final))
+    copymem(it.value.value, p, size)
+
 
 proc parseCommands*(full: var FullImpl): seq[InstrData] =
   ## Parse all commands from current memory position, without executing
@@ -125,7 +134,9 @@ proc addEchoHandler*(full: var FullImpl) =
   var emu = full.emu
   var stack: seq[EmuEventKind]
   var show = true
-  let hideList = { eekStartInstructionFetch }
+  var hideList: set[EmuEventKind] = { eekStartInstructionFetch }
+  const showTrace = { eekGetReg16 }
+
   proc echoHandler(ev: EmuEvent) =
     if ev.kind in eekEndKinds:
       if stack.pop() in hideList:
@@ -134,18 +145,8 @@ proc addEchoHandler*(full: var FullImpl) =
       return
 
 
-    var res = &"[{stack.len():^3}]" & clt(repeat("  ", stack.len()))
-    for call in ev.stackTrace[^3 .. ^1]:
-      # let (procname, line, path) = call
-      let
-        procname = call.procname
-        line = call.line
-        path = call.filename
-
-      let (dir, name, _) = splitFile(AbsFile($path))
-      # echo clfmt"{    procname:>} {  name:>}:{line:<3}" |>> terminalWidth()
-
-
+    let indent = clt(repeat("  ", stack.len()))
+    var res = &"[{stack.len():^3}]" & indent
     if ev.kind == eekScope:
       res.add "> " + fgYellow
       res.add ev.msg + fgRed
@@ -175,9 +176,15 @@ proc addEchoHandler*(full: var FullImpl) =
 
     elif ev.kind in eekValueKinds:
       case ev.kind:
-        of eekGetReg8, eekSetReg8: res.add " " & $Reg8T(ev.memAddr)
-        of eekGetReg16, eekSetReg16: res.add " " & $Reg16T(ev.memAddr)
-        of eekGetReg32, eekSetReg32: res.add " " & $Reg32T(ev.memAddr)
+        of eekGetReg8, eekSetReg8:
+          res.add format(" $# ($#)", Reg8T(ev.memAddr), ev.memAddr)
+
+        of eekGetReg16, eekSetReg16:
+          res.add format(" $# ($#)", Reg16T(ev.memAddr), ev.memAddr)
+
+        of eekGetReg32, eekSetReg32:
+          res.add format(" $# ($#)", Reg32T(ev.memAddr), ev.memAddr)
+
         of eekSetDtRegBase .. eekGetDtRegSelector:
           res.add " " & $DtRegT(ev.memAddr)
 
@@ -185,6 +192,12 @@ proc addEchoHandler*(full: var FullImpl) =
         of eekSetMem8 .. eekGetMem32:
           let s = log2(emu.mem.len().float()).int()
           res.add " 0x" & toHex(ev.memAddr)[^s .. ^1]
+
+        of eekEndInstructionFetch:
+          res.add " "
+          res.add ev.msg
+          res.add " "
+          res.add ev.value.value.mapIt(toHex(it, 2)).join(" ")
 
         else:
           discard
@@ -210,6 +223,19 @@ proc addEchoHandler*(full: var FullImpl) =
 
     if show:
       echo res
+
+    if ev.kind in showTrace:
+      var trace = clt("")
+      for call in ev.stackTrace:
+        let
+          procname = call.procname
+          line = call.line
+          path = call.filename
+
+        let (dir, name, _) = splitFile(AbsFile($path))
+        trace.add clfmt("    |{indent}  - {procname:,fg-red} {name:,fg-green}:{line:,fg-cyan}\n")
+
+      echo trace
 
     if ev.kind in eekStartKinds:
       if ev.kind in hideList:

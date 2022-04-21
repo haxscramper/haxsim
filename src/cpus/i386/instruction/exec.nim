@@ -1,6 +1,7 @@
 import instruction/instruction
 import hardware/[processor, cr]
 import emulator/access
+import std/lenientops
 import common
 
 template INSTR(): untyped = this.exec.idata
@@ -29,32 +30,34 @@ proc exec*(this: var InstrImpl): bool =
 
   return true
 
+func `+=`*(i: var int, other: U8 | U16 | U32) = i += int(other)
+
 proc calcModrm16*(this: var ExecInstr): U32 =
+  # 8-bit or 8-bit displacement immediately following the operand.
+  var res: int
   case this.getModRmMod():
-    of modDispByte: result += this.disp8.U32
-    of modDispDWord: result += this.disp16.U32
+    of modDispByte: res += this.disp8
+    of modDispDWord: res += this.disp16
     else: discard
 
+  # MODRM encoding for indirect adressing does fall into the same pattern
+  # as regular register adressing, and instead uses `BX/SI/DI/BP`
+  # registers. For table source seee 2.1.5 "instruction format" section in
+  # the intel manual, table 2-1
   case this.getModRmRM():
-    of 0, 1, 7:
-      result += CPU[BX]
-    of 2, 3, 6:
-      if this.getModRmMod() == modIndSib and this.getModRmRM() == 6:
-        result += this.disp16.U32
+    of 0b000: res += CPU[BX] + CPU[SI]
+    of 0b001: res += CPU[BX] + CPU[DI]
+    of 0b010: res += CPU[BP] + CPU[SI]
+    of 0b011: res += CPU[BP] + CPU[DI]
+    of 0b100: res += CPU[DI]
+    of 0b101: res += CPU[SI]
+    of 0b110:
+      if this.getModRmMod() == modIndSib:
+        res += this.disp16
+    of 0b111: res += CPU[BX]
+    else: discard
 
-      else:
-        result += CPU[BP]
-        this.idata.segment = SS
-
-    else:
-      discard
-
-  if this.getModRmRM() < 6:
-    if toBool(this.getModRmRM() mod 2):
-      result += CPU[DI]
-
-    else:
-      result += CPU[SI]
+  return res.U32
 
 proc calcSib*(this: var ExecInstr): U32 =
   var base: U32
@@ -79,21 +82,27 @@ proc calcSib*(this: var ExecInstr): U32 =
 
 
 proc calcModrm32*(this: var ExecInstr): U32 =
+  var res: int # Intermediate values can be negative, so using `int` here
   case this.getModRmMod():
-    of modDispByte: result += this.disp8.U32
-    of modDispDWord: result += this.disp32.U32
+    of modDispByte: res += this.disp8.U32
+    of modDispDWord: res += this.disp32.U32
     else: discard
 
+  # Intel manual, section 2.1.5, table 2-2
   case this.getModRmRM():
-    of 4:
-      result += this.calcSib()
-    of 5:
+    of 0b000: res += CPU[EAX]
+    of 0b001: res += CPU[ECX]
+    of 0b010: res += CPU[EDX]
+    of 0b011: res += CPU[EBX]
+    of 0b100: res += this.calcSib()
+    of 0b101:
       if this.getModRmMod() == modIndSib:
-        result  += this.disp32.U32
+        res += this.disp32
+    of 0b110: res += CPU[ESI]
+    of 0b111: res += CPU[EDI]
+    else: discard
 
-    else:
-      this.idata.segment = (if (this.getModRmRM() == 5): SS else: DS)
-      result += CPU.getGPreg(Reg32T(this.getModRmRM()))
+  return res.U32
 
 
 proc calcModrm*(this: var ExecInstr): U32 =
