@@ -6,7 +6,24 @@ import common
 
 template INSTR(): untyped = this.exec.idata
 
-proc writeMem8*(this: var ExecInstr, addrD: EPointer, v: U8) =
+type Ex = ExecInstr | InstrImpl
+
+proc readMem32*(this: var Ex, addrD: EPointer): U32 =
+  ACS.getData32(this.selectSegment(), addrD)
+
+proc readMem16*(this: var Ex, addrD: EPointer): U16 =
+  ACS.getData16(this.selectSegment(), addrD)
+
+proc readMem8*(this: var Ex, addrD: EPointer): U8 =
+  ACS.getData8(this.selectSegment(), addrD)
+
+proc writeMem32*(this: var Ex, addrD: EPointer, v: U32) =
+  ACS.putData32(this.selectSegment(), addrD, v)
+
+proc writeMem16*(this: var Ex, addrD: EPointer, v: U16) =
+  ACS.putData16(this.selectSegment(), addrD, v)
+
+proc writeMem8*(this: var Ex, addrD: EPointer, v: U8) =
   ACS.putData8(this.selectSegment(), addrD, v)
 
 proc exec*(this: var InstrImpl): bool =
@@ -118,14 +135,14 @@ proc setRm32*(this: var ExecInstr, value: U32): void =
     CPU.setGPreg(Reg32T(this.getModRmRM()), value)
   
   else:
-    WRITEMEM32(this.calcModrm(), value)
+    this.writeMem32(this.calcModrm(), value)
 
 proc getRm32*(this: var ExecInstr): U32 =
   if this.getModRmMod() == modRegAddr:
     return CPU.getGPreg(Reg32T(this.getModRmRM()))
   
   else:
-    return READMEM32(this.calcModrm())
+    return this.readMem32(this.calcModrm())
 
 
 proc setR32*(this: var ExecInstr, value: U32): void =
@@ -136,18 +153,18 @@ proc getR32*(this: var ExecInstr): U32 =
 
 proc setMoffs32*(this: var ExecInstr, value: U32): void =
   this.idata.segment = DS
-  WRITEMEM32(this.moffs, value)
+  this.writeMem32(this.moffs, value)
 
 proc getMoffs32*(this: var ExecInstr): U32 =
   this.idata.segment = DS
-  return READMEM32(this.moffs)
+  return this.readMem32(this.moffs)
 
 proc setRm16*(this: var ExecInstr, value: U16): void =
   if this.getModRmMod() == modRegAddr:
     CPU.setGPreg(Reg16T(this.getModRmRM()), value)
   
   else:
-    WRITEMEM16(this.calcModrm(), value)
+    this.writeMem16(this.calcModrm(), value)
   
 
 proc getRm16*(this: var ExecInstr): U16 =
@@ -155,7 +172,7 @@ proc getRm16*(this: var ExecInstr): U16 =
     return CPU.getGPreg(Reg16T(this.getModRmRM()))
   
   else:
-    return READMEM16(this.calcModrm())
+    return this.readMem16(this.calcModrm())
   
 
 proc setR16*(this: var ExecInstr, value: U16): void =
@@ -166,11 +183,11 @@ proc getR16*(this: var ExecInstr): U16 =
 
 proc setMoffs16*(this: var ExecInstr, value: U16): void =
   this.idata.segment = DS
-  WRITEMEM16(this.moffs, value)
+  this.writeMem16(this.moffs, value)
 
 proc getMoffs16*(this: var ExecInstr): U16 =
   this.idata.segment = DS
-  return READMEM16(this.moffs)
+  return this.readMem16(this.moffs)
 
 proc setRm8*(this: var ExecInstr, value: U8): void =
   if this.getModRmMod() == modRegAddr:
@@ -185,7 +202,7 @@ proc getRm8*(this: var ExecInstr): U8 =
     return CPU.getGPreg(Reg8T(this.getModRmRM()))
   
   else:
-    return READMEM8(this.calcModrm())
+    return this.readMem8(this.calcModrm())
   
 
 proc setR8*(this: var ExecInstr, value: U8): void =
@@ -197,7 +214,7 @@ proc setMoffs8*(this: var ExecInstr, value: U8): void =
 
 proc getMoffs8*(this: var ExecInstr): U8 =
   this.idata.segment = DS
-  return READMEM8(this.moffs)
+  return this.readMem8(this.moffs)
 
 proc getR8*(this: var ExecInstr): U8 =
   return CPU.getGPreg(Reg8T(this.getModrmReg()))

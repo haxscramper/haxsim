@@ -15,21 +15,6 @@ template ACS*(): untyped {.dirty.} = EMU.accs
 template INT*(): untyped {.dirty.} = EMU.intr
 template EIO*(): untyped {.dirty.} = EMU.accs.io
 
-template READMEM32*(addrD: untyped): untyped {.dirty.} =
-  EMU.accs.getData32(this.selectSegment(), addrD)
-
-template READMEM16*(addrD: untyped): untyped {.dirty.} =
-  EMU.accs.getData16(this.selectSegment(), addrD)
-
-template READMEM8*(addrD: untyped): untyped {.dirty.} =
-  EMU.accs.getData8(this.selectSegment(), addrD)
-
-template WRITEMEM32*(addrD: untyped, v: untyped): untyped {.dirty.} =
-  EMU.accs.putData32(this.selectSegment(), addrD, v)
-
-template WRITEMEM16*(addrD: untyped, v: untyped): untyped {.dirty.} =
-  EMU.accs.putData16(this.selectSegment(), addrD, v)
-
 const MAXOPCODE* = 0x200
 type
   InstrModFlags* = enum
@@ -177,6 +162,10 @@ proc getEmu*(this: ExecInstr): Emulator =
   result = this.emu
   assertRef(result)
 
+proc getEmu*(this: var InstrImpl): Emulator =
+  result = this.exec.getEmu()
+  assertRef(result)
+
 proc isMode32*(this: ExecInstr): bool =
   return this.mode32
 
@@ -189,6 +178,9 @@ proc selectSegment*(this: var ExecInstr): SgRegT =
 
   else:
     this.idata.segment
+
+proc selectSegment*(this: var InstrImpl): SgRegT =
+  this.exec.selectSegment()
 
 proc initExecInstr*(): ExecInstr =
   for i in 0 ..< MAXOPCODE:

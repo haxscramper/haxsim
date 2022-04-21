@@ -10,9 +10,6 @@ import emulator/[emulator, access]
 template instr32*(f: untyped): untyped {.dirty.} = 
   instrfuncT(f)
 
-proc selectSegment*(this: var InstrImpl): SgRegT =
-  this.exec.selectSegment()
-
 proc addRm32R32*(this: var InstrImpl): void =
   var r32, rm32: U32
   rm32 = this.exec.getRm32().U32()
@@ -650,8 +647,8 @@ proc callfM16_32*(this: var InstrImpl): void =
   var eip, m48: U32
   var cs: U16
   m48 = this.exec.getM()
-  eip = READMEM32(m48)
-  cs = READMEM16(m48 + 4)
+  eip = this.readMem32(m48)
+  cs = this.readMem16(m48 + 4)
   INFO(2, "cs = 0x%04x, eip = 0x%08x", cs, eip)
   this.exec.callf(cs, eip)
 
@@ -664,8 +661,8 @@ proc jmpfM16_32*(this: var InstrImpl): void =
   var eip, m48: U32
   var sel: U16
   m48 = this.exec.getM()
-  eip = READMEM32(m48)
-  sel = READMEM16(m48 + 4)
+  eip = this.readMem32(m48)
+  sel = this.readMem16(m48 + 4)
   this.exec.jmpf(sel, eip)
 
 proc pushRm32*(this: var InstrImpl): void =
@@ -679,8 +676,8 @@ proc lgdtM32*(this: var InstrImpl): void =
   var limit: U16
   if not(this.exec.chkRing(0)): raise newException(EXPGP, "")
   m48 = this.exec.getM()
-  limit = READMEM16(m48)
-  base = READMEM32(m48 + 2)
+  limit = this.readMem16(m48)
+  base = this.readMem32(m48 + 2)
   INFO(2, "base = 0x%08x, limit = 0x%04x", base, limit)
   this.exec.setGdtr(base, limit)
 
@@ -689,8 +686,8 @@ proc lidtM32*(this: var InstrImpl): void =
   var limit: U16
   if not(this.exec.chkRing(0)): raise newException(EXPGP, "")
   m48 = this.exec.getM()
-  limit = READMEM16(m48)
-  base = READMEM32(m48 + 2)
+  limit = this.readMem16(m48)
+  base = this.readMem32(m48 + 2)
   INFO(2, "base = 0x%08x, limit = 0x%04x", base, limit)
   this.exec.setIdtr(base, limit)
 
@@ -707,19 +704,6 @@ proc code_81*(this: var InstrImpl): void =
     of 7: this.cmpRm32Imm32()
     else:
       ERROR("not implemented: 0x81 /%d\\n", this.getModrmReg())
-
-# proc code_83*(this: var InstrImpl): void =
-#   case this.getModrmReg():
-#     of 0: this.addRm32Imm8()
-#     of 1: this.orRm32Imm8()
-#     of 2: this.adcRm32Imm8()
-#     of 3: this.sbbRm32Imm8()
-#     of 4: this.andRm32Imm8()
-#     of 5: this.subRm32Imm8()
-#     of 6: this.xorRm32Imm8()
-#     of 7: this.cmpRm32Imm8()
-#     else:
-#       ERROR("not implemented: 0x83 /%d\\n", this.getModrmReg())
 
 proc codeC1*(this: var InstrImpl): void =
   case this.getModrmReg():

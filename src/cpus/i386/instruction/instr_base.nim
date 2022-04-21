@@ -21,9 +21,6 @@ proc setFuncflag*(
   this.exec.instrfuncs[opcode] = implF
   this.chk[opcode] = flags
   
-proc getEmu*(this: var InstrImpl): Emulator =
-  result = this.exec.getEmu()
-  assertRef(result)
 
 proc addRm8R8*(this: var InstrImpl): void =
   let rm8 = this.exec.getRm8()

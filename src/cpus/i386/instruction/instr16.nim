@@ -10,9 +10,6 @@ import emulator/[emulator, access]
 template instr16*(f: untyped): untyped {.dirty.} =
   instrfuncT(f)
 
-proc selectSegment*(this: var InstrImpl): SgRegT =
-  this.exec.selectSegment()
-
 proc addRm16R16*(this: var InstrImpl): void =
   var r16, rm16: U16
   rm16 = this.exec.getRm16()
@@ -664,8 +661,8 @@ proc callRm16*(this: var InstrImpl): void =
 proc callfM1616*(this: var InstrImpl): void =
   var ip, m32, cs: U16
   m32 = this.exec.getM().U16
-  ip = READMEM16(m32)
-  cs = READMEM16(m32 + 2)
+  ip = this.readMem16(m32)
+  cs = this.readMem16(m32 + 2)
   this.exec.callf(cs, ip.U32)
 
 proc jmpRm16*(this: var InstrImpl): void =
@@ -676,8 +673,8 @@ proc jmpRm16*(this: var InstrImpl): void =
 proc jmpfM1616*(this: var InstrImpl): void =
   var ip, m32, sel: U16
   m32 = this.exec.getM().U16
-  ip = READMEM16(m32)
-  sel = READMEM16(m32 + 2)
+  ip = this.readMem16(m32)
+  sel = this.readMem16(m32 + 2)
   this.exec.jmpf(sel, ip.U32)
 
 proc pushRm16*(this: var InstrImpl): void =
@@ -690,16 +687,16 @@ proc lgdtM24*(this: var InstrImpl): void =
   var limit, m48, base: U16
   if not(this.exec.chkRing(0)): raise newException(EXPGP, "")
   m48 = this.exec.getM().U16
-  limit = READMEM16(m48)
-  base = U16(READMEM32(m48 + 2) and ((1 shl 24) - 1))
+  limit = this.readMem16(m48)
+  base = U16(this.readMem32(m48 + 2) and ((1 shl 24) - 1))
   this.exec.setGdtr(base.U32, limit)
 
 proc lidtM24*(this: var InstrImpl): void =
   var limit, base, m48: U16
   if not(this.exec.chkRing(0)): raise newException(EXPGP, "")
   m48 = this.exec.getM().U16
-  limit = READMEM16(m48)
-  base = U16(READMEM32(m48 + 2) and ((1 shl 24) - 1))
+  limit = this.readMem16(m48)
+  base = U16(this.readMem32(m48 + 2) and ((1 shl 24) - 1))
   this.exec.setIdtr(base.U32, limit)
 
 proc code81*(this: var InstrImpl): void =
