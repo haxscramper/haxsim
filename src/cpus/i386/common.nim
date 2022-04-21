@@ -163,4 +163,5 @@ func `u8`*(arg: openarray[int]): seq[uint8] =
 
 func toHexTrim*(i: SomeInteger): string =
   let tmp = toHex(i)
-  return tmp[tmp.skipWhile({'0'}) .. ^1]
+  let idx = tmp.skipWhile({'0'})
+  return tmp[tern(idx == tmp.len, tmp.len - 1, idx) .. ^1]

@@ -52,6 +52,13 @@ type
     eekGetMem16 = "get mem 16"
     eekGetMem32 = "get mem 32"
 
+    eekSetIo8 = "set io 8"
+    eekSetIo16 = "set io 16"
+    eekSetIo32 = "set io 32"
+    eekGetIo8 = "get io 8"
+    eekGetIo16 = "get io 16"
+    eekGetIo32 = "get io 32"
+
     eekCodePrefix = "code prefix"
 
     eekGetMemBlob = "read blob"

@@ -188,8 +188,10 @@ proc addEchoHandler*(full: var FullImpl) =
         of eekSetDtRegBase .. eekGetDtRegSelector:
           res.add " " & $DtRegT(ev.memAddr)
 
-        of eekGetSegment, eekSetSegment: res.add " " & $SgRegT(ev.memAddr)
-        of eekSetMem8 .. eekGetMem32:
+        of eekGetSegment, eekSetSegment:
+          res.add " " & $SgRegT(ev.memAddr)
+
+        of eekSetMem8 .. eekGetMem32, eekSetIo8 .. eekGetIo32:
           let s = log2(emu.mem.len().float()).int()
           res.add " 0x" & toHex(ev.memAddr)[^s .. ^1]
 
@@ -251,10 +253,9 @@ proc initFull*(emuset: var EmuSetting, logger: EmuLogger = initEmuLogger()): Ful
   var emu = initEmulator(emuset, logger)
   let data = InstrData()
   var full = FullImpl(emu: emu, data: data)
-  var instr = initExecInstr(full.emu, full.data, false)
   assertRef(full.emu)
-  full.impl16 = initInstrImpl16(instr)
-  full.impl32 = initInstrImpl32(instr)
+  full.impl16 = initInstrImpl16(initExecInstr(full.emu, full.data, false))
+  full.impl32 = initInstrImpl32(initExecInstr(full.emu, full.data, true))
   assertRef(full.impl16.get_emu())
   return full
 
@@ -285,17 +286,29 @@ proc main(): cint =
   var opt: char
   runEmulator(eset)
 
-proc compile*(instr: openarray[string]): seq[EByte] =
+proc compile*(
+    instr: openarray[string],
+    protMode: bool = false): seq[EByte] =
   for i in instr:
-    result.add i.parseInstr().compileInstr()
+    result.add i.parseInstr().compileInstr(protMode = protMode)
 
-proc loadAt*(full: var FullImpl, memAddr: EPointer, instr: openarray[string]) =
-  var compiled = compile(instr)
+proc loadAt*(
+    full: var FullImpl,
+    memAddr: EPointer,
+    instr: openarray[string],
+    protMode: bool = false
+  ) =
+  var compiled = compile(instr, protMode = protMode)
   full.emu.loadBlob(compiled, memAddr)
 
 proc init*(
-    instr: openarray[string], log: bool = false, memsize: ESize = 0): FullImpl =
-  var compiled = compile(instr)
+    instr: openarray[string],
+    log: bool = false,
+    memsize: ESize = 0,
+    protMode: bool = false
+  ): FullImpl =
+
+  var compiled = compile(instr, protMode = protMode)
   var eset = EmuSetting(memSize: tern(
     memsize == 0,
     ESize(compiled.len() + 12),
@@ -312,9 +325,13 @@ proc init*(
 
 proc eval*(
     instr: openarray[string],
-    log: bool = false, memsize: ESize = 0): Emulator =
+    log: bool = false,
+    memsize: ESize = 0,
+    protMode: bool = false
+  ): Emulator =
 
-  var full = init(instr, log, memsize)
+  var full = init(instr, log, memsize, protMode = protMode)
+  full.emu.cpu.setMode32(protMode)
   full.loop()
   return full.emu
 

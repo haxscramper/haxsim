@@ -76,3 +76,15 @@ suite "Primitive instructions":
       "mov byte [edi+1], 0x7": u8 [0xC6, 0x47, 0x01, 0x07]
     }:
       check parseInstr(instr).compileInstr() == bin
+
+  test "Protected mode":
+    for (instr, bin) in {
+      "mov ebx, 0xB8000": (
+        u8 [0x66, 0xBB, 0x00, 0x80, 0x0B, 0x00],
+        u8 [0xBB, 0x00, 0x80, 0x0B, 0x00],
+      )
+    }:
+      let (binReal, binProt) = bin
+      check:
+        parseInstr(instr).compileInstr(protMode = true) == binProt
+        parseInstr(instr).compileInstr(protMode = false) == binReal

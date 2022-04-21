@@ -156,6 +156,11 @@ proc `ip=`*(this: var Processor, value: U16) = this.field0.ip = value
 proc isMode32*(this: var Processor): bool =
   return this.sgregs[CS].cache.flags.DB.bool
 
+func `[]`*(this: var Processor, reg: SgRegT): var SGRegister = this.sgregs[reg]
+
+proc setMode32*(this: var Processor, mode: bool) =
+  this[CS].cache.flags.DB = mode.U8
+
 proc isProtected*(this: var Processor): bool =
   # FIXME will cause infinite recursion because original implementation of
   # the processor called into `CR::isProtected()` for the parent class

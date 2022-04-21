@@ -17,8 +17,8 @@ startHax()
 suite "Write character to VGA":
   test "Write single character":
     var emu = eval([
-      "mov edi, 0xB800",
-      "mov byte [edi], 65", # Codepoint 'A', code is `65`
-      "mov byte [edi+1], 0x7", # Character attribute `0b111`
+      "mov ebx, 0xB8000",
+      "mov byte [ebx], 65", # Codepoint 'A', code is `65`
+      "mov byte [ebx+1], 0x7", # Character attribute `0b111`
       "hlt"
-    ])
+    ], protMode = true, log = true)

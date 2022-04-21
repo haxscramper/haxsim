@@ -272,23 +272,21 @@ proc readMem16Seg*(this: var DataAccess, seg: SgRegT, memAddr: U32): U16 =
   var paddr, ioBase: U32
   paddr = this.transVirtualToPhysical(MODEREAD, seg, memAddr)
   ioBase = this.io.chkMemio(paddr)
-  return (if ioBase != 0:
-            this.io.readMemio16(ioBase, paddr - ioBase)
+  if ioBase != 0:
+    return this.io.readMemio16(ioBase, paddr - ioBase)
 
-          else:
-            this.mem.readMem16(paddr)
-          )
+  else:
+    return this.mem.readMem16(paddr)
 
 proc readMem8Seg*(this: var DataAccess, seg: SgRegT, memAddr: U32): U8 =
   var paddr, ioBase: U32
   paddr = this.transVirtualToPhysical(MODEREAD, seg, memAddr)
   ioBase = this.io.chkMemio(paddr)
-  return (if ioBase != 0:
-            this.io.readMemio8(ioBase, paddr - ioBase)
+  if ioBase != 0:
+    return this.io.readMemio8(ioBase, paddr - ioBase)
 
-          else:
-            this.mem.readMem8(paddr)
-          )
+  else:
+    return this.mem.readMem8(paddr)
 
 proc writeMem32Seg*(this: var DataAccess, seg: SgRegT, memAddr: U32, v: U32): void =
   var paddr, ioBase: U32
@@ -341,6 +339,7 @@ proc getData32*(this: var DataAccess, seg: SgRegT, memAddr: U32): U32 =
   return this.readMem32Seg(seg, memAddr)
 
 proc putData8*(this: var DataAccess, seg: SgRegT, memAddr: U32, v: U8): void =
+  this.logger.scope "put data $# to $#" % [$v, toHexTrim(memAddr)]
   this.writeMem8Seg(seg, memAddr, v)
 
 proc putData16*(this: var DataAccess, seg: SgRegT, memAddr: U32, v: U16): void =
