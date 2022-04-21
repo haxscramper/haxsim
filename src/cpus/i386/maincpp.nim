@@ -79,7 +79,7 @@ proc fetch*(full: var FullImpl) =
     # full.emu.logger.noLog():
     let r = full.data.instrRange
     var p = full.emu.mem.memory.asMemPointer(r.start)
-    let size = r.final - r.start
+    let size = r.final - r.start + 1
     it.value.value.setLen(size)
     it.msg.addf("$#..$#", toHexTrim(r.start), toHexTrim(r.final))
     copymem(it.value.value, p, size)
@@ -135,7 +135,7 @@ proc addEchoHandler*(full: var FullImpl) =
   var stack: seq[EmuEventKind]
   var show = true
   var hideList: set[EmuEventKind] = { eekStartInstructionFetch }
-  const showTrace = { eekGetReg16 }
+  const showTrace: set[EmuEventKind] = { }
 
   proc echoHandler(ev: EmuEvent) =
     if ev.kind in eekEndKinds:
@@ -310,8 +310,11 @@ proc init*(
   full.emu.loadBlob(compiled)
   return full
 
-proc eval*(instr: openarray[string], log: bool = false): Emulator =
-  var full = init(instr, log)
+proc eval*(
+    instr: openarray[string],
+    log: bool = false, memsize: ESize = 0): Emulator =
+
+  var full = init(instr, log, memsize)
   full.loop()
   return full.emu
 

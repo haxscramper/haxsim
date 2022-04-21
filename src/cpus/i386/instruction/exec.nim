@@ -34,6 +34,7 @@ func `+=`*(i: var int, other: U8 | U16 | U32) = i += int(other)
 
 proc calcModrm16*(this: var ExecInstr): U32 =
   # 8-bit or 8-bit displacement immediately following the operand.
+  this.logger.scope "Calculate 16-bit MODRM value"
   var res: int
   case this.getModRmMod():
     of modDispByte: res += this.disp8
@@ -60,28 +61,20 @@ proc calcModrm16*(this: var ExecInstr): U32 =
   return res.U32
 
 proc calcSib*(this: var ExecInstr): U32 =
-  var base: U32
-  if this.base == 5 and this.getModRmMod() == modIndSib:
-    base = this.disp32.U32
+  ## Calculate value of the scaled index byte. Refer to manual section
+  ## 2.1.5, table 2-3 for elaboration on the calculation logic.
+  this.logger.scope "Calculate SIB value"
+  case this.getModRmMod():
+    of modIndSib: result += this.disp32.U32
+    of modDispByte: result += this.disp8.U8 + CPU[EBP]
+    of modDispDWord: result += this.disp32.U32 + CPU[EBP]
+    else: discard
 
-  else:
-    if this.base == 4:
-      if this.base == 0:
-        this.idata.segment = SS
-        base = 0
-
-      else:
-        ERROR("not implemented SIB (base = %d, index = %d, scale = %d)\\n", BASE, INDEX, SCALE)
-
-
-    else:
-      this.idata.segment = tern(this.getModRmRM() == 5, SS, DS)
-      base = CPU.getGPreg(Reg32T(this.base))
-
-  return base + CPU.getGPreg(Reg32T(this.base)) * (1 shl this.base).U32
-
+  if not(this.base == 0b101 and this.getModRmMod() == modIndSib):
+    result += CPU[Reg32T(this.index)] * U32(1 shl this.scale)
 
 proc calcModrm32*(this: var ExecInstr): U32 =
+  this.logger.scope "Calculate 32-bit MODRM value"
   var res: int # Intermediate values can be negative, so using `int` here
   case this.getModRmMod():
     of modDispByte: res += this.disp8.U32
@@ -106,6 +99,9 @@ proc calcModrm32*(this: var ExecInstr): U32 =
 
 
 proc calcModrm*(this: var ExecInstr): U32 =
+  ## Calculate memory address for current instructin's operand using parsed
+  ## MODRM byte value. NOTE: Current instruction must not use register
+  ## addressing `mod=11`
   assert(this.getModRmMod() != modRegAddr)
   let is32 = this.isMode32() xor this.idata.addrSizeOverride
   this.logger.scope("Calc modrm " & tern(is32, "32", "16"))
@@ -117,12 +113,12 @@ proc calcModrm*(this: var ExecInstr): U32 =
     return this.calcModrm16()
   
 proc setRm32*(this: var ExecInstr, value: U32): void =
+  ## Set 32-bit value into location designated by current MODRM config.
   if this.getModRmMod() == modRegAddr:
     CPU.setGPreg(Reg32T(this.getModRmRM()), value)
   
   else:
     WRITEMEM32(this.calcModrm(), value)
-
 
 proc getRm32*(this: var ExecInstr): U32 =
   if this.getModRmMod() == modRegAddr:

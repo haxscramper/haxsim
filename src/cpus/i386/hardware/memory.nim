@@ -73,6 +73,9 @@ proc readMem8*(this: var Memory, memAddr: U32): U8 =
   result = this.memory[memAddr]
   this.log ev(eekGetMem8, evalue(result, 8), memAddr)
 
+proc `[]`*(this: var Memory, memAddr: U32): U8 = readMem8(this, memAddr)
+
+
 proc initMemory*(size: ESize, logger: EmuLogger): Memory =
   Memory(memory: newSeq[U8](size), a20gate: false, logger: logger)
 

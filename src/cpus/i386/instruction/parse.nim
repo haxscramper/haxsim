@@ -210,4 +210,4 @@ proc parse*(this: var InstrImpl): void =
   if iParseMoffs in this.chk[op]:
     this.parseMoffs()
 
-  this.idata.instrRange.final = this.getCodePos()
+  this.idata.instrRange.final = this.getCodePos() - 1

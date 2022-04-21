@@ -97,8 +97,8 @@ suite "Full instruction parser":
   test "Parse and execute commands":
     const text = [
       "mov edi, 0xFF56",
-      "mov byte [edi], 65",
-      "mov byte [edi+1], 0x7",
+      "mov byte [bx], 65",
+      "mov byte [bx+1], 0x7",
       "hlt"
     ]
 
@@ -110,13 +110,15 @@ suite "Full instruction parser":
         cmds[0].imm32.U32 == 0xFF56u32
         cmds[0].opcode.U16 == 0xBFu16
 
-        cmds[0].instrRange == (1u32, 6u32)
-        cmds[1].instrRange == (6u32, 9u32)
-        cmds[2].instrRange == (9u32, 13u32)
+        cmds[0].instrRange == (1u32, 5u32)
+        cmds[1].instrRange == (6u32, 8u32)
+        cmds[2].instrRange == (9u32, 12u32)
 
         cmds.len == 4
 
     block execute:
-      var full = eval(text, log = true)
+      var full = eval(text, memsize = 0xFFFF)
       check:
         full.cpu[EDI] == 0xFF56u32
+        full.mem[0xFF56] == 65u8
+        full.mem[0xFF57] == 0x7u8
