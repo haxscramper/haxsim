@@ -14,9 +14,10 @@ type
     MODEGRAPHIC256
 
   VGA* = ref object
+    logger*: EmuLogger
     mor*: VGAMor
     portio*: PortIO
-    memio*: ref MemoryIO
+    memio*: MemoryIO
     plane*: array[4, seq[U8]]
     refresh*: bool
     seq*: Sequencer
@@ -413,28 +414,39 @@ type
     mask*: U8
 
 
+func logger*(s: Sequencer): EmuLogger = s.vga.logger
+func logger*(s: GraphicController): EmuLogger = s.vga.logger
+
 proc initCRT*(v: VGA): CRT
 proc initSequencer*(v: VGA): Sequencer
 proc initAttribute*(v: VGA): Attribute
 proc initDAC*(v: VGA): DAC
 proc initGraphicController*(v: VGA): GraphicController
-    
-proc initVGA*(): VGA =
-  result = VGA(
-    memio: initMemoryIO().asRef(),
-    portio: initPortIO()
+
+
+proc read8*(this: var VGA, offset: U32): U8
+proc write8*(this: var VGA, offset: U32, v: U8)
+
+proc initVGA*(logger: EmuLogger): VGA =
+  var vga = VGA(portio: initPortIO(), logger: logger)
+
+  vga.memio = initMemoryIO(
+    writeI = proc(memAddr: EPointer, value: U8) =
+      write8(vga, memAddr, value),
+    readI = proc(memAddr: EPointer): U8 =
+      read8(vga, memAddr)
   )
 
-
-  result.crt = initCRT(result)
-  result.seq = initSequencer(result)
-  result.gc = initGraphicController(result)
-  result.dac = initDAC(result)
-  result.attr = initAttribute(result)
-
+  vga.crt = initCRT(vga)
+  vga.seq = initSequencer(vga)
+  vga.gc = initGraphicController(vga)
+  vga.dac = initDAC(vga)
+  vga.attr = initAttribute(vga)
 
   for i in 0 ..< 4:
-    result.plane[i] = newSeqWith(1 shl 16, 0'u8)
+    vga.plane[i] = newSeqWith(1 shl 16, 0'u8)
+
+  return vga
 
 proc deleteVGA*(vga: var VGA): VGA =
   for i in 0 ..< 4:
@@ -985,6 +997,7 @@ proc read8*(this: var VGA, offset: U32): U8 =
 proc write*(this: var GraphicController, nplane: U8, offset: U32, v: U8)
 
 proc writePlane*(this: var Sequencer, n: U8, o: U32, v: U8) =
+  this.logger.scope "Write to plane, sequencer"
   if toBool((this.mapMr.raw shr n) and 1):
     this.vga.gc.write(n, o, v)
 
@@ -995,6 +1008,7 @@ proc writePlane*(this: var VGA, nplane: U8, offset: U32, v: U8): void =
   this.plane[nplane][offset] = v
 
 proc write*(this: var Sequencer, offset: U32, v: U8): void =
+  this.logger.scope "Write to sequencer"
   var offset = offset
   if not(this.memMr.EM.toBool()):
     offset = (offset and (1 shl 16) - 1)
@@ -1014,7 +1028,8 @@ proc write*(this: var Sequencer, offset: U32, v: U8): void =
 
 
 proc write8*(this: var VGA, offset: U32, v: U8): void =
-  var count: cint = 0
+  this.logger.scope "Write 8 to VGA"
+  var count {.global.}: int = 0
   if this.mor.ER.toBool():
     this.seq.write(offset, v)
     if not(toBool(postInc(count) mod 0x10)):
@@ -1047,6 +1062,7 @@ proc chkOffset*(this: var GraphicController, offset: ptr U32): bool =
 
 
 proc write*(this: var GraphicController, nplane: U8, offset: U32, v: U8): void =
+  this.logger.scope "Write to graphic controller"
   var offset = offset
   if not(chkOffset(this, addr offset)):
     return

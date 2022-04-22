@@ -10,7 +10,7 @@ type
     ## port.
     portIoMap*: Table[uint16, csizeT] ## Memory address to the size of the
     ## associated IO port.
-    memIo*: Table[uint32, ref MemoryIO]
+    memIo*: Table[uint32, MemoryIO]
     memIoMap*: Table[uint32, uint32]
 
 template log*(io: IO, ev: EmuEvent): untyped =
@@ -96,13 +96,11 @@ proc outIo16*(this: var IO, port: uint16, value: uint16): void =
   for i in 0 ..< 2:
     this.outIo8(port + uint16(i), uint8((value shr (8 * i)) and 0xff))
 
-proc setMemio*(this: var IO, base: uint32, len: csizeT, dev: ref MemoryIO): void =
+proc setMemio*(this: var IO, base: uint32, len: csizeT, dev: var MemoryIO): void =
   assertRef(this.memory)
   assertRef(dev)
   var memAddr: uint32
-  # echov base
-  # ASSERT(not((base != 0 and ((1 shl 12) - 1) != 0)))
-  dev[].setMem(this.memory, base, len)
+  dev.setMem(this.memory, base, len)
   this.memIo[base] = dev
   block:
     memAddr = base
@@ -121,33 +119,33 @@ proc getMemioBase*(this: var IO, memAddr: uint32): uint32 =
 
 proc readMemio32*(this: var IO, base: uint32, offset: uint32): uint32 =
   ASSERT(base in this.memIo)
-  result = this.memIo[base][].read32(offset)
+  result = this.memIo[base].read32(offset)
   this.log ev(eekGetIo32, evalue(result), offset)
 
 proc readMemio16*(this: var IO, base: uint32, offset: uint32): uint16 =
   ASSERT(base in this.memIo)
-  result = this.memIo[base][].read16(offset)
+  result = this.memIo[base].read16(offset)
   this.log ev(eekGetIo16, evalue(result), offset)
 
 proc readMemio8*(this: var IO, base: uint32, offset: uint32): uint8 =
   ASSERT(base in this.memIo)
-  result = this.memIo[base][].read8(offset)
+  result = this.memIo[base].read8(offset)
   this.log ev(eekGetIo8, evalue(result), offset)
 
 proc writeMemio32*(this: var IO, base: uint32, offset: uint32, value: uint32): void =
   ASSERT(base in this.memIo)
   this.log ev(eekSetIo32, evalue(value), offset)
-  this.memIo[base][].write32(offset, value)
+  this.memIo[base].write32(offset, value)
 
 proc writeMemio16*(this: var IO, base: uint32, offset: uint32, value: uint16): void =
   ASSERT(base in this.memIo)
   this.log ev(eekSetIo16, evalue(value), offset)
-  this.memIo[base][].write16(offset, value)
+  this.memIo[base].write16(offset, value)
 
 proc writeMemio8*(this: var IO, base: uint32, offset: uint32, value: uint8): void =
   ASSERT(base in this.memIo)
   this.log ev(eekSetIo8, evalue(value), offset)
-  this.memIo[base][].write8(offset, value)
+  this.memIo[base].write8(offset, value)
 
 proc chkMemio*(this: var IO, memAddr: uint32): uint32 =
   result = this.getMemioBase(memAddr)

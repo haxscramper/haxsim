@@ -45,19 +45,15 @@ proc insertFloppy*(this: var Emulator, slot: uint8, disk: cstring, write: bool):
 
 proc initEmulator*(set: EmuSetting, logger: EmuLogger): Emulator =
   new(result)
-  var picM, picS: PIC
-  var pit: ref PIT
-  var syscon: ref SysControl
-  var com: ref COM
-  picM = initPIC()
-  picS = initPIC(picM)
+  var picM = initPIC()
+  var picS = initPIC(picM)
   result.intr.setPic(picM, true)
   result.intr.setPic(picS, false)
-  pit = initPIT().asRef()
+  var pit = initPIT().asRef()
   result.fdd = initFDD().asReF()
-  syscon = initSysControl(result.accs.mem).asRef()
-  com = (ref COM)()
-  var vga = initVGA()
+  var syscon = initSysControl(result.accs.mem).asRef()
+  var com = (ref COM)()
+  var vga = initVGA(logger)
   var kb = initKeyboard(result.accs.mem)
   picM.setIrq(0, pit)
   picM.setIrq(1, kb)
