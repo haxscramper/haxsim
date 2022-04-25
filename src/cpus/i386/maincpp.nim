@@ -290,7 +290,7 @@ proc compile*(
     instr: openarray[string],
     protMode: bool = false): seq[EByte] =
   for i in instr:
-    result.add i.parseInstr().compileInstr(protMode = protMode)
+    result.add i.parseInstr((0, 0)).compileInstr(protMode = protMode)
 
 proc loadAt*(
     full: var FullImpl,

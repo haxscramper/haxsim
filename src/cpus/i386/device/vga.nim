@@ -1,3 +1,10 @@
+## This module provides implementation of the VGA device. For extensive
+## documentation on the features and fields of the various VGA registers
+## please refer to http://www.osdever.net/FreeVGA/home.htm, specifically
+## sections that describe various registers -
+## http://www.osdever.net/FreeVGA/vga/vga.htm "Input/Output Register
+## Information".
+
 import common
 import hmisc/wrappers/wraphelp
 import dev_io
@@ -14,6 +21,7 @@ type
     MODEGRAPHIC256
 
   VGA* = ref object
+    ## Main VGA object
     logger*: EmuLogger
     mor*: VGAMor
     portio*: PortIO
@@ -96,19 +104,26 @@ type
     dacsr*: DACDacsr
     pelmr*: DACPelmr
 
-  VGAMorField1* = object
-    IO* {.bitsize: 1.}: U8
-    ER* {.bitsize: 1.}: U8
-    CLK0* {.bitsize: 1.}: U8
-    CLK1* {.bitsize: 1.}: U8
-    field4* {.bitsize: 1.}: U8
-    PS* {.bitsize: 1.}: U8
-    HSP* {.bitsize: 1.}: U8
-    VSA* {.bitsize: 1.}: U8
-
   VGAMor* {.union.} = object
-    raw*: U8
-    field1*: VGAMorField1
+    ## "Miscelaneous Output Registers". Read at `0x3CC`, write at `0x3C2`.
+    ## http://www.osdever.net/FreeVGA/vga/extreg.htm#3CCR3C2W
+    IO* {.bitsize: 1.}: U8 ## This bit selects the CRT controller
+    ## addresses. When set to 0, this bit sets the CRT controller addresses
+    ## to 0x03Bx and the address for the Input Status Register 1 to 0x03BA
+    ## for compatibility withthe monochrome adapter. When set to 1, this
+    ## bit sets CRT controller addresses to 0x03Dx and the Input Status
+    ## Register 1 address to 0x03DA for compatibility with the
+    ## color/graphics adapter. The Write addresses to the Feature Control
+    ## register are affected in the same manner.
+    ER* {.bitsize: 1.}: U8 ## "Controls system access to the display buffer.
+    ## - `= 0` disables address decode for the display buffer from the system
+    ## - `= 1` enables address decode for the display buffer from the system"
+    CLK0* {.bitsize: 1.}: U8 ## Clock speed selector. Unused in this emulator
+    CLK1* {.bitsize: 1.}: U8 ## Second clock speed selector, also unused
+    field4* {.bitsize: 1.}: U8 ## Unused filler field
+    PS* {.bitsize: 1.}: U8 ## Which memory page to select - low or high
+    HSP* {.bitsize: 1.}: U8 ## Horizontal sync polarity, unused in the emulator
+    VSA* {.bitsize: 1.}: U8 ## Vertical sync polarity, unused in the emulator.
 
   SequencerSarField1* = object
     INDX* {.bitsize: 3.}: U8
@@ -243,86 +258,86 @@ type
     WBM* {.bitsize: 1.}: U8
     HR* {.bitsize: 1.}: U8
 
-  GraphicControllerGcar* {.union.} = object
-    raw*: U8
-    field1*: GraphicControllerGcarField1
-
-  GraphicControllerSrField1* = object
-    SRM0* {.bitsize: 1.}: U8
-    SRM1* {.bitsize: 1.}: U8
-    SRM2* {.bitsize: 1.}: U8
-    SRM3* {.bitsize: 1.}: U8
+  GraphicControllerGcar* = object
+    INDX* {.bitsize: 4.}: U8
 
   CRTCrtmcr* {.union.} = object
     raw*: U8
     field1*: CRTCrtmcrField1
 
-  GraphicControllerGcarField1* = object
-    INDX* {.bitsize: 4.}: U8
+  GraphicControllerSr* = object
+    ## "Set/Reset Register", index `0x00`
+    SRM0* {.bitsize: 1.}: U8
+    SRM1* {.bitsize: 1.}: U8
+    SRM2* {.bitsize: 1.}: U8
+    SRM3* {.bitsize: 1.}: U8
 
-  GraphicControllerSr* {.union.} = object
-    raw*: U8
-    field1*: GraphicControllerSrField1
-
-  GraphicControllerEsrField1* = object
+  GraphicControllerEsr* = object
+    ## "Enable Set/Reset Register", index `0x01`
     ESRM0* {.bitsize: 1.}: U8
     ESRM1* {.bitsize: 1.}: U8
     ESRM2* {.bitsize: 1.}: U8
     ESRM3* {.bitsize: 1.}: U8
 
-  GraphicControllerEsr* {.union.} = object
-    raw*: U8
-    field1*: GraphicControllerEsrField1
-
-  GraphicControllerCcrField1* = object
+  GraphicControllerCcr* = object
+    ## "Color Compare Register", index `0x02`
     CCM0* {.bitsize: 1.}: U8
     CCM1* {.bitsize: 1.}: U8
     CCM2* {.bitsize: 1.}: U8
     CCM3* {.bitsize: 1.}: U8
 
-  GraphicControllerCcr* {.union.} = object
-    raw*: U8
-    field1*: GraphicControllerCcrField1
-
-  GraphicControllerDrrField1* = object
+  GraphicControllerDrr* = object
+    ## "Data Rotate Register", index `0x03`
     RC* {.bitsize: 3.}: U8
     FS* {.bitsize: 2.}: U8
 
-  GraphicControllerDrr* {.union.} = object
-    raw*: U8
-    field1*: GraphicControllerDrrField1
+  GraphicControllerRmsr* = object
+    ## "Read Map Select Register", index `0x04`
+    MS* {.bitsize: 2.}: U8 ## Specifies memory plane to transfer data to.
+    ## Due to the arrangement of video memory, this field must be modified
+    ## four times to read one or more pixels values in the planar video
+    ## modes.
 
-  GraphicControllerRmsrField1* = object
-    MS* {.bitsize: 2.}: U8
+  GraphicControllerGmr* = object
+    ## "Graphic Mode Register" - GMR
+    ## http://www.osdever.net/FreeVGA/vga/graphreg.htm Index `0x05`
+    WM* {.bitsize: 2.}: U8 ## "Write Mode". This field selects between four
+    ## write modes, simply known as Write Modes 0-3, based upon the value
+    ## of this field. Currently emulator implements two of them:
+    ##
+    ## 1. `00b` -- Write Mode 0: In this mode, the host data is first rotated
+    ##   as per the Rotate Count field, then the Enable Set/Reset mechanism
+    ##   selects data from this or the Set/Reset field. Then the selected
+    ##   Logical Operation is performed on the resulting data and the data
+    ##   in the latch register. Then the Bit Mask field is used to select
+    ##   which bits come from the resulting data and which come from the
+    ##   latch register. Finally, only the bit planes enabled by the Memory
+    ##   Plane Write Enable field are written to memory.
+    ##
+    ## 2. `01b` -- Write Mode 1: In this mode, data is transferred directly
+    ##   from the 32 bit latch register to display memory, affected only by
+    ##   the Memory Plane Write Enable field. The host data is not used in
+    ##   this mode.
 
-  GraphicControllerRmsr* {.union.} = object
-    raw*: U8
-    field1*: GraphicControllerRmsrField1
-
-  GraphicControllerGmrField1* = object
-    WM* {.bitsize: 2.}: U8
-    field1* {.bitsize: 1.}: U8
-    RM* {.bitsize: 1.}: U8
-    OE* {.bitsize: 1.}: U8
-    SRM* {.bitsize: 1.}: U8
-    f256CM* {.bitsize: 1.}: U8
-
-  GraphicControllerGmr* {.union.} = object
-    raw*: U8
-    field1*: GraphicControllerGmrField1
-
-  GraphicControllerMrField1* = object
-    GM* {.bitsize: 1.}: U8
-    OE* {.bitsize: 1.}: U8
-    MM* {.bitsize: 2.}: U8
+    pad1* {.bitsize: 1.}: U8
+    RM* {.bitsize: 1.}: U8 ## "Read Mode". Unused in the emulator for now
+    OE* {.bitsize: 1.}: U8 ## Host "Odd/Even" memory read addressing
+    ## enable. When set to 1, this bit selects the odd/even addressing
+    ## mode.
+    SRM* {.bitsize: 1.}: U8 ## "Shift Register Interleave Mode"
+    f256CM* {.bitsize: 1.}: U8 ## 256-color-mode. "When set to 0, this bit
+    ## allows bit 5 to control the loading of the shift registers. When set
+    ## to 1, this bit causes the shift registers to be loaded in a manner
+    ## that supports the 256-color mode."
 
   CRTEhbr* {.union.} = object
     raw*: U8
     field1*: CRTEhbrField1
 
-  GraphicControllerMr* {.union.} = object
-    raw*: U8
-    field1*: GraphicControllerMrField1
+  GraphicControllerMr* = object
+    GM* {.bitsize: 1.}: U8
+    OE* {.bitsize: 1.}: U8
+    MM* {.bitsize: 2.}: U8
 
   AttributeAcarField1* = object
     INDX* {.bitsize: 5.}: U8
@@ -605,20 +620,20 @@ proc initAttribute*(v: VGA): Attribute =
 proc initDAC*(v: VGA): DAC =
   result = DAC(vga: v)
 
-proc IO*(this: VGAMor): U8 = this.field1.IO
-proc `IO=`*(this: var VGAMor, value: U8) = this.field1.IO = value
-proc ER*(this: VGAMor): U8 = this.field1.ER
-proc `ER=`*(this: var VGAMor, value: U8) = this.field1.ER = value
-proc CLK0*(this: VGAMor): U8 = this.field1.CLK0
-proc `CLK0=`*(this: var VGAMor, value: U8) = this.field1.CLK0 = value
-proc CLK1*(this: VGAMor): U8 = this.field1.CLK1
-proc `CLK1=`*(this: var VGAMor, value: U8) = this.field1.CLK1 = value
-proc PS*(this: VGAMor): U8 = this.field1.PS
-proc `PS=`*(this: var VGAMor, value: U8) = this.field1.PS = value
-proc HSP*(this: VGAMor): U8 = this.field1.HSP
-proc `HSP=`*(this: var VGAMor, value: U8) = this.field1.HSP = value
-proc VSA*(this: VGAMor): U8 = this.field1.VSA
-proc `VSA=`*(this: var VGAMor, value: U8) = this.field1.VSA = value
+# proc IO*(this: VGAMor): U8 = this.field1.IO
+# proc `IO=`*(this: var VGAMor, value: U8) = this.field1.IO = value
+# proc ER*(this: VGAMor): U8 = this.field1.ER
+# proc `ER=`*(this: var VGAMor, value: U8) = this.field1.ER = value
+# proc CLK0*(this: VGAMor): U8 = this.field1.CLK0
+# proc `CLK0=`*(this: var VGAMor, value: U8) = this.field1.CLK0 = value
+# proc CLK1*(this: VGAMor): U8 = this.field1.CLK1
+# proc `CLK1=`*(this: var VGAMor, value: U8) = this.field1.CLK1 = value
+# proc PS*(this: VGAMor): U8 = this.field1.PS
+# proc `PS=`*(this: var VGAMor, value: U8) = this.field1.PS = value
+# proc HSP*(this: VGAMor): U8 = this.field1.HSP
+# proc `HSP=`*(this: var VGAMor, value: U8) = this.field1.HSP = value
+# proc VSA*(this: VGAMor): U8 = this.field1.VSA
+# proc `VSA=`*(this: var VGAMor, value: U8) = this.field1.VSA = value
 proc INDX*(this: SequencerSar): U8 = this.field1.INDX
 proc `INDX=`*(this: var SequencerSar, value: U8) = this.field1.INDX = value
 proc f89DC*(this: SequencerCmr): U8 = this.field1.f89DC
@@ -689,54 +704,6 @@ proc WBM*(this: CRTCrtmcr): U8 = this.field1.WBM
 proc `WBM=`*(this: var CRTCrtmcr, value: U8) = this.field1.WBM = value
 proc HR*(this: CRTCrtmcr): U8 = this.field1.HR
 proc `HR=`*(this: var CRTCrtmcr, value: U8) = this.field1.HR = value
-proc INDX*(this: GraphicControllerGcar): U8 = this.field1.INDX
-proc `INDX=`*(this: var GraphicControllerGcar, value: U8) = this.field1.INDX = value
-proc SRM0*(this: GraphicControllerSr): U8 = this.field1.SRM0
-proc `SRM0=`*(this: var GraphicControllerSr, value: U8) = this.field1.SRM0 = value
-proc SRM1*(this: GraphicControllerSr): U8 = this.field1.SRM1
-proc `SRM1=`*(this: var GraphicControllerSr, value: U8) = this.field1.SRM1 = value
-proc SRM2*(this: GraphicControllerSr): U8 = this.field1.SRM2
-proc `SRM2=`*(this: var GraphicControllerSr, value: U8) = this.field1.SRM2 = value
-proc SRM3*(this: GraphicControllerSr): U8 = this.field1.SRM3
-proc `SRM3=`*(this: var GraphicControllerSr, value: U8) = this.field1.SRM3 = value
-proc ESRM0*(this: GraphicControllerEsr): U8 = this.field1.ESRM0
-proc `ESRM0=`*(this: var GraphicControllerEsr, value: U8) = this.field1.ESRM0 = value
-proc ESRM1*(this: GraphicControllerEsr): U8 = this.field1.ESRM1
-proc `ESRM1=`*(this: var GraphicControllerEsr, value: U8) = this.field1.ESRM1 = value
-proc ESRM2*(this: GraphicControllerEsr): U8 = this.field1.ESRM2
-proc `ESRM2=`*(this: var GraphicControllerEsr, value: U8) = this.field1.ESRM2 = value
-proc ESRM3*(this: GraphicControllerEsr): U8 = this.field1.ESRM3
-proc `ESRM3=`*(this: var GraphicControllerEsr, value: U8) = this.field1.ESRM3 = value
-proc CCM0*(this: GraphicControllerCcr): U8 = this.field1.CCM0
-proc `CCM0=`*(this: var GraphicControllerCcr, value: U8) = this.field1.CCM0 = value
-proc CCM1*(this: GraphicControllerCcr): U8 = this.field1.CCM1
-proc `CCM1=`*(this: var GraphicControllerCcr, value: U8) = this.field1.CCM1 = value
-proc CCM2*(this: GraphicControllerCcr): U8 = this.field1.CCM2
-proc `CCM2=`*(this: var GraphicControllerCcr, value: U8) = this.field1.CCM2 = value
-proc CCM3*(this: GraphicControllerCcr): U8 = this.field1.CCM3
-proc `CCM3=`*(this: var GraphicControllerCcr, value: U8) = this.field1.CCM3 = value
-proc RC*(this: GraphicControllerDrr): U8 = this.field1.RC
-proc `RC=`*(this: var GraphicControllerDrr, value: U8) = this.field1.RC = value
-proc FS*(this: GraphicControllerDrr): U8 = this.field1.FS
-proc `FS=`*(this: var GraphicControllerDrr, value: U8) = this.field1.FS = value
-proc MS*(this: GraphicControllerRmsr): U8 = this.field1.MS
-proc `MS=`*(this: var GraphicControllerRmsr, value: U8) = this.field1.MS = value
-proc WM*(this: GraphicControllerGmr): U8 = this.field1.WM
-proc `WM=`*(this: var GraphicControllerGmr, value: U8) = this.field1.WM = value
-proc RM*(this: GraphicControllerGmr): U8 = this.field1.RM
-proc `RM=`*(this: var GraphicControllerGmr, value: U8) = this.field1.RM = value
-proc OE*(this: GraphicControllerGmr): U8 = this.field1.OE
-proc `OE=`*(this: var GraphicControllerGmr, value: U8) = this.field1.OE = value
-proc SRM*(this: GraphicControllerGmr): U8 = this.field1.SRM
-proc `SRM=`*(this: var GraphicControllerGmr, value: U8) = this.field1.SRM = value
-proc f256CM*(this: GraphicControllerGmr): U8 = this.field1.f256CM
-proc `f256CM=`*(this: var GraphicControllerGmr, value: U8) = this.field1.f256CM = value
-proc GM*(this: GraphicControllerMr): U8 = this.field1.GM
-proc `GM=`*(this: var GraphicControllerMr, value: U8) = this.field1.GM = value
-proc OE*(this: GraphicControllerMr): U8 = this.field1.OE
-proc `OE=`*(this: var GraphicControllerMr, value: U8) = this.field1.OE = value
-proc MM*(this: GraphicControllerMr): U8 = this.field1.MM
-proc `MM=`*(this: var GraphicControllerMr, value: U8) = this.field1.MM = value
 proc INDX*(this: AttributeAcar): U8 = this.field1.INDX
 proc `INDX=`*(this: var AttributeAcar, value: U8) = this.field1.INDX = value
 proc IPAS*(this: AttributeAcar): U8 = this.field1.IPAS
@@ -979,14 +946,14 @@ proc in8*(this: var VGA, memAddr: U16): U8 =
   case memAddr:
     of 0x3c2: return 0
     of 0x3c3: return 0
-    of 0x3cc: return this.mor.raw
+    of 0x3cc: return cast[U8](this.mor)
     of 0x3ba, 0x3da: return 0
     else: discard
   return high(U8)
 
 proc out8*(this: var VGA, memAddr: U16, v: U8): void =
   case memAddr:
-    of 0x3c2: this.mor.raw = v
+    of 0x3c2: this.mor = cast[VGAMor](v)
     of 0x3c3: discard
     of 0x3ba, 0x3da: discard
     else: discard
@@ -1155,7 +1122,7 @@ proc out8*(this: var CRT, memAddr: U16, v: U8): void =
 
 proc in8*(this: var GraphicController, memAddr: U16): U8 =
   case memAddr:
-    of 0x3ce: return this.gcar.raw
+    of 0x3ce: return cast[U8](this.gcar)
     of 0x3cf: return this.regs[this.gcar.INDX][]
     else: return high(U8)
 
@@ -1163,7 +1130,7 @@ proc out8*(this: var GraphicController, memAddr: U16, v: U8): void =
   case memAddr:
     of 0x3ce:
       chkRegidx(this, v)
-      this.gcar.raw = v
+      this.gcar = cast[GraphicControllerGcar](v)
     of 0x3cf:
       this.regs[this.gcar.INDX][] = v
 

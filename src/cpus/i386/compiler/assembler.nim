@@ -46,10 +46,27 @@ type
     opcode*: ICode
     operands*: array[4, Option[InstrOperand]]
 
+  InstrStmtKind* = enum
+    iskCommand
+    iskComment ## Standalone comment
+    iskLabel
+
+  InstrStmt* = object
+    text*: string ## Text of the standalone or trailing comment, label
+                  ## name.
+    case kind*: InstrStmtKind
+      of iskCommand:
+        desc*: InstrDesc
+
+      of iskComment, iskLabel:
+        discard
+
+  InstrProgram* = object
+    labels: seq[tuple[name: string, instrs: seq[InstrDesc]]]
+
 type
-  InstrParseError* = object of CatchableError
-
-
+  InstrParseError* = object of ParseError
+  InstrBadMnemonic* = object of InstrParseError
   InstrErrorOperands* = object of InstrParseError
 
 
@@ -449,9 +466,22 @@ proc parseOperand*(str: var PosStr): InstrOperand =
   result.target = tar
   result.dataKind = dat
 
-proc parseInstr*(text: string): InstrDesc =
-  var str = initPosStr(text.toUpperAscii())
-  result.mnemonic = parseEnum[ICodeMnemonic](str.popIdent().toUpperAscii())
+proc parseInstrRaw*(text: string, pos: tuple[line, column: int]): InstrDesc =
+  var str = initPosStr(text.toUpperAscii(), pos)
+  let mnemonic = str.popIdent().toUpperAscii()
+  try:
+    result.mnemonic = parseEnum[ICodeMnemonic](mnemonic)
+
+  except ValueError:
+    raise newException(
+      InstrBadMnemonic,
+      "Unknown instruction mnemonic - '$#' $#" % [
+        mnemonic,
+        describeAtPosition(str)
+    ]).withIt do:
+      it.setLineInfo(str)
+
+
   str.space()
   var idx = 0
   while ?str:
@@ -469,12 +499,48 @@ proc parseInstr*(text: string): InstrDesc =
     if op.isSome() and op.get().dataKind.isNone():
       op.get().dataKind = known
 
+proc parseInstr*(text: string, pos: tuple[line, column: int]): InstrDesc =
+  result = parseInstrRaw(text, pos)
   selectOpcode(result)
+
+func instrComment*(text: string): InstrStmt =
+  InstrStmt(kind: iskComment, text: text)
+
+func instrLabel*(name: string): InstrStmt =
+  InstrStmt(kind: iskLabel, text: name)
+
+func instrCommand*(desc: InstrDesc): InstrStmt =
+  InstrStmt(desc: desc, kind: iskCommand)
+
+proc parseProgram*(prog: string): seq[InstrStmt] =
+  var lineNum = 0
+  for line in splitLines(prog):
+    var commentStart = line.high
+    while 0 <= commentStart and line[commentStart] != ';':
+      dec commentStart
+
+    let comment = tern(commentStart < 0, "", line[(commentStart + 1) .. ^1])
+    let text = strip(
+      line[0 .. tern(commentStart < 0, line.high, commentStart - 1)])
+
+    if text.empty():
+      if not comment.empty():
+        result.add instrComment(comment)
+
+    elif text[^1] == ':':
+      result.add instrLabel(text[0..^2])
+
+    else:
+      result.add parseInstr(text, (lineNum, 0)).instrCommand().withIt do:
+        it.text = strip(comment)
+
+    inc lineNum
+
 
 startHax()
 
 proc test(code: string, dbg: bool = false) =
-  let instr = parseInstr(code)
+  let instr = parseInstr(code, (0, 0))
   if dbg:
     echov code
     pprinte instr
