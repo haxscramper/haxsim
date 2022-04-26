@@ -22,6 +22,9 @@ type
     eekGetModrmRM = "get modrm.rm"
 
     eekEndInstructionFetch = "end fetch instruction"
+    eekOut8Unknown = "unknown write to port"
+    eekOut8Write = "write to port"
+    eekIn8Read = "read from port"
 
     eekGetIP = "get IP"
     eekGetEIP = "get EIP"
@@ -67,6 +70,7 @@ type
     # value kind end
 
     eekInterrupt = "interrupt"
+    eekIn8Unknown = "unknown read from port"
     eekInterruptHandler = "execute interrupt handler setup"
     eekScope = "scope"
     eekEnd = "end"
@@ -165,17 +169,25 @@ const
 # func toStr*(ev: EmuEventKind): string {.magic: "EnumToStr".}
 # func `$`*(ev: EmuEventKind): string = toStr(ev).substr(3)
 
-func ev*(kind: EmuEventKind): EmuEvent =
-  EmuEvent(kind: kind)
+func ev*(kind: EmuEventKind, msg: string = ""): EmuEvent =
+  EmuEvent(kind: kind, msg: msg)
 
-func ev*(kind: EmuEventKind, value: EmuValue): EmuEvent =
-  EmuEvent(kind: kind, value: value)
+func ev*(
+    kind: EmuEventKind, value: EmuValue,
+    msg: string = ""): EmuEvent =
+  EmuEvent(kind: kind, value: value, msg: msg)
 
-func ev*(kind: EmuEventKind, value: EmuValue, memAddr: uint): EmuEvent =
-  EmuEvent(kind: kind, value: value, memAddr: memaddr)
+func ev*(
+    kind: EmuEventKind, value: EmuValue,
+    memAddr: uint, msg: string = ""): EmuEvent =
+  EmuEvent(kind: kind, value: value, memAddr: memaddr, msg: msg)
 
-func ev*[T](der: typedesc[T], kind: EmuEventKind): T =
-  T(kind: kind)
+func ev*(
+    kind: EmuEventKind, memAddr: uint, msg: string = ""): EmuEvent =
+  EmuEvent(kind: kind, memAddr: memaddr, msg: msg)
+
+func ev*[T](der: typedesc[T], kind: EmuEventKind, msg: string = ""): T =
+  T(kind: kind, msg: msg)
 
 func evEnd*(): EmuEvent =
   EmuEvent(kind: eekEnd)

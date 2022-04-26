@@ -3,204 +3,162 @@ import std/bitops
 import dev_irq
 import dev_io
 
-const MAX_IRQ* = 8
+const MAXIRQ* = 8
 type
-  OCW2* {.union.} = object
-    raw*: uint8
-    field1*: OCW2_field1
+  OCW2* = object
+    L* {.bitsize: 3.}: U8
+    field1* {.bitsize: 2.}: U8
+    EOI* {.bitsize: 1.}: U8
+    SL* {.bitsize: 1.}: U8
+    R* {.bitsize: 1.}: U8
 
-  OCW2_field1* = object
-    L* {.bitsize: 3.}: uint8
-    field1* {.bitsize: 2.}: uint8
-    EOI* {.bitsize: 1.}: uint8
-    SL* {.bitsize: 1.}: uint8
-    R* {.bitsize: 1.}: uint8
-
-proc L*(this: OCW2): uint8 = this.field1.L
-proc `L=`*(this: var OCW2, value: uint8) = this.field1.L = value
-proc EOI*(this: OCW2): uint8 = this.field1.EOI
-proc `EOI=`*(this: var OCW2, value: uint8) = this.field1.EOI = value
-proc SL*(this: OCW2): uint8 = this.field1.SL
-proc `SL=`*(this: var OCW2, value: uint8) = this.field1.SL = value
-proc R*(this: OCW2): uint8 = this.field1.R
-proc `R=`*(this: var OCW2, value: uint8) = this.field1.R = value
-
-type
   PIC* = ref object of IRQ
     ## Programmable interrupt controller.
     portio*: PortIO
-    pic_m*: PIC ## Master PIC
-    irq*: array[MAX_IRQ, IRQ] ## Array of devices that can create interrupts
-    irr*: uint8 ## Interrupt request register. Stores index of the device
+    logger*: EmuLogger
+    picM*: PIC ## Master PIC
+    irq*: array[MAXIRQ, IRQ] ## Array of devices that can create interrupts
+    irr*: U8 ## Interrupt request register. Stores index of the device
                 ## that generated interrupt. The IRR tells us which
                 ## interrupts have been raised.
-    isr*: uint8 ## Interrupt service register. The ISR tells us which
+    isr*: U8 ## Interrupt service register. The ISR tells us which
                 ## interrupts are being serviced, meaning IRQs sent to the
                 ## CPU.
-    imr*: uint8 ## Interrupt mask register. Based on the interrupt mask
+    imr*: U8 ## Interrupt mask register. Based on the interrupt mask
                 ## (IMR), the PIC will send interrupts from the IRR to the
                 ## CPU, at which point they are marked in the ISR.
-    ic1*: PIC_ic1
-    ic2*: PIC_ic2
-    ic3*: PIC_ic3
-    ic4*: PIC_ic4
-    init_icn*: int8
+    ic1*: PICIc1
+    ic2*: PICIc2
+    ic3*: PICIc3
+    ic4*: PICIc4
+    initIcn*: int8
 
-  PIC_ic2_field1* = object
-    IVA_h* {.bitsize: 3.}: uint8
-    IVA_x86* {.bitsize: 5.}: uint8
+  PICIc1* = object
+    IC4* {.bitsize: 1.}: U8
+    SNGL* {.bitsize: 1.}: U8
+    ADI* {.bitsize: 1.}: U8
+    LTIM* {.bitsize: 1.}: U8
+    field4* {.bitsize: 1.}: U8
+    IVAL* {.bitsize: 3.}: U8
 
-  PIC_ic1* {.union.} = object
-    raw*: uint8
-    field1*: PIC_ic1_field1
+  PICIc2* = object
+    IVAH* {.bitsize: 3.}: U8
+    IVAX86* {.bitsize: 5.}: U8
 
-  PIC_ic1_field1* = object
-    IC4* {.bitsize: 1.}: uint8
-    SNGL* {.bitsize: 1.}: uint8
-    ADI* {.bitsize: 1.}: uint8
-    LTIM* {.bitsize: 1.}: uint8
-    field4* {.bitsize: 1.}: uint8
-    IVA_l* {.bitsize: 3.}: uint8
+  PICIc3Field1* = object
+    S0* {.bitsize: 1.}: U8
+    S1* {.bitsize: 1.}: U8
+    S2* {.bitsize: 1.}: U8
+    S3* {.bitsize: 1.}: U8
+    S4* {.bitsize: 1.}: U8
+    S5* {.bitsize: 1.}: U8
+    S6* {.bitsize: 1.}: U8
+    S7* {.bitsize: 1.}: U8
 
-  PIC_ic2* {.union.} = object
-    raw*: uint8
-    field1*: PIC_ic2_field1
+  PICIc3Field2* = object
+    ID* {.bitsize: 3.}: U8
 
-  PIC_ic3_field1* = object
-    S0* {.bitsize: 1.}: uint8
-    S1* {.bitsize: 1.}: uint8
-    S2* {.bitsize: 1.}: uint8
-    S3* {.bitsize: 1.}: uint8
-    S4* {.bitsize: 1.}: uint8
-    S5* {.bitsize: 1.}: uint8
-    S6* {.bitsize: 1.}: uint8
-    S7* {.bitsize: 1.}: uint8
+  PICIc3* {.union.} = object
+    raw*: U8
+    field1*: PICIc3Field1
+    field2*: PICIc3Field2
 
-  PIC_ic3_field2* = object
-    ID* {.bitsize: 3.}: uint8
-
-  PIC_ic3* {.union.} = object
-    raw*: uint8
-    field1*: PIC_ic3_field1
-    field2*: PIC_ic3_field2
-
-  PIC_ic4* {.union.} = object
-    raw*: uint8
-    field1*: PIC_ic4_field1
-
-  PIC_ic4_field1* = object
-    PM* {.bitsize: 1.}: uint8
-    AEOI* {.bitsize: 1.}: uint8
-    MS* {.bitsize: 1.}: uint8
-    BUF* {.bitsize: 1.}: uint8
-    SFNM* {.bitsize: 1.}: uint8
+  PICIc4* = object
+    PM* {.bitsize: 1.}: U8
+    AEOI* {.bitsize: 1.}: U8
+    MS* {.bitsize: 1.}: U8
+    BUF* {.bitsize: 1.}: U8
+    SFNM* {.bitsize: 1.}: U8
 
 
-proc IC4*(this: PIC_ic1): uint8 = this.field1.IC4
-proc `IC4=`*(this: var PIC_ic1, value: uint8) = this.field1.IC4 = value
-proc SNGL*(this: PIC_ic1): uint8 = this.field1.SNGL
-proc `SNGL=`*(this: var PIC_ic1, value: uint8) = this.field1.SNGL = value
-proc ADI*(this: PIC_ic1): uint8 = this.field1.ADI
-proc `ADI=`*(this: var PIC_ic1, value: uint8) = this.field1.ADI = value
-proc LTIM*(this: PIC_ic1): uint8 = this.field1.LTIM
-proc `LTIM=`*(this: var PIC_ic1, value: uint8) = this.field1.LTIM = value
-proc IVA_l*(this: PIC_ic1): uint8 = this.field1.IVA_l
-proc `IVA_l=`*(this: var PIC_ic1, value: uint8) = this.field1.IVA_l = value
-proc IVA_h*(this: PIC_ic2): uint8 = this.field1.IVA_h
-proc `IVA_h=`*(this: var PIC_ic2, value: uint8) = this.field1.IVA_h = value
-proc IVA_x86*(this: PIC_ic2): uint8 = this.field1.IVA_x86
-proc `IVA_x86=`*(this: var PIC_ic2, value: uint8) = this.field1.IVA_x86 = value
+template log*(mem: PIC, ev: EmuEvent, depth: int = -2) =
+  mem.logger.log(ev, depth)
 
-proc S0*(this: PIC_ic3): uint8 = this.field1.S0
-proc `S0=`*(this: var PIC_ic3, value: uint8) = this.field1.S0 = value
-proc S1*(this: PIC_ic3): uint8 = this.field1.S1
-proc `S1=`*(this: var PIC_ic3, value: uint8) = this.field1.S1 = value
-proc S2*(this: PIC_ic3): uint8 = this.field1.S2
-proc `S2=`*(this: var PIC_ic3, value: uint8) = this.field1.S2 = value
-proc S3*(this: PIC_ic3): uint8 = this.field1.S3
-proc `S3=`*(this: var PIC_ic3, value: uint8) = this.field1.S3 = value
-proc S4*(this: PIC_ic3): uint8 = this.field1.S4
-proc `S4=`*(this: var PIC_ic3, value: uint8) = this.field1.S4 = value
-proc S5*(this: PIC_ic3): uint8 = this.field1.S5
-proc `S5=`*(this: var PIC_ic3, value: uint8) = this.field1.S5 = value
-proc S6*(this: PIC_ic3): uint8 = this.field1.S6
-proc `S6=`*(this: var PIC_ic3, value: uint8) = this.field1.S6 = value
-proc S7*(this: PIC_ic3): uint8 = this.field1.S7
-proc `S7=`*(this: var PIC_ic3, value: uint8) = this.field1.S7 = value
+proc S0*(this: PICIc3): U8 = this.field1.S0
+proc `S0=`*(this: var PICIc3, value: U8) = this.field1.S0 = value
+proc S1*(this: PICIc3): U8 = this.field1.S1
+proc `S1=`*(this: var PICIc3, value: U8) = this.field1.S1 = value
+proc S2*(this: PICIc3): U8 = this.field1.S2
+proc `S2=`*(this: var PICIc3, value: U8) = this.field1.S2 = value
+proc S3*(this: PICIc3): U8 = this.field1.S3
+proc `S3=`*(this: var PICIc3, value: U8) = this.field1.S3 = value
+proc S4*(this: PICIc3): U8 = this.field1.S4
+proc `S4=`*(this: var PICIc3, value: U8) = this.field1.S4 = value
+proc S5*(this: PICIc3): U8 = this.field1.S5
+proc `S5=`*(this: var PICIc3, value: U8) = this.field1.S5 = value
+proc S6*(this: PICIc3): U8 = this.field1.S6
+proc `S6=`*(this: var PICIc3, value: U8) = this.field1.S6 = value
+proc S7*(this: PICIc3): U8 = this.field1.S7
+proc `S7=`*(this: var PICIc3, value: U8) = this.field1.S7 = value
 
-proc ID*(this: PIC_ic3): uint8 = this.field2.ID
-proc `ID=`*(this: var PIC_ic3, value: uint8) = this.field2.ID = value
+proc ID*(this: PICIc3): U8 = this.field2.ID
+proc `ID=`*(this: var PICIc3, value: U8) = this.field2.ID = value
 
-proc PM*(this: PIC_ic4): uint8 = this.field1.PM
-proc `PM=`*(this: var PIC_ic4, value: uint8) = this.field1.PM = value
-proc AEOI*(this: PIC_ic4): uint8 = this.field1.AEOI
-proc `AEOI=`*(this: var PIC_ic4, value: uint8) = this.field1.AEOI = value
-proc MS*(this: PIC_ic4): uint8 = this.field1.MS
-proc `MS=`*(this: var PIC_ic4, value: uint8) = this.field1.MS = value
-proc BUF*(this: PIC_ic4): uint8 = this.field1.BUF
-proc `BUF=`*(this: var PIC_ic4, value: uint8) = this.field1.BUF = value
-proc SFNM*(this: PIC_ic4): uint8 = this.field1.SFNM
-proc `SFNM=`*(this: var PIC_ic4, value: uint8) = this.field1.SFNM = value
-
-
-proc chk_m2s_pic*(this: var PIC, n: uint8): bool =
+proc chkM2sPic*(this: var PIC, n: U8): bool =
   return not(this.ic1.SNGL).bool and
-         not(this.pic_m.isNil()) and
-         bool(this.ic3.raw and uint8(1 shl n))
+         not(this.picM.isNil()) and
+         bool(this.ic3.raw and U8(1 shl n))
 
-proc set_irq*(this: var PIC, n: uint8, dev: IRQ): void =
+proc setIrq*(this: var PIC, n: U8, dev: IRQ): void =
   this.irq[n] = dev
 
 
-proc initPIC*(master: PIC = nil): PIC =
-  result = PIC(
-    pic_m: master,
+proc out8*(this: var PIC, memAddr: U16, v: U8)
+proc in8*(this: var PIC, memAddr: U16): U8
+
+proc initPIC*(logger: EmuLogger, master: PIC = nil): PIC =
+  var pic =  PIC(
+    picM: master,
+    logger: logger,
     irr: 0,
     isr: 0,
-    init_icn: -1
+    initIcn: -1
   )
 
-  for i in 0 ..< MAX_IRQ:
-    result.irq[i] = nil
+  pic.portio.in8 = proc(mem: U16): U8 = in8(pic, mem)
+  pic.portio.out8 = proc(mem: U16, v: U8) = out8(pic, mem, v)
 
-proc get_nintr*(this: var PIC): int8 =
-  var iva: uint8
+  for i in 0 ..< MAXIRQ:
+    pic.irq[i] = nil
+
+  return pic
+
+proc getNintr*(this: var PIC): int8 =
+  var iva: U8
   var i: cint
   block:
     i = 0
-    while i < MAX_IRQ and toBool(not(((this.irr shr i) and 1))):
+    while i < MAXIRQ and toBool(not(((this.irr shr i) and 1))):
       postInc(i)
 
-  if i == MAX_IRQ:
+  if i == MAXIRQ:
     return -1
 
   if not(this.ic4.AEOI.toBool()):
-    this.isr = (this.isr or uint8(1 shl i))
+    this.isr = (this.isr or U8(1 shl i))
 
-  this.irr = (this.irr xor uint8(1 shl i))
+  this.irr = (this.irr xor U8(1 shl i))
   if not(this.ic1.SNGL).toBool():
-    if not(this.pic_m.toBool()) and toBool(this.ic3.raw and uint8(1 shl i)):
+    if not(this.picM.toBool()) and toBool(this.ic3.raw and U8(1 shl i)):
       return -1
 
     else:
-      if this.pic_m.toBool() and not(this.pic_m.chk_m2s_pic(this.ic3.ID)):
+      if this.picM.toBool() and not(this.picM.chkM2sPic(this.ic3.ID)):
         ERROR("")
 
-
-
-  iva = (if this.ic4.PM.toBool(): this.ic2.IVA_x86 shl 3 else: this.ic1.IVA_l + (this.ic2.IVA_h shl 3))
+  iva = (if this.ic4.PM.toBool(): this.ic2.IVAX86 shl 3 else: this.ic1.IVAL + (this.ic2.IVAH shl 3))
   return iva.int8 + int8(i)
 
-proc chk_intreq*(this: var PIC): bool =
+proc chkIntreq*(this: var PIC): bool =
   ## Check for interrupt request on any of the devices connected to the
   ## interrupt controller.
-  if this.init_icn.toBool():
+  if this.initIcn.toBool():
     return false
 
   # Scan through all attached devices, looking for any external interrupt
   # routine.
-  var firstInterrupt: Option[uint8]
-  for i in 0'u8 ..< MAX_IRQ.U8:
+  var firstInterrupt: Option[U8]
+  for i in 0'u8 ..< MAXIRQ.U8:
     if # Check IRQ device is not nil
        this.irq[i].isNil().not() and
        # Check if IMR bit is set and interrupt can be used.
@@ -215,63 +173,58 @@ proc chk_intreq*(this: var PIC): bool =
     return false
 
   let interrupt = firstInterrupt.get()
-  if uint8(this.isr and uint8(1 shl interrupt)) >= this.isr:
+  if U8(this.isr and U8(1 shl interrupt)) >= this.isr:
     return false
 
   # Mask interrupt request register values
-  this.irr = (this.irr or uint8(1 shl interrupt))
+  this.irr = (this.irr or U8(1 shl interrupt))
   return true
 
 
-proc in8*(this: var PIC, memAddr: uint16): uint8 =
+proc in8*(this: var PIC, memAddr: U16): U8 =
   case memAddr:
     of 0x21, 0xa1:
-      return not(this.imr)
+      result = not(this.imr)
+      this.log ev(
+        eekIn8Read, evalue(result),
+        memAddr, msg = "PIC IMR register")
 
     else:
-      assert false
+      this.logger.log ev(eekIn8Unknown, memAddr)
 
-  return 0
-
-proc set_command*(this: var PIC, v: uint8): void =
-  if this.init_icn.toBool():
-    this.ic1.raw = v
-    this.init_icn = 1
+proc setCommand*(this: var PIC, v: U8): void =
+  if this.initIcn.toBool():
+    this.ic1 = cast[PICIc1](v)
+    this.initIcn = 1
 
   else:
-    var ocw2: OCW2
-    ocw2.raw = v
+    let ocw2: OCW2 = cast[OCW2](v)
     if ocw2.EOI.toBool():
       if ocw2.SL.toBool():
-        this.isr = (this.isr and not(uint8(1 shl ocw2.L)))
+        this.isr = (this.isr and not(U8(1 shl ocw2.L)))
 
       else:
         var i: cint
         block:
           i = 0
-          while i < MAX_IRQ and not(toBool((this.isr shr i) and 1)):
+          while i < MAXIRQ and not(toBool((this.isr shr i) and 1)):
             postInc(i)
-        if i < MAX_IRQ:
-          this.isr = (this.isr and not(uint8(1 shl i)))
+        if i < MAXIRQ:
+          this.isr = (this.isr and not(U8(1 shl i)))
 
-
-
-
-
-
-proc set_data*(this: var PIC, v: uint8): void =
-  if this.init_icn > 0:
+proc setData*(this: var PIC, v: U8): void =
+  if this.initIcn > 0:
     var done = false
-    case preInc(this.init_icn):
+    case preInc(this.initIcn):
       of 2:
-        this.ic2.raw = v
+        this.ic2 = cast[PICIc2](v)
         if this.ic1.SNGL.toBool():
           done = true
 
         else:
           return
       of 3:
-        this.ic3.raw = v
+        this.ic3 = cast[PICIc3](v)
         if not(this.ic1.IC4).toBool():
           done = true
 
@@ -279,28 +232,31 @@ proc set_data*(this: var PIC, v: uint8): void =
           return
 
       of 4:
-        this.ic4.raw = v
+        this.ic4 = cast[PICIc4](v)
         done = true
 
       else:
         done = true
 
     if done:
-      this.init_icn = 0
-
-      for i in 0 ..< MAX_IRQ:
+      this.initIcn = 0
+      for i in 0 ..< MAXIRQ:
         if this.irq[i].toBool():
           discard this.irq[i].chkIntreq()
 
   else:
     this.imr = not(v)
 
-proc out8*(this: var PIC, memAddr: uint16, v: uint8): void =
+proc out8*(this: var PIC, memAddr: U16, v: U8) =
   case memAddr:
     of 0x20, 0xa0:
-      set_command(this, v)
+      this.log ev(eekOut8Write, evalue(v), memAddr, msg = "PIC set command")
+      setCommand(this, v)
+
     of 0x21, 0xa1:
-      set_data(this, v)
+      this.log ev(eekOut8Write, evalue(v), memAddr, msg = "PIC set data")
+      setData(this, v)
 
     else:
-      assert false
+      this.logger.log ev(eekOut8Unknown, evalue(v), memAddr).withIt do:
+        it.msg = "PIC"

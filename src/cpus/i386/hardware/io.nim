@@ -26,13 +26,15 @@ proc destroyIO*(this: var IO): void =
 
 
 proc setPortio*(this: var IO, memAddr: U16, len: csizeT, dev: PortIO): void =
-  let memAddr = (memAddr and not(1.U16))
+  assertRefFields dev, "Missing I/O callback implementation"
+
+  let memAddr = (memAddr and not(1u16))
   this.portIo[memAddr] = dev
   this.portIoMap[memAddr] = len
 
 proc getPortioBase*(this: var IO, memAddr: U16): U16 =
   for i in 0 ..< 5:
-    let base: U16 = (memAddr and (not(1.U16))) - U16(2 * i)
+    let base: U16 = (memAddr and (not(1u16))) - U16(2 * i)
     if base in this.portIoMap:
       if memAddr < base + this.portIoMap[base]:
         return base

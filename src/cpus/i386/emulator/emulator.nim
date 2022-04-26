@@ -45,8 +45,8 @@ proc insertFloppy*(this: var Emulator, slot: uint8, disk: cstring, write: bool):
 
 proc initEmulator*(set: EmuSetting, logger: EmuLogger): Emulator =
   new(result)
-  var picM = initPIC()
-  var picS = initPIC(picM)
+  var picM = initPIC(logger)
+  var picS = initPIC(logger, picM)
   result.intr.setPic(picM, true)
   result.intr.setPic(picS, false)
   var pit = initPIT().asRef()

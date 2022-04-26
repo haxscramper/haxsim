@@ -170,20 +170,20 @@ proc isProtected*(this: var Processor): bool =
 proc getEip*(this: var Processor): U32 =
   result = this.eip
   this.log ev(eekGetEIP).withIt do:
-    it.value = evalue(result, 32)
+    it.value = evalue(result)
 
 proc getIp*(this: var Processor): U32 =
   result = this.ip
   this.log ev(eekGetIP).withIt do:
-    it.value = evalue(result, 32)
+    it.value = evalue(result)
 
 proc getGpreg*(this: Processor, n: Reg32T): U32 =
   result = this.gpregs[n].reg32
-  this.log ev(eekGetReg32, evalue(result, 32), n.U8)
+  this.log ev(eekGetReg32, evalue(result), n.U8)
 
 proc getGpreg*(this: Processor, n: Reg16T): U16 =
   result = this.gpregs[Reg32T(n.int)].reg16
-  this.log ev(eekGetReg16, evalue(result, 16), n.U8)
+  this.log ev(eekGetReg16, evalue(result), n.U8)
 
 proc getGpreg*(this: Processor, n: Reg8T): U8 =
   if n < AH:
@@ -194,7 +194,7 @@ proc getGpreg*(this: Processor, n: Reg8T): U8 =
 
   this.log ev(eekGetReg8).withIt do:
     it.memAddr = n.uint64
-    it.value = evalue(result, sizeof(result))
+    it.value = evalue(result)
 
 proc `[]`*(this: Processor, reg: Reg8T): U8 = this.getGPreg(reg)
 proc `[]`*(this: Processor, reg: Reg16T): U16 = this.getGPreg(reg)
@@ -206,15 +206,15 @@ proc getSgreg*(this: Processor, n: SgRegT): SgRegister =
 
 proc getDtregSelector*(this: Processor, n: DTregT): U32 =
   result = this.dtregs[n].selector
-  this.log ev(eekGetDtRegSelector, evalue(result, 32), n.U8)
+  this.log ev(eekGetDtRegSelector, evalue(result), n.U8)
 
 proc getDtregBase*(this: Processor, n: DTregT): U32 =
   result = this.dtregs[n].base
-  this.log ev(eekGetDtRegBase, evalue(result, 32), n.U8)
+  this.log ev(eekGetDtRegBase, evalue(result), n.U8)
 
 proc getDtregLimit*(this: Processor, n: DTregT): U16 =
   result = this.dtregs[n].limit
-  this.log ev(eekGetDtRegLimit, evalue(result, 16), n.U8)
+  this.log ev(eekGetDtRegLimit, evalue(result), n.U8)
 
 proc setEip*(this: var Processor, v: U32): void =
   this.eip = v
