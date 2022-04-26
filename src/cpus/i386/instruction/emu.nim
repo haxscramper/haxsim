@@ -77,14 +77,14 @@ proc switchTask*(this: var ExecInstr, sel: U16): void =
   oldTss.cr3 = CPU.getCrn(3)
   oldTss.eip = CPU.getEip()
   oldTss.eflags = CPU.eflags.getEflags()
-  oldTss.eax = CPU.getGpreg(EAX)
-  oldTss.ecx = CPU.getGpreg(ECX)
-  oldTss.edx = CPU.getGpreg(EDX)
-  oldTss.ebx = CPU.getGpreg(EBX)
-  oldTss.esp = CPU.getGpreg(ESP)
-  oldTss.ebp = CPU.getGpreg(EBP)
-  oldTss.esi = CPU.getGpreg(ESI)
-  oldTss.edi = CPU.getGpreg(EDI)
+  oldTss.eax = CPU[EAX]
+  oldTss.ecx = CPU[ECX]
+  oldTss.edx = CPU[EDX]
+  oldTss.ebx = CPU[EBX]
+  oldTss.esp = CPU[ESP]
+  oldTss.ebp = CPU[EBP]
+  oldTss.esi = CPU[ESI]
+  oldTss.edi = CPU[EDI]
   oldTss.es = ACS.getSegment(ES)
   oldTss.cs = ACS.getSegment(CS)
   oldTss.ss = ACS.getSegment(SS)
@@ -105,14 +105,14 @@ proc switchTask*(this: var ExecInstr, sel: U16): void =
   CPU.setCrn(3, newTss.cr3)
   CPU.setEip(newTss.eip)
   CPU.eflags.setEflags(newTss.eflags)
-  CPU.setGpreg(EAX, newTss.eax)
-  CPU.setGpreg(ECX, newTss.ecx)
-  CPU.setGpreg(EDX, newTss.edx)
-  CPU.setGpreg(EBX, newTss.ebx)
-  CPU.setGpreg(ESP, newTss.esp)
-  CPU.setGpreg(EBP, newTss.ebp)
-  CPU.setGpreg(ESI, newTss.esi)
-  CPU.setGpreg(EDI, newTss.edi)
+  CPU[EAX] = newTss.eax
+  CPU[ECX] = newTss.ecx
+  CPU[EDX] = newTss.edx
+  CPU[EBX] = newTss.ebx
+  CPU[ESP] = newTss.esp
+  CPU[EBP] = newTss.ebp
+  CPU[ESI] = newTss.esi
+  CPU[EDI] = newTss.edi
   ACS.setSegment(ES, newTss.es)
   ACS.setSegment(CS, newTss.cs)
   ACS.setSegment(SS, newTss.ss)
@@ -147,7 +147,7 @@ proc callf*(this: var ExecInstr, sel: U16, eip: U32): void =
   if toBool(cs.RPL xor RPL):
     if RPL < cs.RPL: raise newException(EXPGP, "")
     ACS.push32(ACS.getSegment(SS))
-    ACS.push32(CPU.getGpreg(ESP))
+    ACS.push32(CPU[ESP])
   
   ACS.push32(cs.raw)
   ACS.push32(CPU.getEip())
@@ -164,7 +164,7 @@ proc retf*(this: var ExecInstr): void =
     var ss: U16
     esp = ACS.pop32()
     ss = ACS.pop32().U16
-    CPU.setGpreg(ESP, esp)
+    CPU[ESP] = esp
     ACS.setSegment(SS, ss)
   
   ACS.setSegment(CS, cs.raw)
@@ -190,7 +190,7 @@ proc iret*(this: var ExecInstr): void =
       var ss: U16
       esp = ACS.pop32()
       ss = ACS.pop32().U16
-      CPU.setGpreg(ESP, esp)
+      CPU[ESP] = esp
       ACS.setSegment(SS, ss)
 
     ACS.setSegment(CS, cs.raw)

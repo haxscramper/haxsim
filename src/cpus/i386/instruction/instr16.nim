@@ -147,22 +147,22 @@ proc incR16*(this: var InstrImpl): void =
   var r16: U16
   reg = U8(this.idata.opcode and ((1 shl 3) - 1))
   r16 = CPU.getGPreg(Reg16T(reg))
-  CPU.setGPreg(Reg16T(reg), r16 + 1)
+  CPU[Reg16T(reg)] = r16 + 1
   CPU.eflags.updateADD(r16, 1)
 
 proc decR16*(this: var InstrImpl): void =
   let reg: U8 = U8(this.idata.opcode and ((1 shl 3) - 1))
   let r16: U16 = CPU.getGPreg(Reg16T(reg))
-  CPU.setGPreg(Reg16T(reg), r16 - 1)
+  CPU[Reg16T(reg)] = r16 - 1
   CPU.eflags.updateSUB(r16, 1)
 
 proc pushR16*(this: var InstrImpl): void =
   let reg: U8 = U8(this.idata.opcode and ((1 shl 3) - 1))
-  this.push16(CPU.getGPreg(Reg16T(reg)))
+  this.push16(CPU[Reg16T(reg)])
 
 proc popR16*(this: var InstrImpl): void =
   let reg: U8 = U8(this.idata.opcode and ((1 shl 3) - 1))
-  CPU.setGPreg(Reg16T(reg), this.pop16())
+  CPU[Reg16T(reg)] = this.pop16()
 
 proc pusha*(this: var InstrImpl): void =
   let sp: U16 = CPU[SP]
@@ -325,7 +325,7 @@ proc testAxImm16*(this: var InstrImpl): void =
 
 proc movR16Imm16*(this: var InstrImpl): void =
   let reg: U8 = U8(this.idata.opcode and ((1 shl 3) - 1))
-  CPU.setGPreg(Reg16T(reg), this.imm16.U16)
+  CPU[Reg16T(reg)] = this.imm16.U16
 
 proc ret*(this: var InstrImpl): void =
   this.cpu.setIp(this.pop16())
