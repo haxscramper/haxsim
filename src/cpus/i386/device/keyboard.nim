@@ -53,7 +53,7 @@ proc initMouse*(kb: Keyboard): Mouse =
 proc get_mouse*(this: var Keyboard): Mouse =
   return this.mouse
 
-proc command*(this: var Mouse, v: uint8): void =
+proc command*(this: var Mouse, v: uint8) =
   case v:
     of 0xf4:
       while toBool(this.keyboard.kcsr.OBF):
@@ -69,7 +69,7 @@ proc command*(this: var Mouse, v: uint8): void =
     else:
       discard
 
-proc send_code*(this: var Mouse, code: uint8): void =
+proc send_code*(this: var Mouse, code: uint8) =
   if this.keyboard.ccb.ME.toBool() or not(this.enable):
     return
 
@@ -101,7 +101,7 @@ proc in8*(this: var Keyboard, memAddr: uint16): uint8 =
 
   return uint8(255)
 
-proc write_outbuf*(this: var Keyboard, v: uint8): void =
+proc write_outbuf*(this: var Keyboard, v: uint8) =
   # FIXME - required threaded access: while this.kcsr.OBF.toBool(): discard
 
   this.kcsr.OBF = 1
@@ -110,12 +110,12 @@ proc write_outbuf*(this: var Keyboard, v: uint8): void =
     this.intr = true
 
 
-proc send_code*(this: var Keyboard, scancode: uint8): void =
+proc send_code*(this: var Keyboard, scancode: uint8) =
   if not(this.ccb.KE.toBool()):
     this.write_outbuf(scancode)
 
 
-proc swt_a20gate*(this: var Keyboard, v: uint8): void =
+proc swt_a20gate*(this: var Keyboard, v: uint8) =
   case v:
     of 0xdd:
       this.mem.set_a20gate(false)
@@ -125,7 +125,7 @@ proc swt_a20gate*(this: var Keyboard, v: uint8): void =
       discard
 
 
-proc command*(this: var Keyboard, v: uint8): void =
+proc command*(this: var Keyboard, v: uint8) =
   if not(this.kcsr.ST6.toBool()):
     # Check if input data is meant for controller command
     if this.kcsr.F1.toBool():
@@ -193,7 +193,7 @@ proc command*(this: var Keyboard, v: uint8): void =
   this.kcsr.ST6 = 0
 
 
-proc out8*(this: var Keyboard, memAddr: uint16, v: uint8): void =
+proc out8*(this: var Keyboard, memAddr: uint16, v: uint8) =
   case memAddr:
     of 0x60:
       # Write command byte

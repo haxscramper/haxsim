@@ -13,7 +13,7 @@ type
     intrQ*: Deque[(U8, bool)]
     picS*, picM*: PIC
 
-proc setPic*(this: var Interrupt, pic: PIC, master: bool): void =
+proc setPic*(this: var Interrupt, pic: PIC, master: bool) =
   assertRef(pic)
   if master:
     this.picM = pic
@@ -21,10 +21,10 @@ proc setPic*(this: var Interrupt, pic: PIC, master: bool): void =
   else:
     this.picS = pic
 
-proc queueInterrupt*(this: var Interrupt, n: U8, hard: bool): void =
+proc queueInterrupt*(this: var Interrupt, n: U8, hard: bool) =
   this.intrQ.addLast((n, hard))
 
-proc iret*(this: var Interrupt): void =
+proc iret*(this: var Interrupt) =
   discard
 
 import std/deques
@@ -36,7 +36,7 @@ import emulator/descriptor
 import emulator/access
 
 proc saveRegs*(
-    acs: var DataAccess, this: var Interrupt, chpl: bool, cs: U16): void =
+    acs: var DataAccess, this: var Interrupt, chpl: bool, cs: U16) =
   ## Store values of the current register, code segment on stack. Values
   ## are put on stack in order `(E)FLAGS -> CS -> (E)IP`. Values are popped
   ## back when `iret` (interrupt return) instruction is called.
@@ -70,7 +70,7 @@ proc saveRegs*(
     acs.push16(acs.cpu.getIp().U16)
 
 
-proc handleInterrupt*(acs: var DataAccess, this: var Interrupt): void =
+proc handleInterrupt*(acs: var DataAccess, this: var Interrupt) =
   if this.intrQ.len() == 0:
     return
 

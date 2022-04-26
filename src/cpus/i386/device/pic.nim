@@ -99,7 +99,7 @@ proc chkM2sPic*(this: var PIC, n: U8): bool =
          not(this.picM.isNil()) and
          bool(this.ic3.raw and U8(1 shl n))
 
-proc setIrq*(this: var PIC, n: U8, dev: IRQ): void =
+proc setIrq*(this: var PIC, n: U8, dev: IRQ) =
   this.irq[n] = dev
 
 
@@ -195,7 +195,7 @@ proc in8*(this: var PIC, memAddr: U16): U8 =
     else:
       this.logger.log ev(eekIn8Unknown, memAddr)
 
-proc setCommand*(this: var PIC, v: U8): void =
+proc setCommand*(this: var PIC, v: U8) =
   if this.initIcn.toBool():
     this.ic1 = cast[PICIc1](v)
     this.initIcn = 1
@@ -215,7 +215,7 @@ proc setCommand*(this: var PIC, v: U8): void =
         if i < MAXIRQ:
           this.isr = (this.isr and not(U8(1 shl i)))
 
-proc setData*(this: var PIC, v: U8): void =
+proc setData*(this: var PIC, v: U8) =
   if this.initIcn > 0:
     var done = false
     case preInc(this.initIcn):

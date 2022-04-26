@@ -324,14 +324,14 @@ type
 proc i8080_rb*(c: var i8080; aAddr: uint16): uint8 =
   return c.read_byte(aAddr)
 
-proc i8080_wb*(c: var i8080; aAddr: uint16; val: uint8): void =
+proc i8080_wb*(c: var i8080; aAddr: uint16; val: uint8) =
   c.write_byte(aAddr, val)
 
 proc i8080_rw*(c: var i8080; aAddr: uint16): uint16 =
   return c.read_byte(aAddr + 1) shl 8 or
       c.read_byte(aAddr)
 
-proc i8080_ww*(c: var i8080; aAddr: uint16; val: uint16): void =
+proc i8080_ww*(c: var i8080; aAddr: uint16; val: uint16) =
   c.write_byte(aAddr, uint8(val and 0xFF))
   c.write_byte(aAddr + 1, uint8(val shr 8))
 
@@ -343,15 +343,15 @@ proc i8080_next_word*(c: var i8080): uint16 =
   result = i8080_rw(c, c.pc)
   c.pc += 2
 
-proc i8080_set_bc*(c: var i8080; val: uint16): void =
+proc i8080_set_bc*(c: var i8080; val: uint16) =
   c.b = uint8(val shr 8)
   c.c = uint8(val and 0xFF)
 
-proc i8080_set_de*(c: var i8080; val: uint16): void =
+proc i8080_set_de*(c: var i8080; val: uint16) =
   c.d = uint8(val shr 8)
   c.e = uint8(val and 0xFF)
 
-proc i8080_set_hl*(c: var i8080; val: uint16): void =
+proc i8080_set_hl*(c: var i8080; val: uint16) =
   c.h = uint8(val shr 8)
   c.l = uint8(val and 0xFF)
 
@@ -364,7 +364,7 @@ proc i8080_get_de*(c: var i8080): uint16 =
 proc i8080_get_hl*(c: var i8080): uint16 =
   return (c.h.uint16 shl 8) or c.l
 
-proc i8080_push_stack*(c: var i8080; val: uint16): void =
+proc i8080_push_stack*(c: var i8080; val: uint16) =
   c.sp -= 2
   i8080_ww(c, c.sp, val)
 
@@ -393,18 +393,18 @@ template setZsp(c, val): untyped =
   c.pf = parity(val)
 
 
-proc i8080_add*(c: var i8080; reg: ptr uint8; val: uint8; cy: bool): void =
+proc i8080_add*(c: var i8080; reg: ptr uint8; val: uint8; cy: bool) =
   var res: uint8 = reg[] + val + uint8(cy)
   c.cf = carry(8, reg[], val, cy)
   c.hf = carry(4, reg[], val, cy)
   setZsp(c, res)
   reg[] = res
 
-proc i8080_sub*(c: var i8080; reg: ptr uint8; val: uint8; cy: bool): void =
+proc i8080_sub*(c: var i8080; reg: ptr uint8; val: uint8; cy: bool) =
   i8080_add(c, reg, not(val), not(cy))
   c.cf = not(c.cf)
 
-proc i8080_dad*(c: var i8080; val: uint16): void =
+proc i8080_dad*(c: var i8080; val: uint16) =
   c.cf = bool(((i8080_get_hl(c) + val) shr 16) and 1)
   i8080_set_hl(c, i8080_get_hl(c) + val)
 
@@ -418,58 +418,58 @@ proc i8080_dcr*(c: var i8080; val: uint8): uint8 =
   c.hf = not(((result and 0xF) == 0xF))
   setZsp(c, result)
 
-proc i8080_ana*(c: var i8080; val: uint8): void =
+proc i8080_ana*(c: var i8080; val: uint8) =
   var result: uint8 = c.a and val
   c.cf = bool(0)
   c.hf = (((c.a or val) and 0x08) != 0)
   setZsp(c, result)
   c.a = result
 
-proc i8080_xra*(c: var i8080; val: uint8): void =
+proc i8080_xra*(c: var i8080; val: uint8) =
   c.a = val xor c.a
   c.cf = false
   c.hf = false
   setZsp(c, c.a)
 
-proc i8080_ora*(c: var i8080; val: uint8): void =
+proc i8080_ora*(c: var i8080; val: uint8) =
   c.a = val or c.a
   c.cf = false
   c.hf = false
   setZsp(c, c.a)
 
-proc i8080_cmp*(c: var i8080; val: uint8): void =
+proc i8080_cmp*(c: var i8080; val: uint8) =
   var result: int16 = int16(c.a - val)
   c.cf = bool(result shr 8)
   c.hf = bool(not((c.a.int16 xor result xor val.int16)).uint8 and 0x10)
   setZsp(c, result.uint8 and 0xFF)
 
-proc i8080_jmp*(c: var i8080; aAddr: uint16): void =
+proc i8080_jmp*(c: var i8080; aAddr: uint16) =
   c.pc = aAddr
 
-proc i8080_cond_jmp*(c: var i8080; condition: bool): void =
+proc i8080_cond_jmp*(c: var i8080; condition: bool) =
   var aAddr: uint16 = i8080_next_word(c)
   if condition:
     c.pc = aAddr
 
-proc i8080_call*(c: var i8080; aAddr: uint16): void =
+proc i8080_call*(c: var i8080; aAddr: uint16) =
   i8080_push_stack(c, c.pc)
   i8080_jmp(c, aAddr)
 
-proc i8080_cond_call*(c: var i8080; condition: bool): void =
+proc i8080_cond_call*(c: var i8080; condition: bool) =
   var aAddr: uint16 = i8080_next_word(c)
   if condition:
     i8080_call(c, aAddr)
     c.cyc += 6
 
-proc i8080_ret*(c: var i8080): void =
+proc i8080_ret*(c: var i8080) =
   c.pc = i8080_pop_stack(c)
 
-proc i8080_cond_ret*(c: var i8080; condition: bool): void =
+proc i8080_cond_ret*(c: var i8080; condition: bool) =
   if condition:
     i8080_ret(c)
     c.cyc += 6
 
-proc i8080_push_psw*(c: var i8080): void =
+proc i8080_push_psw*(c: var i8080) =
   var psw: uint8 = 0
   psw = c.sf.uint8 shl 7 or psw
   psw = c.zf.uint8 shl 6 or psw
@@ -479,7 +479,7 @@ proc i8080_push_psw*(c: var i8080): void =
   psw = c.cf.uint8 shl 0 or psw
   i8080_push_stack(c, c.a shl 8 or psw)
 
-proc i8080_pop_psw*(c: var i8080): void =
+proc i8080_pop_psw*(c: var i8080) =
   var af: uint16 = i8080_pop_stack(c)
   c.a = uint8(af shr 8)
   var psw: uint8 = uint8(af and 0xFF)
@@ -489,25 +489,25 @@ proc i8080_pop_psw*(c: var i8080): void =
   c.pf = bool((psw shr 2) and 1)
   c.cf = bool((psw shr 0) and 1)
 
-proc i8080_rlc*(c: var i8080): void =
+proc i8080_rlc*(c: var i8080) =
   c.cf = bool(c.a.uint8 shr 7)
   c.a = ((c.a.uint8 shl 1) or c.cf.uint8)
 
-proc i8080_rrc*(c: var i8080): void =
+proc i8080_rrc*(c: var i8080) =
   c.cf = bool(c.a.uint8 and 1)
   c.a = ((c.a.uint8 shr 1) or uint8(c.cf.uint8 shl 7))
 
-proc i8080_ral*(c: var i8080): void =
+proc i8080_ral*(c: var i8080) =
   var cy: bool = c.cf
   c.cf = bool(c.a.uint8 shr 7)
   c.a = ((c.a.uint8 shl 1) or cy.uint8)
 
-proc i8080_rar*(c: var i8080): void =
+proc i8080_rar*(c: var i8080) =
   var cy: bool = c.cf
   c.cf = bool(c.a.uint8 and 1)
   c.a = ((c.a.uint8 shr 1) or (cy.uint8 shl 7))
 
-proc i8080_daa*(c: var i8080): void =
+proc i8080_daa*(c: var i8080) =
   var cy: bool = c.cf
   var correction: uint8 = 0
   var lsb: uint8 = c.a and 0x0F
@@ -520,17 +520,17 @@ proc i8080_daa*(c: var i8080): void =
   i8080_add(c, addr c.a, correction, false)
   c.cf = cy
 
-proc i8080_xchg*(c: var i8080): void =
+proc i8080_xchg*(c: var i8080) =
   var de: uint16 = i8080_get_de(c)
   i8080_set_de(c, i8080_get_hl(c))
   i8080_set_hl(c, de)
 
-proc i8080_xthl*(c: var i8080): void =
+proc i8080_xthl*(c: var i8080) =
   var val: uint16 = i8080_rw(c, c.sp)
   i8080_ww(c, c.sp, i8080_get_hl(c))
   i8080_set_hl(c, val)
 
-proc i8080_execute*(c: var i8080; opcode: Opc): void =
+proc i8080_execute*(c: var i8080; opcode: Opc) =
   c.cyc += oPCODES_CYCLES[opcode.uint8]
   if c.interrupt_delay > 0:
     c.interrupt_delay -= 1
@@ -784,7 +784,7 @@ proc i8080_execute*(c: var i8080; opcode: Opc): void =
     of opIll8, opIll9, opIll10: i8080_call(c, i8080_next_word(c))
     of opIll11: i8080_jmp(c, i8080_next_word(c))
 
-proc i8080_init*(c: var i8080): void =
+proc i8080_init*(c: var i8080) =
   c.read_byte = nil
   c.write_byte = nil
   c.port_in = nil
@@ -810,7 +810,7 @@ proc i8080_init*(c: var i8080): void =
   c.interrupt_vector = 0
   c.interrupt_delay = 0
 
-proc i8080_step*(c: var i8080): void =
+proc i8080_step*(c: var i8080) =
   if c.interrupt_pending and c.iff and (c.interrupt_delay == 0):
     c.interrupt_pending = false
     c.iff = false
@@ -820,7 +820,7 @@ proc i8080_step*(c: var i8080): void =
     if not(c.halted):
       i8080_execute(c, i8080_next_byte(c).Opc)
 
-proc i8080_interrupt*(c: var i8080; opcode: uint8): void =
+proc i8080_interrupt*(c: var i8080; opcode: uint8) =
   c.interrupt_pending = true
   c.interrupt_vector = opcode
 
@@ -1011,17 +1011,17 @@ proc tick(c: var i8080) =
       raise newImplementKindError(c.activeOpc)
 
 
-proc init*(c: var i8080; memory: ref seq[Opc]): void =
+proc init*(c: var i8080; memory: ref seq[Opc]) =
   i8080_init(c)
   memory[].add opHlt
   c.read_byte = proc(aAddr: uint16): uint8 =
     memory[aAddr].uint8
 
-  c.write_byte = proc(aAddr: uint16; val: uint8): void =
+  c.write_byte = proc(aAddr: uint16; val: uint8) =
     memory[aAddr] = val.Opc
 
   c.port_in = proc(port: uint8): uint8 = return 0x00
-  c.port_out = proc(port: uint8; value: uint8): void = discard
+  c.port_out = proc(port: uint8; value: uint8) = discard
 
 proc main*() =
   startHax()

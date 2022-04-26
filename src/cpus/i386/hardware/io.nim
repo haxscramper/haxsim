@@ -19,13 +19,13 @@ template log*(io: IO, ev: EmuEvent): untyped =
 proc initIO*(mem: Memory): IO =
   result.memory = mem
 
-proc destroyIO*(this: var IO): void =
+proc destroyIO*(this: var IO) =
   this.portIo.clear()
   this.memIo.clear()
   this.memIoMap.clear()
 
 
-proc setPortio*(this: var IO, memAddr: U16, len: csizeT, dev: PortIO): void =
+proc setPortio*(this: var IO, memAddr: U16, len: csizeT, dev: PortIO) =
   assertRefFields dev, "Missing I/O callback implementation"
 
   let memAddr = (memAddr and not(1u16))
@@ -79,7 +79,7 @@ proc inIo16*(this: var IO, port: U16): U16 =
     v = (v + this.inIo8(port + U16(i)) shl (8 * i))
   return v
 
-proc outIo8*(this: var IO, port: U16, value: U8): void =
+proc outIo8*(this: var IO, port: U16, value: U8) =
   var base: U16 = this.getPortioBase(port)
   if base != 0:
     this.portIo[base].out8(port, value)
@@ -87,17 +87,16 @@ proc outIo8*(this: var IO, port: U16, value: U8): void =
   else:
     ERROR("no device connected at port : 0x%04x", port)
 
-  INFO(4, "out [0x%04x] (0x%04x)", port, value)
 
-proc outIo32*(this: var IO, port: U16, value: U32): void =
+proc outIo32*(this: var IO, port: U16, value: U32) =
   for i in 0 ..< 4:
     this.outIo8(port + U16(i), U8((value shr (8 * i)) and 0xff))
 
-proc outIo16*(this: var IO, port: U16, value: U16): void =
+proc outIo16*(this: var IO, port: U16, value: U16) =
   for i in 0 ..< 2:
     this.outIo8(port + U16(i), U8((value shr (8 * i)) and 0xff))
 
-proc setMemio*(this: var IO, base: U32, len: csizeT, dev: var MemoryIO): void =
+proc setMemio*(this: var IO, base: U32, len: csizeT, dev: var MemoryIO) =
   assertRef(this.memory)
   assertRef(dev)
   var memAddr: U32
@@ -111,7 +110,9 @@ proc setMemio*(this: var IO, base: U32, len: csizeT, dev: var MemoryIO): void =
 
 
 proc getMemio*(this: var IO, memAddr: U32): Option[U32] =
-  let memAddr = memAddr and 0x0FFFu32
+  # Cut lower bits of the memory address
+  let memAddr = memAddr and 0xFFFF_0000u32
+
   if memAddr in this.memIoMap:
     return some this.memIoMap[memAddr]
 
@@ -130,17 +131,17 @@ proc readMemio8*(this: var IO, base: U32, offset: U32): U8 =
   result = this.memIo[base].read8(offset)
   this.log ev(eekGetIo8, evalue(result), offset)
 
-proc writeMemio32*(this: var IO, base: U32, offset: U32, value: U32): void =
+proc writeMemio32*(this: var IO, base: U32, offset: U32, value: U32) =
   ASSERT(base in this.memIo)
   this.log ev(eekSetIo32, evalue(value), offset)
   this.memIo[base].write32(offset, value)
 
-proc writeMemio16*(this: var IO, base: U32, offset: U32, value: U16): void =
+proc writeMemio16*(this: var IO, base: U32, offset: U32, value: U16) =
   ASSERT(base in this.memIo)
   this.log ev(eekSetIo16, evalue(value), offset)
   this.memIo[base].write16(offset, value)
 
-proc writeMemio8*(this: var IO, base: U32, offset: U32, value: U8): void =
+proc writeMemio8*(this: var IO, base: U32, offset: U32, value: U8) =
   ASSERT(base in this.memIo)
   this.log ev(eekSetIo8, evalue(value), offset)
   this.memIo[base].write8(offset, value)

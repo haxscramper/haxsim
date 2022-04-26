@@ -38,10 +38,10 @@ type
 template log*(full: FullImpl, ev: EmuEvent): untyped =
   full.emu.logger.log(ev, -2)
 
-proc help*(name: cstring): void =
+proc help*(name: cstring) =
   discard 
 
-proc init*(): void =
+proc init*() =
   when false:
     setbuf(stdout, nil)
     setbuf(stderr, nil)
@@ -260,7 +260,7 @@ proc initFull*(emuset: var EmuSetting, logger: EmuLogger = initEmuLogger()): Ful
   return full
 
 
-proc runEmulator*(eset: Setting): void =
+proc runEmulator*(eset: Setting) =
   var emuset: EmuSetting
   emuset.memSize = eset.memSize
 

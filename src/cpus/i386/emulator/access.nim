@@ -59,7 +59,7 @@ proc initDataAccess*(size: ESize, logger: EmuLogger): DataAccess =
 
 import emulator/descriptor
 
-proc setSegment*(this: var DataAccess, reg: SgRegT, sel: U16): void =
+proc setSegment*(this: var DataAccess, reg: SgRegT, sel: U16) =
   ## Set segment value in the GDT table, update cache in the SG registers.
   ## https://wiki.osdev.org/Descriptor_Cache
   var sg: SGRegister = this.cpu.getSgreg(reg)
@@ -165,7 +165,7 @@ proc searchTlb*(this: var DataAccess, vpn: U32, pte: var PTE): bool =
     pte = this.tlb[vpn]
     return true
 
-proc cacheTlb*(this: var DataAccess, vpn: U32, pte: PTE): void =
+proc cacheTlb*(this: var DataAccess, vpn: U32, pte: PTE) =
   this.tlb[vpn] = pte
 
 
@@ -285,7 +285,7 @@ proc readMem8Seg*(this: var DataAccess, seg: SgRegT, memAddr: U32): U8 =
   else:
     return this.mem.readMem8(paddr)
 
-proc writeMem32Seg*(this: var DataAccess, seg: SgRegT, memAddr: U32, v: U32): void =
+proc writeMem32Seg*(this: var DataAccess, seg: SgRegT, memAddr: U32, v: U32) =
   let paddr: U32 = this.transVirtualToPhysical(MODEWRITE, seg, memAddr)
   let ioBase = this.io.getMemio(paddr)
   if ioBase.canGet(ioBaseId):
@@ -295,7 +295,7 @@ proc writeMem32Seg*(this: var DataAccess, seg: SgRegT, memAddr: U32, v: U32): vo
     this.mem.writeMem32(paddr, v)
 
 
-proc writeMem16Seg*(this: var DataAccess, seg: SgRegT, memAddr: U32, v: U16): void =
+proc writeMem16Seg*(this: var DataAccess, seg: SgRegT, memAddr: U32, v: U16) =
   let paddr: U32 = this.transVirtualToPhysical(MODEWRITE, seg, memAddr)
   let ioBase = this.io.getMemio(paddr)
   if ioBase.canGet(ioBaseId):
@@ -305,7 +305,7 @@ proc writeMem16Seg*(this: var DataAccess, seg: SgRegT, memAddr: U32, v: U16): vo
     this.mem.writeMem16(paddr, v)
 
 
-proc writeMem8Seg*(this: var DataAccess, seg: SgRegT, memAddr: U32, v: U8): void =
+proc writeMem8Seg*(this: var DataAccess, seg: SgRegT, memAddr: U32, v: U8) =
   let paddr: U32 = this.transVirtualToPhysical(MODEWRITE, seg, memAddr)
   let ioBase  = this.io.getMemio(paddr)
   if ioBase.canGet(ioBaseId):
@@ -332,14 +332,14 @@ proc getData16*(this: var DataAccess, seg: SgRegT, memAddr: U32): U16 =
 proc getData32*(this: var DataAccess, seg: SgRegT, memAddr: U32): U32 =
   return this.readMem32Seg(seg, memAddr)
 
-proc putData8*(this: var DataAccess, seg: SgRegT, memAddr: U32, v: U8): void =
+proc putData8*(this: var DataAccess, seg: SgRegT, memAddr: U32, v: U8) =
   this.logger.scope "put data $# to $#" % [$v, toHexTrim(memAddr)]
   this.writeMem8Seg(seg, memAddr, v)
 
-proc putData16*(this: var DataAccess, seg: SgRegT, memAddr: U32, v: U16): void =
+proc putData16*(this: var DataAccess, seg: SgRegT, memAddr: U32, v: U16) =
   this.writeMem16Seg(seg, memAddr, v)
 
-proc putData32*(this: var DataAccess, seg: SgRegT, memAddr: U32, v: U32): void =
+proc putData32*(this: var DataAccess, seg: SgRegT, memAddr: U32, v: U32) =
   this.writeMem32Seg(seg, memAddr, v)
 
 proc getCode8*(this: var DataAccess, index: cint): U8 =
@@ -360,7 +360,7 @@ proc getCode32*(this: var DataAccess, index: cint): U32 =
   return this.execMem32Seg(CS, this.cpu.getEip() + index.U32)
 
 
-proc push32*(this: var DataAccess, value: U32): void =
+proc push32*(this: var DataAccess, value: U32) =
   this.logger.scope "push 32"
 
   this.cpu.updateGpreg(ESP, -4)
@@ -375,7 +375,7 @@ proc pop32*(this: var DataAccess): U32 =
   this.cpu.updateGpreg(ESP, 4)
   return value
 
-proc push16*(this: var DataAccess, value: U16): void =
+proc push16*(this: var DataAccess, value: U16) =
   this.logger.scope "push 16"
 
   this.cpu.updateGpreg(SP, -2)

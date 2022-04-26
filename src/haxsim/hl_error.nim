@@ -25,7 +25,7 @@ func linesAround*(baseStr: string, charRange: Slice[int]):
   result.endPos = result.startPos + (charRange.b - charRange.a)
 
 func renderLine*(c0, r0, c1, r1: int, buf: var ColoredRuneGrid,
-                rune: ColoredRune): void =
+                rune: ColoredRune) =
   let
     dc = c1 - c0
     dr = r1 - r0

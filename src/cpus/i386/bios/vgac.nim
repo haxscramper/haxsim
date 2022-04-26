@@ -27,12 +27,12 @@ var palette: array[16, rgb_t] = @([
                 (0x3f, 0x3f, 0x15), 
                 (0x3f, 0x3f, 0x3f)
               ])
-proc attr_configure*(): void = 
+proc attr_configure*() =
   for i in 0 ..< 0x10:
     out_port(0x3c0, i)
     out_port(0x3c1, i)
 
-proc seq_configure*(): void = 
+proc seq_configure*() =
   out_port(0x3c4, 2)
   out_port(0x3c5, 0x3)
   out_port(0x3c4, 3)
@@ -40,20 +40,20 @@ proc seq_configure*(): void =
   out_port(0x3c4, 4)
   out_port(0x3c5, 0x2)
 
-proc dac_configure*(): void = 
+proc dac_configure*() =
   out_port(0x3c8, 0)
   for i in 0 ..< 0x10:
     out_port(0x3c9, palette[i].red)
     out_port(0x3c9, palette[i].green)
     out_port(0x3c9, palette[i].blue)
 
-proc gc_configure*(): void = 
+proc gc_configure*() =
   out_port(0x3ce, 5)
   out_port(0x3cf, 0x10)
   out_port(0x3ce, 6)
   out_port(0x3cf, 0xe)
 
-proc load_font*(): void = 
+proc load_font*() =
   _cli()
   out_port(0x3c4, 2)
   out_port(0x3c5, 0x4)
