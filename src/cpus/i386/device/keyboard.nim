@@ -49,12 +49,6 @@ type
 proc initMouse*(kb: Keyboard): Mouse =
   Mouse(keyboard: kb, enable: false)
 
-proc initKeyboard*(m: Memory): Keyboard =
-  new(result)
-  new(result.mouse)
-  result.mouse = initMouse(result)
-  result.kcsr = cast[KeyboardKcsr](0'u8)
-  result.mem = m
 
 proc get_mouse*(this: var Keyboard): Mouse =
   return this.mouse
@@ -214,5 +208,10 @@ proc out8*(this: var Keyboard, memAddr: uint16, v: uint8): void =
 
   command(this, v)
 
-
-
+proc initKeyboard*(m: Memory): Keyboard =
+  var kb = Keyboard()
+  kb.mouse = initMouse(kb)
+  kb.kcsr = cast[KeyboardKcsr](0'u8)
+  kb.mem = m
+  kb.portio = wrapPortIO(kb, in8, out8)
+  return kb

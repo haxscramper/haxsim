@@ -44,47 +44,54 @@ proc insertFloppy*(this: var Emulator, slot: uint8, disk: cstring, write: bool):
   return (if not this.fdd.isNil(): this.fdd.insertDisk(slot, disk, write) else: false)
 
 proc initEmulator*(set: EmuSetting, logger: EmuLogger): Emulator =
-  new(result)
-  var picM = initPIC(logger)
-  var picS = initPIC(logger, picM)
-  result.intr.setPic(picM, true)
-  result.intr.setPic(picS, false)
-  var pit = initPIT().asRef()
-  result.fdd = initFDD().asReF()
-  var syscon = initSysControl(result.accs.mem).asRef()
-  var com = (ref COM)()
-  var vga = initVGA(logger)
-  var kb = initKeyboard(result.accs.mem)
+  var emu = Emulator()
+  var
+    picM = initPIC(logger)
+    picS = initPIC(logger, picM)
+
+  emu.intr.setPic(picM, true)
+  emu.intr.setPic(picS, false)
+  emu.fdd = initFDD()
+
+  var
+    pit = initPIT()
+    syscon = initSysControl(emu.accs.mem)
+    com = initCom()
+    vga = initVGA(logger)
+    kb = initKeyboard(emu.accs.mem)
+
   picM.setIrq(0, pit)
   picM.setIrq(1, kb)
   picM.setIrq(2, picS)
-  picM.setIrq(6, result.fdd)
+  picM.setIrq(6, emu.fdd)
   picS.setIrq(4, kb.getMouse())
-  result.logger = logger
-  result.accs = initDataAccess(set.memSize, logger)
+  emu.logger = logger
+  emu.accs = initDataAccess(set.memSize, logger)
 
-  assertRef(result.accs.io.memory)
-  result.accs.io.setPortio(0x020, 2, picM.portio)
-  result.accs.io.setPortio(0x040, 4, pit.portio)
-  result.accs.io.setPortio(0x060, 1, kb.portio)
-  result.accs.io.setPortio(0x064, 1, kb.portio)
-  result.accs.io.setPortio(0x0a0, 2, picS.portio)
-  result.accs.io.setPortio(0x092, 1, syscon.portio)
-  result.accs.io.setPortio(0x3b4, 2, vga.getCrt().portio)
-  result.accs.io.setPortio(0x3ba, 1, vga.portio)
-  result.accs.io.setPortio(0x3c0, 2, vga.getAttr().portio)
+  assertRef(emu.accs.io.memory)
+  emu.accs.io.setPortio(0x020, 2, picM.portio)
+  emu.accs.io.setPortio(0x040, 4, pit.portio)
+  emu.accs.io.setPortio(0x060, 1, kb.portio)
+  emu.accs.io.setPortio(0x064, 1, kb.portio)
+  emu.accs.io.setPortio(0x0a0, 2, picS.portio)
+  emu.accs.io.setPortio(0x092, 1, syscon.portio)
+  emu.accs.io.setPortio(0x3b4, 2, vga.getCrt().portio)
+  emu.accs.io.setPortio(0x3ba, 1, vga.portio)
+  emu.accs.io.setPortio(0x3c0, 2, vga.getAttr().portio)
   # `VGA::MOR` register write
-  result.accs.io.setPortio(0x3c2, 2, vga.portio)
-  result.accs.io.setPortio(0x3c4, 2, vga.getSeq().portio)
-  result.accs.io.setPortio(0x3c6, 4, vga.getDac().portio)
+  emu.accs.io.setPortio(0x3c2, 2, vga.portio)
+  emu.accs.io.setPortio(0x3c4, 2, vga.getSeq().portio)
+  emu.accs.io.setPortio(0x3c6, 4, vga.getDac().portio)
   # `VGA::MOR` register read
-  result.accs.io.setPortio(0x3cc, 1, vga.portio)
-  result.accs.io.setPortio(0x3ce, 2, vga.getGc().portio)
-  result.accs.io.setPortio(0x3d4, 2, vga.getCrt().portio)
-  result.accs.io.setPortio(0x3da, 1, vga.portio)
-  result.accs.io.setPortio(0x3f0, 8, result.fdd.portio)
-  result.accs.io.setPortio(0x3f8, 1, com.portio)
-  result.accs.io.setMemio(0xa0000, 0x20000, vga.memio)
+  emu.accs.io.setPortio(0x3cc, 1, vga.portio)
+  emu.accs.io.setPortio(0x3ce, 2, vga.getGc().portio)
+  emu.accs.io.setPortio(0x3d4, 2, vga.getCrt().portio)
+  emu.accs.io.setPortio(0x3da, 1, vga.portio)
+  emu.accs.io.setPortio(0x3f0, 8, emu.fdd.portio)
+  emu.accs.io.setPortio(0x3f8, 1, com.portio)
+  emu.accs.io.setMemio(0xa0000, 0x20000, vga.memio)
+
+  return emu
 
 proc loadBlob*(this: var Emulator, blob: var MemData, pos: uint32 = 0) =
   assertRef(this.accs.mem)

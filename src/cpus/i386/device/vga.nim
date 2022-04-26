@@ -435,49 +435,6 @@ type
 func logger*(s: Sequencer): EmuLogger = s.vga.logger
 func logger*(s: GraphicController): EmuLogger = s.vga.logger
 
-proc initCRT*(v: VGA): CRT
-proc initSequencer*(v: VGA): Sequencer
-proc initAttribute*(v: VGA): Attribute
-proc initDAC*(v: VGA): DAC
-proc initGraphicController*(v: VGA): GraphicController
-
-
-proc read8*(this: var VGA, offset: U32): U8
-proc write8*(this: var VGA, offset: U32, v: U8)
-
-proc in8*(this: var VGA, memAddr: U16): U8
-proc out8*(this: var VGA, memAddr: U16, v: U8)
-
-proc initVGA*(logger: EmuLogger): VGA =
-  var vga = VGA(logger: logger)
-
-  vga.portio = initPortIO(
-    "VGA",
-    outI = proc(memAddr: U16, value: U8) =
-      out8(vga, memAddr, value),
-    inI = proc(memAddr: U16): U8 =
-      in8(vga, memAddr)
-  )
-
-  vga.memio = initMemoryIO(
-    "VGA",
-    writeI = proc(memAddr: EPointer, value: U8) =
-      write8(vga, memAddr, value),
-    readI = proc(memAddr: EPointer): U8 =
-      read8(vga, memAddr)
-  )
-
-  vga.crt = initCRT(vga)
-  vga.seq = initSequencer(vga)
-  vga.gc = initGraphicController(vga)
-  vga.dac = initDAC(vga)
-  vga.attr = initAttribute(vga)
-
-  for i in 0 ..< 4:
-    vga.plane[i] = newSeqWith(1 shl 16, 0'u8)
-
-  return vga
-
 proc deleteVGA*(vga: var VGA): VGA =
   for i in 0 ..< 4:
     discard
@@ -502,153 +459,8 @@ proc getCrt*(this: var VGA): ptr CRT =
 proc getGc*(this: var VGA): ptr GraphicController =
   return addr this.gc
 
-proc initSequencer*(v: VGA): Sequencer =
-  result = Sequencer(vga: v)
-  for i in 0 ..< len(result.regs):
-    if not result.regs[i].isNil():
-      result.regs[i][] = 0
-
-  result.regs = [
-    0x1: nil,
-    0x2: pcast[U8](result.cmr),
-    0x3: pcast[U8](result.mapMr),
-    0x4: pcast[U8](result.cmsr),
-    0x5: pcast[U8](result.memMr),
-    0x6: nil,
-    0x7: nil,
-    0x8: nil
-  ]
-
-
 proc read*(this: var Sequencer, offset: U32): U8
 
-proc initCRT*(v: VGA): CRT =
-  new(result)
-  result.vga = v
-  for i in 0 ..< len(result.regs):
-    if not result.regs[i].isNil():
-      result.regs[i][] = 0
-
-  # http://www.osdever.net/FreeVGA/vga/crtcreg.htm
-  result.regs = [
-    # Index 00h -- Horizontal Total Register
-    0x00: addr result.htr.raw,
-    # Index 01h -- End Horizontal Display Register
-    0x01: addr result.hdeer.raw,
-    # Index 02h -- Start Horizontal Blanking Register
-    0x02: addr result.shbr.raw,
-    # Index 03h -- End Horizontal Blanking Register
-    0x03: addr result.ehbr.raw,
-    # Index 04h -- Start Horizontal Retrace Register
-    0x04: nil,
-    # Index 05h -- End Horizontal Retrace Register
-    0x05: nil,
-    # Index 06h -- Vertical Total Register
-    0x06: nil,
-    # Index 07h -- Overflow Register
-    0x07: nil,
-    # Index 08h -- Preset Row Scan Register
-    0x08: nil,
-    # Index 09h -- Maximum Scan Line Register
-    0x09: addr result.mslr.raw,
-    # Index 0Ah -- Cursor Start Register
-    0x0A: addr result.csr.raw,
-    # Index 0Bh -- Cursor End Register
-    0x0B: addr result.cer.raw,
-    # Index 0Ch -- Start Address High Register
-    0x0C: addr result.sahr.raw,
-    # Index 0Dh -- Start Address Low Register
-    0x0D: addr result.salr.raw,
-    # Index 0Eh -- Cursor Location High Register
-    0x0E: addr result.clhr.raw,
-    # Index 0Fh -- Cursor Location Low Register
-    0x0F: addr result.cllr.raw,
-    # Index 10h -- Vertical Retrace Start Register
-    0x10: nil,
-    # Index 11h -- Vertical Retrace End Register
-    0x11: nil,
-    # Index 12h -- Vertical Display End Register
-    0x12: addr result.vdeer.raw,
-    # Index 13h -- Offset Register
-    0x13: addr result.ofsr.raw,
-    # Index 14h -- Underline Location Register
-    0x14: nil,
-    # Index 15h -- Start Vertical Blanking Register
-    0x15: nil,
-    # Index 16h -- End Vertical Blanking
-    0x16: nil,
-    # Index 17h -- CRTC Mode Control Register
-    0x17: addr result.crtmcr.raw,
-    # Index 18h -- Line Compare Register
-    0x18: nil,
-  ]
-
-
-proc initGraphicController*(v: VGA): GraphicController =
-  result = GraphicController(vga: v)
-  for i in 0 ..< len(result.regs):
-    if not result.regs[i].isNil():
-      result.regs[i][] = 0
-
-  result.regs = [
-    0x1: pcast[U8](result.sr),
-    0x2: pcast[U8](result.esr),
-    0x3: pcast[U8](result.ccr),
-    0x4: pcast[U8](result.drr),
-    0x5: pcast[U8](result.rmsr),
-    0x6: pcast[U8](result.gmr),
-    0x7: pcast[U8](result.mr),
-    0x8: nil,
-    0x9: nil
-  ]
-
-proc initAttribute*(v: VGA): Attribute =
-  result = Attribute(vga: v)
-  for i in 0 ..< len(result.regs):
-    if not result.regs[i].isNil():
-      result.regs[i][] = 0
-
-  result.regs = [
-    0x01: pcast[U8](addr result.ipr[0x0]),
-    0x02: pcast[U8](addr result.ipr[0x1]),
-    0x03: pcast[U8](addr result.ipr[0x2]),
-    0x04: pcast[U8](addr result.ipr[0x3]),
-    0x05: pcast[U8](addr result.ipr[0x4]),
-    0x06: pcast[U8](addr result.ipr[0x5]),
-    0x07: pcast[U8](addr result.ipr[0x6]),
-    0x08: pcast[U8](addr result.ipr[0x7]),
-    0x09: pcast[U8](addr result.ipr[0x8]),
-    0x0A: pcast[U8](addr result.ipr[0x9]),
-    0x0B: pcast[U8](addr result.ipr[0xa]),
-    0x0C: pcast[U8](addr result.ipr[0xb]),
-    0x0D: pcast[U8](addr result.ipr[0xc]),
-    0x0E: pcast[U8](addr result.ipr[0xd]),
-    0x0F: pcast[U8](addr result.ipr[0xe]),
-    0x10: pcast[U8](addr result.ipr[0xf]),
-    0x11: pcast[U8](addr result.amcr),
-    0x12: nil,
-    0x13: pcast[U8](addr result.cper),
-    0x14: pcast[U8](addr result.hpelpr),
-    0x15: pcast[U8](addr result.csr)
-  ]
-
-proc initDAC*(v: VGA): DAC =
-  result = DAC(vga: v)
-
-# proc IO*(this: VGAMor): U8 = this.field1.IO
-# proc `IO=`*(this: var VGAMor, value: U8) = this.field1.IO = value
-# proc ER*(this: VGAMor): U8 = this.field1.ER
-# proc `ER=`*(this: var VGAMor, value: U8) = this.field1.ER = value
-# proc CLK0*(this: VGAMor): U8 = this.field1.CLK0
-# proc `CLK0=`*(this: var VGAMor, value: U8) = this.field1.CLK0 = value
-# proc CLK1*(this: VGAMor): U8 = this.field1.CLK1
-# proc `CLK1=`*(this: var VGAMor, value: U8) = this.field1.CLK1 = value
-# proc PS*(this: VGAMor): U8 = this.field1.PS
-# proc `PS=`*(this: var VGAMor, value: U8) = this.field1.PS = value
-# proc HSP*(this: VGAMor): U8 = this.field1.HSP
-# proc `HSP=`*(this: var VGAMor, value: U8) = this.field1.HSP = value
-# proc VSA*(this: VGAMor): U8 = this.field1.VSA
-# proc `VSA=`*(this: var VGAMor, value: U8) = this.field1.VSA = value
 proc INDX*(this: SequencerSar): U8 = this.field1.INDX
 proc `INDX=`*(this: var SequencerSar, value: U8) = this.field1.INDX = value
 proc f89DC*(this: SequencerCmr): U8 = this.field1.f89DC
@@ -928,7 +740,10 @@ proc out8*(this: var DAC, memAddr: U16, v: U8): void =
     else:
       assert false
 
-
+proc initDAC*(v: VGA): DAC =
+  var dac = DAC(vga: v)
+  dac.portio = wrapPortIO(dac, in8, out8)
+  return dac
 
 proc rgbImage*(this: var VGA, buffer: var seq[U8], size: int): void =
   ## Fill image buffer of `size*3` with `R,G,B` value triples
@@ -1115,6 +930,7 @@ proc out8*(this: var Sequencer, memAddr: U16, v: U8): void =
     else:
       discard
 
+
 proc in8*(this: var CRT, memAddr: U16): U8 =
   case memAddr:
     of 0x3b4, 0x3d4: return this.crtcar.raw
@@ -1132,8 +948,6 @@ proc out8*(this: var CRT, memAddr: U16, v: U8): void =
 
     else:
       discard
-
-
 
 proc in8*(this: var GraphicController, memAddr: U16): U8 =
   case memAddr:
@@ -1168,3 +982,163 @@ proc out8*(this: var Attribute, memAddr: U16, v: U8): void =
 
     else:
       discard
+
+proc initAttribute*(v: VGA): Attribute =
+  var attr = Attribute(vga: v)
+  for i in 0 ..< len(attr.regs):
+    if not attr.regs[i].isNil():
+      attr.regs[i][] = 0
+
+  attr.regs = [
+    0x01: pcast[U8](addr attr.ipr[0x0]),
+    0x02: pcast[U8](addr attr.ipr[0x1]),
+    0x03: pcast[U8](addr attr.ipr[0x2]),
+    0x04: pcast[U8](addr attr.ipr[0x3]),
+    0x05: pcast[U8](addr attr.ipr[0x4]),
+    0x06: pcast[U8](addr attr.ipr[0x5]),
+    0x07: pcast[U8](addr attr.ipr[0x6]),
+    0x08: pcast[U8](addr attr.ipr[0x7]),
+    0x09: pcast[U8](addr attr.ipr[0x8]),
+    0x0A: pcast[U8](addr attr.ipr[0x9]),
+    0x0B: pcast[U8](addr attr.ipr[0xa]),
+    0x0C: pcast[U8](addr attr.ipr[0xb]),
+    0x0D: pcast[U8](addr attr.ipr[0xc]),
+    0x0E: pcast[U8](addr attr.ipr[0xd]),
+    0x0F: pcast[U8](addr attr.ipr[0xe]),
+    0x10: pcast[U8](addr attr.ipr[0xf]),
+    0x11: pcast[U8](addr attr.amcr),
+    0x12: nil,
+    0x13: pcast[U8](addr attr.cper),
+    0x14: pcast[U8](addr attr.hpelpr),
+    0x15: pcast[U8](addr attr.csr)
+  ]
+
+  attr.portio = wrapPortIO(attr, in8, out8)
+
+  return attr
+
+proc initSequencer*(v: VGA): Sequencer =
+  var se = Sequencer(vga: v)
+  for i in 0 ..< len(se.regs):
+    if not se.regs[i].isNil():
+      se.regs[i][] = 0
+
+  se.regs = [
+    0x1: nil,
+    0x2: pcast[U8](se.cmr),
+    0x3: pcast[U8](se.mapMr),
+    0x4: pcast[U8](se.cmsr),
+    0x5: pcast[U8](se.memMr),
+    0x6: nil,
+    0x7: nil,
+    0x8: nil
+  ]
+
+  se.portio = wrapPortIO(se, in8, out8)
+
+  return se
+
+
+proc initGraphicController*(v: VGA): GraphicController =
+  var gc = GraphicController(vga: v)
+  for i in 0 ..< len(gc.regs):
+    if not gc.regs[i].isNil():
+      gc.regs[i][] = 0
+
+  gc.regs = [
+    0x1: pcast[U8](gc.sr),
+    0x2: pcast[U8](gc.esr),
+    0x3: pcast[U8](gc.ccr),
+    0x4: pcast[U8](gc.drr),
+    0x5: pcast[U8](gc.rmsr),
+    0x6: pcast[U8](gc.gmr),
+    0x7: pcast[U8](gc.mr),
+    0x8: nil,
+    0x9: nil
+  ]
+
+  gc.portio = wrapPortIO(gc, in8, out8)
+
+  return gc
+
+proc initCRT*(v: VGA): CRT =
+  var crt = CRT()
+  crt.vga = v
+  for i in 0 ..< len(crt.regs):
+    if not crt.regs[i].isNil():
+      crt.regs[i][] = 0
+
+  # http://www.osdever.net/FreeVGA/vga/crtcreg.htm
+  crt.regs = [
+    # Index 00h -- Horizontal Total Register
+    0x00: addr crt.htr.raw,
+    # Index 01h -- End Horizontal Display Register
+    0x01: addr crt.hdeer.raw,
+    # Index 02h -- Start Horizontal Blanking Register
+    0x02: addr crt.shbr.raw,
+    # Index 03h -- End Horizontal Blanking Register
+    0x03: addr crt.ehbr.raw,
+    # Index 04h -- Start Horizontal Retrace Register
+    0x04: nil,
+    # Index 05h -- End Horizontal Retrace Register
+    0x05: nil,
+    # Index 06h -- Vertical Total Register
+    0x06: nil,
+    # Index 07h -- Overflow Register
+    0x07: nil,
+    # Index 08h -- Preset Row Scan Register
+    0x08: nil,
+    # Index 09h -- Maximum Scan Line Register
+    0x09: addr crt.mslr.raw,
+    # Index 0Ah -- Cursor Start Register
+    0x0A: addr crt.csr.raw,
+    # Index 0Bh -- Cursor End Register
+    0x0B: addr crt.cer.raw,
+    # Index 0Ch -- Start Address High Register
+    0x0C: addr crt.sahr.raw,
+    # Index 0Dh -- Start Address Low Register
+    0x0D: addr crt.salr.raw,
+    # Index 0Eh -- Cursor Location High Register
+    0x0E: addr crt.clhr.raw,
+    # Index 0Fh -- Cursor Location Low Register
+    0x0F: addr crt.cllr.raw,
+    # Index 10h -- Vertical Retrace Start Register
+    0x10: nil,
+    # Index 11h -- Vertical Retrace End Register
+    0x11: nil,
+    # Index 12h -- Vertical Display End Register
+    0x12: addr crt.vdeer.raw,
+    # Index 13h -- Offset Register
+    0x13: addr crt.ofsr.raw,
+    # Index 14h -- Underline Location Register
+    0x14: nil,
+    # Index 15h -- Start Vertical Blanking Register
+    0x15: nil,
+    # Index 16h -- End Vertical Blanking
+    0x16: nil,
+    # Index 17h -- CRTC Mode Control Register
+    0x17: addr crt.crtmcr.raw,
+    # Index 18h -- Line Compare Register
+    0x18: nil,
+  ]
+
+  crt.portio = wrapPortIO(crt, in8, out8)
+
+  return crt
+
+proc initVGA*(logger: EmuLogger): VGA =
+  var vga = VGA(logger: logger)
+
+  vga.portio = wrapPortIO(vga, in8, out8)
+  vga.memio = wrapMemoryIO(vga, read8, write8)
+
+  vga.crt = initCRT(vga)
+  vga.seq = initSequencer(vga)
+  vga.gc = initGraphicController(vga)
+  vga.dac = initDAC(vga)
+  vga.attr = initAttribute(vga)
+
+  for i in 0 ..< 4:
+    vga.plane[i] = newSeqWith(1 shl 16, 0'u8)
+
+  return vga

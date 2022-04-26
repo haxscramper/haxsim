@@ -443,21 +443,6 @@ proc fdd_configure*(this: var FDD): void =
   this.conf.raw = cmd[1]
 
 
-proc initFDD*(): FDD =
-  new(result)
-  result.fddfuncs[FDD_READ_TRACK] = fddfunc_t(fdd_read_track)
-  result.fddfuncs[FDD_WRITE_DATA] = fddfunc_t(fdd_write_data)
-  result.fddfuncs[FDD_READ_DATA] = fddfunc_t(fdd_read_data)
-  result.fddfuncs[FDD_CONFIGURE] = fddfunc_t(fdd_configure)
-  for i in 0 ..< MAX_FDD:
-    result.drive[i] = nil
-  result.conf.EIS = 0
-  result.conf.EFIFO = 1
-  result.conf.POLL = 0
-  result.sra.raw = 0
-  result.srb.raw = 0
-  result.data_q.max = 0
-  # th = std.thread(addr FDD.worker, this)
 
 proc insert_disk*(this: var FDD, slot: uint8, fname: cstring, write: bool): bool =
   var d: ref DRIVE
@@ -552,3 +537,23 @@ proc worker*(this: var FDD): void =
     this.fddfuncs[mode](this)
     # this.CXX_SYNTAX_ERROR("*")[mode])()
     this.msr.CMD_BSY = 0
+
+proc initFDD*(): FDD =
+  var fdd = FDD()
+  fdd.fddfuncs[FDD_READ_TRACK] = fddfunc_t(fdd_read_track)
+  fdd.fddfuncs[FDD_WRITE_DATA] = fddfunc_t(fdd_write_data)
+  fdd.fddfuncs[FDD_READ_DATA] = fddfunc_t(fdd_read_data)
+  fdd.fddfuncs[FDD_CONFIGURE] = fddfunc_t(fdd_configure)
+  for i in 0 ..< MAX_FDD:
+    fdd.drive[i] = nil
+  fdd.conf.EIS = 0
+  fdd.conf.EFIFO = 1
+  fdd.conf.POLL = 0
+  fdd.sra.raw = 0
+  fdd.srb.raw = 0
+  fdd.data_q.max = 0
+  # th = std.thread(addr FDD.worker, this)
+
+  fdd.portio = wrapPortIO(fdd, in8, out8)
+
+  return fdd

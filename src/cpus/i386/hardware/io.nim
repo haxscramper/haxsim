@@ -4,7 +4,7 @@ import device/dev_io
 import std/tables
 
 type
-  IO* {.requiresinit.} = object
+  IO* = object
     memory*: Memory
     portIo*: Table[U16, PortIO] ## Memory address to the specific IO
     ## port.

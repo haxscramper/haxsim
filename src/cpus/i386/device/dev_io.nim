@@ -28,10 +28,29 @@ proc initPortIO*(
 
   PortIO(in8: inI, out8: outI, name: name)
 
+template wrapPortIO*(obj, inImpl, outImpl: untyped): untyped =
+  initPortIO(
+    $typeof(obj),
+    outI = proc(memAddr: U16, value: U8) =
+      out8(obj, memAddr, value),
+    inI = proc(memAddr: U16): U8 =
+      in8(obj, memAddr)
+  )
+
 proc initMemoryIO*(
     name: string, writeI: MemWrite8Impl, readI: MemRead8Impl): MemoryIO =
 
   MemoryIO(write8: writeI, read8: readI, name: name)
+
+template wrapMemoryIO*(obj, readImpl, writeImpl: untyped): untyped =
+  initMemoryIO(
+    $typeof(obj),
+    writeI = proc(memAddr: EPointer, value: U8) =
+      write8(obj, memAddr, value),
+    readI = proc(memAddr: EPointer): U8 =
+      read8(obj, memAddr)
+  )
+
 
 proc setMem*(this: var MemoryIO, mem: Memory, memAddr: U32, len: csizeT): void =
   assertRef(mem)
