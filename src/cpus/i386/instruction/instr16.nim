@@ -26,7 +26,7 @@ proc addR16Rm16*(this: var InstrImpl): void =
 
 proc addAxImm16*(this: var InstrImpl): void =
   var ax: U16
-  ax = CPU.getGPreg(AX)
+  ax = CPU[AX]
   CPU.setGPreg(AX, ax + this.imm16.U16)
   CPU.eflags.updateADD(ax, this.imm16.U16)
 
@@ -52,7 +52,7 @@ proc orR16Rm16*(this: var InstrImpl): void =
 
 proc orAxImm16*(this: var InstrImpl): void =
   var ax: U16
-  ax = CPU.getGPreg(AX)
+  ax = CPU[AX]
   CPU.setGPreg(AX, ax or this.imm16.U16)
   CPU.eflags.updateOR(ax, this.imm16.U16)
 
@@ -84,7 +84,7 @@ proc andR16Rm16*(this: var InstrImpl): void =
 
 proc andAxImm16*(this: var InstrImpl): void =
   var ax: U16
-  ax = CPU.getGPreg(AX)
+  ax = CPU[AX]
   CPU.setGPreg(AX, ax and this.imm16.U16)
   CPU.eflags.updateAND(ax, this.imm16.U16)
 
@@ -104,7 +104,7 @@ proc subR16Rm16*(this: var InstrImpl): void =
 
 proc subAxImm16*(this: var InstrImpl): void =
   var ax: U16
-  ax = CPU.getGPreg(AX)
+  ax = CPU[AX]
   CPU.setGPreg(AX, ax - this.imm16.U16)
   CPU.eflags.updateSUB(ax, this.imm16.U16)
 
@@ -122,7 +122,7 @@ proc xorR16Rm16*(this: var InstrImpl): void =
 
 proc xorAxImm16*(this: var InstrImpl): void =
   var ax: U16
-  ax = CPU.getGPreg(AX)
+  ax = CPU[AX]
   CPU.setGPreg(AX, ax xor this.imm16.U16)
 
 proc cmpRm16R16*(this: var InstrImpl): void =
@@ -139,7 +139,7 @@ proc cmpR16Rm16*(this: var InstrImpl): void =
 
 proc cmpAxImm16*(this: var InstrImpl): void =
   var ax: U16
-  ax = CPU.getGPreg(AX)
+  ax = CPU[AX]
   CPU.eflags.updateSUB(ax, this.imm16.U16)
 
 proc incR16*(this: var InstrImpl): void =
@@ -165,15 +165,15 @@ proc popR16*(this: var InstrImpl): void =
   CPU.setGPreg(Reg16T(reg), this.pop16())
 
 proc pusha*(this: var InstrImpl): void =
-  let sp: U16 = CPU.getGPreg(SP)
-  this.push16(CPU.getGPreg(AX))
-  this.push16(CPU.getGPreg(CX))
-  this.push16(CPU.getGPreg(DX))
-  this.push16(CPU.getGPreg(BX))
+  let sp: U16 = CPU[SP]
+  this.push16(CPU[AX])
+  this.push16(CPU[CX])
+  this.push16(CPU[DX])
+  this.push16(CPU[BX])
   this.push16(sp)
-  this.push16(CPU.getGPreg(BP))
-  this.push16(CPU.getGPreg(SI))
-  this.push16(CPU.getGPreg(DI))
+  this.push16(CPU[BP])
+  this.push16(CPU[SI])
+  this.push16(CPU[DI])
 
 proc popa*(this: var InstrImpl): void =
   var sp: U16
@@ -241,18 +241,18 @@ proc leaR16M16*(this: var InstrImpl): void =
 proc xchgR16Ax*(this: var InstrImpl): void =
   var ax, r16: U16
   r16 = this.exec.getR16()
-  ax = CPU.getGPreg(AX)
+  ax = CPU[AX]
   this.exec.setR16(ax)
   CPU.setGPreg(AX, r16)
 
 proc cbw*(this: var InstrImpl): void =
   var alS: int8
-  alS = CPU.getGPreg(AL).int8
+  alS = CPU[AL].int8
   CPU.setGPreg(AX, alS.U16)
 
 proc cwd*(this: var InstrImpl): void =
   var ax: U16
-  ax = CPU.getGPreg(AX)
+  ax = CPU[AX]
   CPU.setGPreg(DX, U16(if toBool(ax and (1 shl 15)): -1 else: 0))
 
 proc callfPtr1616*(this: var InstrImpl): void =
@@ -268,14 +268,14 @@ proc movAxMoffs16*(this: var InstrImpl): void =
   CPU.setGPreg(AX, this.exec.getMoffs16())
 
 proc movMoffs16Ax*(this: var InstrImpl): void =
-  this.exec.setMoffs16(CPU.getGPreg(AX))
+  this.exec.setMoffs16(CPU[AX])
 
 proc cmpsM8M8*(this: var InstrImpl): void =
   var m8D, m8S: U8
   var repeat = true
   while repeat:
-    m8S = ACS.getData8(this.exec.selectSegment(), CPU.getGPreg(SI))
-    m8D = ACS.getData8(ES, CPU.getGPreg(DI))
+    m8S = ACS.getData8(this.exec.selectSegment(), CPU[SI])
+    m8D = ACS.getData8(ES, CPU[DI])
     CPU.eflags.updateSUB(m8S, m8D)
     CPU.updateGPreg(SI, int16(if this.eflags.isDirection(): -1 else: 1))
     CPU.updateGPreg(DI, int16(if this.eflags.isDirection(): -1 else: 1))
@@ -283,11 +283,11 @@ proc cmpsM8M8*(this: var InstrImpl): void =
       CPU.updateGPreg(CX, -1)
       case this.getPreRepeat():
         of REPZ:
-          if not(CPU.getGPreg(CX)).toBool() or not(this.eflags.isZero()):
+          if not(CPU[CX]).toBool() or not(this.eflags.isZero()):
             repeat = false
 
         of REPNZ:
-          if not(CPU.getGPreg(CX)).toBool() or this.eflags.isZero():
+          if not(CPU[CX]).toBool() or this.eflags.isZero():
             repeat = false
 
         else:
@@ -298,8 +298,8 @@ proc cmpsM16M16*(this: var InstrImpl): void =
   var m16D, m16S: U16
   var repeat = true
   while repeat:
-    m16S = ACS.getData16(this.exec.selectSegment(), CPU.getGPreg(SI))
-    m16D = ACS.getData16(ES, CPU.getGPreg(DI))
+    m16S = ACS.getData16(this.exec.selectSegment(), CPU[SI])
+    m16D = ACS.getData16(ES, CPU[DI])
     CPU.eflags.updateSUB(m16S, m16D)
     CPU.updateGPreg(SI, (if this.eflags.isDirection(): -1 else: 1))
     CPU.updateGPreg(DI, (if this.eflags.isDirection(): -1 else: 1))
@@ -307,11 +307,11 @@ proc cmpsM16M16*(this: var InstrImpl): void =
       CPU.updateGPreg(CX, -1)
       case this.getPreRepeat():
         of REPZ:
-          if not(CPU.getGPreg(CX)).toBool() or not(this.eflags.isZero()):
+          if not(CPU[CX]).toBool() or not(this.eflags.isZero()):
             repeat = false
 
         of REPNZ:
-          if not(CPU.getGPreg(CX)).toBool() or this.eflags.isZero():
+          if not(CPU[CX]).toBool() or this.eflags.isZero():
             repeat = false
 
         else:
@@ -320,7 +320,7 @@ proc cmpsM16M16*(this: var InstrImpl): void =
 
 proc testAxImm16*(this: var InstrImpl): void =
   var ax: U16
-  ax = CPU.getGPreg(AX)
+  ax = CPU[AX]
   CPU.eflags.updateAND(ax, this.imm16.U16)
 
 proc movR16Imm16*(this: var InstrImpl): void =
@@ -335,7 +335,7 @@ proc movRm16Imm16*(this: var InstrImpl): void =
 
 proc leave*(this: var InstrImpl): void =
   var ebp: U16
-  ebp = CPU.getGPreg(EBP).U16()
+  ebp = CPU[EBP].U16()
   CPU.setGPreg(ESP, ebp)
   CPU.setGPreg(EBP, this.pop16())
 
@@ -344,7 +344,7 @@ proc inAxImm8*(this: var InstrImpl): void =
 
 proc outImm8Ax*(this: var InstrImpl): void =
   var ax: U16
-  ax = CPU.getGPreg(AX).U16()
+  ax = CPU[AX].U16()
   EIO.outIo16(this.imm8.U16, ax)
 
 proc callRel16*(this: var InstrImpl): void =
@@ -359,13 +359,13 @@ proc jmpfPtr1616*(this: var InstrImpl): void =
 
 proc inAxDx*(this: var InstrImpl): void =
   var dx: U16
-  dx = CPU.getGPreg(DX).U16()
+  dx = CPU[DX].U16()
   CPU.setGPreg(AX, EIO.inIo16(dx))
 
 proc outDxAx*(this: var InstrImpl): void =
   var ax, dx: U16
-  dx = CPU.getGPreg(DX)
-  ax = CPU.getGPreg(AX)
+  dx = CPU[DX]
+  ax = CPU[AX]
   EIO.outIo16(dx, ax)
 
 template JCCREL16*(cc: untyped, isFlag: untyped): untyped {.dirty.} =
@@ -551,7 +551,7 @@ proc shlRm16Cl*(this: var InstrImpl): void =
   var rm16: U16
   var cl: U8
   rm16 = this.exec.getRm16()
-  cl = CPU.getGPreg(CL)
+  cl = CPU[CL]
   this.exec.setRm16(rm16 shl cl)
   CPU.eflags.updateSHL(rm16, cl.U8)
 
@@ -559,7 +559,7 @@ proc shrRm16Cl*(this: var InstrImpl): void =
   var rm16: U16
   var cl: U8
   rm16 = this.exec.getRm16()
-  cl = CPU.getGPreg(CL)
+  cl = CPU[CL]
   this.exec.setRm16(rm16 shr cl)
   CPU.eflags.updateSHR(rm16, cl.U8)
 
@@ -567,7 +567,7 @@ proc salRm16Cl*(this: var InstrImpl): void =
   var rm16S: int16
   var cl: U8
   rm16S = this.exec.getRm16().int16
-  cl = CPU.getGPreg(CL)
+  cl = CPU[CL]
   this.exec.setRm16(U16(rm16S shl cl))
 
 
@@ -575,7 +575,7 @@ proc sarRm16Cl*(this: var InstrImpl): void =
   var rm16S: int16
   var cl: U8
   rm16S = this.exec.getRm16().int16
-  cl = CPU.getGPreg(CL)
+  cl = CPU[CL]
   this.exec.setRm16(U16(rm16S shr cl))
 
 
@@ -602,7 +602,7 @@ proc mulDxAxRm16*(this: var InstrImpl): void =
   var ax, rm16: U16
   var val: U32
   rm16 = this.exec.getRm16()
-  ax = CPU.getGPreg(AX)
+  ax = CPU[AX]
   val = ax * rm16
   CPU.setGPreg(AX, U16(val and ((1 shl 16) - 1)))
   CPU.setGPreg(DX, U16((val shr 16) and ((1 shl 16) - 1)))
@@ -612,7 +612,7 @@ proc imulDxAxRm16*(this: var InstrImpl): void =
   var axS, rm16S: int16
   var valS: int32
   rm16S = this.exec.getRm16().int16
-  axS = CPU.getGPreg(AX).int16
+  axS = CPU[AX].int16
   valS = axS * rm16S
   CPU.setGPreg(AX, U16(valS and ((1 shl 16) - 1)))
   CPU.setGPreg(DX, U16((valS shr 16) and ((1 shl 16) - 1)))
@@ -624,7 +624,7 @@ proc divDxAxRm16*(this: var InstrImpl): void =
   if rm16 == 0:
     raise newException(EXP_DE, "divider was zero")
 
-  var val: U32 = (CPU.getGPreg(DX) shl 16) or CPU.getGPreg(AX)
+  var val: U32 = (CPU[DX] shl 16) or CPU[AX]
   CPU.setGPreg(AX, U16(val div rm16))
   CPU.setGPreg(DX, U16(val mod rm16))
 
@@ -635,7 +635,7 @@ proc idivDxAxRm16*(this: var InstrImpl): void =
     raise newException(EXP_DE, "divider was zero")
   # if not(rm16S.toBool()): raise newException(EXPDE, "")
 
-  var valS: int32 = int32((CPU.getGPreg(DX) shl 16) or CPU.getGPreg(AX))
+  var valS: int32 = int32((CPU[DX] shl 16) or CPU[AX])
   CPU.setGPreg(AX, U16(valS div rm16S))
   CPU.setGPreg(DX, U16(valS mod rm16S))
 

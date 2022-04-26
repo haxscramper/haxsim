@@ -104,7 +104,7 @@ type
     dacsr*: DACDacsr
     pelmr*: DACPelmr
 
-  VGAMor* {.union.} = object
+  VGAMor* = object
     ## "Miscelaneous Output Registers". Read at `0x3CC`, write at `0x3C2`.
     ## http://www.osdever.net/FreeVGA/vga/extreg.htm#3CCR3C2W
     IO* {.bitsize: 1.}: U8 ## This bit selects the CRT controller
@@ -335,9 +335,12 @@ type
     field1*: CRTEhbrField1
 
   GraphicControllerMr* = object
-    GM* {.bitsize: 1.}: U8
-    OE* {.bitsize: 1.}: U8
-    MM* {.bitsize: 2.}: U8
+    ## "Miscellaneous Graphics Register" Index 06h.,
+    GM* {.bitsize: 1.}: U8 ##  "This bit controls alphanumeric mode
+    ## addressing. When set to 1, this bit selects graphics modes, which
+    ## also disables the character generator latches."
+    OE* {.bitsize: 1.}: U8 ## Odd/Even Enable
+    MM* {.bitsize: 2.}: U8 ## "Memory Map" register
 
   AttributeAcarField1* = object
     INDX* {.bitsize: 5.}: U8

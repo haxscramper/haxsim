@@ -32,8 +32,7 @@ proc setPortio*(this: var IO, memAddr: U16, len: csizeT, dev: PortIO): void =
 
 proc getPortioBase*(this: var IO, memAddr: U16): U16 =
   for i in 0 ..< 5:
-    var base: U16 = (memAddr and (not(1.U16))) - U16(2 * i)
-    echov memAddr, base
+    let base: U16 = (memAddr and (not(1.U16))) - U16(2 * i)
     if base in this.portIoMap:
       if memAddr < base + this.portIoMap[base]:
         return base

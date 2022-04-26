@@ -73,9 +73,11 @@ proc initEmulator*(set: EmuSetting, logger: EmuLogger): Emulator =
   result.accs.io.setPortio(0x3b4, 2, vga.getCrt().portio)
   result.accs.io.setPortio(0x3ba, 1, vga.portio)
   result.accs.io.setPortio(0x3c0, 2, vga.getAttr().portio)
+  # `VGA::MOR` register write
   result.accs.io.setPortio(0x3c2, 2, vga.portio)
   result.accs.io.setPortio(0x3c4, 2, vga.getSeq().portio)
   result.accs.io.setPortio(0x3c6, 4, vga.getDac().portio)
+  # `VGA::MOR` register read
   result.accs.io.setPortio(0x3cc, 1, vga.portio)
   result.accs.io.setPortio(0x3ce, 2, vga.getGc().portio)
   result.accs.io.setPortio(0x3d4, 2, vga.getCrt().portio)
@@ -88,10 +90,12 @@ proc loadBlob*(this: var Emulator, blob: var MemData, pos: uint32 = 0) =
   assertRef(this.accs.mem)
   this.accs.mem.writeDataBlob(pos, blob)
 
-proc loadBinary*(this: var Emulator, fname: cstring, memAddr: uint32, offset: uint32, size: int64): void =
-  var fp: FILE
+proc loadBinary*(
+    this: var Emulator, fname: cstring, memAddr: uint32,
+    offset: uint32, size: int64): void =
+
   var size = size
-  fp = open($fname, fmRead)
+  var fp: FILE = open($fname, fmRead)
   if not(fp.toBool()):
     return
 
