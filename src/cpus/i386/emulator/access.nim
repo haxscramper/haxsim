@@ -314,8 +314,6 @@ proc writeMem8Seg*(this: var DataAccess, seg: SgRegT, memAddr: U32, v: U8) =
   else:
     this.mem.writeMem8(paddr, v)
 
-
-
 proc execMem8Seg*(this: var DataAccess, seg: SgRegT, memAddr: U32): U8 =
   let pos = this.transVirtualToPhysical(MODEEXEC, seg, memAddr)
   return this.mem.readMem8(pos)

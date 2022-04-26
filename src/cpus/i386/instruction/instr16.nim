@@ -732,7 +732,7 @@ proc codeC1*(this: var InstrImpl) =
     of 6: this.salRm16Imm8()
     of 7: this.sarRm16Imm8()
     else:
-      ERROR("not implemented: 0xc1 /%d\\n", this.getModrmReg())
+      ERROR("not implemented: 0xC1 /%d\\n", this.getModrmReg())
 
 proc codeD3*(this: var InstrImpl) =
   case this.getModrmReg():
@@ -741,7 +741,7 @@ proc codeD3*(this: var InstrImpl) =
     of 6: this.salRm16Cl()
     of 7: this.sarRm16Cl()
     else:
-      ERROR("not implemented: 0xd3 /%d\\n", this.getModrmReg())
+      ERROR("not implemented: 0xD3 /%d\\n", this.getModrmReg())
 
 proc codeF7*(this: var InstrImpl) =
   case this.getModrmReg():
@@ -753,7 +753,7 @@ proc codeF7*(this: var InstrImpl) =
     of 6: this.divDxAxRm16()
     of 7: this.idivDxAxRm16()
     else:
-      ERROR("not implemented: 0xf7 /%d\\n", this.getModrmReg())
+      ERROR("not implemented: 0xF7 /%d\\n", this.getModrmReg())
 
 proc codeFf*(this: var InstrImpl) =
   case this.getModrmReg():
@@ -765,19 +765,19 @@ proc codeFf*(this: var InstrImpl) =
     of 5: this.jmpfM1616()
     of 6: this.pushRm16()
     else:
-      ERROR("not implemented: 0xff /%d\\n", this.getModrmReg())
+      ERROR("not implemented: 0xFF /%d\\n", this.getModrmReg())
 
 proc code0f00*(this: var InstrImpl) =
   case this.getModrmReg():
     of 3: this.ltrRm16()
-    else: ERROR("not implemented: 0x0f00 /%d\\n", this.getModrmReg())
+    else: ERROR("not implemented: 0x0F00 /%d\\n", this.getModrmReg())
 
 proc code0f01*(this: var InstrImpl) =
   case this.getModrmReg():
     of 2: this.lgdtM24()
     of 3: this.lidtM24()
     else:
-      ERROR("not implemented: 0x0f01 /%d\\n", this.getModrmReg())
+      ERROR("not implemented: 0x0F01 /%d\\n", this.getModrmReg())
 
 
 proc initInstrImpl16*(r: var InstrImpl, instr: ExecInstr) =
@@ -794,13 +794,13 @@ proc initInstrImpl16*(r: var InstrImpl, instr: ExecInstr) =
 
   r.setFuncflag(U16(0x09), instr16(orRm16R16),        CHKMODRM)
 
-  r.setFuncflag(U16(0x0b), instr16(orR16Rm16),        CHKMODRM)
+  r.setFuncflag(U16(0x0B), instr16(orR16Rm16),        CHKMODRM)
 
-  r.setFuncflag(U16(0x0d), instr16(orAxImm16),        CHKIMM16)
+  r.setFuncflag(U16(0x0D), instr16(orAxImm16),        CHKIMM16)
   r.setFuncflag(U16(0x16), instr16(pushSs),           {})
   r.setFuncflag(U16(0x17), instr16(popSs),            {})
-  r.setFuncflag(U16(0x1e), instr16(pushDs),           {})
-  r.setFuncflag(U16(0x1f), instr16(popDs),            {})
+  r.setFuncflag(U16(0x1E), instr16(pushDs),           {})
+  r.setFuncflag(U16(0x1F), instr16(popDs),            {})
 
   r.setFuncflag(U16(0x21), instr16(andRm16R16),       CHKMODRM)
 
@@ -810,9 +810,9 @@ proc initInstrImpl16*(r: var InstrImpl, instr: ExecInstr) =
 
   r.setFuncflag(U16(0x29), instr16(subRm16R16),       CHKMODRM)
 
-  r.setFuncflag(U16(0x2b), instr16(subR16Rm16),       CHKMODRM)
+  r.setFuncflag(U16(0x2B), instr16(subR16Rm16),       CHKMODRM)
 
-  r.setFuncflag(U16(0x2d), instr16(subAxImm16),       CHKIMM16)
+  r.setFuncflag(U16(0x2D), instr16(subAxImm16),       CHKIMM16)
 
   r.setFuncflag(U16(0x31), instr16(xorRm16R16),       CHKMODRM)
 
@@ -822,9 +822,9 @@ proc initInstrImpl16*(r: var InstrImpl, instr: ExecInstr) =
 
   r.setFuncflag(U16(0x39), instr16(cmpRm16R16),       CHKMODRM)
 
-  r.setFuncflag(U16(0x3b), instr16(cmpR16Rm16),       CHKMODRM)
+  r.setFuncflag(U16(0x3B), instr16(cmpR16Rm16),       CHKMODRM)
 
-  r.setFuncflag(U16(0x3d), instr16(cmpAxImm16),       CHKIMM16)
+  r.setFuncflag(U16(0x3D), instr16(cmpAxImm16),       CHKIMM16)
 
   for i in 0 .. 7: r.setFuncflag(U16(0x40 + i), instr16(incR16), {})
   for i in 0 .. 7: r.setFuncflag(U16(0x48 + i), instr16(decR16), {})
@@ -835,8 +835,8 @@ proc initInstrImpl16*(r: var InstrImpl, instr: ExecInstr) =
   r.setFuncflag(U16(0x61), instr16(popa),             {})
   r.setFuncflag(U16(0x68), instr16(pushImm16),        CHKIMM16)
   r.setFuncflag(U16(0x69), instr16(imulR16Rm16Imm16), CHKMODRM + CHKIMM16)
-  r.setFuncflag(U16(0x6a), instr16(pushImm8),         CHKIMM8)
-  r.setFuncflag(U16(0x6b), instr16(imulR16Rm16Imm8),  CHKMODRM + CHKIMM8)
+  r.setFuncflag(U16(0x6A), instr16(pushImm8),         CHKIMM8)
+  r.setFuncflag(U16(0x6B), instr16(imulR16Rm16Imm8),  CHKMODRM + CHKIMM8)
 
 
   r.setFuncflag(U16(0x85), instr16(testRm16R16),  CHKMODRM)
@@ -845,76 +845,76 @@ proc initInstrImpl16*(r: var InstrImpl, instr: ExecInstr) =
 
   r.setFuncflag(U16(0x89), instr16(movRm16R16),   CHKMODRM)
 
-  r.setFuncflag(U16(0x8b), instr16(movR16Rm16),   CHKMODRM)
-  r.setFuncflag(U16(0x8c), instr16(movRm16Sreg),  CHKMODRM)
-  r.setFuncflag(U16(0x8d), instr16(leaR16M16),    CHKMODRM)
+  r.setFuncflag(U16(0x8B), instr16(movR16Rm16),   CHKMODRM)
+  r.setFuncflag(U16(0x8C), instr16(movRm16Sreg),  CHKMODRM)
+  r.setFuncflag(U16(0x8D), instr16(leaR16M16),    CHKMODRM)
 
   for i in 0 .. 7: r.setFuncflag(U16(0x90 + i), instr16(xchgR16Ax), CHKIMM16)
 
   r.setFuncflag(U16(0x98), instr16(cbw),          {})
   r.setFuncflag(U16(0x99), instr16(cwd),          {})
-  r.setFuncflag(U16(0x9a), instr16(callfPtr1616), CHKPTR16 + CHKIMM16)
-  r.setFuncflag(U16(0x9c), instr16(pushf),        {})
-  r.setFuncflag(U16(0x9d), instr16(popf),         {})
+  r.setFuncflag(U16(0x9A), instr16(callfPtr1616), CHKPTR16 + CHKIMM16)
+  r.setFuncflag(U16(0x9C), instr16(pushf),        {})
+  r.setFuncflag(U16(0x9D), instr16(popf),         {})
 
-  r.setFuncflag(U16(0xa1), instr16(movAxMoffs16), CHKMOFFS)
+  r.setFuncflag(U16(0xA1), instr16(movAxMoffs16), CHKMOFFS)
 
-  r.setFuncflag(U16(0xa3), instr16(movMoffs16Ax), CHKMOFFS)
-  r.setFuncflag(U16(0xa6), instr16(cmpsM8M8),     {})
-  r.setFuncflag(U16(0xa7), instr16(cmpsM16M16),   {})
+  r.setFuncflag(U16(0xA3), instr16(movMoffs16Ax), CHKMOFFS)
+  r.setFuncflag(U16(0xA6), instr16(cmpsM8M8),     {})
+  r.setFuncflag(U16(0xA7), instr16(cmpsM16M16),   {})
 
-  r.setFuncflag(U16(0xa9), instr16(testAxImm16),  CHKIMM16)
+  r.setFuncflag(U16(0xA9), instr16(testAxImm16),  CHKIMM16)
 
   for i in 0 .. 7:
-    r.setFuncflag(U16(0xb8 + i), instr16(movR16Imm16),  CHKIMM16)
+    r.setFuncflag(U16(0xB8 + i), instr16(movR16Imm16),  CHKIMM16)
 
-  r.setFuncflag(U16(0xc3), instr16(ret),          {})
-  r.setFuncflag(U16(0xc7), instr16(movRm16Imm16), CHKMODRM + CHKIMM16)
-  r.setFuncflag(U16(0xc9), instr16(leave),        {})
-
-
-  r.setFuncflag(U16(0xe5), instr16(inAxImm8),    CHKIMM8)
-
-  r.setFuncflag(U16(0xe7), instr16(outImm8Ax),   CHKIMM8)
-  r.setFuncflag(U16(0xe8), instr16(callRel16),   CHKIMM16)
-  r.setFuncflag(U16(0xe9), instr16(jmpRel16),    CHKIMM16)
-  r.setFuncflag(U16(0xea), instr16(jmpfPtr1616), CHKPTR16 + CHKIMM16)
+  r.setFuncflag(U16(0xC3), instr16(ret),          {})
+  r.setFuncflag(U16(0xC7), instr16(movRm16Imm16), CHKMODRM + CHKIMM16)
+  r.setFuncflag(U16(0xC9), instr16(leave),        {})
 
 
-  r.setFuncflag(U16(0xed), instr16(inAxDx), {})
+  r.setFuncflag(U16(0xE5), instr16(inAxImm8),    CHKIMM8)
 
-  r.setFuncflag(U16(0xef), instr16(outDxAx), {})
-  r.setFuncflag(U16(0x0f80), instr16(joRel16), CHKIMM16)
-  r.setFuncflag(U16(0x0f81), instr16(jnoRel16), CHKIMM16)
-  r.setFuncflag(U16(0x0f82), instr16(jbRel16), CHKIMM16)
-  r.setFuncflag(U16(0x0f83), instr16(jnbRel16), CHKIMM16)
-  r.setFuncflag(U16(0x0f84), instr16(jzRel16), CHKIMM16)
-  r.setFuncflag(U16(0x0f85), instr16(jnzRel16), CHKIMM16)
-  r.setFuncflag(U16(0x0f86), instr16(jbeRel16), CHKIMM16)
-  r.setFuncflag(U16(0x0f87), instr16(jaRel16), CHKIMM16)
-  r.setFuncflag(U16(0x0f88), instr16(jsRel16), CHKIMM16)
-  r.setFuncflag(U16(0x0f89), instr16(jnsRel16), CHKIMM16)
-  r.setFuncflag(U16(0x0f8a), instr16(jpRel16), CHKIMM16)
-  r.setFuncflag(U16(0x0f8b), instr16(jnpRel16), CHKIMM16)
-  r.setFuncflag(U16(0x0f8c), instr16(jlRel16), CHKIMM16)
-  r.setFuncflag(U16(0x0f8d), instr16(jnlRel16), CHKIMM16)
-  r.setFuncflag(U16(0x0f8e), instr16(jleRel16), CHKIMM16)
-  r.setFuncflag(U16(0x0f8f), instr16(jnleRel16), CHKIMM16)
-  r.setFuncflag(U16(0x0faf), instr16(imulR16Rm16), CHKMODRM)
-  r.setFuncflag(U16(0x0fb6), instr16(movzxR16Rm8), CHKMODRM)
-  r.setFuncflag(U16(0x0fb7), instr16(movzxR16Rm16), CHKMODRM)
-  r.setFuncflag(U16(0x0fbe), instr16(movsxR16Rm8), CHKMODRM)
-  r.setFuncflag(U16(0x0fbf), instr16(movsxR16Rm16), CHKMODRM)
+  r.setFuncflag(U16(0xE7), instr16(outImm8Ax),   CHKIMM8)
+  r.setFuncflag(U16(0xE8), instr16(callRel16),   CHKIMM16)
+  r.setFuncflag(U16(0xE9), instr16(jmpRel16),    CHKIMM16)
+  r.setFuncflag(U16(0xEA), instr16(jmpfPtr1616), CHKPTR16 + CHKIMM16)
+
+
+  r.setFuncflag(U16(0xED), instr16(inAxDx), {})
+
+  r.setFuncflag(U16(0xEF), instr16(outDxAx), {})
+  r.setFuncflag(U16(0x0F80), instr16(joRel16), CHKIMM16)
+  r.setFuncflag(U16(0x0F81), instr16(jnoRel16), CHKIMM16)
+  r.setFuncflag(U16(0x0F82), instr16(jbRel16), CHKIMM16)
+  r.setFuncflag(U16(0x0F83), instr16(jnbRel16), CHKIMM16)
+  r.setFuncflag(U16(0x0F84), instr16(jzRel16), CHKIMM16)
+  r.setFuncflag(U16(0x0F85), instr16(jnzRel16), CHKIMM16)
+  r.setFuncflag(U16(0x0F86), instr16(jbeRel16), CHKIMM16)
+  r.setFuncflag(U16(0x0F87), instr16(jaRel16), CHKIMM16)
+  r.setFuncflag(U16(0x0F88), instr16(jsRel16), CHKIMM16)
+  r.setFuncflag(U16(0x0F89), instr16(jnsRel16), CHKIMM16)
+  r.setFuncflag(U16(0x0F8A), instr16(jpRel16), CHKIMM16)
+  r.setFuncflag(U16(0x0F8B), instr16(jnpRel16), CHKIMM16)
+  r.setFuncflag(U16(0x0F8C), instr16(jlRel16), CHKIMM16)
+  r.setFuncflag(U16(0x0F8D), instr16(jnlRel16), CHKIMM16)
+  r.setFuncflag(U16(0x0F8E), instr16(jleRel16), CHKIMM16)
+  r.setFuncflag(U16(0x0F8F), instr16(jnleRel16), CHKIMM16)
+  r.setFuncflag(U16(0x0FAF), instr16(imulR16Rm16), CHKMODRM)
+  r.setFuncflag(U16(0x0FB6), instr16(movzxR16Rm8), CHKMODRM)
+  r.setFuncflag(U16(0x0FB7), instr16(movzxR16Rm16), CHKMODRM)
+  r.setFuncflag(U16(0x0FBE), instr16(movsxR16Rm8), CHKMODRM)
+  r.setFuncflag(U16(0x0FBF), instr16(movsxR16Rm16), CHKMODRM)
 
   r.setFuncflag(U16(0x81), instr16(code81), CHKMODRM + CHKIMM16)
   r.setFuncflag(U16(0x83), instr16(code81), CHKMODRM + CHKIMM8)
 
-  r.setFuncflag(U16(0xc1), instr16(codeC1), CHKMODRM + CHKIMM8)
-  r.setFuncflag(U16(0xd3), instr16(codeD3), CHKMODRM)
-  r.setFuncflag(U16(0xf7), instr16(codeF7), CHKMODRM)
-  r.setFuncflag(U16(0xff), instr16(codeFf), CHKMODRM)
-  r.setFuncflag(U16(0x0f00), instr16(code0f00), CHKMODRM)
-  r.setFuncflag(U16(0x0f01), instr16(code0f01), CHKMODRM)
+  r.setFuncflag(U16(0xC1), instr16(codeC1), CHKMODRM + CHKIMM8)
+  r.setFuncflag(U16(0xD3), instr16(codeD3), CHKMODRM)
+  r.setFuncflag(U16(0xF7), instr16(codeF7), CHKMODRM)
+  r.setFuncflag(U16(0xFF), instr16(codeFf), CHKMODRM)
+  r.setFuncflag(U16(0x0F00), instr16(code0f00), CHKMODRM)
+  r.setFuncflag(U16(0x0F01), instr16(code0f01), CHKMODRM)
 
 
 proc initInstrImpl16*(instr: ExecInstr): InstrImpl =

@@ -73,23 +73,30 @@ proc initEmulator*(set: EmuSetting, logger: EmuLogger): Emulator =
   emu.accs.io.setPortio(0x040, 4, pit.portio)
   emu.accs.io.setPortio(0x060, 1, kb.portio)
   emu.accs.io.setPortio(0x064, 1, kb.portio)
-  emu.accs.io.setPortio(0x0a0, 2, picS.portio)
+  emu.accs.io.setPortio(0x0A0, 2, picS.portio)
   emu.accs.io.setPortio(0x092, 1, syscon.portio)
-  emu.accs.io.setPortio(0x3b4, 2, vga.getCrt().portio)
-  emu.accs.io.setPortio(0x3ba, 1, vga.portio)
-  emu.accs.io.setPortio(0x3c0, 2, vga.getAttr().portio)
-  # `VGA::MOR` register write
-  emu.accs.io.setPortio(0x3c2, 2, vga.portio)
-  emu.accs.io.setPortio(0x3c4, 2, vga.getSeq().portio)
-  emu.accs.io.setPortio(0x3c6, 4, vga.getDac().portio)
-  # `VGA::MOR` register read
-  emu.accs.io.setPortio(0x3cc, 1, vga.portio)
-  emu.accs.io.setPortio(0x3ce, 2, vga.getGc().portio)
-  emu.accs.io.setPortio(0x3d4, 2, vga.getCrt().portio)
-  emu.accs.io.setPortio(0x3da, 1, vga.portio)
-  emu.accs.io.setPortio(0x3f0, 8, emu.fdd.portio)
-  emu.accs.io.setPortio(0x3f8, 1, com.portio)
-  emu.accs.io.setMemio(0xa0000, 0x20000, vga.memio)
+  block: # VGA configuration
+    # Configuration registers for various parts of the VGA device.
+    #
+    # Two-byte ports provide access to all registers using
+    # `[<index-selector>]`, `[<actual-register>]` approach. First byte
+    # selects index of the regiser, second one actually writes to
+    # registers.
+
+    emu.accs.io.setPortio(0x3B4, 2, vga.getCrt().portio)
+    emu.accs.io.setPortio(0x3BA, 1, vga.portio)
+    emu.accs.io.setPortio(0x3C0, 2, vga.getAttr().portio)
+    emu.accs.io.setPortio(0x3C2, 2, vga.portio)
+    emu.accs.io.setPortio(0x3C4, 2, vga.getSeq().portio)
+    emu.accs.io.setPortio(0x3C6, 4, vga.getDac().portio)
+    emu.accs.io.setPortio(0x3CC, 1, vga.portio)
+    emu.accs.io.setPortio(0x3CE, 2, vga.getGc().portio)
+    emu.accs.io.setPortio(0x3D4, 2, vga.getCrt().portio)
+    emu.accs.io.setPortio(0x3DA, 1, vga.portio)
+
+  emu.accs.io.setPortio(0x3F0, 8, emu.fdd.portio)
+  emu.accs.io.setPortio(0x3F8, 1, com.portio)
+  emu.accs.io.setMemio(0xA0000, 0x20000, vga.memio)
 
   return emu
 
