@@ -247,10 +247,10 @@ proc setGpreg*(this: var Processor, n: Reg8T, v: U8): void =
 proc `[]=`*(this: var Processor, reg: Reg8T, value: U8) =
   this.setGPreg(reg, value)
 
-proc `[]=`*(this: var Processor, reg: Reg16T, value: U16): U16 =
+proc `[]=`*(this: var Processor, reg: Reg16T, value: U16) =
   this.setGPreg(reg, value)
 
-proc `[]=`*(this: var Processor, reg: Reg32T, value: U32): U32 =
+proc `[]=`*(this: var Processor, reg: Reg32T, value: U32) =
   this.setGPreg(reg, value)
 
 proc setSgreg*(this: var Processor, n: SgRegT, reg: SGRegister): void =

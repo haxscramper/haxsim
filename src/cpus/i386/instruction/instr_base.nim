@@ -36,7 +36,7 @@ proc addR8Rm8*(this: var InstrImpl): void =
 
 proc addAlImm8*(this: var InstrImpl): void =
   let al = CPU[AL]
-  CPU.setGPreg(AL, al + this.imm8.U8)
+  CPU[AL] = al + this.imm8.U8
   CPU.eflags.updateADD(al, this.imm8.U32)
 
 proc orRm8R8*(this: var InstrImpl): void =
@@ -47,7 +47,7 @@ proc orRm8R8*(this: var InstrImpl): void =
 
 proc orAlImm8*(this: var InstrImpl): void =
   let al = CPU[AL]
-  CPU.setGPreg(AL, al or this.imm8.U8)
+  CPU[AL] = al or this.imm8.U8
   CPU.eflags.updateOR(al, this.imm8.U8)
 
 proc orR8Rm8*(this: var InstrImpl): void =
@@ -70,7 +70,7 @@ proc andR8Rm8*(this: var InstrImpl): void =
 
 proc andAlImm8*(this: var InstrImpl): void =
   let al = CPU[AL]
-  CPU.setGPreg(AL, al and this.imm8.U8)
+  CPU[AL] = al and this.imm8.U8
   CPU.eflags.updateAND(al, this.imm8.U8)
 
 proc subRm8R8*(this: var InstrImpl): void =
@@ -87,7 +87,7 @@ proc subR8Rm8*(this: var InstrImpl): void =
 
 proc subAlImm8*(this: var InstrImpl): void =
   let al = CPU[AL]
-  CPU.setGPreg(AL, al - this.imm8.U8)
+  CPU[AL] = al - this.imm8.U8
   CPU.eflags.updateSUB(al, this.imm8.U8)
 
 proc xorRm8R8*(this: var InstrImpl): void =
@@ -102,7 +102,7 @@ proc xorR8Rm8*(this: var InstrImpl): void =
 
 proc xorAlImm8*(this: var InstrImpl): void =
   let al = CPU[AL]
-  CPU.setGPreg(AL, al xor this.imm8.U8)
+  CPU[AL] = al xor this.imm8.U8
 
 proc cmpRm8R8*(this: var InstrImpl): void =
   let rm8 = this.exec.getRm8()
@@ -173,7 +173,7 @@ proc nop*(this: var InstrImpl): void =
 
 
 proc movAlMoffs8*(this: var InstrImpl): void =
-  CPU.setGPreg(AL, this.exec.getMoffs8())
+  CPU[AL] = this.exec.getMoffs8()
 
 proc movMoffs8Al*(this: var InstrImpl): void =
   this.exec.setMoffs8(CPU[AL])
@@ -364,7 +364,7 @@ proc mulAxAlRm8*(this: var InstrImpl): void =
   rm8 = this.exec.getRm8()
   al = CPU[AL]
   val = al * rm8
-  CPU.setGPreg(AX, val)
+  CPU[AX] = val
   CPU.eflags.updateMUL(al, rm8)
 
 proc imulAxAlRm8*(this: var InstrImpl): void =
@@ -373,7 +373,7 @@ proc imulAxAlRm8*(this: var InstrImpl): void =
   rm8S = this.exec.getRm8().int8
   alS = CPU[AL].int8
   valS = alS * rm8S
-  CPU.setGPreg(AX, valS.U8)
+  CPU[AX] = valS.U8
   CPU.eflags.updateIMUL(alS, rm8S)
 
 proc divAlAhRm8*(this: var InstrImpl): void =
@@ -381,16 +381,16 @@ proc divAlAhRm8*(this: var InstrImpl): void =
   var ax: U16
   rm8 = this.exec.getRm8()
   ax = CPU[AX]
-  CPU.setGPreg(AL, U8(ax div rm8))
-  CPU.setGPreg(AH, U8(ax mod rm8))
+  CPU[AL] = U8(ax div rm8)
+  CPU[AH] = U8(ax mod rm8)
 
 proc idivAlAhRm8*(this: var InstrImpl): void =
   var rm8S: int8
   var axS: int16
   rm8S = this.exec.getRm8().int8
   axS = CPU[AX].int16
-  CPU.setGPreg(AL, U8(axS div rm8S))
-  CPU.setGPreg(AH, U8(axS mod rm8S))
+  CPU[AL] = U8(axS div rm8S)
+  CPU[AH] = U8(axS mod rm8S)
 
 
 proc code_80*(this: var InstrImpl): void =
