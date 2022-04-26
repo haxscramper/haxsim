@@ -445,10 +445,22 @@ proc initGraphicController*(v: VGA): GraphicController
 proc read8*(this: var VGA, offset: U32): U8
 proc write8*(this: var VGA, offset: U32, v: U8)
 
+proc in8*(this: var VGA, memAddr: U16): U8
+proc out8*(this: var VGA, memAddr: U16, v: U8)
+
 proc initVGA*(logger: EmuLogger): VGA =
-  var vga = VGA(portio: initPortIO(), logger: logger)
+  var vga = VGA(logger: logger)
+
+  vga.portio = initPortIO(
+    "VGA",
+    outI = proc(memAddr: U16, value: U8) =
+      out8(vga, memAddr, value),
+    inI = proc(memAddr: U16): U8 =
+      in8(vga, memAddr)
+  )
 
   vga.memio = initMemoryIO(
+    "VGA",
     writeI = proc(memAddr: EPointer, value: U8) =
       write8(vga, memAddr, value),
     readI = proc(memAddr: EPointer): U8 =

@@ -115,8 +115,11 @@ proc initPIC*(logger: EmuLogger, master: PIC = nil): PIC =
     initIcn: -1
   )
 
-  pic.portio.in8 = proc(mem: U16): U8 = in8(pic, mem)
-  pic.portio.out8 = proc(mem: U16, v: U8) = out8(pic, mem, v)
+  pic.portio = initPortIO(
+    "PIC",
+    inI = proc(mem: U16): U8 = in8(pic, mem),
+    outI = proc(mem: U16, v: U8) = out8(pic, mem, v)
+  )
 
   for i in 0 ..< MAXIRQ:
     pic.irq[i] = nil

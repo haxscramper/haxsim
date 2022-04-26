@@ -43,10 +43,6 @@ proc initPIT*(): PIT =
 
 proc destroyPIT*(this: var PIT): void =
   discard
-  # for i in 0 ..< 3:
-  #   if timer[i].th.joinable():
-  #     timer[i].running = false
-  #     timer[i].th.join()
 
 
 var rl_fst: bool

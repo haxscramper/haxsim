@@ -2,27 +2,36 @@ import common
 import hardware/memory
 
 type
-  PortIO* = object
-    in8*: proc(memAddr: U16): U8
-    out8*: proc(memAddr: U16, v: U8): void
-
-proc initPortIO*(): PortIO = 
-  discard 
-
-
-type
   MemWrite8Impl = proc(memAddr: EPointer, value: U8)
   MemRead8Impl = proc(memAddr: EPointer): U8
 
+  PortOutImpl = proc(memAddr: U16, value: U8)
+  PortInImpl = proc(memAddr: U16): U8
+
+  PortIO* = ref object
+    name*: string ## Name of the device connected to the port. Used for
+                  ## debugging purposes, not used in the code
+                  ## implementation itself.
+    in8*: PortInImpl
+    out8*: PortOutImpl
+
   MemoryIO* = ref object
+    name*: string ## Name of the memory-mapped device
     memory*: Memory
     paddr*: U32
     write8*: MemWrite8Impl
     read8*: MemRead8Impl
     size*: csizeT
-  
-proc initMemoryIO*(writeI: MemWrite8Impl, readI: MemRead8Impl): MemoryIO =
-  MemoryIO(write8: writeI, read8: readI)
+
+proc initPortIO*(
+    name: string, inI: PortInImpl, outI: PortOutImpl): PortIO =
+
+  PortIO(in8: inI, out8: outI, name: name)
+
+proc initMemoryIO*(
+    name: string, writeI: MemWrite8Impl, readI: MemRead8Impl): MemoryIO =
+
+  MemoryIO(write8: writeI, read8: readI, name: name)
 
 proc setMem*(this: var MemoryIO, mem: Memory, memAddr: U32, len: csizeT): void =
   assertRef(mem)
