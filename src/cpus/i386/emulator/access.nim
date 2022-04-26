@@ -259,63 +259,57 @@ proc transVirtualToPhysical*(
     result = (result and (1 shl 20) - 1)
 
 proc readMem32Seg*(this: var DataAccess, seg: SgRegT, memAddr: U32): U32 =
-  var paddr, ioBase: U32
-  paddr = this.transVirtualToPhysical(MODEREAD, seg, memAddr)
-  ioBase = this.io.chkMemio(paddr)
-  if ioBase != 0:
-    return this.io.readMemio32(ioBase, paddr - ioBase)
+  let paddr: U32 = this.transVirtualToPhysical(MODEREAD, seg, memAddr)
+  let ioBase = this.io.getMemio(paddr)
+  if ioBase.canGet(ioBaseId):
+    return this.io.readMemio32(ioBaseId, paddr - ioBaseId)
 
   else:
     return this.mem.readMem32(paddr)
 
 proc readMem16Seg*(this: var DataAccess, seg: SgRegT, memAddr: U32): U16 =
-  var paddr, ioBase: U32
-  paddr = this.transVirtualToPhysical(MODEREAD, seg, memAddr)
-  ioBase = this.io.chkMemio(paddr)
-  if ioBase != 0:
-    return this.io.readMemio16(ioBase, paddr - ioBase)
+  let paddr: U32 = this.transVirtualToPhysical(MODEREAD, seg, memAddr)
+  let ioBase = this.io.getMemio(paddr)
+  if ioBase.canGet(ioBaseId):
+    return this.io.readMemio16(ioBaseId, paddr - ioBaseId)
 
   else:
     return this.mem.readMem16(paddr)
 
 proc readMem8Seg*(this: var DataAccess, seg: SgRegT, memAddr: U32): U8 =
-  var paddr, ioBase: U32
-  paddr = this.transVirtualToPhysical(MODEREAD, seg, memAddr)
-  ioBase = this.io.chkMemio(paddr)
-  if ioBase != 0:
-    return this.io.readMemio8(ioBase, paddr - ioBase)
+  let paddr: U32 = this.transVirtualToPhysical(MODEREAD, seg, memAddr)
+  let ioBase = this.io.getMemio(paddr)
+  if ioBase.canGet(ioBaseId):
+    return this.io.readMemio8(ioBaseId, paddr - ioBaseId)
 
   else:
     return this.mem.readMem8(paddr)
 
 proc writeMem32Seg*(this: var DataAccess, seg: SgRegT, memAddr: U32, v: U32): void =
-  var paddr, ioBase: U32
-  paddr = this.transVirtualToPhysical(MODEWRITE, seg, memAddr)
-  ioBase = this.io.chkMemio(paddr)
-  if ioBase != 0:
-    this.io.writeMemio32(ioBase, paddr - ioBase, v)
+  let paddr: U32 = this.transVirtualToPhysical(MODEWRITE, seg, memAddr)
+  let ioBase = this.io.getMemio(paddr)
+  if ioBase.canGet(ioBaseId):
+    this.io.writeMemio32(ioBaseId, paddr - ioBaseId, v)
 
   else:
     this.mem.writeMem32(paddr, v)
 
 
 proc writeMem16Seg*(this: var DataAccess, seg: SgRegT, memAddr: U32, v: U16): void =
-  var paddr, ioBase: U32
-  paddr = this.transVirtualToPhysical(MODEWRITE, seg, memAddr)
-  ioBase = this.io.chkMemio(paddr)
-  if ioBase != 0:
-    this.io.writeMemio16(ioBase, paddr - ioBase, v)
+  let paddr: U32 = this.transVirtualToPhysical(MODEWRITE, seg, memAddr)
+  let ioBase = this.io.getMemio(paddr)
+  if ioBase.canGet(ioBaseId):
+    this.io.writeMemio16(ioBaseId, paddr - ioBaseId, v)
 
   else:
     this.mem.writeMem16(paddr, v)
 
 
 proc writeMem8Seg*(this: var DataAccess, seg: SgRegT, memAddr: U32, v: U8): void =
-  var paddr, ioBase: U32
-  paddr = this.transVirtualToPhysical(MODEWRITE, seg, memAddr)
-  ioBase = this.io.chkMemio(paddr)
-  if ioBase != 0:
-    this.io.writeMemio8(ioBase, paddr - ioBase, v)
+  let paddr: U32 = this.transVirtualToPhysical(MODEWRITE, seg, memAddr)
+  let ioBase  = this.io.getMemio(paddr)
+  if ioBase.canGet(ioBaseId):
+    this.io.writeMemio8(ioBaseId, paddr - ioBaseId, v)
 
   else:
     this.mem.writeMem8(paddr, v)

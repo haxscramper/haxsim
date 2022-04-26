@@ -6,12 +6,12 @@ import std/tables
 type
   IO* {.requiresinit.} = object
     memory*: Memory
-    portIo*: Table[uint16, PortIO] ## Memory address to the specific IO
+    portIo*: Table[U16, PortIO] ## Memory address to the specific IO
     ## port.
-    portIoMap*: Table[uint16, csizeT] ## Memory address to the size of the
+    portIoMap*: Table[U16, csizeT] ## Memory address to the size of the
     ## associated IO port.
-    memIo*: Table[uint32, MemoryIO]
-    memIoMap*: Table[uint32, uint32]
+    memIo*: Table[U32, MemoryIO]
+    memIoMap*: Table[U32, U32]
 
 template log*(io: IO, ev: EmuEvent): untyped =
   io.memory.logger.log(ev, -2)
@@ -25,14 +25,14 @@ proc destroyIO*(this: var IO): void =
   this.memIoMap.clear()
 
 
-proc setPortio*(this: var IO, memAddr: uint16, len: csizeT, dev: PortIO): void =
-  let memAddr = (memAddr and not(1.uint16))
+proc setPortio*(this: var IO, memAddr: U16, len: csizeT, dev: PortIO): void =
+  let memAddr = (memAddr and not(1.U16))
   this.portIo[memAddr] = dev
   this.portIoMap[memAddr] = len
 
-proc getPortioBase*(this: var IO, memAddr: uint16): uint16 =
+proc getPortioBase*(this: var IO, memAddr: U16): U16 =
   for i in 0 ..< 5:
-    var base: uint16 = (memAddr and (not(1.uint16))) - uint16(2 * i)
+    var base: U16 = (memAddr and (not(1.U16))) - U16(2 * i)
     echov memAddr, base
     if base in this.portIoMap:
       if memAddr < base + this.portIoMap[base]:
@@ -43,13 +43,13 @@ proc getPortioBase*(this: var IO, memAddr: uint16): uint16 =
 
   return 0
 
-proc inIo8*(this: var IO, port: uint16): uint8 =
+proc inIo8*(this: var IO, port: U16): U8 =
   this.log ev(eekInIO).withIt do:
     it.memAddr = port
     it.size = 8
 
-  var v: uint8 = 0
-  let base: uint16 = this.getPortioBase(port)
+  var v: U8 = 0
+  let base: U16 = this.getPortioBase(port)
   if base != 0:
     v = this.portIo[base].in8(port)
 
@@ -64,22 +64,22 @@ proc inIo8*(this: var IO, port: uint16): uint8 =
   return v
 
 
-proc inIo32*(this: var IO, port: uint16): uint32 =
-  var v: uint32 = 0
+proc inIo32*(this: var IO, port: U16): U32 =
+  var v: U32 = 0
   for i in 0 ..< 4:
-    v = (v + this.inIo8(port + uint16(i)) shl (8 * i))
+    v = (v + this.inIo8(port + U16(i)) shl (8 * i))
   return v
 
 
 
-proc inIo16*(this: var IO, port: uint16): uint16 =
-  var v: uint16 = 0
+proc inIo16*(this: var IO, port: U16): U16 =
+  var v: U16 = 0
   for i in 0 ..< 2:
-    v = (v + this.inIo8(port + uint16(i)) shl (8 * i))
+    v = (v + this.inIo8(port + U16(i)) shl (8 * i))
   return v
 
-proc outIo8*(this: var IO, port: uint16, value: uint8): void =
-  var base: uint16 = this.getPortioBase(port)
+proc outIo8*(this: var IO, port: U16, value: U8): void =
+  var base: U16 = this.getPortioBase(port)
   if base != 0:
     this.portIo[base].out8(port, value)
 
@@ -88,18 +88,18 @@ proc outIo8*(this: var IO, port: uint16, value: uint8): void =
 
   INFO(4, "out [0x%04x] (0x%04x)", port, value)
 
-proc outIo32*(this: var IO, port: uint16, value: uint32): void =
+proc outIo32*(this: var IO, port: U16, value: U32): void =
   for i in 0 ..< 4:
-    this.outIo8(port + uint16(i), uint8((value shr (8 * i)) and 0xff))
+    this.outIo8(port + U16(i), U8((value shr (8 * i)) and 0xff))
 
-proc outIo16*(this: var IO, port: uint16, value: uint16): void =
+proc outIo16*(this: var IO, port: U16, value: U16): void =
   for i in 0 ..< 2:
-    this.outIo8(port + uint16(i), uint8((value shr (8 * i)) and 0xff))
+    this.outIo8(port + U16(i), U8((value shr (8 * i)) and 0xff))
 
-proc setMemio*(this: var IO, base: uint32, len: csizeT, dev: var MemoryIO): void =
+proc setMemio*(this: var IO, base: U32, len: csizeT, dev: var MemoryIO): void =
   assertRef(this.memory)
   assertRef(dev)
-  var memAddr: uint32
+  var memAddr: U32
   dev.setMem(this.memory, base, len)
   this.memIo[base] = dev
   block:
@@ -109,43 +109,37 @@ proc setMemio*(this: var IO, base: uint32, len: csizeT, dev: var MemoryIO): void
       memAddr = (memAddr + (1 shl 12))
 
 
-proc getMemioBase*(this: var IO, memAddr: uint32): uint32 =
-  let memAddr = (memAddr and (not(((1.uint32 shl 12) - 1))))
+proc getMemio*(this: var IO, memAddr: U32): Option[U32] =
+  let memAddr = memAddr and 0x0FFFu32
   if memAddr in this.memIoMap:
-    return this.memIoMap[memAddr]
+    return some this.memIoMap[memAddr]
 
-  else:
-    return 0
-
-proc readMemio32*(this: var IO, base: uint32, offset: uint32): uint32 =
+proc readMemio32*(this: var IO, base: U32, offset: U32): U32 =
   ASSERT(base in this.memIo)
   result = this.memIo[base].read32(offset)
   this.log ev(eekGetIo32, evalue(result), offset)
 
-proc readMemio16*(this: var IO, base: uint32, offset: uint32): uint16 =
+proc readMemio16*(this: var IO, base: U32, offset: U32): U16 =
   ASSERT(base in this.memIo)
   result = this.memIo[base].read16(offset)
   this.log ev(eekGetIo16, evalue(result), offset)
 
-proc readMemio8*(this: var IO, base: uint32, offset: uint32): uint8 =
+proc readMemio8*(this: var IO, base: U32, offset: U32): U8 =
   ASSERT(base in this.memIo)
   result = this.memIo[base].read8(offset)
   this.log ev(eekGetIo8, evalue(result), offset)
 
-proc writeMemio32*(this: var IO, base: uint32, offset: uint32, value: uint32): void =
+proc writeMemio32*(this: var IO, base: U32, offset: U32, value: U32): void =
   ASSERT(base in this.memIo)
   this.log ev(eekSetIo32, evalue(value), offset)
   this.memIo[base].write32(offset, value)
 
-proc writeMemio16*(this: var IO, base: uint32, offset: uint32, value: uint16): void =
+proc writeMemio16*(this: var IO, base: U32, offset: U32, value: U16): void =
   ASSERT(base in this.memIo)
   this.log ev(eekSetIo16, evalue(value), offset)
   this.memIo[base].write16(offset, value)
 
-proc writeMemio8*(this: var IO, base: uint32, offset: uint32, value: uint8): void =
+proc writeMemio8*(this: var IO, base: U32, offset: U32, value: U8): void =
   ASSERT(base in this.memIo)
   this.log ev(eekSetIo8, evalue(value), offset)
   this.memIo[base].write8(offset, value)
-
-proc chkMemio*(this: var IO, memAddr: uint32): uint32 =
-  result = this.getMemioBase(memAddr)
