@@ -73,7 +73,14 @@ suite "Primitive instructions":
       # 16-bit register used, no need for operand size change prefix.
       "mov di, 0xB800": u8 [0xBF, 0x00, 0xB8],
       "mov byte [edi], 65": u8 [0xC6, 0x07, 0x41],
-      "mov byte [edi+1], 0x7": u8 [0xC6, 0x47, 0x01, 0x07]
+      "mov byte [edi+1], 0x7": u8 [0xC6, 0x47, 0x01, 0x07],
+      "mov byte [0x3C2], 0b10": u8 [
+        0xC6, # `MOV R/M8` instruction
+        0b00_000_101, # `[mod=00, reg=000, rm=101]`. MODRM byte indicates
+                      # that offset should be used for addressing.
+        0xC2, 0x03, # Offset value, 16-bit operand
+        0x02 # Value to move to memory location
+      ]
     }:
       check parseInstr(instr).compileInstr() == bin
 

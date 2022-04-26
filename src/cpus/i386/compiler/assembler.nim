@@ -83,8 +83,8 @@ proc matchingTarget(given: InstrOperand, expect: OpAddrKind): bool =
         result = not given.indirect
 
     of opAddrRegMem:
-      if k in regs:
-        result = true
+      result = (k in regs) or
+               (k in {iokImmediate} and given.indirect)
 
     of opAddrImm:
       result = k in { iokImmediate }
@@ -331,11 +331,7 @@ proc regCode*(target: InstrOperandTarget): uint8 =
 
 proc compileInstr*(instr: InstrDesc, protMode: bool = false): seq[uint8] =
   let opc = instr.opcode
-  # echov "------------"
-  # echov opc
-  # echov opc.hasModrm()
   if opc.isExtended():
-    echov opc.opIdx()
     result.add cast[array[2, uint8]](opc.opIdx())
 
   else:
@@ -357,6 +353,15 @@ proc compileInstr*(instr: InstrDesc, protMode: bool = false): seq[uint8] =
 
         else:
           rm.mod = modIndSib
+          if arg.target.kind in { iokImmediate }:
+            # Special value of the `rm` register that indicates use of the
+            # immediate 16/32-bit offset.
+            rm.rm = 0b101
+            if protMode:
+              trail.add cast[array[4, EByte]](arg.target.value.U32)
+
+            else:
+              trail.add cast[array[2, EByte]](arg.target.value.U16)
 
       else:
         if arg.offset.canGet(offset):
@@ -499,7 +504,7 @@ proc parseInstrRaw*(text: string, pos: tuple[line, column: int]): InstrDesc =
     if op.isSome() and op.get().dataKind.isNone():
       op.get().dataKind = known
 
-proc parseInstr*(text: string, pos: tuple[line, column: int]): InstrDesc =
+proc parseInstr*(text: string, pos: tuple[line, column: int] = (0, 0)): InstrDesc =
   result = parseInstrRaw(text, pos)
   selectOpcode(result)
 
