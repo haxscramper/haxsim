@@ -14,6 +14,10 @@ import std/sequtils
 template r*(reg: untyped): untyped {.dirty.} =
   (addr reg.raw)
 
+const
+  charWidth*: U8 = 8
+  charHeight*: U8 = 8
+
 type
   gmodeT* {.size: sizeof(cint).} = enum
     MODETEXT
@@ -86,7 +90,7 @@ type
   Attribute* = ref object
     vga*: VGA
     acar*: AttributeAcar
-    ipr*: array[0x10, AttributeField2]
+    ipr*: array[0x10, AttributePaletteRegister]
     amcr*: AttributeAmcr
     cper*: AttributeCper
     portio*: PortIO
@@ -137,62 +141,56 @@ type
     S4* {.bitsize: 1.}: U8
     SO* {.bitsize: 1.}: U8
 
-  SequencerMapMrField1* = object
-
   SequencerMapMr* = object
+    ## "Map Mask Register", index `0x02`
     MAP0E* {.bitsize: 1.}: U8
     MAP1E* {.bitsize: 1.}: U8
     MAP2E* {.bitsize: 1.}: U8
     MAP3E* {.bitsize: 1.}: U8
 
-  SequencerCmsrField1* = object
+  SequencerCmsr* = object
     CMB* {.bitsize: 2.}: U8
     CMA* {.bitsize: 2.}: U8
     CMBM* {.bitsize: 1.}: U8
     CMAM* {.bitsize: 1.}: U8
 
-  SequencerCmsr* {.union.} = object
-    raw*: U8
-    field1*: SequencerCmsrField1
-
-  SequencerMemMrField1* = object
-    field0* {.bitsize: 1.}: U8
-    EM* {.bitsize: 1.}: U8
-    OE* {.bitsize: 1.}: U8
-    C4* {.bitsize: 1.}: U8
-
-  SequencerMemMr* {.union.} = object
-    raw*: U8
-    field1*: SequencerMemMrField1
-
-  CRTCrtcarField1* = object
-    INDX* {.bitsize: 5.}: U8
+  SequencerMemMr* = object
+    ## "Memory Mode" register, index `0x04`
+    pad {.bitsize: 1.}: U8 ## Unused
+    EM* {.bitsize: 1.}: U8 ## Extended memory. When set to 1, this bit
+                           ## enables the video memory from 64KB to 256KB.
+    OE* {.bitsize: 1.}: U8 ## Odd/Event host memeory write addresign disable
+    C4* {.bitsize: 1.}: U8 ## Chain 4 enable. "This bit controls the map
+    ## selected during system read operations. When set to 0, this bit
+    ## enables system addresses to sequentially access data within a bit
+    ## map by using the Map Mask register. When set to 1, this bit causes
+    ## the two low-order bits to select the map accessed as shown below:
+    ##
+    ## =====   ============
+    ## A0 A1   Map Selected
+    ## 0   0   0
+    ## 0   1   1
+    ## 1   0   2
+    ## 1   1   3
+    ## =====   =============
 
   CRTCrtcar* {.union.} = object
-    raw*: U8
-    field1*: CRTCrtcarField1
+    INDX* {.bitsize: 5.}: U8
 
   CRTHtr* {.union.} = object
     ## Horizontal total register.
-    raw*: U8
     HT*: U8
 
   CRTHdeer* {.union.} = object
     ## "Horizontal display end register", index `0x1`.
-    raw*: U8
     HDEE*: U8
 
   CRTShbr* {.union.} = object
     ## "Start horizontal blanking", index `0x2`
-    raw*: U8
     SHB*: U8
 
-  CRTEhbrField1* = object
-    EB* {.bitsize: 5.}: U8
-    DESC* {.bitsize: 2.}: U8
-
   CRTMslr* = object
-    ## "Maximum Scan Line Register", index 0x09
+    ## "Maximum Scan Line Register", index `0x09`
     MSL* {.bitsize: 5.}: U8 ## In text modes, this field is programmed with
     ## the character height - 1 (scan line numbers are zero based.) In
     ## graphics modes, a non-zero value in this field will cause each scan
@@ -201,62 +199,46 @@ type
     LC9* {.bitsize: 1.}: U8
     LC* {.bitsize: 1.}: U8
 
-  CRTCsrField1* = object
+  CRTCsr* = object
     RSCB* {.bitsize: 5.}: U8
     CO* {.bitsize: 1.}: U8
 
-  CRTCsr* {.union.} = object
-    raw*: U8
-    field1*: CRTCsrField1
-
-  CRTCerField1* = object
+  CRTCer* = object
     RSCE* {.bitsize: 5.}: U8
     CSC* {.bitsize: 2.}: U8
 
-  CRTCer* {.union.} = object
-    raw*: U8
-    field1*: CRTCerField1
-
-  CRTSahr* {.union.} = object
-    raw*: U8
+  CRTSahr* = object
     HBSA*: U8
 
-  CRTSalr* {.union.} = object
-    raw*: U8
+  CRTSalr* = object
     LBSA*: U8
 
-  CRTClhr* {.union.} = object
-    raw*: U8
+  CRTClhr* = object
     HBCL*: U8
 
-  CRTCllr* {.union.} = object
-    raw*: U8
+  CRTCllr* = object
     LBCL*: U8
 
-  CRTVdeer* {.union.} = object
-    raw*: U8
+  CRTVdeer* = object
     VDEE*: U8
 
-  CRTOfsr* {.union.} = object
-    raw*: U8
+  CRTOfsr* = object
     LLWS*: U8
 
   CRTCrtmcrField1* = object
-    CMS0* {.bitsize: 1.}: U8
-    SRSC* {.bitsize: 1.}: U8
-    HRSX* {.bitsize: 1.}: U8
-    C2* {.bitsize: 1.}: U8
-    field4* {.bitsize: 1.}: U8
-    AW* {.bitsize: 1.}: U8
-    WBM* {.bitsize: 1.}: U8
-    HR* {.bitsize: 1.}: U8
 
   GraphicControllerGcar* = object
     INDX* {.bitsize: 4.}: U8
 
-  CRTCrtmcr* {.union.} = object
-    raw*: U8
-    field1*: CRTCrtmcrField1
+  CRTCrtmcr* = object
+    CMS0* {.bitsize: 1.}: U8
+    SRSC* {.bitsize: 1.}: U8
+    HRSX* {.bitsize: 1.}: U8
+    C2* {.bitsize: 1.}: U8
+    pad {.bitsize: 1.}: U8
+    AW* {.bitsize: 1.}: U8
+    WBM* {.bitsize: 1.}: U8
+    HR* {.bitsize: 1.}: U8
 
   GraphicControllerSr* = object
     ## "Set/Reset Register", index `0x00`
@@ -323,9 +305,9 @@ type
     ## to 1, this bit causes the shift registers to be loaded in a manner
     ## that supports the 256-color mode."
 
-  CRTEhbr* {.union.} = object
-    raw*: U8
-    field1*: CRTEhbrField1
+  CRTEhbr* = object
+    EB* {.bitsize: 5.}: U8
+    DESC* {.bitsize: 2.}: U8
 
   GraphicControllerMr* = object
     ## "Miscellaneous Graphics Register" Index 06h.,
@@ -339,7 +321,14 @@ type
     INDX* {.bitsize: 5.}: U8
     IPAS* {.bitsize: 1.}: U8
 
-  AttributeField2* = object
+  AttributePaletteRegister* = object
+    ## "Attribute Palette Register".
+    ##
+    ## These 6-bit registers allow a dynamic mapping between the text
+    ## attribute or graphic color input value and the display color on the
+    ## CRT screen. When set to 1, this bit selects the appropriate color.
+    ##
+    ## Value is used as address into DAC registers.
     P0* {.bitsize: 1.}: U8
     P1* {.bitsize: 1.}: U8
     P2* {.bitsize: 1.}: U8
@@ -347,42 +336,47 @@ type
     P4* {.bitsize: 1.}: U8
     P5* {.bitsize: 1.}: U8
 
-  AttributeAmcrField1* = object
-    GAM* {.bitsize: 1.}: U8
+  AttributeAmcr* = object
+    ## "Attribute Mode Controller" register, index `0x10`
+    AGTE* {.bitsize: 1.}: U8 ## "Attribute Controller Graphic Enable"
     ME* {.bitsize: 1.}: U8
     ELGCC* {.bitsize: 1.}: U8
     ELSBI* {.bitsize: 1.}: U8
-    field4* {.bitsize: 1.}: U8
+    pad {.bitsize: 1.}: U8
     PELPC* {.bitsize: 1.}: U8
     PELW* {.bitsize: 1.}: U8
-    P54S* {.bitsize: 1.}: U8
+    P54S* {.bitsize: 1.}: U8 ## "Palette Bits 5-4 Select"
+    ##
+    ## This bit selects the source for the P5 and P4 video bits that act as
+    ## inputs to the video DAC. When this bit is set to 0, P5 and P4 are
+    ## the outputs of the Internal Palette registers. When this bit is set
+    ## to 1, P5 and P4 are bits 1 and 0 of the Color Select register.
 
-  AttributeAmcr* {.union.} = object
-    raw*: U8
-    field1*: AttributeAmcrField1
-
-  AttributeCperField1* = object
+  AttributeCper* = object
     ECP* {.bitsize: 4.}: U8
     VSM* {.bitsize: 2.}: U8
 
-  AttributeCper* {.union.} = object
-    raw*: U8
-    field1*: AttributeCperField1
-
-  AttributeHpelprField1* = object
+  AttributeHpelpr* = object
     HPELP* {.bitsize: 4.}: U8
 
-  AttributeHpelpr* {.union.} = object
-    raw*: U8
-    field1*: AttributeHpelprField1
+  AttributeCsr* = object
+    ## "Color Select Register", index `0x14`.
 
-  AttributeCsrField1* = object
-    SC45* {.bitsize: 2.}: U8
-    SC67* {.bitsize: 2.}: U8
+    SC45* {.bitsize: 2.}: U8 ## Color Select 5-4
+    ##
+    ## These bits can be used in place of the P4 and P5 bits from the
+    ## Internal Palette registers to form the 8-bit digital color value to
+    ## the video DAC. Selecting these bits is done in the Attribute Mode
+    ## Control register (index 0x10). These bits are used to rapidly switch
+    ## between colors sets within the video DAC.
 
-  AttributeCsr* {.union.} = object
-    raw*: U8
-    field1*: AttributeCsrField1
+    SC67* {.bitsize: 2.}: U8 ## Color Select 7-6
+    ##
+    ## In modes other than mode 13 hex, these are the two most-significant
+    ## bits of the 8-bit digital color value to the video DAC. In mode 13
+    ## hex, the 8-bit attribute is the digital color value to the video
+    ## DAC. These bits are used to rapidly switch between sets of colors in
+    ## the video DAC.
 
   DACField2Field1* = object
     R* {.bitsize: 6.}: U8
@@ -393,27 +387,19 @@ type
     raw*: array[3, U8]
     field1*: DACField2Field1
 
-  DACWPar* {.union.} = object
-    raw*: U8
+  DACWPar* = object
     index*: U8
 
-  DACRPar* {.union.} = object
-    raw*: U8
+  DACRPar* = object
     index*: U8
 
-  DACPdr* {.union.} = object
-    raw*: U8
+  DACPdr* = object
     color*: U8
 
-  DACDacsrField1* = object
+  DACDacsr* = object
     DACstate* {.bitsize: 2.}: U8
 
-  DACDacsr* {.union.} = object
-    raw*: U8
-    field1*: DACDacsrField1
-
-  DACPelmr* {.union.} = object
-    raw*: U8
+  DACPelmr* = object
     mask*: U8
 
 
@@ -446,95 +432,27 @@ proc getGc*(this: var VGA): ptr GraphicController =
 
 proc read*(this: var Sequencer, offset: U32): U8
 
-proc CMB*(this: SequencerCmsr): U8 = this.field1.CMB
-proc `CMB=`*(this: var SequencerCmsr, value: U8) = this.field1.CMB = value
-proc CMA*(this: SequencerCmsr): U8 = this.field1.CMA
-proc `CMA=`*(this: var SequencerCmsr, value: U8) = this.field1.CMA = value
-proc CMBM*(this: SequencerCmsr): U8 = this.field1.CMBM
-proc `CMBM=`*(this: var SequencerCmsr, value: U8) = this.field1.CMBM = value
-proc CMAM*(this: SequencerCmsr): U8 = this.field1.CMAM
-proc `CMAM=`*(this: var SequencerCmsr, value: U8) = this.field1.CMAM = value
-proc EM*(this: SequencerMemMr): U8 = this.field1.EM
-proc `EM=`*(this: var SequencerMemMr, value: U8) = this.field1.EM = value
-proc OE*(this: SequencerMemMr): U8 = this.field1.OE
-proc `OE=`*(this: var SequencerMemMr, value: U8) = this.field1.OE = value
-proc C4*(this: SequencerMemMr): U8 = this.field1.C4
-proc `C4=`*(this: var SequencerMemMr, value: U8) = this.field1.C4 = value
-proc INDX*(this: CRTCrtcar): U8 = this.field1.INDX
-proc `INDX=`*(this: var CRTCrtcar, value: U8) = this.field1.INDX = value
-proc EB*(this: CRTEhbr): U8 = this.field1.EB
-proc `EB=`*(this: var CRTEhbr, value: U8) = this.field1.EB = value
-proc DESC*(this: CRTEhbr): U8 = this.field1.DESC
-proc `DESC=`*(this: var CRTEhbr, value: U8) = this.field1.DESC = value
-
-proc RSCB*(this: CRTCsr): U8 = this.field1.RSCB
-proc `RSCB=`*(this: var CRTCsr, value: U8) = this.field1.RSCB = value
-proc CO*(this: CRTCsr): U8 = this.field1.CO
-proc `CO=`*(this: var CRTCsr, value: U8) = this.field1.CO = value
-proc RSCE*(this: CRTCer): U8 = this.field1.RSCE
-proc `RSCE=`*(this: var CRTCer, value: U8) = this.field1.RSCE = value
-proc CSC*(this: CRTCer): U8 = this.field1.CSC
-proc `CSC=`*(this: var CRTCer, value: U8) = this.field1.CSC = value
-proc CMS0*(this: CRTCrtmcr): U8 = this.field1.CMS0
-proc `CMS0=`*(this: var CRTCrtmcr, value: U8) = this.field1.CMS0 = value
-proc SRSC*(this: CRTCrtmcr): U8 = this.field1.SRSC
-proc `SRSC=`*(this: var CRTCrtmcr, value: U8) = this.field1.SRSC = value
-proc HRSX*(this: CRTCrtmcr): U8 = this.field1.HRSX
-proc `HRSX=`*(this: var CRTCrtmcr, value: U8) = this.field1.HRSX = value
-proc C2*(this: CRTCrtmcr): U8 = this.field1.C2
-proc `C2=`*(this: var CRTCrtmcr, value: U8) = this.field1.C2 = value
-proc AW*(this: CRTCrtmcr): U8 = this.field1.AW
-proc `AW=`*(this: var CRTCrtmcr, value: U8) = this.field1.AW = value
-proc WBM*(this: CRTCrtmcr): U8 = this.field1.WBM
-proc `WBM=`*(this: var CRTCrtmcr, value: U8) = this.field1.WBM = value
-proc HR*(this: CRTCrtmcr): U8 = this.field1.HR
-proc `HR=`*(this: var CRTCrtmcr, value: U8) = this.field1.HR = value
-
-proc GAM*(this: AttributeAmcr): U8 = this.field1.GAM
-proc `GAM=`*(this: var AttributeAmcr, value: U8) = this.field1.GAM = value
-proc ME*(this: AttributeAmcr): U8 = this.field1.ME
-proc `ME=`*(this: var AttributeAmcr, value: U8) = this.field1.ME = value
-proc ELGCC*(this: AttributeAmcr): U8 = this.field1.ELGCC
-proc `ELGCC=`*(this: var AttributeAmcr, value: U8) = this.field1.ELGCC = value
-proc ELSBI*(this: AttributeAmcr): U8 = this.field1.ELSBI
-proc `ELSBI=`*(this: var AttributeAmcr, value: U8) = this.field1.ELSBI = value
-proc PELPC*(this: AttributeAmcr): U8 = this.field1.PELPC
-proc `PELPC=`*(this: var AttributeAmcr, value: U8) = this.field1.PELPC = value
-proc PELW*(this: AttributeAmcr): U8 = this.field1.PELW
-proc `PELW=`*(this: var AttributeAmcr, value: U8) = this.field1.PELW = value
-proc P54S*(this: AttributeAmcr): U8 = this.field1.P54S
-proc `P54S=`*(this: var AttributeAmcr, value: U8) = this.field1.P54S = value
-proc ECP*(this: AttributeCper): U8 = this.field1.ECP
-proc `ECP=`*(this: var AttributeCper, value: U8) = this.field1.ECP = value
-proc VSM*(this: AttributeCper): U8 = this.field1.VSM
-proc `VSM=`*(this: var AttributeCper, value: U8) = this.field1.VSM = value
-proc HPELP*(this: AttributeHpelpr): U8 = this.field1.HPELP
-proc `HPELP=`*(this: var AttributeHpelpr, value: U8) = this.field1.HPELP = value
-proc SC45*(this: AttributeCsr): U8 = this.field1.SC45
-proc `SC45=`*(this: var AttributeCsr, value: U8) = this.field1.SC45 = value
-proc SC67*(this: AttributeCsr): U8 = this.field1.SC67
-proc `SC67=`*(this: var AttributeCsr, value: U8) = this.field1.SC67 = value
 proc R*(this: DACField2): U8 = this.field1.R
 proc `R=`*(this: var DACField2, value: U8) = this.field1.R = value
 proc G*(this: DACField2): U8 = this.field1.G
 proc `G=`*(this: var DACField2, value: U8) = this.field1.G = value
 proc B*(this: DACField2): U8 = this.field1.B
 proc `B=`*(this: var DACField2, value: U8) = this.field1.B = value
-proc DACstate*(this: DACDacsr): U8 = this.field1.DACstate
-proc `DACstate=`*(this: var DACDacsr, value: U8) = this.field1.DACstate = value
 
 template chkRegidx*(this, n: untyped): untyped {.dirty.} =
   if int(n) > sizeof(this.regs):
     ERROR("register index out of bound", n)
 
-  if not(toBool(this.regs[n])):
-    ERROR("not implemented")
+  if isNil(this.regs[n]):
+    ERROR("Cannot write to register index $#[$#] - it is nil" % [
+      $typeof(this), $n])
 
-proc getWindowsize*(this: var CRT, x: ptr U16, y: ptr U16): void =
-  x[] = 8 * this.hdeer.HDEE
-  y[] = 8 * this.vdeer.VDEE
 
-proc getWindowsize*(this: var VGA, x: ptr U16, y: ptr U16): void =
+proc getWindowsize*(this: var CRT, x: var U16, y: var U16): void =
+  x = charWidth * this.hdeer.HDEE
+  y = charHeight * this.vdeer.VDEE
+
+proc getWindowsize*(this: var VGA, x: var U16, y: var U16): void =
   this.crt.getWindowsize(x, y)
 
 proc graphicMode*(this: var GraphicController): gmodeT =
@@ -577,12 +495,18 @@ proc getFont*(this: var Sequencer, att: U8): ptr U8 =
 
 
 proc attrIndexText*(this: var CRT, n: U32): U8 =
+  # In alphanumeric mode the four planes are assigned distinct tasks. Plane
+  # 0 contains character data, while plane 1 contains Attribute data.
   let
     # Compute column based on the display width
-    x    = U16(n mod (8 * this.hdeer.HDEE))
+    x    = U16(n mod (charWidth * this.hdeer.HDEE))
     # Compute row
-    y    = U16(n div (8 * this.hdeer.HDEE))
-    idx  = (y div (this.mslr.MSL + 1) * this.hdeer.HDEE) + x div 8
+    y    = U16(n div (charHeight * this.hdeer.HDEE))
+    idx  = (
+      y div ( # Number of characters per row
+        (this.mslr.MSL + 1) * # (Character height - 1) + 1
+        this.hdeer.HDEE) # Display height
+      ) + x div charWidth
     # Read character codepoint from plane zero
     chr  = this.vga.readPlane(0, U32(idx * 2))
     # Read character attributes from plane one
@@ -600,39 +524,28 @@ proc attrIndexText*(this: var CRT, n: U32): U8 =
 
 
 proc dacIndex*(this: var Attribute, index: U8): U8 =
-  var dacIdx: U8
   type
-    field1 = object
+    IpData = object
       low {.bitsize: 4.}: U8
       high {.bitsize: 2.}: U8
 
-  type
-    IpData {.union.} = object
-      raw: U8
-      field1: field1
-
-  proc low(this: IpData): U8 = this.field1.low
-  proc `low=`(this: var IpData, value: U8) = this.field1.low = value
-  proc high(this: IpData): U8 = this.field1.high
-  proc `high=`(this: var IpData, value: U8) = this.field1.high = value
-
   let ipData = cast[IpData](this.ipr[index and 0xF])
-  if toBool(this.amcr.GAM):
-    dacIdx = ipData.low
-    dacIdx = (dacIdx + ((if toBool(this.amcr.P54S):
-              this.csr.SC45
+  if toBool(this.amcr.AGTE):
+    result = ipData.low
+    if toBool(this.amcr.P54S):
+      result += (this.csr.SC45 shl 4)
 
-            else:
-              ipData.high
-            )) shl 4)
-    dacIdx = (dacIdx + this.csr.SC67 shl 6)
+    else:
+      result += ipData.high shl 4
+
+    result += this.csr.SC67 shl 6
 
   else:
-    dacIdx = ipData.low
-
-  return dacIdx
+    result = ipData.low
 
 proc translateRgb*(this: var DAC, index: U8): U32 =
+  ## Translate color index (6-bit) into concrete value of the RGB using
+  ## `this.clut` map.
   var rgb: U32
   rgb = U32(this.clut[index].R shl 0x02)
   rgb = U32(rgb + this.clut[index].G shl 0x0A)
@@ -642,8 +555,8 @@ proc translateRgb*(this: var DAC, index: U8): U32 =
 proc in8*(this: var DAC, memAddr: U16): U8 =
   var v: U8
   case memAddr:
-    of 0x3C6: return this.pelmr.raw
-    of 0x3C7: return this.dacsr.raw
+    of 0x3C6: return cast[U8](this.pelmr)
+    of 0x3C7: return cast[U8](this.dacsr)
     of 0x3C9:
       v = this.clut[this.rPar.index].raw[postInc(this.progress)]
       if this.progress == 3:
@@ -663,13 +576,13 @@ proc out8*(this: var DAC, memAddr: U16, v: U8): void =
       if v > 0xFF:
         ERROR("")
 
-      this.rPar.raw = v
+      this.rPar = cast[DACRPar](v)
       this.progress = 0
     of 0x3C8:
       if v > 0xFF:
         ERROR("")
 
-      this.wPar.raw = v
+      this.wPar = cast[DACWPar](v)
       this.progress = 0
     of 0x3C9:
       this.clut[this.wPar.index].raw[postInc(this.progress)] = v
@@ -687,7 +600,7 @@ proc initDAC*(v: VGA): DAC =
 
 proc rgbImage*(this: var VGA, buffer: var seq[U8], size: int): void =
   ## Fill image buffer of `size*3` with `R,G,B` value triples
-  var mode: gmodeT = this.gc.graphicMode()
+  let mode: gmodeT = this.gc.graphicMode()
   var idx = 0
   for i in 0 ..< size:
     let attrIdx: U8 =
@@ -712,6 +625,19 @@ proc rgbImage*(this: var VGA, buffer: var seq[U8], size: int): void =
     buffer[idx] = U8((rgb shr 16) and 0xFF)
     inc idx
 
+proc txtBuffer*(
+    this: var VGA, offset: U32 = 0x8000): seq[seq[tuple[ch: char, attr: U8]]] =
+
+  for row in 0u8 ..< this.crt.vdeer.VDEE:
+    var rowBuf = newSeqWith(this.crt.hdeer.HDEE.int, ('0', 0u8))
+    for cell in 0u8 ..< this.crt.hdeer.HDEE:
+      let idx = (this.crt.vdeer.VDEE.U32 * row.U32 + cell.U32) * 2 + offset
+      let chr = this.readPlane(0, idx).char()
+      let att = this.readPlane(1, idx)
+      rowBuf[cell] = (chr, att)
+
+    result.add rowBuf
+
 proc in8*(this: var VGA, memAddr: U16): U8 =
   case memAddr:
     of 0x3C2: return 0
@@ -733,24 +659,35 @@ proc read8*(this: var VGA, offset: U32): U8 =
 
 proc write*(this: var GraphicController, nplane: U8, offset: U32, v: U8)
 
-proc writePlane*(this: var Sequencer, n: U8, o: U32, v: U8) =
-  this.logger.scope "Write to plane, sequencer"
+proc writePlane*(this: var Sequencer, n: U8, offset: U32, v: U8) =
+  this.logger.scope "Write to plane, sequencer n=$#, offset=$#, v=$#".format(
+    n, toHexTrim(offset), v)
+
   if toBool((cast[U8](this.mapMr) shr n) and 1):
-    this.vga.gc.write(n, o, v)
+    this.vga.gc.write(n, offset, v)
 
 proc writePlane*(this: var VGA, nplane: U8, offset: U32, v: U8): void =
+  this.logger.scope "Write to vga plane n=$#, offset=$#, v=$#".format(
+    nplane, offset.toHexTrim(), v)
+
   if nplane > 3 or offset > (1 shl 16) - 1:
     ERROR("Out of Plane range")
 
   this.plane[nplane][offset] = v
 
 proc write*(this: var Sequencer, offset: U32, v: U8): void =
-  this.logger.scope "Write to sequencer"
+  this.logger.scope "Write to sequencer, offset=$#, v=$#".format(
+    toHexTrim(offset), v)
+
   var offset = offset
   if not(this.memMr.EM.toBool()):
+    # Cut off lower indices of the memory if "Extended Memory" is not
+    # enabled.
     offset = (offset and (1 shl 16) - 1)
 
   if this.memMr.C4.toBool():
+    # "Chain 4" is enabled, using lower bits of the offset as an indicator
+    # for a plane index.
     this.writePlane(U8(offset and 3), offset and (not(3'u32)), v)
 
   else:
@@ -765,7 +702,9 @@ proc write*(this: var Sequencer, offset: U32, v: U8): void =
 
 
 proc write8*(this: var VGA, offset: U32, v: U8): void =
-  this.logger.scope "Write 8 to VGA"
+  this.logger.scope "Write 8 to VGA, offset=$#, v=$#".format(
+    toHexTrim(offset), v)
+
   var count {.global.}: int = 0
   if this.mor.ER.toBool():
     this.seq.write(offset, v)
@@ -873,7 +812,7 @@ proc out8*(this: var Sequencer, memAddr: U16, v: U8): void =
 
 proc in8*(this: var CRT, memAddr: U16): U8 =
   case memAddr:
-    of 0x3B4, 0x3D4: return this.crtcar.raw
+    of 0x3B4, 0x3D4: return cast[U8](this.crtcar)
     of 0x3B5, 0x3D5: return this.regs[this.crtcar.INDX][]
     else: return high(U8)
 
@@ -881,7 +820,7 @@ proc out8*(this: var CRT, memAddr: U16, v: U8): void =
   case memAddr:
     of 0x3B4, 0x3D4:
       chkRegidx(this, v)
-      this.crtcar.raw = v
+      this.crtcar = cast[CRTCrtcar](v)
 
     of 0x3B5, 0x3D5:
       this.regs[this.crtcar.INDX][] = v
@@ -965,14 +904,17 @@ proc initSequencer*(v: VGA): Sequencer =
 
   se.regs = [
     0x1: nil,
-    0x2: pcast[U8](se.cmr),
-    0x3: pcast[U8](se.mapMr),
-    0x4: pcast[U8](se.cmsr),
-    0x5: pcast[U8](se.memMr),
+    0x2: pcast[U8](addr se.cmr),
+    0x3: pcast[U8](addr se.mapMr),
+    0x4: pcast[U8](addr se.cmsr),
+    0x5: pcast[U8](addr se.memMr),
     0x6: nil,
     0x7: nil,
     0x8: nil
   ]
+
+  echov se.regs[0x2][]
+  # assertRef se.regs[0x02]
 
   se.portio = wrapPortIO(se, in8, out8)
 
@@ -986,13 +928,13 @@ proc initGraphicController*(v: VGA): GraphicController =
       gc.regs[i][] = 0
 
   gc.regs = [
-    0x1: pcast[U8](gc.sr),
-    0x2: pcast[U8](gc.esr),
-    0x3: pcast[U8](gc.ccr),
-    0x4: pcast[U8](gc.drr),
-    0x5: pcast[U8](gc.rmsr),
-    0x6: pcast[U8](gc.gmr),
-    0x7: pcast[U8](gc.mr),
+    0x1: pcast[U8](addr gc.sr),
+    0x2: pcast[U8](addr gc.esr),
+    0x3: pcast[U8](addr gc.ccr),
+    0x4: pcast[U8](addr gc.drr),
+    0x5: pcast[U8](addr gc.rmsr),
+    0x6: pcast[U8](addr gc.gmr),
+    0x7: pcast[U8](addr gc.mr),
     0x8: nil,
     0x9: nil
   ]
@@ -1011,13 +953,13 @@ proc initCRT*(v: VGA): CRT =
   # http://www.osdever.net/FreeVGA/vga/crtcreg.htm
   crt.regs = [
     # Index 00h -- Horizontal Total Register
-    0x00: addr crt.htr.raw,
+    0x00: pcast[U8](addr crt.htr),
     # Index 01h -- End Horizontal Display Register
-    0x01: addr crt.hdeer.raw,
+    0x01: pcast[U8](addr crt.hdeer),
     # Index 02h -- Start Horizontal Blanking Register
-    0x02: addr crt.shbr.raw,
+    0x02: pcast[U8](addr crt.shbr),
     # Index 03h -- End Horizontal Blanking Register
-    0x03: addr crt.ehbr.raw,
+    0x03: pcast[U8](addr crt.ehbr),
     # Index 04h -- Start Horizontal Retrace Register
     0x04: nil,
     # Index 05h -- End Horizontal Retrace Register
@@ -1029,27 +971,27 @@ proc initCRT*(v: VGA): CRT =
     # Index 08h -- Preset Row Scan Register
     0x08: nil,
     # Index 09h -- Maximum Scan Line Register
-    0x09: pcast[U8](crt.mslr),
+    0x09: pcast[U8](addr crt.mslr),
     # Index 0Ah -- Cursor Start Register
-    0x0A: addr crt.csr.raw,
+    0x0A: pcast[U8](addr crt.csr),
     # Index 0Bh -- Cursor End Register
-    0x0B: addr crt.cer.raw,
+    0x0B: pcast[U8](addr crt.cer),
     # Index 0Ch -- Start Address High Register
-    0x0C: addr crt.sahr.raw,
+    0x0C: pcast[U8](addr crt.sahr),
     # Index 0Dh -- Start Address Low Register
-    0x0D: addr crt.salr.raw,
+    0x0D: pcast[U8](addr crt.salr),
     # Index 0Eh -- Cursor Location High Register
-    0x0E: addr crt.clhr.raw,
+    0x0E: pcast[U8](addr crt.clhr),
     # Index 0Fh -- Cursor Location Low Register
-    0x0F: addr crt.cllr.raw,
+    0x0F: pcast[U8](addr crt.cllr),
     # Index 10h -- Vertical Retrace Start Register
     0x10: nil,
     # Index 11h -- Vertical Retrace End Register
     0x11: nil,
     # Index 12h -- Vertical Display End Register
-    0x12: addr crt.vdeer.raw,
+    0x12: pcast[U8](addr crt.vdeer),
     # Index 13h -- Offset Register
-    0x13: addr crt.ofsr.raw,
+    0x13: pcast[U8](addr crt.ofsr),
     # Index 14h -- Underline Location Register
     0x14: nil,
     # Index 15h -- Start Vertical Blanking Register
@@ -1057,7 +999,7 @@ proc initCRT*(v: VGA): CRT =
     # Index 16h -- End Vertical Blanking
     0x16: nil,
     # Index 17h -- CRTC Mode Control Register
-    0x17: addr crt.crtmcr.raw,
+    0x17: pcast[U8](addr crt.crtmcr),
     # Index 18h -- Line Compare Register
     0x18: nil,
   ]

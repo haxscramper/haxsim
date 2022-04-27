@@ -25,6 +25,7 @@ type
     logger*: EmuLogger
     accs*: DataAccess
     intr*: Interrupt
+    vga*: VGA
     fdd*: FDD
 
 func io*(emu: Emulator): IO = emu.accs.io
@@ -57,8 +58,10 @@ proc initEmulator*(set: EmuSetting, logger: EmuLogger): Emulator =
     pit = initPIT()
     syscon = initSysControl(emu.accs.mem)
     com = initCom()
-    vga = initVGA(logger)
-    kb = initKeyboard(emu.accs.mem)
+
+  emu.vga = initVGA(logger)
+
+  var kb = initKeyboard(emu.accs.mem)
 
   picM.setIrq(0, pit)
   picM.setIrq(1, kb)
@@ -83,20 +86,20 @@ proc initEmulator*(set: EmuSetting, logger: EmuLogger): Emulator =
     # selects index of the regiser, second one actually writes to
     # registers.
 
-    emu.accs.io.setPortio(0x3B4, 2, vga.getCrt().portio)
-    emu.accs.io.setPortio(0x3BA, 1, vga.portio)
-    emu.accs.io.setPortio(0x3C0, 2, vga.getAttr().portio)
-    emu.accs.io.setPortio(0x3C2, 2, vga.portio)
-    emu.accs.io.setPortio(0x3C4, 2, vga.getSeq().portio)
-    emu.accs.io.setPortio(0x3C6, 4, vga.getDac().portio)
-    emu.accs.io.setPortio(0x3CC, 1, vga.portio)
-    emu.accs.io.setPortio(0x3CE, 2, vga.getGc().portio)
-    emu.accs.io.setPortio(0x3D4, 2, vga.getCrt().portio)
-    emu.accs.io.setPortio(0x3DA, 1, vga.portio)
+    emu.accs.io.setPortio(0x3B4, 2, emu.vga.getCrt().portio)
+    emu.accs.io.setPortio(0x3BA, 1, emu.vga.portio)
+    emu.accs.io.setPortio(0x3C0, 2, emu.vga.getAttr().portio)
+    emu.accs.io.setPortio(0x3C2, 2, emu.vga.portio)
+    emu.accs.io.setPortio(0x3C4, 2, emu.vga.getSeq().portio)
+    emu.accs.io.setPortio(0x3C6, 4, emu.vga.getDac().portio)
+    emu.accs.io.setPortio(0x3CC, 1, emu.vga.portio)
+    emu.accs.io.setPortio(0x3CE, 2, emu.vga.getGc().portio)
+    emu.accs.io.setPortio(0x3D4, 2, emu.vga.getCrt().portio)
+    emu.accs.io.setPortio(0x3DA, 1, emu.vga.portio)
 
   emu.accs.io.setPortio(0x3F0, 8, emu.fdd.portio)
   emu.accs.io.setPortio(0x3F8, 1, com.portio)
-  emu.accs.io.setMemio(0xA0000, 0x20000, vga.memio)
+  emu.accs.io.setMemio(0xA0000, 0x20000, emu.vga.memio)
 
   return emu
 
