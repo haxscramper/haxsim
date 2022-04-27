@@ -1,7 +1,7 @@
 import instruction/[opcodes, syntaxes, instruction]
 import common
 import hmisc/core/all
-import std/[options, strutils, sequtils, math, enumutils, sets, tables]
+import std/[options, strutils, sequtils, math, enumutils, sets, tables, re]
 import hmisc/other/hpprint
 import hmisc/algo/[hlex_base, lexcast, clformat, clformat_interpolate]
 
@@ -11,6 +11,7 @@ type
     iokReg16
     iokReg32
     iokOffset
+    iokLabel
     iokImmediate
 
   InstrOperandTarget* = object
@@ -26,6 +27,9 @@ type
 
       of iokImmediate:
         value*: int
+
+      of iokLabel:
+        name*: string
 
       of iokOffset:
         section*: string
@@ -44,12 +48,15 @@ type
   InstrDesc* = object
     mnemonic*: ICodeMnemonic
     opcode*: ICode
+    line*, col*: int
     operands*: array[4, Option[InstrOperand]]
 
   InstrStmtKind* = enum
     iskCommand
     iskComment ## Standalone comment
     iskLabel
+    iskConfig
+    iskGlobal
 
   InstrStmt* = object
     text*: string ## Text of the standalone or trailing comment, label
@@ -57,6 +64,13 @@ type
     case kind*: InstrStmtKind
       of iskCommand:
         desc*: InstrDesc
+
+      of iskGlobal:
+        globalDecls*: seq[string]
+
+      of iskConfig:
+        config*: string
+        param*: string
 
       of iskComment, iskLabel:
         discard
@@ -84,10 +98,10 @@ proc matchingTarget(given: InstrOperand, expect: OpAddrKind): bool =
 
     of opAddrRegMem:
       result = (k in regs) or
-               (k in {iokImmediate} and given.indirect)
+               (k in {iokImmediate, iokLabel} and given.indirect)
 
     of opAddrImm:
-      result = k in { iokImmediate }
+      result = k in { iokImmediate, iokLabel }
 
     of opAddr32Kinds:
       result =
@@ -141,7 +155,8 @@ let
 
     opMOV_AH_B_Imm_B: opMOV_RegMem_B_Imm_B,
     opMOV_AL_B_Imm_B: opMOV_RegMem_B_Imm_B,
-    opMOV_BL_B_Imm_B: opMOV_RegMem_B_Imm_B
+    opMOV_BL_B_Imm_B: opMOV_RegMem_B_Imm_B,
+    opMOV_DL_B_Imm_B: opMOV_RegMem_B_Imm_B,
   })
 
 func dedupOpcodes*(code: ICode): ICode =
@@ -161,6 +176,7 @@ func `$`*(instr: InstrOperandTarget): string =
     of iokReg32: "R32:" & $instr.reg32
     of iokImmediate: "M:" & $instr.value
     of iokOffset: "O:" & $instr.value
+    of iokLabel: "L:" & instr.name
 
 func `$`*(instr: InstrOperand): string =
   "[$# k:$# ind:$#$#]" % [
@@ -290,10 +306,6 @@ proc selectOpcode*(instr: var InstrDesc) =
       else:
         failures.add(op, failDesc.join("\n"))
 
-  # for (a, b) in failures:
-  #   echo a
-  #   echo "    ", b
-
   # Some instructions have more specialized versions implemented - for
   # example general `mov r/m16/32 imm16/32` can be encoded using operand
   # `C6`, but if target register is `EAX`, then it is an `B8`. I think some
@@ -305,21 +317,23 @@ proc selectOpcode*(instr: var InstrDesc) =
       toRemove.add opMoreSpecialized[item]
 
   for item in toRemove:
-    # echov "remove", item, item.opIdx().toHex()
     match.excl item
 
   if match.len == 0:
     # No possible matches most likely indicates error in the user input code.
     raise newException(
-      InstrErrorOperands, "No matching code for $# - alternatives:\n$#" % [
+      InstrErrorOperands,
+      "No matching code for $# at $#:$# - alternatives:\n$#" % [
         $instr.mnemonic,
+        $instr.line,
+        $instr.col,
         failures.mapIt("$#:\n$#" % [
           $toUpperAscii($it[0]).toYellow(),
           it[1].indent(2)]).join("\n").indent(2)
       ])
 
   else:
-    assert match.len == 1, $match
+    assert match.len == 1, "$# at $#:$#" % [ $match, $instr.line, $instr.col ]
     instr.opcode = toSeq(match)[0]
 
 proc regCode*(target: InstrOperandTarget): uint8 =
@@ -465,17 +479,32 @@ proc parseOperand*(str: var PosStr): InstrOperand =
     tar = T(kind: iokReg32, reg32: parseEnum[Reg32T](id))
     if dat.isNone(): dat = some opData32
 
+  elif id[0] notin Digits:
+    tar = T(kind: iokLabel, name: id)
+    # dat = some opData32
+
   else:
     tar = T(kind: iokImmediate, value: lexcast[int](id))
 
   result.target = tar
   result.dataKind = dat
 
+proc mapMnemonic(str: string): string =
+  const map = toTable({
+    "JE": "JZ"
+  })
+
+  if str in map:
+    return map[str]
+
+  else:
+    return str
+
 proc parseInstrRaw*(text: string, pos: tuple[line, column: int]): InstrDesc =
   var str = initPosStr(text.toUpperAscii(), pos)
   let mnemonic = str.popIdent().toUpperAscii()
   try:
-    result.mnemonic = parseEnum[ICodeMnemonic](mnemonic)
+    result.mnemonic = parseEnum[ICodeMnemonic](mnemonic.mapMnemonic())
 
   except ValueError:
     raise newException(
@@ -495,14 +524,22 @@ proc parseInstrRaw*(text: string, pos: tuple[line, column: int]): InstrDesc =
     if ?str:
       str.skipWhile({',', ' '})
 
-  var known: Option[OpDataKind]
-  for op in result.operands:
-    if op.isSome() and op.get().dataKind.isSome():
-      known = op.get().dataKind
+  block:
+    # Patch operand sizes
+    var known: Option[OpDataKind]
+    for op in result.operands:
+      if op.isSome() and op.get().dataKind.isSome():
+        known = op.get().dataKind
 
-  for op in mitems(result.operands):
-    if op.isSome() and op.get().dataKind.isNone():
-      op.get().dataKind = known
+    for op in mitems(result.operands):
+      if op.isSome() and op.get().dataKind.isNone():
+        if known.isNone() and op.get().target.kind in { iokLabel }:
+          op.get().dataKind = some opData32
+        else:
+          op.get().dataKind = known
+
+  result.line = pos.line
+  result.col = pos.column
 
 proc parseInstr*(text: string, pos: tuple[line, column: int] = (0, 0)): InstrDesc =
   result = parseInstrRaw(text, pos)
@@ -516,6 +553,9 @@ func instrLabel*(name: string): InstrStmt =
 
 func instrCommand*(desc: InstrDesc): InstrStmt =
   InstrStmt(desc: desc, kind: iskCommand)
+
+func rei*(str: string): Regex =
+  re(str, {reIgnoreCase, reStudy})
 
 proc parseProgram*(prog: string): seq[InstrStmt] =
   var lineNum = 0
@@ -536,8 +576,25 @@ proc parseProgram*(prog: string): seq[InstrStmt] =
       result.add instrLabel(text[0..^2])
 
     else:
-      result.add parseInstr(text, (lineNum, 0)).instrCommand().withIt do:
-        it.text = strip(comment)
+      if text =~ rei"\s*global ":
+        var str = initPosStr(text)
+        str.space()
+        discard str.popIdent()
+        str.space()
+        var names: seq[string]
+        while str[IdentChars]:
+          names.add str.popIdent()
+          str.space()
+          if str[',']:
+            str.next()
+        result.add InstrStmt(kind: iskGlobal, globalDecls: names)
+
+      elif text =~ rei"\s*bits\s+(.*)":
+        result.add InstrStmt(kind: iskConfig, config: "bits", param: matches[0])
+
+      else:
+        result.add parseInstr(text, (lineNum, 0)).instrCommand().withIt do:
+          it.text = strip(comment)
 
     inc lineNum
 

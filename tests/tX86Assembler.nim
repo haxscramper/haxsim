@@ -95,3 +95,8 @@ suite "Primitive instructions":
       check:
         parseInstr(instr).compileInstr(protMode = true) == binProt
         parseInstr(instr).compileInstr(protMode = false) == binReal
+
+suite "BIOS":
+  test "video.asm":
+    const text = readFile(relToSource"assets/video.asm")
+    let prog = parseProgram(text)

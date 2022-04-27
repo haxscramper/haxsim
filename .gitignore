@@ -1,6 +1,4 @@
 **/cache/*
-tests/*
-!tests/*.nim
 *.bin
 *.ods#
 **/htmldocs/*
