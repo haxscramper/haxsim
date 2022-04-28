@@ -405,8 +405,30 @@ proc regCode*(target: InstrOperandTarget): uint8 =
     of iokReg32: uint8(target.reg32)
     else: assert false; 0'u8
 
-proc compileInstr*(instr: InstrDesc, protMode: bool = false): seq[uint8] =
+proc compileInstr*(
+    instr: InstrDesc,
+    labelPatches: var Table[int, string],
+    pos: int,
+    protMode: bool = false,
+  ): seq[uint8] =
+
   let opc = instr.opcode
+  for op in instr.operands:
+    if op.isSome() and op.get().target.segmentOverride.canGet(seg):
+      case seg:
+        of CS: result.insert 0x2E
+        of SS: result.insert 0x36
+        of DS: result.insert 0x3E
+        of ES: result.insert 0x26
+        of FS: result.insert 0x64
+        of GS: result.insert 0x65
+
+  if (instr.usedSize() == 4 and not protMode) or
+     (instr.usedSize() == 2 and protMode):
+    # If instruction used size is different from currently selected
+    # bitness, add operand size override prefix
+    result.insert 0x66
+
   if opc.isExtended():
     result.add cast[array[2, uint8]](opc.opIdx())
 
@@ -469,8 +491,11 @@ proc compileInstr*(instr: InstrDesc, protMode: bool = false): seq[uint8] =
           value = op.get().target.value
 
         elif op.get().target of iokLabel:
+          # If label is used instead of a regular integer it is replaced with dummy
+          # value of zero, and then patched back later, when all label values are
+          # known.
           value = 0
-          echov "backpatch label", op.get().target.name
+          labelPatches[pos + result.len] = op.get().target.name
 
     # If instruction requires encoding immediate values, determine target
     # size and cast provided value.
@@ -480,42 +505,44 @@ proc compileInstr*(instr: InstrDesc, protMode: bool = false): seq[uint8] =
       of 4: result.add cast[array[4, EByte]](U32(value))
       else: assert false, $instr.usedSize()
 
-  for op in instr.operands:
-    if op.isSome() and op.get().target.segmentOverride.canGet(seg):
-      case seg:
-        of CS: result.insert 0x2E
-        of SS: result.insert 0x36
-        of DS: result.insert 0x3E
-        of ES: result.insert 0x26
-        of FS: result.insert 0x64
-        of GS: result.insert 0x65
 
-  if (instr.usedSize() == 4 and not protMode) or
-     (instr.usedSize() == 2 and protMode):
-    # If instruction used size is different from currently selected
-    # bitness, add operand size override prefix.
-    result.insert 0x66
+proc compileInstr*(instr: InstrDesc, protMode: bool = false): seq[U8] =
+  var table: Table[int, string]
+  return compileInstr(instr, table, 0, protMode = protMode)
 
 
 proc compile*(prog: var InstrProgram) =
   var pos: int
+  var patches: Table[int, string]
   for stmt in mitems(prog.stmts):
     case stmt.kind:
       of iskCommand, iskDataDW:
         case stmt.kind:
-          of iskCommand: stmt.binary = compileInstr(stmt.desc)
+          of iskCommand: stmt.binary = compileInstr(stmt.desc, patches, pos)
           of iskDataDW: stmt.binary.add cast[array[2, U8]](stmt.dataDW)
           else: discard
 
-        stmt.crange = pos .. pos + stmt.binary.len
+        stmt.crange = pos ..< pos + stmt.binary.len
         pos += stmt.binary.len
 
       of iskLabel:
-        prog.labels[stmt.text] = pos
-
+        prog.labels[stmt.text.toUpperAscii()] = pos
 
       else:
         discard
+
+  for stmt in mitems(prog.stmts):
+    if stmt of iskCommand:
+      # echov stmt.crange, hshow(stmt.binary, clShowHex)
+      for byt in stmt.crange:
+        if byt in patches:
+          let sub = stmt.crange.b - byt - 1
+          let target = prog.labels[patches[byt]]
+          let slice = sub .. sub + 3
+          # echov "Patching use of", patches[byt], "at", slice, "to value", hshow(target, clShowHex)
+          # echov stmt.binary
+          stmt.binary[slice] = cast[array[4, U8]](target)
+          # echov "fixed to", hshow(stmt.binary, clShowHex)
 
 proc enumNames[E: enum](): seq[string] =
   for val in low(E) .. high(E):

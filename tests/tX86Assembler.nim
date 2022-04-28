@@ -50,8 +50,6 @@ suite "Primitive instructions":
       ]
     }:
       let instrDat = parseInstr(instr)
-      # pprinte instrDat
-      # echov instr
       let compiled = compileInstr(instrDat)
       check:
         compiled == bin
