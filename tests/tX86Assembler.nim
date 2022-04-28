@@ -96,6 +96,16 @@ suite "Primitive instructions":
         parseInstr(instr).compileInstr(protMode = true) == binProt
         parseInstr(instr).compileInstr(protMode = false) == binReal
 
+suite "Programs":
+  test "jump to label":
+    let prog = parseProgram("""
+cursor_x:
+  mov dl, [cursor_x]
+""")
+
+  test "segment register move":
+    let prog = parseProgram("mov  ds, cx")
+
 suite "BIOS":
   test "video.asm":
     const text = readFile(relToSource"assets/video.asm")

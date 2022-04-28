@@ -175,8 +175,8 @@ type
     opPOP_EBP_V                    = (0x5D_00_00'u64, "POP EBP")
     opPOP_ESI_V                    = (0x5E_00_00'u64, "POP ESI")
     opPOP_EDI_V                    = (0x5F_00_00'u64, "POP EDI")
-    opPUSHA_AX_W_CX_W_DX_W_STACK_V = (0x60_00_00'u64, "PUSHA AX CX DX ...")
-    opPOPA_DI_W_SI_W_BP_W_STACK_V  = (0x61_00_00'u64, "POPA DI SI BP ...")
+    opPUSHA                        = (0x60_00_00'u64, "PUSHA")
+    opPOPA                         = (0x61_00_00'u64, "POPA")
     opBOUND_Reg_V_Mem_A_EFLAGS_V   = (0x62_00_00'u64, "BOUND r16/32 m16/32&16/32 eFlags")
     opARPL_RegMem_W_Reg_W          = (0x63_00_00'u64, "ARPL r/m16 r16")
     opFS_FS_W                      = (0x64_00_00'u64, "FS FS")
@@ -634,7 +634,7 @@ func getOpcodes*(code: ICodeMnemonic): seq[ICode] =
     of opMneLTR         : @[ opLTR_TR_W_RegMem_W ]
     of opMneAAS         : @[ opAAS_AL_B_AH_B ]
     of opMneSETO        : @[ opSETO_RegMem_B ]
-    of opMnePUSHA       : @[ opPUSHA_AX_W_CX_W_DX_W_STACK_V ]
+    of opMnePUSHA       : @[ opPUSHA ]
     of opMneJNS         : @[ opJNS_Imm_V, opJNS_Imm_B ]
     of opMneSETNB       : @[ opSETNB_RegMem_B ]
     of opMneFS          : @[ opFS_FS_W ]
@@ -693,7 +693,7 @@ func getOpcodes*(code: ICodeMnemonic): seq[ICode] =
     of opMneJMPF        : @[ opJMPF_A_P, opJMPF_Mem_P ]
     of opMneRCR         : @[ opRCR_RegMem_B_Imm_B, opRCR_RegMem_V_Imm_B, opRCR_RegMem_B_One_B, opRCR_RegMem_V_One_B, opRCR_RegMem_B_CL_B, opRCR_RegMem_V_CL_B ]
     of opMneJL          : @[ opJL_Imm_V, opJL_Imm_B ]
-    of opMnePOPA        : @[ opPOPA_DI_W_SI_W_BP_W_STACK_V ]
+    of opMnePOPA        : @[ opPOPA ]
     of opMneREPNZ       : @[ opREPNZ_ECX_V ]
     of opMneLOOPZ       : @[ opLOOPZ_ECX_V_Imm_B ]
     of opMneRCL         : @[ opRCL_RegMem_B_Imm_B, opRCL_RegMem_V_Imm_B, opRCL_RegMem_B_One_B, opRCL_RegMem_V_One_B, opRCL_RegMem_B_CL_B, opRCL_RegMem_V_CL_B ]
@@ -941,8 +941,8 @@ func getTestedFlags*(code: ICode): set[OpFlagIO] =
     of opPOP_EBP_V                   : set[OpFlagIO]({})
     of opPOP_ESI_V                   : set[OpFlagIO]({})
     of opPOP_EDI_V                   : set[OpFlagIO]({})
-    of opPUSHA_AX_W_CX_W_DX_W_STACK_V: set[OpFlagIO]({})
-    of opPOPA_DI_W_SI_W_BP_W_STACK_V : set[OpFlagIO]({})
+    of opPUSHA                       : set[OpFlagIO]({})
+    of opPOPA                        : set[OpFlagIO]({})
     of opBOUND_Reg_V_Mem_A_EFLAGS_V  : set[OpFlagIO]({})
     of opARPL_RegMem_W_Reg_W         : set[OpFlagIO]({})
     of opFS_FS_W                     : set[OpFlagIO]({})
@@ -1341,8 +1341,8 @@ func getModifiedFlags*(code: ICode): set[OpFlagIO] =
     of opPOP_EBP_V                   : set[OpFlagIO]({})
     of opPOP_ESI_V                   : set[OpFlagIO]({})
     of opPOP_EDI_V                   : set[OpFlagIO]({})
-    of opPUSHA_AX_W_CX_W_DX_W_STACK_V: set[OpFlagIO]({})
-    of opPOPA_DI_W_SI_W_BP_W_STACK_V : set[OpFlagIO]({})
+    of opPUSHA                       : set[OpFlagIO]({})
+    of opPOPA                        : set[OpFlagIO]({})
     of opBOUND_Reg_V_Mem_A_EFLAGS_V  : set[OpFlagIO]({opfInterrupt, })
     of opARPL_RegMem_W_Reg_W         : set[OpFlagIO]({opfZero, })
     of opFS_FS_W                     : set[OpFlagIO]({})
@@ -1798,8 +1798,8 @@ func getUsedOperands*(code: ICode): array[4, Option[(OpAddrKind, OpDataKind)]] =
     of opPOP_EBP_V                   : [some((AdEBP, DaV))      , nop                     , nop                     , nop                     , ]
     of opPOP_ESI_V                   : [some((AdESI, DaV))      , nop                     , nop                     , nop                     , ]
     of opPOP_EDI_V                   : [some((AdEDI, DaV))      , nop                     , nop                     , nop                     , ]
-    of opPUSHA_AX_W_CX_W_DX_W_STACK_V: [some((AdAX, DaW))       , some((AdCX, DaW))       , some((AdDX, DaW))       , some((AdSTACK, DaV))    , ]
-    of opPOPA_DI_W_SI_W_BP_W_STACK_V : [some((AdDI, DaW))       , some((AdSI, DaW))       , some((AdBP, DaW))       , some((AdSTACK, DaV))    , ]
+    of opPUSHA                       : [nop                     , nop                     , nop                     , nop                     , ]
+    of opPOPA                        : [nop                     , nop                     , nop                     , nop                     , ]
     of opBOUND_Reg_V_Mem_A_EFLAGS_V  : [some((AdReg, DaV))      , some((AdMem, DaA))      , some((AdEFLAGS, DaV))   , nop                     , ]
     of opARPL_RegMem_W_Reg_W         : [some((AdRegMem, DaW))   , some((AdReg, DaW))      , nop                     , nop                     , ]
     of opFS_FS_W                     : [some((AdFS, DaW))       , nop                     , nop                     , nop                     , ]

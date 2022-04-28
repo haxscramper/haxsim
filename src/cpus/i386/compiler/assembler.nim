@@ -1,7 +1,8 @@
 import instruction/[opcodes, syntaxes, instruction]
 import common
 import hmisc/core/all
-import std/[options, strutils, sequtils, math, enumutils, sets, tables, re]
+import hmisc/macros/henumutils
+import std/[options, strutils, sequtils, math, sets, tables, re]
 import hmisc/other/hpprint
 import hmisc/algo/[hlex_base, lexcast, clformat, clformat_interpolate]
 
@@ -10,6 +11,7 @@ type
     iokReg8
     iokReg16
     iokReg32
+    iokSgReg
     iokOffset
     iokLabel
     iokImmediate
@@ -24,6 +26,9 @@ type
 
       of iokReg32:
         reg32*: Reg32T
+
+      of iokSgReg:
+        sgReg*: SgRegT
 
       of iokImmediate:
         value*: int
@@ -59,10 +64,16 @@ type
     iskGlobal
 
   InstrStmt* = object
+    ## Single instruction statement. It jams all the data into single
+    ## object in order to allow further instrospection - correlation
+    ## between single instruction and specific chunk of program code.
     text*: string ## Text of the standalone or trailing comment, label
-                  ## name.
+                  ## name (normalized: uppercased).
+    origin*: tuple[line, col: int] ## Original position of the instruction
     case kind*: InstrStmtKind
       of iskCommand:
+        binary*: seq[EByte] ## Compiled code of the statement
+        crange*: Slice[int] ## Size of the instruction in compiled form
         desc*: InstrDesc
 
       of iskGlobal:
@@ -76,7 +87,9 @@ type
         discard
 
   InstrProgram* = object
-    labels: seq[tuple[name: string, instrs: seq[InstrDesc]]]
+    labels*: Table[string, int] ## Map between normalized (uppercased)
+                                ## label names and
+    stmts*: seq[InstrStmt] ## Full list of statements in the program
 
 type
   InstrParseError* = object of ParseError
@@ -87,9 +100,6 @@ type
 proc matchingTarget(given: InstrOperand, expect: OpAddrKind): bool =
   let k = given.target.kind
   let t = given.target
-  # echov "----"
-  # echov expect
-  # echov given
   const regs = { iokReg8, iokReg16, iokReg32 }
   case expect:
     of opAddrReg:
@@ -101,12 +111,14 @@ proc matchingTarget(given: InstrOperand, expect: OpAddrKind): bool =
                (k in {iokImmediate, iokLabel} and given.indirect)
 
     of opAddrImm:
-      result = k in { iokImmediate, iokLabel }
+      result = k in { iokImmediate, iokLabel } and
+              not given.indirect
 
     of opAddr32Kinds:
-      result =
-         (k == iokReg32 and t.reg32 == opAddrToReg32[expect].get()) or
-         (k == iokReg16 and t.reg16 == Reg16T(opAddrToReg32[expect].get().uint8()))
+      if (k == iokReg32 and t.reg32 == opAddrToReg32[expect].get()) or
+         (k == iokReg16 and
+          t.reg16 == Reg16T(opAddrToReg32[expect].get().uint8())):
+        return true
 
     of opAddr16Kinds:
       result = k == iokReg16 and t.reg16 == opAddrToReg16[expect].get()
@@ -121,27 +133,11 @@ proc matchingTarget(given: InstrOperand, expect: OpAddrKind): bool =
       result = false
 
     of opAddrSReg:
-      result = false
+      result = k == iokSgReg
+      # t.sgReg == opAddrToSgReg[expect].get()
 
     else:
       assert false, $expect.symbolName()
-
-  # if (
-  #   (expect in { opAddrReg } and not given.indirect) or
-  #   (expect in { opAddrRegMem } and operand.indirect)
-  # ) and k in { iokReg8, iokReg16, iokReg32 }:
-  #   result = true
-
-  # elif expect in { opAddrImm } and
-  #      tk in { iokImmediate }:
-  #   result = true
-
-  # elif expect in { opAddrGRegEAX } and
-  #      tk in { iokReg32 }:
-  #   result = true
-
-  # echov tk, expect, result
-
 
 let
   opMoreSpecialized* = toTable({
@@ -165,8 +161,6 @@ func dedupOpcodes*(code: ICode): ICode =
     of opMOV_Reg_B_RegMem_B: opMOV_RegMem_B_Reg_B
     of opSUB_Reg_V_RegMem_V: opSUB_RegMem_V_Reg_V
     of opXOR_Reg_V_RegMem_V: opXOR_RegMem_V_Reg_V
-    # of opMov_Reg_B_RegMem_B: opMov_RegMem_B_Reg_B
-    # of opMOV_Reg_V_Imm_V: opMOV_EAX_D_Imm_V
     else: code
 
 func `$`*(instr: InstrOperandTarget): string =
@@ -174,6 +168,7 @@ func `$`*(instr: InstrOperandTarget): string =
     of iokReg8: "R8:" & $instr.reg8
     of iokReg16: "R16:" & $instr.reg16
     of iokReg32: "R32:" & $instr.reg32
+    of iokSgReg: "S:" & $instr.sgReg
     of iokImmediate: "M:" & $instr.value
     of iokOffset: "O:" & $instr.value
     of iokLabel: "L:" & instr.name
@@ -186,10 +181,14 @@ func `$`*(instr: InstrOperand): string =
     tern(?instr.offset, "+" & $instr.offset.get(), "")
   ]
 
-func hshow*(instr: InstrOperandTarget, opts: HDisplayOpts = defaultHDIsplay): ColoredText =
+func hshow*(
+    instr: InstrOperandTarget,
+    opts: HDisplayOpts = defaultHDIsplay): ColoredText =
   toCyan($instr)
 
-func hshow*(instr: InstrOperand, opts: HDisplayOpts = defaultHDisplay): ColoredText =
+func hshow*(
+    instr: InstrOperand,
+    opts: HDisplayOpts = defaultHDisplay): ColoredText =
   let dat = tern(?instr.dataKind, hshow(instr.dataKind.get(), opts), clt"?")
   let offset = tern(?instr.offset, "+" & hshow(instr.offset.get(), opts), clt"")
 
@@ -271,6 +270,7 @@ proc selectOpcode*(instr: var InstrDesc) =
     else:
       var allMatch = true
       var failDesc: seq[string]
+      var matching: seq[string]
       for idx in 0 ..< giveLen:
         if not allMatch:
           continue
@@ -295,12 +295,19 @@ proc selectOpcode*(instr: var InstrDesc) =
           let msg = format(
             "Target mismatch - wanted '$#' for '$#', but got '$#'",
             $toGreen($expectAddr), idx, $toRed($given))
-          # echov msg
           failDesc.add msg
-
           allMatch = false
 
+        else:
+          matching.add "Target data #$#: $#=$#, addr: $#=$#" % [
+            $idx,
+            $expectData.formatKind(), $givenData.formatKind(),
+            $expectAddr, $given
+          ]
+
       if allMatch:
+        # echov op.dedupOpcodes()
+        # echo matching.join("\n")
         match.incl op.dedupOpcodes()
 
       else:
@@ -323,17 +330,29 @@ proc selectOpcode*(instr: var InstrDesc) =
     # No possible matches most likely indicates error in the user input code.
     raise newException(
       InstrErrorOperands,
-      "No matching code for $# at $#:$# - alternatives:\n$#" % [
+      "No matching code for $# $# at $#:$# - alternatives:\n$#" % [
         $instr.mnemonic,
+        givenOperands.mapIt("[" & $it & "]").join(" "),
         $instr.line,
         $instr.col,
-        failures.mapIt("$#:\n$#" % [
+        failures.mapIt("$# ($# = $#):\n$#" % [
           $toUpperAscii($it[0]).toYellow(),
+          symbolName(it[0]),
+          $hshow(it[0].int, clShowHex),
           it[1].indent(2)]).join("\n").indent(2)
       ])
 
   else:
-    assert match.len == 1, "$# at $#:$#" % [ $match, $instr.line, $instr.col ]
+    if match.len != 1:
+      pprinte instr
+      pprinte match
+      assert false, "$# ($#) at $#:$#" % [
+        $match,
+        match.mapIt(toHexTrim(it.int)).join(", "),
+        $instr.line,
+        $instr.col
+      ]
+
     instr.opcode = toSeq(match)[0]
 
 proc regCode*(target: InstrOperandTarget): uint8 =
@@ -479,6 +498,10 @@ proc parseOperand*(str: var PosStr): InstrOperand =
     tar = T(kind: iokReg32, reg32: parseEnum[Reg32T](id))
     if dat.isNone(): dat = some opData32
 
+  elif id in asConst(enumNames[SgRegT]()):
+    tar = T(kind: iokSgReg, sgReg: parseEnum[SgRegT](id))
+    if dat.isNone(): dat = some opData16
+
   elif id[0] notin Digits:
     tar = T(kind: iokLabel, name: id)
     # dat = some opData32
@@ -557,7 +580,7 @@ func instrCommand*(desc: InstrDesc): InstrStmt =
 func rei*(str: string): Regex =
   re(str, {reIgnoreCase, reStudy})
 
-proc parseProgram*(prog: string): seq[InstrStmt] =
+proc parseProgram*(prog: string): InstrProgram =
   var lineNum = 0
   for line in splitLines(prog):
     var commentStart = line.high
@@ -570,10 +593,10 @@ proc parseProgram*(prog: string): seq[InstrStmt] =
 
     if text.empty():
       if not comment.empty():
-        result.add instrComment(comment)
+        result.stmts.add instrComment(comment)
 
     elif text[^1] == ':':
-      result.add instrLabel(text[0..^2])
+      result.stmts.add instrLabel(text[0..^2])
 
     else:
       if text =~ rei"\s*global ":
@@ -587,13 +610,17 @@ proc parseProgram*(prog: string): seq[InstrStmt] =
           str.space()
           if str[',']:
             str.next()
-        result.add InstrStmt(kind: iskGlobal, globalDecls: names)
+
+        result.stmts.add InstrStmt(
+          kind: iskGlobal, globalDecls: names)
 
       elif text =~ rei"\s*bits\s+(.*)":
-        result.add InstrStmt(kind: iskConfig, config: "bits", param: matches[0])
+        result.stmts.add InstrStmt(
+          kind: iskConfig, config: "bits", param: matches[0])
 
       else:
-        result.add parseInstr(text, (lineNum, 0)).instrCommand().withIt do:
+        result.stmts.add parseInstr(
+            text, (lineNum, 0)).instrCommand().withIt do:
           it.text = strip(comment)
 
     inc lineNum

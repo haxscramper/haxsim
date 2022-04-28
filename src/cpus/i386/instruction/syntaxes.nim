@@ -125,7 +125,6 @@ const
     opAddrGregBH: BH,
   })
 
-
   opAddrToReg16* = toSparseMapArray({
     opAddrGregAX: AX,
     opAddrGregCX: CX,
@@ -146,6 +145,15 @@ const
     opAddrGregEBP: EBP,
     opAddrGregESI: ESI,
     opAddrGregEDI: EDI,
+  })
+
+  opAddrToSgReg* = toSparseMapArray({
+    opAddrSRegES: ES,
+    opAddrSRegCS: CS,
+    opAddrSRegSS: SS,
+    opAddrSRegDS: DS,
+    opAddrSRegFS: FS,
+    opAddrSRegGS: GS,
   })
 
   opAddr8Kinds* = toKeySet(opAddrToReg8)
