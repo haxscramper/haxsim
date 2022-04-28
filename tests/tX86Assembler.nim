@@ -50,7 +50,7 @@ suite "Primitive instructions":
       ]
     }:
       let instrDat = parseInstr(instr)
-      let compiled = compileInstr(instrDat)
+      let compiled = compileInstr(instrDat).data()
       check:
         compiled == bin
 
@@ -61,7 +61,7 @@ suite "Primitive instructions":
       "mov eax, 0x89ABCDEF": u8 [0xB8, 0xEF, 0xCD, 0xAB, 0x89]
     }:
       # echov instr, bin
-      check parseInstr(instr).compileInstr() == bin
+      check parseInstr(instr).compileInstr().data() == bin
 
   test "Indirect addressing":
     for (instr, bin) in {
@@ -80,7 +80,7 @@ suite "Primitive instructions":
         0x02 # Value to move to memory location
       ]
     }:
-      check parseInstr(instr).compileInstr() == bin
+      check parseInstr(instr).compileInstr().data() == bin
 
   test "Protected mode":
     for (instr, bin) in {
@@ -91,8 +91,8 @@ suite "Primitive instructions":
     }:
       let (binReal, binProt) = bin
       check:
-        parseInstr(instr).compileInstr(protMode = true) == binProt
-        parseInstr(instr).compileInstr(protMode = false) == binReal
+        parseInstr(instr).compileInstr(protMode = true).data() == binProt
+        parseInstr(instr).compileInstr(protMode = false).data() == binReal
 
 suite "Programs":
   test "jump to label":
@@ -103,6 +103,22 @@ cursor_x:
 
   test "segment register move":
     let prog = parseProgram("mov  ds, cx")
+
+  test "Label compilation correctness":
+    var prog = parseProgram():
+      """
+jz 0x1234
+jz 0x12
+mov al, 0x12
+on_one:
+  jz on_zero
+on_zero:
+  jz on_one
+"""
+    prog.compile()
+    for cmd in prog.stmts:
+      if cmd of iskCommand:
+        echov cmd.desc.text, "->", cmd.binary.hshow(clShowHex)
 
 suite "BIOS":
   test "video.asm":

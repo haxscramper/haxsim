@@ -53,6 +53,7 @@ type
     offset*: Option[int]
 
   InstrDesc* = object
+    text*: string
     mnemonic*: ICodeMnemonic
     opcode*: ICode
     line*, col*: int
@@ -68,6 +69,13 @@ type
     iskDataDW ## Word data
     iskDataDD ## Doubleword data
 
+  InstrBinaryPart* = object
+    location*: typeof(instantiationInfo())
+    data*: seq[U8]
+    pos*: int
+
+  InstrBinary* = seq[InstrBinaryPart]
+
   InstrStmt* = object
     ## Single instruction statement. It jams all the data into single
     ## object in order to allow further instrospection - correlation
@@ -75,7 +83,7 @@ type
     text*: string ## Text of the standalone or trailing comment, label
                   ## name (normalized: uppercased).
     origin*: tuple[line, col: int] ## Original position of the instruction
-    binary*: seq[EByte] ## Compiled code of the statement
+    binary*: InstrBinary ## Compiled code of the statement
     crange*: Slice[int] ## Size of the instruction in compiled form
     case kind*: InstrStmtKind
       of iskCommand:
@@ -266,10 +274,17 @@ func usedSize(instr: InstrDesc): uint8 =
   for op in instr.operands:
     if op.isSome():
       let op = op.get()
-      if op.indirect:
+      if op.indirect or op.target of { iokImmediate, iokLabel }:
         # If indirect addressing is used, operand sizes depend on the
         # explicitly specified data size, such as `byte [ebx]`, `word
-        # [eax]` and so on
+        # [eax]` and so on..
+        #
+        # Immediate values don't have dedicated size based on address, so
+        # they go through specified data kind as well.
+        #
+        # Size of the label target is based on the 'real/protected' mode
+        # state at the time of parsing (it can be altered using `bits 16`,
+        # `bits 32` directive).
         case op.dataKind.get():
           of opData8: return 1
           of opData16: return 2
@@ -282,7 +297,7 @@ func usedSize(instr: InstrDesc): uint8 =
         case op.target.kind:
           of iokReg8: return 1
           of iokReg16, iokSgReg: return 2
-          of iokReg32, iokLabel: return 4
+          of iokReg32: return 4
           else: assert false, $op.target.kind
 
 proc selectOpcode*(instr: var InstrDesc) =
@@ -405,35 +420,46 @@ proc regCode*(target: InstrOperandTarget): uint8 =
     of iokReg32: uint8(target.reg32)
     else: assert false; 0'u8
 
+template bin(it: untyped, inPos: int): untyped =
+  var res = InstrBinaryPart(
+    location: instantiationInfo(fullPaths = true),
+    pos: inPos)
+
+  res.data.add it
+  res
+
 proc compileInstr*(
     instr: InstrDesc,
     labelPatches: var Table[int, string],
     pos: int,
     protMode: bool = false,
-  ): seq[uint8] =
+  ): InstrBinary =
 
   let opc = instr.opcode
+  var pos = pos
   for op in instr.operands:
     if op.isSome() and op.get().target.segmentOverride.canGet(seg):
       case seg:
-        of CS: result.insert 0x2E
-        of SS: result.insert 0x36
-        of DS: result.insert 0x3E
-        of ES: result.insert 0x26
-        of FS: result.insert 0x64
-        of GS: result.insert 0x65
+        of CS: result.add bin(0x2E, postInc(pos))
+        of SS: result.add bin(0x36, postInc(pos))
+        of DS: result.add bin(0x3E, postInc(pos))
+        of ES: result.add bin(0x26, postInc(pos))
+        of FS: result.add bin(0x64, postInc(pos))
+        of GS: result.add bin(0x65, postInc(pos))
 
   if (instr.usedSize() == 4 and not protMode) or
      (instr.usedSize() == 2 and protMode):
     # If instruction used size is different from currently selected
     # bitness, add operand size override prefix
-    result.insert 0x66
+    result.add bin(0x66, postInc(pos))
 
   if opc.isExtended():
-    result.add cast[array[2, uint8]](opc.opIdx())
+    let opc: U16 = opc.opIdx()
+    result.add bin(U8(opc shr 0x8), postInc(pos))
+    result.add bin(U8(opc and 0xFF), postInc(pos))
 
   else:
-    result.add opc.opIdx().uint8()
+    result.add bin(opc.opIdx().uint8(), postInc(pos))
 
   if opc.hasModrm():
     var rm = ModRM()
@@ -480,8 +506,8 @@ proc compileInstr*(
     if opc.isExtendedOpcode():
       rm.reg = opc.opExt()
 
-    result.add cast[EByte](rm)
-    result.add trail
+    result.add bin(cast[EByte](rm), postInc(pos))
+    result.add bin(trail, postInc(pos))
 
   if opc.hasImm8() or opc.hasImm1632():
     var value: int
@@ -500,16 +526,14 @@ proc compileInstr*(
     # If instruction requires encoding immediate values, determine target
     # size and cast provided value.
     case instr.usedSize():
-      of 1: result.add cast[EByte](U8(value))
-      of 2: result.add cast[array[2, EByte]](U16(value))
-      of 4: result.add cast[array[4, EByte]](U32(value))
+      of 1: result.add bin(cast[EByte](U8(value)), postInc(pos))
+      of 2: result.add bin(cast[array[2, EByte]](U16(value)), postInc(pos))
+      of 4: result.add bin(cast[array[4, EByte]](U32(value)), postInc(pos))
       else: assert false, $instr.usedSize()
 
-
-proc compileInstr*(instr: InstrDesc, protMode: bool = false): seq[U8] =
+proc compileInstr*(instr: InstrDesc, protMode: bool = false): InstrBinary =
   var table: Table[int, string]
   return compileInstr(instr, table, 0, protMode = protMode)
-
 
 proc compile*(prog: var InstrProgram) =
   var pos: int
@@ -518,8 +542,12 @@ proc compile*(prog: var InstrProgram) =
     case stmt.kind:
       of iskCommand, iskDataDW:
         case stmt.kind:
-          of iskCommand: stmt.binary = compileInstr(stmt.desc, patches, pos)
-          of iskDataDW: stmt.binary.add cast[array[2, U8]](stmt.dataDW)
+          of iskCommand:
+            stmt.binary = compileInstr(stmt.desc, patches, pos)
+
+          of iskDataDW:
+            stmt.binary.add bin(cast[array[2, U8]](stmt.dataDW), pos)
+
           else: discard
 
         stmt.crange = pos ..< pos + stmt.binary.len
@@ -533,22 +561,24 @@ proc compile*(prog: var InstrProgram) =
 
   for stmt in mitems(prog.stmts):
     if stmt of iskCommand:
-      # echov stmt.crange, hshow(stmt.binary, clShowHex)
-      for byt in stmt.crange:
-        if byt in patches:
-          let sub = stmt.crange.b - byt - 1
-          let target = prog.labels[patches[byt]]
-          let slice = sub .. sub + 3
-          # echov "Patching use of", patches[byt], "at", slice, "to value", hshow(target, clShowHex)
-          # echov stmt.binary
-          stmt.binary[slice] = cast[array[4, U8]](target)
-          # echov "fixed to", hshow(stmt.binary, clShowHex)
+      for slice in mitems(stmt.binary):
+        if slice.pos in patches:
+          let target = prog.labels[patches[slice.pos]]
+          if slice.data.len == 2:
+            slice.data = toSeq(cast[array[2, U8]](target))
+
+          elif slice.data.len == 4:
+            slice.data = toSeq(cast[array[4, U8]](target))
+
+          else:
+            echov slice.data.len
+            assert false, "!!!!!!!!!!!!!!!!!!!!!AAAAAAAAAAAAAAAA SHIT"
 
 proc enumNames[E: enum](): seq[string] =
   for val in low(E) .. high(E):
     result.add $val
 
-proc parseOperand*(str: var PosStr): InstrOperand =
+proc parseOperand*(str: var PosStr, protMode: bool): InstrOperand =
   var dat: Option[OpDataKind]
   var adr: OpAddrKind
   if str.trySkip("BYTE"):
@@ -619,9 +649,26 @@ proc parseOperand*(str: var PosStr): InstrOperand =
 
   elif id[0] notin Digits:
     tar = T(kind: iokLabel, name: id)
+    if dat.isNone() and not result.indirect:
+      if protMode:
+        dat = some opData32
+      else:
+        dat = some opData16
 
   else:
-    tar = T(kind: iokImmediate, value: lexcast[int](id))
+    let v = lexcast[int](id)
+    tar = T(kind: iokImmediate, value: v)
+    if dat.isNone() and not result.indirect:
+      # If used data size is not yet known, determine it based on the
+      # provided value.
+      if v in low(U8).int .. high(U8).int:
+        dat = some opData8
+
+      elif v in low(U16).int .. high(U16).int:
+        dat = some opData16
+
+      elif v in low(U32).int .. high(U32).int:
+        dat = some opData32
 
   result.target = tar
   result.dataKind = dat
@@ -637,7 +684,10 @@ proc mapMnemonic(str: string): string =
   else:
     return str
 
-proc parseInstrRaw*(text: string, pos: tuple[line, column: int]): InstrDesc =
+proc parseInstrRaw*(
+    text: string,
+    protMode: bool,
+    pos: tuple[line, column: int]): InstrDesc =
   var str = initPosStr(text.toUpperAscii(), pos)
   let mnemonic = str.popIdent().toUpperAscii()
   try:
@@ -656,7 +706,7 @@ proc parseInstrRaw*(text: string, pos: tuple[line, column: int]): InstrDesc =
   str.space()
   var idx = 0
   while ?str:
-    result.operands[idx] = some parseOperand(str)
+    result.operands[idx] = some parseOperand(str, protMode)
     inc idx
     if ?str:
       str.skipWhile({',', ' '})
@@ -675,11 +725,16 @@ proc parseInstrRaw*(text: string, pos: tuple[line, column: int]): InstrDesc =
         else:
           op.get().dataKind = known
 
+  result.text = text
   result.line = pos.line
   result.col = pos.column
 
-proc parseInstr*(text: string, pos: tuple[line, column: int] = (0, 0)): InstrDesc =
-  result = parseInstrRaw(text, pos)
+proc parseInstr*(
+    text: string,
+    protMode: bool = false,
+    pos: tuple[line, column: int] = (0, 0)): InstrDesc =
+
+  result = parseInstrRaw(text, protMode, pos)
   selectOpcode(result)
 
 func instrComment*(text: string): InstrStmt =
@@ -696,6 +751,7 @@ func rei*(str: string): Regex =
 
 proc parseProgram*(prog: string): InstrProgram =
   var lineNum = 0
+  var protMode = false
   for line in splitLines(prog):
     var commentStart = line.high
     while 0 <= commentStart and line[commentStart] != ';':
@@ -732,22 +788,40 @@ proc parseProgram*(prog: string): InstrProgram =
         result.stmts.add InstrStmt(
           kind: iskConfig, config: "bits", param: matches[0])
 
+        if matches[0] == "32":
+          protMode = true
+
+        elif matches[0] == "16":
+          protMode = false
+
       elif text =~ rei"\s*dw\s+(.*)":
         result.stmts.add InstrStmt(
           kind: iskDataDW, dataDW: lexcast[U16](matches[0]))
 
       else:
         result.stmts.add parseInstr(
-            text, (lineNum, 0)).instrCommand().withIt do:
+            text, protMode = protMode, (lineNum, 0)
+        ).instrCommand().withIt do:
           it.text = strip(comment)
 
     inc lineNum
 
+func data*(bin: InstrBinary): seq[U8] =
+  for slice in bin:
+    result.add slice.data
+
+
+proc parseCompileProgram*(prog: string): seq[U8] =
+  var prog = parseProgram(prog)
+  prog.compile()
+  for stmt in prog.stmts:
+    if stmt of iskCommand:
+      result.add stmt.binary.data()
 
 startHax()
 
 proc test(code: string, dbg: bool = false) =
-  let instr = parseInstr(code, (0, 0))
+  let instr = parseInstr(code, false, (0, 0))
   if dbg:
     echov code
     pprinte instr

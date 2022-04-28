@@ -66,8 +66,11 @@ while readRow(x):
   let num = align(
     join([
       x.rowEntry("po").toUpper().align(2, padding = '0'),
-      x.rowEntry("so").toUpper().align(3, padding = '0'),
-      x.rowEntry("o").toUpper().ternIt(it notin ["R", ""], it, "0"),
+      x.rowEntry("so").toUpper().align(2, padding = '0'),
+      x.rowEntry("o").toUpper().ternIt(
+        it notin ["R", ""],
+        it.align(2, padding = '0'),
+        "00"),
     ]), 6, padding = '0')
 
 

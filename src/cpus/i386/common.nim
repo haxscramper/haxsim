@@ -120,24 +120,29 @@ func toBool*[T](i: ref T): bool = not isNil(i)
 
 
 func toBin*(u: uint, size: int): string =
+  ## Convert unsigned integer to it's binary representation
   toBin(u.BiggestInt, size)
 
 func isExtended*(icode: ICode): bool =
-  toBool((icode.uint and 0xF0_FF_FF) and 0x0F_00_00)
+  ## Test if opcode requires two-byte extended operand
+  (icode.uint and 0x0F_00_00) == 0x0F_00_00
 
 const
   clShowHex* = hdisplay(flags += {dfUseHex, dfSplitNumbers})
   clShowBin* = hdisplay(flags += {dfUseBin, dfSplitNumbers})
 
 func opIdx*(icode: ICode): uint16 =
+  ## Return operand index - either two-byte extended (starting with
+  ## `0x0F`), or one-byte regular
   if isExtended(icode):
-    uint16((icode.uint and 0xFF_FF_00) shr 16)
+    uint16((icode.uint and 0xFF_FF_00) shr 8)
 
   else:
     uint16((icode.uint and 0xFF_00_00) shr 16)
 
 
 func opExt*(icode: ICode): uint8 =
+  ## Return opcode multiplier extension value for instruction
   uint8(icode.uint and 0x00_00_FF)
 
 func toOpcode*(code: uint16, ext: uint8 = 0): ICode =
