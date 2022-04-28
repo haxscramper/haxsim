@@ -156,6 +156,7 @@ const
     opAddrSRegGS: GS,
   })
 
+  opAddrSgKinds* = toKeySet(opAddrToSgReg)
   opAddr8Kinds* = toKeySet(opAddrToReg8)
   opAddr16Kinds* = toKeySet(opAddrToReg16)
   opAddr32Kinds* = toKeySet(opAddrToReg32)

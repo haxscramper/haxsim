@@ -17,6 +17,7 @@ type
     iokImmediate
 
   InstrOperandTarget* = object
+    segmentOverride*: Option[SgRegT]
     case kind*: InstrOperandKind
       of iokReg8:
         reg8*: Reg8T
@@ -62,6 +63,9 @@ type
     iskLabel
     iskConfig
     iskGlobal
+    iskDataDB ## Sequence of bytes
+    iskDataDW ## Word data
+    iskDataDD ## Doubleword data
 
   InstrStmt* = object
     ## Single instruction statement. It jams all the data into single
@@ -85,6 +89,15 @@ type
 
       of iskComment, iskLabel:
         discard
+
+      of iskDataDB:
+        dataDB*: seq[U8]
+
+      of iskDataDW:
+        dataDW*: U16
+
+      of iskDataDD:
+        dataDD*: U32
 
   InstrProgram* = object
     labels*: Table[string, int] ## Map between normalized (uppercased)
@@ -134,7 +147,9 @@ proc matchingTarget(given: InstrOperand, expect: OpAddrKind): bool =
 
     of opAddrSReg:
       result = k == iokSgReg
-      # t.sgReg == opAddrToSgReg[expect].get()
+
+    of opAddrSgKinds:
+      result = k == iokSgReg and t.sgReg == opAddrToSgReg[expect].get()
 
     else:
       assert false, $expect.symbolName()
@@ -143,6 +158,8 @@ let
   opMoreSpecialized* = toTable({
     # Map from more specialied instructions into their generalized
     # counterparts.
+
+    # MOV
     opMOV_EAX_V_Imm_V: opMOV_RegMem_V_Imm_V,
     opMOV_EDX_V_Imm_V: opMOV_RegMem_V_Imm_V,
     opMOV_EBX_V_Imm_V: opMOV_RegMem_V_Imm_V,
@@ -153,6 +170,29 @@ let
     opMOV_AL_B_Imm_B: opMOV_RegMem_B_Imm_B,
     opMOV_BL_B_Imm_B: opMOV_RegMem_B_Imm_B,
     opMOV_DL_B_Imm_B: opMOV_RegMem_B_Imm_B,
+
+    # ADD
+    opADD_Reg_V_RegMem_V: opADD_RegMem_V_Reg_V,
+
+    # CMP
+    opCMP_AL_B_Imm_B: opCMP_RegMem_B_Imm_B,
+
+    # DEC
+    opDEC_ECX_V: opDEC_RegMem_V,
+
+    # INC
+    opINC_EDI_V: opINC_RegMem_V,
+    opINC_EBP_V: opINC_RegMem_V,
+    opINC_ECX_V: opINC_RegMem_V,
+
+    # POP
+    opPOP_EDX_V: opPOP_RegMem_V,
+
+    # PUSH
+    opPUSH_EDX_V: opPUSH_RegMem_V,
+
+    # TEST
+    opTEST_AL_B_Imm_B: opTEST_RegMem_B_Imm_B
   })
 
 func dedupOpcodes*(code: ICode): ICode =
@@ -161,6 +201,8 @@ func dedupOpcodes*(code: ICode): ICode =
     of opMOV_Reg_B_RegMem_B: opMOV_RegMem_B_Reg_B
     of opSUB_Reg_V_RegMem_V: opSUB_RegMem_V_Reg_V
     of opXOR_Reg_V_RegMem_V: opXOR_RegMem_V_Reg_V
+    of opXor_Reg_B_RegMem_B: opXor_RegMem_B_Reg_B
+    of opMOV_Reg_V_RegMem_V: opMOV_RegMem_V_Reg_V
     else: code
 
 func `$`*(instr: InstrOperandTarget): string =
@@ -348,7 +390,7 @@ proc selectOpcode*(instr: var InstrDesc) =
       pprinte match
       assert false, "$# ($#) at $#:$#" % [
         $match,
-        match.mapIt(toHexTrim(it.int)).join(", "),
+        match.mapIt(symbolName(it) & ":" & toHexTrim(it.int)).join(", "),
         $instr.line,
         $instr.col
       ]
@@ -461,6 +503,11 @@ proc parseOperand*(str: var PosStr): InstrOperand =
     str.skip('[')
     id = str.popIdent()
     str.space()
+    if str[':']:
+      str.skip(':')
+      result.target.segmentOverride = some parseEnum[SgRegT](id)
+      id = str.popIdent()
+
     if str['+']:
       str.skip('+')
       str.space()
@@ -492,19 +539,21 @@ proc parseOperand*(str: var PosStr): InstrOperand =
 
   elif id in asConst(enumNames[Reg16T]()):
     tar = T(kind: iokReg16, reg16: parseEnum[Reg16T](id))
-    if dat.isNone(): dat = some opData16
+    if dat.isNone() and not result.indirect:
+      dat = some opData16
 
   elif id in asConst(enumNames[Reg32T]()):
     tar = T(kind: iokReg32, reg32: parseEnum[Reg32T](id))
-    if dat.isNone(): dat = some opData32
+    if dat.isNone() and not result.indirect:
+      dat = some opData32
 
   elif id in asConst(enumNames[SgRegT]()):
     tar = T(kind: iokSgReg, sgReg: parseEnum[SgRegT](id))
-    if dat.isNone(): dat = some opData16
+    if dat.isNone() and not result.indirect:
+      dat = some opData16
 
   elif id[0] notin Digits:
     tar = T(kind: iokLabel, name: id)
-    # dat = some opData32
 
   else:
     tar = T(kind: iokImmediate, value: lexcast[int](id))
@@ -617,6 +666,10 @@ proc parseProgram*(prog: string): InstrProgram =
       elif text =~ rei"\s*bits\s+(.*)":
         result.stmts.add InstrStmt(
           kind: iskConfig, config: "bits", param: matches[0])
+
+      elif text =~ rei"\s*dw\s+(.*)":
+        result.stmts.add InstrStmt(
+          kind: iskDataDW, dataDW: lexcast[U16](matches[0]))
 
       else:
         result.stmts.add parseInstr(

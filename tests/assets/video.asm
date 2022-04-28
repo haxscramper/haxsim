@@ -74,7 +74,7 @@ video_scroll_up:
     xor  ah, ah
     sub  word [cursor_y], ax
     mov  si, ax
-    imul si, 0x28*2
+    imul si, 0x28; *2
     xor  di, di
     mov  cx, 0x19; 0xc8/0x8
     sub  cx, ax
@@ -94,7 +94,7 @@ video_up_loop:
 video_up_attr_loop:
     mov [di], bx
     add di, 2
-    cmp di, 0x28*2*0x19
+    cmp di, 0x28; *2*0x19
     jl  video_up_attr_loop
     pop ds
     popa
