@@ -118,7 +118,7 @@ on_zero:
     prog.compile()
     for cmd in prog.stmts:
       if cmd of iskCommand:
-        echov cmd.desc.text, "->", cmd.binary.hshow(clShowHex)
+        echov cmd.desc.text, "->", cmd.binary.data().hshow(clShowHex)
 
 suite "BIOS":
   test "video.asm":

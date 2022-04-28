@@ -84,7 +84,6 @@ type
                   ## name (normalized: uppercased).
     origin*: tuple[line, col: int] ## Original position of the instruction
     binary*: InstrBinary ## Compiled code of the statement
-    crange*: Slice[int] ## Size of the instruction in compiled form
     case kind*: InstrStmtKind
       of iskCommand:
         desc*: InstrDesc
@@ -364,8 +363,6 @@ proc selectOpcode*(instr: var InstrDesc) =
           ]
 
       if allMatch:
-        # echov op.dedupOpcodes()
-        # echo matching.join("\n")
         match.incl op.dedupOpcodes()
 
       else:
@@ -422,7 +419,7 @@ proc regCode*(target: InstrOperandTarget): uint8 =
 
 template bin(it: untyped, inPos: int): untyped =
   var res = InstrBinaryPart(
-    location: instantiationInfo(fullPaths = true),
+    location: instantiationInfo(fullPaths = false),
     pos: inPos)
 
   res.data.add it
@@ -431,12 +428,11 @@ template bin(it: untyped, inPos: int): untyped =
 proc compileInstr*(
     instr: InstrDesc,
     labelPatches: var Table[int, string],
-    pos: int,
+    pos: var int,
     protMode: bool = false,
   ): InstrBinary =
 
   let opc = instr.opcode
-  var pos = pos
   for op in instr.operands:
     if op.isSome() and op.get().target.segmentOverride.canGet(seg):
       case seg:
@@ -521,7 +517,7 @@ proc compileInstr*(
           # value of zero, and then patched back later, when all label values are
           # known.
           value = 0
-          labelPatches[pos + result.len] = op.get().target.name
+          labelPatches[pos] = op.get().target.name
 
     # If instruction requires encoding immediate values, determine target
     # size and cast provided value.
@@ -533,7 +529,7 @@ proc compileInstr*(
 
 proc compileInstr*(instr: InstrDesc, protMode: bool = false): InstrBinary =
   var table: Table[int, string]
-  return compileInstr(instr, table, 0, protMode = protMode)
+  return compileInstr(instr, table, asVar(0), protMode = protMode)
 
 proc compile*(prog: var InstrProgram) =
   var pos: int
@@ -549,9 +545,6 @@ proc compile*(prog: var InstrProgram) =
             stmt.binary.add bin(cast[array[2, U8]](stmt.dataDW), pos)
 
           else: discard
-
-        stmt.crange = pos ..< pos + stmt.binary.len
-        pos += stmt.binary.len
 
       of iskLabel:
         prog.labels[stmt.text.toUpperAscii()] = pos
@@ -571,7 +564,7 @@ proc compile*(prog: var InstrProgram) =
             slice.data = toSeq(cast[array[4, U8]](target))
 
           else:
-            echov slice.data.len
+            echov slice.data.len, slice.location
             assert false, "!!!!!!!!!!!!!!!!!!!!!AAAAAAAAAAAAAAAA SHIT"
 
 proc enumNames[E: enum](): seq[string] =
