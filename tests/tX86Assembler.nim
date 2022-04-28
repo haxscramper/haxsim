@@ -109,4 +109,5 @@ cursor_x:
 suite "BIOS":
   test "video.asm":
     const text = readFile(relToSource"assets/video.asm")
-    let prog = parseProgram(text)
+    var prog = parseProgram(text)
+    prog.compile()

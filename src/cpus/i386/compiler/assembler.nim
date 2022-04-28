@@ -1,6 +1,7 @@
 import instruction/[opcodes, syntaxes, instruction]
 import common
 import hmisc/core/all
+import hmisc/algo/halgorithm
 import hmisc/macros/henumutils
 import std/[options, strutils, sequtils, math, sets, tables, re]
 import hmisc/other/hpprint
@@ -74,10 +75,10 @@ type
     text*: string ## Text of the standalone or trailing comment, label
                   ## name (normalized: uppercased).
     origin*: tuple[line, col: int] ## Original position of the instruction
+    binary*: seq[EByte] ## Compiled code of the statement
+    crange*: Slice[int] ## Size of the instruction in compiled form
     case kind*: InstrStmtKind
       of iskCommand:
-        binary*: seq[EByte] ## Compiled code of the statement
-        crange*: Slice[int] ## Size of the instruction in compiled form
         desc*: InstrDesc
 
       of iskGlobal:
@@ -280,9 +281,9 @@ func usedSize(instr: InstrDesc): uint8 =
         # the register.
         case op.target.kind:
           of iokReg8: return 1
-          of iokReg16: return 2
-          of iokReg32: return 4
-          else: discard
+          of iokReg16, iokSgReg: return 2
+          of iokReg32, iokLabel: return 4
+          else: assert false, $op.target.kind
 
 proc selectOpcode*(instr: var InstrDesc) =
   var match: HashSet[ICode]
@@ -460,17 +461,34 @@ proc compileInstr*(instr: InstrDesc, protMode: bool = false): seq[uint8] =
     result.add cast[EByte](rm)
     result.add trail
 
-  if instr.operands[1].canGet(src):
-    # TODO remove hardcoded indices, or check if there are no instructions
-    # that would break this code.
-    if opc.hasImm8() or opc.hasImm1632():
-      # If instruction requires encoding immediate values, determine target
-      # size and cast provided value.
-      case instr.usedSize():
-        of 1: result.add cast[EByte](src.target.value.uint8)
-        of 2: result.add cast[array[2, EByte]](src.target.value.uint16)
-        of 4: result.add cast[array[4, EByte]](src.target.value.uint32)
-        else: assert false
+  if opc.hasImm8() or opc.hasImm1632():
+    var value: int
+    for op in ritems(instr.operands):
+      if op.isSome():
+        if op.get().target of iokImmediate:
+          value = op.get().target.value
+
+        elif op.get().target of iokLabel:
+          value = 0
+          echov "backpatch label", op.get().target.name
+
+    # If instruction requires encoding immediate values, determine target
+    # size and cast provided value.
+    case instr.usedSize():
+      of 1: result.add cast[EByte](U8(value))
+      of 2: result.add cast[array[2, EByte]](U16(value))
+      of 4: result.add cast[array[4, EByte]](U32(value))
+      else: assert false, $instr.usedSize()
+
+  for op in instr.operands:
+    if op.isSome() and op.get().target.segmentOverride.canGet(seg):
+      case seg:
+        of CS: result.insert 0x2E
+        of SS: result.insert 0x36
+        of DS: result.insert 0x3E
+        of ES: result.insert 0x26
+        of FS: result.insert 0x64
+        of GS: result.insert 0x65
 
   if (instr.usedSize() == 4 and not protMode) or
      (instr.usedSize() == 2 and protMode):
@@ -478,6 +496,26 @@ proc compileInstr*(instr: InstrDesc, protMode: bool = false): seq[uint8] =
     # bitness, add operand size override prefix.
     result.insert 0x66
 
+
+proc compile*(prog: var InstrProgram) =
+  var pos: int
+  for stmt in mitems(prog.stmts):
+    case stmt.kind:
+      of iskCommand, iskDataDW:
+        case stmt.kind:
+          of iskCommand: stmt.binary = compileInstr(stmt.desc)
+          of iskDataDW: stmt.binary.add cast[array[2, U8]](stmt.dataDW)
+          else: discard
+
+        stmt.crange = pos .. pos + stmt.binary.len
+        pos += stmt.binary.len
+
+      of iskLabel:
+        prog.labels[stmt.text] = pos
+
+
+      else:
+        discard
 
 proc enumNames[E: enum](): seq[string] =
   for val in low(E) .. high(E):
