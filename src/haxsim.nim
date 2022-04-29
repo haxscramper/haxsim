@@ -6,17 +6,17 @@ import haxsim/[
   hl_eval_register
 ]
 
-import argparse
+# import argparse
 
-var p = newParser:
-  command "lex": arg("file")
-  command "parse": arg("file")
-  command "polish": arg("file")
-  command "typed": arg("file")
-  command "eval":
-    arg("file")
-    flag("--ops")
-    flag("--stack")
+# var p = newParser:
+#   command "lex": arg("file")
+#   command "parse": arg("file")
+#   command "polish": arg("file")
+#   command "typed": arg("file")
+#   command "eval":
+#     arg("file")
+#     flag("--ops")
+#     flag("--stack")
 
 proc typedTree(str: string): HLNode =
 
@@ -30,34 +30,35 @@ proc typedTree(str: string): HLNode =
 
 
 proc main*(args: varargs[string]) =
-  var opts = p.parse(toSeq(args))
-  case opts.command:
+  # var opts = p.parse(toSeq(args))
+  let text = ""
+  case "lex":
     of "lex":
-      for tok in hl_lexer.tokenize(opts.lex.get().file.readFile()):
+      for tok in hl_lexer.tokenize(text):
         echo tok.lispRepr()
 
     of "parse":
-      let str = opts.parse.get().file.readFile()
-      let tree = str.tokenize().parse(str)
+      let tree = text.tokenize().parse(text)
       echo treeRepr(tree)
 
     of "typed":
-      echo opts.`typed`.get().file.readFile().typedTree().treeRepr()
+      echo text.typedTree().treeRepr()
 
     of "polish":
-      let tree = opts.polish.get().file.readFile().typedTree()
+      let tree = text.typedTree()
       let ops = compileStack(tree)
       echo ops
 
     of "eval":
-      let tree = opts.eval.get().file.readFile().typedTree()
+      let tree = text.typedTree()
       let ops = compileStack(tree)
       var ctx = newStackEvalCtx()
       ctx.pushScope()
       discard evalStack(
         ops, ctx,
-        opts.eval.get().ops,
-        opts.eval.get().stack
+        false# opts.eval.get().ops
+        ,
+        false # opts.eval.get().stack
       )
 
 when isMainModule:

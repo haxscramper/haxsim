@@ -74,7 +74,6 @@ proc handleInterrupt*(acs: var DataAccess, this: var Interrupt) =
   if this.intrQ.len() == 0:
     return
 
-  echov this.intrQ
   let (n, hard) = this.intrQ.popFirst()
 
   assert globalTick() < 2

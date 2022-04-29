@@ -1,6 +1,6 @@
 import hl_types
 import std/[tables, strformat, sequtils]
-import hmisc/base_errors
+import hmisc/core/all
 
 type
   HLAstEvalCtx* = object

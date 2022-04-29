@@ -58,7 +58,7 @@ suite "Primitive instructions":
     for (instr, bin) in {
       "mov al, 0xAB": u8 [0xB0, 0xAB],
       "mov ax, 0xABCD": u8 [0xB8, 0xCD, 0xAB],
-      "mov eax, 0x89ABCDEF": u8 [0xB8, 0xEF, 0xCD, 0xAB, 0x89]
+      "mov eax, 0x89ABCDEF": u8 [0x66, 0xB8, 0xEF, 0xCD, 0xAB, 0x89]
     }:
       # echov instr, bin
       check parseInstr(instr).compileInstr().data() == bin
@@ -80,7 +80,12 @@ suite "Primitive instructions":
         0x02 # Value to move to memory location
       ]
     }:
-      check parseInstr(instr).compileInstr().data() == bin
+      let res = parseInstr(instr).compileInstr()
+      echov instr
+      for (l, b) in res.binLocations():
+        echov l, b.hshow(clShowHex)
+
+      check res.data() == bin
 
   test "Protected mode":
     for (instr, bin) in {

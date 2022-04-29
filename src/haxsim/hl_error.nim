@@ -1,5 +1,5 @@
 import hmisc/types/colorstring
-import hmisc/[base_errors, hdebug_misc]
+import hmisc/core/all
 import std/lenientops
 
 

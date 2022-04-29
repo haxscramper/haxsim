@@ -913,9 +913,6 @@ proc initSequencer*(v: VGA): Sequencer =
     0x8: nil
   ]
 
-  echov se.regs[0x2][]
-  # assertRef se.regs[0x02]
-
   se.portio = wrapPortIO(se, in8, out8)
 
   return se

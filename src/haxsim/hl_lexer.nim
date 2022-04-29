@@ -2,7 +2,7 @@ import ./hl_types, ./hl_error
 export hl_types
 
 import std/[re]
-import hmisc/[helpers, hdebug_misc]
+import hmisc/core/all
 
 startHax()
 

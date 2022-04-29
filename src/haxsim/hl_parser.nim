@@ -2,7 +2,7 @@ import ./hl_types, ./hl_error
 export hl_types
 
 import std/[strformat]
-import hmisc/[base_errors, hdebug_misc]
+import hmisc/core/all
 import hpprint
 
 type
@@ -320,11 +320,11 @@ Found after {par.at().lispRepr(false)}
 """
             )
 
-            raiseImplementError(par.at(+1).lispRepr())
+            raise newImplementError(par.at(+1).lispRepr())
 
         else:
           par.message(&"Kind {par.at().kind}")
-          raiseImplementError(&"Kind {par.at().kind}")
+          raise newImplementError(&"Kind {par.at().kind}")
 
 
 proc parseFile(par): HLNode =

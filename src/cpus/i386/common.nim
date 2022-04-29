@@ -125,7 +125,7 @@ func toBin*(u: uint, size: int): string =
 
 func isExtended*(icode: ICode): bool =
   ## Test if opcode requires two-byte extended operand
-  (icode.uint and 0x0F_00_00) == 0x0F_00_00
+  (icode.uint and 0xFF_00_00) == 0x0F_00_00
 
 const
   clShowHex* = hdisplay(flags += {dfUseHex, dfSplitNumbers})

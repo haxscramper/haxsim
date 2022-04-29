@@ -134,7 +134,9 @@ proc parseModrm16*(this: var InstrImpl): void =
 
   elif this.mod == modDispByte:
     # Byte signed displacement
-    this.idata.disp8 = ACS.getCode8(0).int8
+    let code = ACS.getCode8(0)
+    echov code.toHexTrim()
+    this.idata.disp8 = code.int8
     CPU.updateEIp(1)
 
 proc parseModrmSibDisp*(this: var InstrImpl): void =

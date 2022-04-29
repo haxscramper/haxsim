@@ -1,12 +1,12 @@
 import hl_types
-import hmisc/[base_errors, hdebug_misc, helpers]
+import hmisc/core/all
 import std/[
   options, tables, macros, strformat,
   strutils, algorithm, sequtils
 ]
 import hpprint, hpprint/hpprint_repr
 import hmisc/types/colorstring
-import fusion/matching
+import hmatching
 
 type
   HLStackEvalCtx* = object
@@ -51,10 +51,10 @@ func `$`*(op: HLStackOp): string =
       result &= " " & $op.value
 
     of hsoCallFunc:
-      result &= " " & toBlue($op.argc)
+      result &= " " & $toBlue($op.argc)
 
     of hsoJump, hsoIfNotJump, hsoForIter:
-      result &= " " & toGreen($op.jumpOffset) & " >>"
+      result &= " " & $toGreen($op.jumpOffset) & " >>"
 
     of hsoStoreName, hsoLoadName:
       result &= " " & $op.varName
@@ -75,15 +75,13 @@ func `$`*(ops: seq[HLStackOp]): string =
   var buf: seq[string]
   for idx, op in pairs(ops):
     if idx in targets:
-      buf.add toRed(">>") & &" {idx:<4} {termAlignLeft($op, opw)} from {toRed($targets[idx])} "
+      buf.add $toRed(">>") & &" {idx:<4} {termAlignLeft($op, opw)} from {toRed($targets[idx])} "
 
     else:
       buf.add &"   {idx:<4} {termAlignLeft($op, opw)} "
 
     if op.annotation.len > 0:
-      buf[^1].add to8Bit("#  " & op.annotation, 13)
-
-
+      buf[^1].add $to8Bit("#  " & op.annotation, 13)
 
   result = buf.join("\n")
 

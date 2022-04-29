@@ -70,7 +70,7 @@ type
     iskDataDD ## Doubleword data
 
   InstrBinaryPart* = object
-    location*: typeof(instantiationInfo())
+    location*: InstInfo
     data*: seq[U8]
     pos*: int
 
@@ -342,7 +342,7 @@ proc selectOpcode*(instr: var InstrDesc) =
           (givenData == opData32 and expectData == opData1632)
         ):
           failDesc.add format(
-            "Data kind mismatch - wanted '$#' for '$#', but got '$#'",
+            "DATA '$#' for '$#', got '$#'",
             $expectData.formatKind().toGreen(), idx,
             $givenData.formatKind().toRed())
 
@@ -350,7 +350,7 @@ proc selectOpcode*(instr: var InstrDesc) =
 
         elif not matchingTarget(given, expectAddr):
           let msg = format(
-            "Target mismatch - wanted '$#' for '$#', but got '$#'",
+            "TARGET '$#' for '$#', got '$#'",
             $toGreen($expectAddr), idx, $toRed($given))
           failDesc.add msg
           allMatch = false
@@ -390,9 +390,9 @@ proc selectOpcode*(instr: var InstrDesc) =
         givenOperands.mapIt("[" & $it & "]").join(" "),
         $instr.line,
         $instr.col,
-        failures.mapIt("$# ($# = $#):\n$#" % [
-          $toUpperAscii($it[0]).toYellow(),
-          symbolName(it[0]),
+        failures.mapIt("$# ($# = $#) $#" % [
+          $toUpperAscii($it[0] |<< 20).toYellow(),
+          symbolName(it[0]) |<< 22,
           $hshow(it[0].int, clShowHex),
           it[1].indent(2)]).join("\n").indent(2)
       ])
@@ -419,7 +419,7 @@ proc regCode*(target: InstrOperandTarget): uint8 =
 
 template bin(it: untyped, inPos: int): untyped =
   var res = InstrBinaryPart(
-    location: instantiationInfo(fullPaths = false),
+    location: currIInfo(false),
     pos: inPos)
 
   res.data.add it
@@ -451,6 +451,7 @@ proc compileInstr*(
 
   if opc.isExtended():
     let opc: U16 = opc.opIdx()
+    # echov "extended", opc.toHexTrim()
     result.add bin(U8(opc shr 0x8), postInc(pos))
     result.add bin(U8(opc and 0xFF), postInc(pos))
 
@@ -511,6 +512,10 @@ proc compileInstr*(
       if op.isSome():
         if op.get().target of iokImmediate:
           value = op.get().target.value
+          # Instruction can have only one immediate field, and it is last
+          # in all instructions, so breaking out immediately when match is
+          # found.
+          break
 
         elif op.get().target of iokLabel:
           # If label is used instead of a regular integer it is replaced with dummy
@@ -518,6 +523,9 @@ proc compileInstr*(
           # known.
           value = 0
           labelPatches[pos] = op.get().target.name
+          # Label is just a shorthand for writing immediate value manually,
+          # same rules apply.
+          break
 
     # If instruction requires encoding immediate values, determine target
     # size and cast provided value.
@@ -640,7 +648,7 @@ proc parseOperand*(str: var PosStr, protMode: bool): InstrOperand =
     if dat.isNone() and not result.indirect:
       dat = some opData16
 
-  elif id[0] notin Digits:
+  elif not((id[0] in {'-', '+'} and id[1] in Digits) or id[0] in Digits):
     tar = T(kind: iokLabel, name: id)
     if dat.isNone() and not result.indirect:
       if protMode:
@@ -710,13 +718,20 @@ proc parseInstrRaw*(
     for op in result.operands:
       if op.isSome() and op.get().dataKind.isSome():
         known = op.get().dataKind
+        break
 
     for op in mitems(result.operands):
-      if op.isSome() and op.get().dataKind.isNone():
-        if known.isNone() and op.get().target.kind in { iokLabel }:
-          op.get().dataKind = some opData32
-        else:
-          op.get().dataKind = known
+      if op.isSome():
+        var op {.byaddr.} = op.get()
+        if op.dataKind.isNone():
+          if known.isNone() and op.target.kind in { iokLabel }:
+            op.dataKind = some opData32
+          else:
+            op.dataKind = known
+
+        elif op.target.kind in { iokImmediate }:
+          # Override immediate values if they are known.
+          op.dataKind = known
 
   result.text = text
   result.line = pos.line
@@ -799,17 +814,33 @@ proc parseProgram*(prog: string): InstrProgram =
 
     inc lineNum
 
+
 func data*(bin: InstrBinary): seq[U8] =
   for slice in bin:
     result.add slice.data
 
+func data*(bin: InstrStmt): seq[U8] = bin.binary.data()
 
-proc parseCompileProgram*(prog: string): seq[U8] =
+iterator binLocations*(bin: InstrBinary): (InstInfo, seq[U8]) =
+  for part in bin:
+    yield (part.location, part.data)
+
+iterator binLocations*(prog: InstrProgram): (InstInfo, seq[U8]) =
+  for stmt in prog.stmts:
+    if stmt of iskCommand:
+      for part in stmt.binary:
+        yield (part.location, part.data)
+
+proc parseBCompileProgramBin*(prog: string): seq[U8] =
   var prog = parseProgram(prog)
   prog.compile()
   for stmt in prog.stmts:
     if stmt of iskCommand:
       result.add stmt.binary.data()
+
+proc parseCompileProgram*(prog: string): InstrProgram =
+  result = parseProgram(prog)
+  result.compile()
 
 startHax()
 

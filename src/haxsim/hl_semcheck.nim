@@ -1,5 +1,5 @@
 import std/[tables, options]
-import hmisc/base_errors
+import hmisc/core/all
 import hl_types, hl_parser
 
 type
@@ -58,10 +58,10 @@ proc typeOfAst(ctx; node: HLNode): HLType =
           result = initHLType(HLList)
 
         else:
-          raiseImplementError(node[0].strVal)
+          raise newImplementError(node[0].strVal)
 
     else:
-      raiseImplementKindError(node)
+      raise newImplementKindError(node)
 
 proc newSymNode*(node: HLNode, semType: HLType, symKind: HlSymKind): HLNode =
   HLNode(symStr: node.strVal, symType: semType,
@@ -115,4 +115,4 @@ proc updateTypes*(node: var HLNode, ctx) =
 
     else:
       echo treeRepr(node)
-      raiseImplementKindError(node)
+      raise newImplementKindError(node)

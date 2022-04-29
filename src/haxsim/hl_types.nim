@@ -2,11 +2,10 @@ import std/[
   strutils, parseutils, sequtils, strformat,
   options, tables, hashes, macros, lists
 ]
-import hmisc/[base_errors]
+import hmisc/core/all
 import hmisc/types/[colorstring]
-import hmisc/helpers
+import hmisc/algo/hstring_algo
 import std/[enumerate]
-
 
 template toArray*[N, T](arg: typed): array[N, T] =
   var result: array[N, T]
@@ -194,12 +193,12 @@ proc initTok*(
     str: tokenStr, line: line, column: column
   )
 
-proc lispRepr*(tok: HLToken, colored: bool = true): string =
+proc lispRepr*(tok: HLToken, colored: bool = true): ColoredText =
   "(" & toBlue(($tok.kind)[3 ..^ 1], colored) & " " &
     toYellow("\"" & tok.str & "\"", colored) & ")"
 
 proc lispRepr*(toks: seq[HLToken], colored: bool = true): string =
-  "(" & mapPairs(toks, lispRepr(rhs)).join(" ") & ")"
+  "(" & mapIt(toks, lispRepr(it)).join(" ") & ")"
 
 #===========================  AST definitions  ===========================#
 
@@ -692,18 +691,18 @@ func `$`*(hlType: HLType): string =
 
   else:
     case hlType.kind:
-      of hvkAny: result = "any".toMagenta
-      of hvkNil: result = "nil".toCyan
-      of hvkInt: result = "int".toBlue
-      of hvkFloat: result = "float".toMagenta
-      of hvkString: result = "string".toYellow
-      of hvkBool: result = "bool".toBlue
+      of hvkAny: result = $("any".toMagenta)
+      of hvkNil: result = $("nil".toCyan)
+      of hvkInt: result = $("int".toBlue)
+      of hvkFloat: result = $("float".toMagenta)
+      of hvkString: result = $("string".toYellow)
+      of hvkBool: result = $("bool".toBlue)
       of hvkArray: result = &"array[{hlType.elemType}]"
       of hvkList: result = &"list[{hlType.elemType}]"
       of hvkRecord: result = "object"
       of hvkTable: result = &"table[{hlType.keyType}, {hlType.valType}]"
       of hvkProc:
-        result &= toRed("proc") & "("
+        result &= $toRed("proc") & "("
         for idx, arg in pairs(hlType.argTypes):
           if idx > 0:
             result &= ", "
@@ -716,14 +715,14 @@ func `$`*(hlType: HLType): string =
 func `$`*(list: HLList): string
 
 func `$`*(val: HLValue): string =
-  if isNil(val): return toBlue("<nil>")
+  if isNil(val): return $toBlue("<nil>")
   case val.kind:
-    of hvkNil: result = toCyan("nil")
+    of hvkNil: result = $toCyan("nil")
     of hvkProc: result = $val.hlType
-    of hvkInt: result = toBlue($val.intVal)
-    of hvkString: result = toYellow($val.strVal)
-    of hvkFloat: result = toMagenta($val.floatVal)
-    of hvkBool: result = toBlue($val.boolVal)
+    of hvkInt: result = $toBlue($val.intVal)
+    of hvkString: result = $toYellow($val.strVal)
+    of hvkFloat: result = $toMagenta($val.floatVal)
+    of hvkBool: result = $toBlue($val.boolVal)
     of hvkAny: result = "~" & $val.anyVal
     of hvkArray:
       result = "["
@@ -739,14 +738,6 @@ func `$`*(val: HLValue): string =
     of hvkList:
       result = "<" & $val.list & ">"
 
-      # for idx, elem in pairs(val.elements):
-      #   if idx > 0:
-      #     result &= ", "
-
-      #   result &= $elem
-
-      # result &= ">"
-
     of hvkTable:
       result = "{"
       for idx, (key, val) in enumerate(pairs(val.table)):
@@ -758,7 +749,7 @@ func `$`*(val: HLValue): string =
       result &= "}"
 
     of hvkRecord:
-      raiseImplementKindError(val)
+      raise newImplementKindError(val)
 
 func `$`*(list: HLList): string =
   var
@@ -792,7 +783,7 @@ func `[]=`*(arr, key, val: HLValue): void =
       arr.table[key] = val
 
     else:
-      raiseArgumentError(
+      raise newArgumentError(
         $arr.kind & " does not support array assignments " &
           &"{arr.kind}[{key.kind}] = {val.kind}"
       )
@@ -812,7 +803,7 @@ func unif*(a, b: HLType): bool =
           true
 
         else:
-          raiseImplementKindError(a)
+          raise newImplementKindError(a)
     )
   )
 
@@ -902,28 +893,28 @@ proc treeRepr*(
 
 
     if isNil(n):
-      return pref & toCyan(" <nil>")
+      return pref & $toCyan(" <nil>")
 
 
     result &= pref & ($n.kind)[3 ..^ 1]
     case n.kind:
       of hnkStrLit:
-        result &= " \"" & toYellow(n.strVal, colored) & "\""
+        result &= " \"" & $toYellow(n.strVal, colored) & "\""
 
       of hnkIntLit:
-        result &= " " & toBlue($n.intVal, colored)
+        result &= " " & $toBlue($n.intVal, colored)
 
       of hnkIdent:
-        result &= " " & toGreen(n.strVal, colored)
+        result &= " " & $toGreen(n.strVal, colored)
 
       of hnkSym:
-        result &= " " & toGreen(n.symStr) & " ("
+        result &= " " & $toGreen(n.symStr) & " ("
 
         case n.symKind:
-          of hskProc: result &= toBlue("proc")
-          of hskVar: result &= toBlue("var")
+          of hskProc: result &= $toBlue("proc")
+          of hskVar: result &= $toBlue("var")
 
-        result &= ") <" & toCyan($n.symType) & ">"
+        result &= ") <" & $toCyan($n.symType) & ">"
 
       else:
         if n.len > 0:

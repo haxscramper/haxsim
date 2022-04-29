@@ -28,6 +28,19 @@ let ppconf = defaultPPrintConf.withIt do:
 suite "Register math":
   test "8-bit":
     check eval(["inc ah", "hlt"]).cpu[AH] == 1'u8
+    let prog = parseCompileProgram():
+      """
+mov ax, 2
+imul ax, -0x2
+hlt
+"""
+    let s = prog.stmts
+    check:
+      s[0].data == u8 [0xB8, 0x02, 0x00]
+      s[1].data == u8 [0x69, 0xC0, 0xFE, 0xFF]
+      s[2].data == u8 [0xF4]
+
+    
     check eval([
       "mov ax, 2", "imul ax, -0x2", "hlt"
     ]).cpu[AX] == cast[uint16](-0x4'i16)
@@ -95,6 +108,24 @@ suite "Interrupts":
 
 suite "Full instruction parser":
   test "Parse and execute commands":
+    var prog = parseProgram(): """
+mov edi, 0xFF56
+mov byte [edi], 65
+mov byte [edi+1], 0x7
+hlt
+"""
+    prog.compile()
+    let s = prog.stmts
+
+    # for (info, data) in prog.binLocations():
+    #   echov info, data.hshow(clShowHex), data.hshow(clShowBin)
+
+    check:
+      s[0].data == u8 [0x66, 0xBF, 0x56, 0xFF, 0x00, 0x00]
+      s[1].data == u8 [0xC6, 0x07, 0x41]
+      s[2].data == u8 [0xC6, 0x47, 0x01, 0x07]
+      s[3].data == u8 [0xF4]
+
     const text = [
       "mov edi, 0xFF56",
       "mov byte [bx], 65",
@@ -104,6 +135,7 @@ suite "Full instruction parser":
 
     block only_parse:
       var full = init(text)
+      echov text
       let cmds = full.parseCommands()
 
       check:

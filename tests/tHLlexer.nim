@@ -1,11 +1,15 @@
 import haxsim/[
-  hl_lexer, hl_parser, hl_eval_ast, hl_eval_stack, hl_semcheck,
+  hl_lexer,
+  hl_parser,
+  hl_eval_ast,
+  hl_eval_stack,
+  hl_semcheck,
   hl_eval_register
 ]
 
 
-import hmisc/hdebug_misc
-import std/[unittest]
+import hmisc/core/all
+import hmisc/preludes/unittest
 
 const str0 = """
 for i in [1, 2, 3] {
