@@ -6,3 +6,5 @@ imgui.ini
 httpserve
 build
 sokol
+em_result.*
+*.wasm*
