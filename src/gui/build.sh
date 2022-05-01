@@ -5,31 +5,25 @@ set -x
 mkdir -p build
 cd build
 rm -rf nimcache
+# rm -rf generated
+mkdir -p generated
+
+nim c -r \
+    --nimcache=nimcache \
+    --gc=refc \
+    --define=directRun \
+    ../em_main.nim
+
+echo "Direct run completed"
 
 nim c \
-    -d=asm \
-    -d=emscripten \
-    -d=useMalloc \
-    --opt=size \
-    --cpu=wasm32 \
-    --cc=clang \
-    --clang.exe=emcc \
-    --clang.linkerexe=emcc \
+    -d=gennyProcHeaderPragmas='{.raises: [], cdecl, exportc, codegenDecl: "$# $#$#".}' \
     --nimcache=nimcache \
-    --noMain \
-    --compileOnly \
-    --exceptions=goto \
     --header=em_main.h \
-    --gc=orc \
-    --out=em_main.o \
+    --noMain \
+    --gc=refc \
+    --out=$PWD/libem_main.a \
+    --app=staticlib \
     ../em_main.nim
 
 cm_verbose=OFF
-
-emcmake cmake \
-    -DCMAKE_VERBOSE_MAKEFILE:BOOL=$cm_verbose \
-    ..
-
-make -j12
-clang-format -i em_result.js
-echo "compiled"
