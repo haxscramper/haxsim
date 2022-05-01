@@ -255,9 +255,7 @@ proc cwde*(this: var InstrImpl) =
   CPU[EAX] = axS.U32
 
 proc cdq*(this: var InstrImpl) =
-  var eax: U32
-  eax = CPU[EAX]
-  CPU[EDX] = U32(if toBool(eax and (1 shl 31)): -1 else: 0)
+  CPU[EDX] = U32 tern(toBool(CPU[EAX] and (1u32 shl 31)), -1, 0)
 
 proc callfPtr16_32*(this: var InstrImpl) =
   this.exec.callf(this.ptr16.U16, this.imm32.U32)

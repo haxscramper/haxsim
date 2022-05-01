@@ -3,3 +3,4 @@
 *.ods#
 **/htmldocs/*
 TAGS
+**/*.out

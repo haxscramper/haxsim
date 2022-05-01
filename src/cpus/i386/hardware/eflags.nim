@@ -7,27 +7,27 @@ type
     field2*: EflagsImplField2Type
   
   EflagsImplField2Type* = object
-    CF* {.bitsize: 1.}: U32
-    field1* {.bitsize: 1.}: U32
-    PF* {.bitsize: 1.}: U32
-    field3* {.bitsize: 1.}: U32
-    AF* {.bitsize: 1.}: U32
-    field5* {.bitsize: 1.}: U32
-    ZF* {.bitsize: 1.}: U32
-    SF* {.bitsize: 1.}: U32
-    TF* {.bitsize: 1.}: U32
-    IF* {.bitsize: 1.}: U32
-    DF* {.bitsize: 1.}: U32
-    OF* {.bitsize: 1.}: U32
-    IOPL* {.bitsize: 2.}: U32
-    NT* {.bitsize: 1.}: U32
+    CF*      {.bitsize: 1.}: U32
+    field1*  {.bitsize: 1.}: U32
+    PF*      {.bitsize: 1.}: U32
+    field3*  {.bitsize: 1.}: U32
+    AF*      {.bitsize: 1.}: U32
+    field5*  {.bitsize: 1.}: U32
+    ZF*      {.bitsize: 1.}: U32
+    SF*      {.bitsize: 1.}: U32
+    TF*      {.bitsize: 1.}: U32
+    IF*      {.bitsize: 1.}: U32
+    DF*      {.bitsize: 1.}: U32
+    OF*      {.bitsize: 1.}: U32
+    IOPL*    {.bitsize: 2.}: U32
+    NT*      {.bitsize: 1.}: U32
     field14* {.bitsize: 1.}: U32
-    RF* {.bitsize: 1.}: U32
-    VM* {.bitsize: 1.}: U32
-    AC* {.bitsize: 1.}: U32
-    VIF* {.bitsize: 1.}: U32
-    VIP* {.bitsize: 1.}: U32
-    ID* {.bitsize: 1.}: U32
+    RF*      {.bitsize: 1.}: U32
+    VM*      {.bitsize: 1.}: U32
+    AC*      {.bitsize: 1.}: U32
+    VIF*     {.bitsize: 1.}: U32
+    VIP*     {.bitsize: 1.}: U32
+    ID*      {.bitsize: 1.}: U32
 
 proc CF*(this: EflagsImpl): U32 =
   this.field2.CF

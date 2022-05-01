@@ -246,7 +246,7 @@ proc addEchoHandler*(full: var FullImpl) =
 
   emu.logger.setHook(echoHandler)
 
-proc initFull*(emuset: var EmuSetting, logger: EmuLogger = initEmuLogger()): FullImpl =
+proc initFull*(emuset: EmuSetting, logger: EmuLogger = initEmuLogger()): FullImpl =
   ## Create full implementation of the evaluation core
   var logger = logger
   logger.logScope ev(eekInitEmulator)

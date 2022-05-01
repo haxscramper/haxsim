@@ -56,7 +56,7 @@ type
     st1*: FDD_st1
     st2*: FDD_st2
     str3*: FDD_str3
-    th*: Thread[int]
+    # th*: Thread[int]
 
   FDD_str3* {.union.} = object
     raw*: uint8

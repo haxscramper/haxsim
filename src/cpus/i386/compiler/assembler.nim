@@ -71,7 +71,7 @@ type
 
   InstrBinaryPart* = object
     location*: InstInfo
-    data*: seq[U8]
+    data*: MemData
     pos*: int
 
   InstrBinary* = seq[InstrBinaryPart]
@@ -99,7 +99,7 @@ type
         discard
 
       of iskDataDB:
-        dataDB*: seq[U8]
+        dataDB*: MemData
 
       of iskDataDW:
         dataDW*: U16
@@ -399,8 +399,6 @@ proc selectOpcode*(instr: var InstrDesc) =
 
   else:
     if match.len != 1:
-      pprinte instr
-      pprinte match
       assert false, "$# ($#) at $#:$#" % [
         $match,
         match.mapIt(symbolName(it) & ":" & toHexTrim(it.int)).join(", "),
@@ -668,7 +666,7 @@ proc parseOperand*(str: var PosStr, protMode: bool): InstrOperand =
       elif v in low(U16).int .. high(U16).int:
         dat = some opData16
 
-      elif v in low(U32).int .. high(U32).int:
+      elif U32(v) in low(U32) .. high(U32):
         dat = some opData32
 
   result.target = tar
@@ -761,6 +759,7 @@ proc parseProgram*(prog: string): InstrProgram =
   var lineNum = 0
   var protMode = false
   for line in splitLines(prog):
+    echo line
     var commentStart = line.high
     while 0 <= commentStart and line[commentStart] != ';':
       dec commentStart
@@ -815,28 +814,32 @@ proc parseProgram*(prog: string): InstrProgram =
     inc lineNum
 
 
-func data*(bin: InstrBinary): seq[U8] =
+func data*(bin: InstrBinary): MemData =
   for slice in bin:
     result.add slice.data
 
-func data*(bin: InstrStmt): seq[U8] = bin.binary.data()
+func data*(bin: InstrStmt): MemData = bin.binary.data()
 
-iterator binLocations*(bin: InstrBinary): (InstInfo, seq[U8]) =
+func data*(prog: InstrProgram): MemData =
+  for stmt in prog.stmts:
+    if stmt of iskCommand:
+      result.add stmt.binary.data()
+
+
+iterator binLocations*(bin: InstrBinary): (InstInfo, MemData) =
   for part in bin:
     yield (part.location, part.data)
 
-iterator binLocations*(prog: InstrProgram): (InstInfo, seq[U8]) =
+iterator binLocations*(prog: InstrProgram): (InstInfo, MemData) =
   for stmt in prog.stmts:
     if stmt of iskCommand:
       for part in stmt.binary:
         yield (part.location, part.data)
 
-proc parseBCompileProgramBin*(prog: string): seq[U8] =
+proc parseBCompileProgramBin*(prog: string): MemData =
   var prog = parseProgram(prog)
   prog.compile()
-  for stmt in prog.stmts:
-    if stmt of iskCommand:
-      result.add stmt.binary.data()
+  return prog.data()
 
 proc parseCompileProgram*(prog: string): InstrProgram =
   result = parseProgram(prog)
