@@ -22,21 +22,40 @@ template printedTrace*(body: untyped) =
 proc printTest*(arg: cstring) {.exportc.} =
   printedTrace():
     echo "pressed button 'init'"
+    echo "input code"
+    echo "----"
+    echo arg
+    echo "----"
+
+    block:
+      var str = "asdfjlk;fdsakjlfasdkljsjdjdsjdjdjd"
+      str.add("123123")
+      echo str
+
     var emuSet: EmuSetting
     emuset.memSize = 0xFFFF
     var full = initFull(emuSet)
-    let code = $arg
-    echo "code range"
-    var prog = parseProgram(code)
-    echo "parsed program"
-    prog.compile()
-    echo "compiled"
-    var bin = prog.data()
-    echo "collected data"
-    full.emu.loadBlob(bin, 0)
+    let i = parseInstr("mov ax, bx")
+
+    # full.loadAt(0): [
+    #   "mov ax, 2",
+    #   "mov dx, 0",
+    #   "div edx",
+    #   "hlt"
+    # ]
+   #  let code = $arg
+   #  echo "code range"
+   #  var prog: InstrProgram
+   # # = parseProgram(code)
+   #  echo "parsed program"
+   #  # prog.compile()
+   #  echo "compiled"
+   #  var bin = prog.data()
+   #  echo "collected data"
+   #  full.emu.loadBlob(bin, 0)
     echo "loaded blob"
     echo "----"
-    echo code
-    echo "compiled to code"
-    echo prog.data()
+    # echo code
+    # echo "compiled to code"
+    # echo prog.data()
     echo "----"

@@ -22,7 +22,8 @@ suite "Primitive instructions":
       "sub eax, ebx",
       "sub eax, ecx",
       "sub ebx, ebx",
-      "sub ebx, ecx"
+      "sub ebx, ecx",
+      "mov ax, bx"
     ]:
       discard parseInstr(instr)
 
