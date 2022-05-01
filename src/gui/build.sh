@@ -24,11 +24,6 @@ nim c \
     --out=em_main.o \
     ../em_main.nim
 
-# find nimcache -iname "*.c" -or -iname "*.h" |
-#     xargs -t -P0 -I{} \
-#         clang-format -style='{ColumnLimit: 120}' \
-#         -i {}
-
 cm_verbose=OFF
 
 emcmake cmake \
@@ -36,7 +31,5 @@ emcmake cmake \
     ..
 
 make -j12
-
 clang-format -i em_result.js
-
 echo "compiled"
