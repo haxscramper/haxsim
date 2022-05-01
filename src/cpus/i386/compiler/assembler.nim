@@ -3,7 +3,8 @@ import common
 import hmisc/core/all
 import hmisc/algo/halgorithm
 import hmisc/macros/henumutils
-import std/[options, strutils, sequtils, math, sets, tables, re]
+import std/[options, strutils, sequtils, math, sets, tables]
+import pkg/regex
 import hmisc/other/hpprint
 import hmisc/algo/[hlex_base, lexcast, clformat, clformat_interpolate]
 
@@ -752,8 +753,27 @@ func instrLabel*(name: string): InstrStmt =
 func instrCommand*(desc: InstrDesc): InstrStmt =
   InstrStmt(desc: desc, kind: iskCommand)
 
-func rei*(str: string): Regex =
-  re(str, {reIgnoreCase, reStudy})
+proc toStrCaptures(m: RegexMatch, s: string): seq[seq[string]] =
+  result = newSeq[seq[string]](m.groupsCount)
+  var j = 0
+  for i in 0 ..< m.groupsCount:
+    result[i] = newSeq[string](m.group(i).len)
+    j = 0
+    for cbounds in m.group(i):
+      result[i][j] = s[cbounds]
+      inc j
+
+func rei*(str: string): Regex = re(str)
+
+func regexMatches(text: string, regex: Regex, matches: var seq[string]): bool =
+  var res: RegexMatch
+  result = match(text, regex, res)
+  for item in res.captures:
+    matches.add text[item[0]]
+
+template `=~`*(text: string, regex: Regex): bool =
+  var matches {.inject.}: seq[string]
+  regexMatches(text, regex, matches)
 
 proc parseProgram*(prog: string): InstrProgram =
   var lineNum = 0

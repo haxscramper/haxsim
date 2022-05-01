@@ -45,6 +45,7 @@
       }
 
       function InitWrappers() {
+        console.log("Initialized wrapper");
         testCall = Module.cwrap("printTest", "string", ["string"]);
       }
     </script>
