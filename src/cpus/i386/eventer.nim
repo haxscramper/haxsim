@@ -17,7 +17,7 @@ type
 
     # value kind start
 
-    eekGetModrmReg = "get modrm.reg"
+    eekGetModrmReg = (12, "get modrm.reg")
     eekGetModrmMod = "get modrm.mod"
     eekGetModrmRM = "get modrm.rm"
 
@@ -73,7 +73,7 @@ type
     eekIn8Unknown = "unknown read from port"
     eekInterruptHandler = "execute interrupt handler setup"
     eekScope = "scope"
-    eekEnd = "end"
+    eekEnd = (901, "end")
 
   EmuEventCategory* = enum
     eecNone

@@ -6,7 +6,7 @@ import std/strformat
 import hmisc/core/all
 import hmisc/core/code_errors
 import hmisc/algo/procbox
-import cpus/i386/maincpp
+import cpus/i386/[maincpp, common, eventer]
 import cpus/i386/emulator/emulator
 import cpus/i386/compiler/assembler
 import pkg/genny
@@ -66,6 +66,20 @@ else:
 
   exportProcs:
     printTest
+
+  exportEnums:
+    EmuEventKind
+    EmuValueSystem
+
+  exportObject EmuValue:
+    discard
+
+  exportRefObject EmuEvent:
+    fields:
+      kind
+      msg
+      value
+      size
 
   writeFiles("generated", "haxsim")
   include build/generated/internal

@@ -4,3 +4,5 @@
 **/htmldocs/*
 TAGS
 **/*.out
+nimcache
+build*

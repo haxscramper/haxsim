@@ -3,9 +3,31 @@
 set -o nounset
 set -o errexit
 
-wip="${1:-webui}"
+wip="${1:-cpp}"
 
 case $wip in
+    "cpp")
+        nim \
+            cpp \
+            --noMain \
+            --gc=refc \
+            --noLinking \
+            src/cpus/core.nim
+
+        prifile=nimcache/nimcache.pri
+        echo "SOURCES *= \\" >$prifile
+        cat nimcache/core.json |
+            jq '.link | .[]' |
+            sd '"(.*)\.o"' '    "$1" \\' |
+            head --bytes -2 >>$prifile
+
+        echo "done"
+        ;;
+
+    "single")
+        nim cpp -r "tests/tEmuEndToEnd.nim"
+        ;;
+
     "test")
         for file in tests/t*.nim; do
             nim c -o:"tests/temp.bin" -r $file

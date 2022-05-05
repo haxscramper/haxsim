@@ -101,7 +101,8 @@ suite "Interrupts":
     full.emu.cpu.setGpreg(SP, max.U16)
 
     full.loop()
-    full.emu.mem.dumpMem()
+    cblock "Dump memory":
+      full.emu.mem.dumpMem()
 
     check full.emu.cpu[BL] == 0x13'u8
     # pprinte(full.emu.cpu.gpregs)

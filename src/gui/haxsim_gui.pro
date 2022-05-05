@@ -9,7 +9,9 @@ INCLUDEPATH *= $$system(./get_nim_dir.sh)
 INCLUDEPATH *= $$PWD/build/nimcache $$PWD/build/generated
 DEPENDPATH *= $$PWD/build/nimcache
 
-message($$INCLUDEPATH)
+ROOT = $$PWD/../..
+
+include($$ROOT/nimcache/nimcache.pri)
 
 #SOURCES *= $$files($$PWD/build/nimcache/*.c)
 LIBS += -L$$PWD/build -lem_main

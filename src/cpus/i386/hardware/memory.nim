@@ -85,7 +85,7 @@ proc destroyMemory*(this: var Memory): void =
 func len*(mem: Memory): int = mem.memory.len()
 
 proc dumpMem*(
-    this: var Memory,
+    this: Memory,
     memAddr: EPointer = 0,
     size: ESize = ESize(this.len())
   ): void =
