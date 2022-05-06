@@ -14,6 +14,7 @@ case $wip in
             --noMain \
             --gc=refc \
             --noLinking \
+            --header=nimcache/genny/em_header.h \
             src/cpus/core.nim
 
         prifile=nimcache/nimcache.pri

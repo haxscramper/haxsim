@@ -20,9 +20,6 @@ template printedTrace*(body: untyped) =
     echo "Exception triggered"
     pprintStackTrace(e)
 
-proc exportedFunc() {.exportc.} =
-  echo "[[[[[[[[[[!!!!!]]]]]]]]]]"
-
 proc printTest*(arg: string)  =
   printedTrace():
     echo "pressed button 'init'"
@@ -64,13 +61,9 @@ when defined(directRun):
 else:
   import std/[macros, compilesettings]
 
-  exportProcs:
-    printTest
-
   exportEnums:
     EmuEventKind
     EmuValueSystem
-
 
   exportRawTypes "using ESize = unsigned int;"
   exportRawTypes "using EByte = unsigned char;"
@@ -90,6 +83,7 @@ else:
       value
       size
 
+  exportRawTypes "using EmuEventHandler = void(*)(EmuEvent, void*);"
   exportRefObject InstrData:
     discard
 
@@ -103,6 +97,9 @@ else:
     procs:
       setRawHook
       setRawHookPayload
+
+    constructor:
+      initEmuLogger
 
   exportRefObject FullImpl:
     fields:

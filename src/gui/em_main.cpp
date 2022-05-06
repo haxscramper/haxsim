@@ -1,18 +1,20 @@
-#include "em_main.h"
-
 #include <QApplication>
 #include <QDebug>
+#include <QDockWidget>
 #include <QLayout>
 #include <QMainWindow>
 #include <QPlainTextEdit>
 #include <QPushButton>
 #include <QVBoxLayout>
+#include "em_main.hpp"
+
+void NimMain();
 
 
 int main(int argc, char** argv) {
     NimMain();
     QApplication a(argc, argv);
-    QMainWindow  w;
+    MainWindow  w;
     auto         main = new QWidget(&w);
     auto         edit = new QPlainTextEdit(main);
     auto         ok   = new QPushButton("Central button", main);
@@ -24,7 +26,7 @@ int main(int argc, char** argv) {
         qDebug() << "Pressed button";
         std::string s    = edit->toPlainText().toStdString();
         char*       data = s.data();
-//        haxsim_print_test(data);
+        //        haxsim_print_test(data);
     });
     w.show();
     return a.exec();

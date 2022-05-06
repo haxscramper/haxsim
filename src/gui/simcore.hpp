@@ -13,7 +13,11 @@ class SimCore : public QObject
   signals:
 
   private:
-    FullImplCxx impl;
+    // NOTE order of declarations is important, logger must be initialized
+    // first, and then implementation should have handle of the logger
+    // object.
+    EmuLoggerCxx logger;
+    FullImplCxx  impl;
 };
 
 #endif // SIMCORE_HPP

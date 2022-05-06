@@ -4,7 +4,8 @@ CONFIG += c++17
 
 SOURCES *= em_main.cpp \
     simcore.cpp
-HEADERS *= build/nimcache/em_main.h \
+HEADERS *= \
+    em_main.hpp \
     simcore.hpp
 #    build/generated/haxsim.h
 INCLUDEPATH *= $$system(./get_nim_dir.sh)
