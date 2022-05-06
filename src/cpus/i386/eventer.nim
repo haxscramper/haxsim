@@ -242,6 +242,16 @@ template scope*(logger: EmuLogger, name: string, depth: int = -3): untyped =
 func setHook*(emu: var EmuLogger, handler: EmuEventHandler) =
   emu.eventHandler = handler
 
+func setRawHook*(emu: var EmuLogger, hook: proc(event: EmuEvent) {.cdecl.}) =
+  emu.setHook(proc(event: EmuEvent) = hook(event))
+
+func setRawHookPayload*(
+    emu: var EmuLogger,
+    hook: proc(event: EmuEvent, data: pointer) {.cdecl.},
+    data: pointer
+  ) =
+  emu.setHook(proc(event: EmuEvent) = hook(event, data))
+
 template noLog*(logger: var EmuLogger, body: untyped): untyped =
   ## Temporarily disable logging for `body` code block
   block:

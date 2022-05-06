@@ -1,14 +1,14 @@
 ## Main implementation file for the web UI. `em_main.c` calls into
 ## procedures exported in this file.
 
-import nimgl/imgui
 import std/strformat
 import hmisc/core/all
 import hmisc/core/code_errors
 import hmisc/algo/procbox
-import cpus/i386/[maincpp, common, eventer]
-import cpus/i386/emulator/emulator
-import cpus/i386/compiler/assembler
+import maincpp, common, eventer
+import emulator/emulator
+import compiler/assembler
+import instruction/instruction
 import pkg/genny
 
 template printedTrace*(body: untyped) =
@@ -62,7 +62,7 @@ when defined(directRun):
   echo "Completed"
 
 else:
-  import std/macros
+  import std/[macros, compilesettings]
 
   exportProcs:
     printTest
@@ -71,8 +71,17 @@ else:
     EmuEventKind
     EmuValueSystem
 
+
+  exportRawTypes "using ESize = unsigned int;"
+  exportRawTypes "using EByte = unsigned char;"
+  exportSeq seq[EByte]:
+    discard
+
+  exportRawTypes "using MemData = SeqEByte;"
+
   exportObject EmuValue:
     discard
+
 
   exportRefObject EmuEvent:
     fields:
@@ -81,5 +90,34 @@ else:
       value
       size
 
-  writeFiles("generated", "haxsim")
-  include build/generated/internal
+  exportRefObject InstrData:
+    discard
+
+  exportRefObject Emulator:
+    discard
+
+  exportObject EmuSetting:
+    discard
+
+  exportRefObject EmuLogger:
+    procs:
+      setRawHook
+      setRawHookPayload
+
+  exportRefObject FullImpl:
+    fields:
+      emu
+      data
+      logger
+
+    constructor:
+      initFull(EmuSetting, EmuLogger)
+
+  const cache = querySetting(nimcacheDir) & "/genny"
+  writeFiles(cache, "haxsim")
+  macro genIncl(path: static[string]): untyped =
+    let pathLit = newLit(path)
+    quote do:
+      include `pathLit`
+
+  genIncl(cache & "/internal")

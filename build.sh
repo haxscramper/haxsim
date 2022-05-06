@@ -7,8 +7,10 @@ wip="${1:-cpp}"
 
 case $wip in
     "cpp")
+        mkdir -p nimcache/genny
         nim \
             cpp \
+            -d=gennyProcHeaderPragmas='{.raises: [], cdecl, exportc, codegenDecl: "$# $#$#".}' \
             --noMain \
             --gc=refc \
             --noLinking \

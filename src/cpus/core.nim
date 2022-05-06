@@ -8,3 +8,5 @@ import hardware/[processor, memory]
 import emulator/[emulator, access]
 import instruction/[syntaxes, instruction]
 import maincpp
+
+import ../gui/em_wrap

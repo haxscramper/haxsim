@@ -30,6 +30,7 @@ type
 
   FullImpl* = ref object
     ## Full implementation of the emulator
+    logger*: EmuLogger
     data*: InstrData ## Data for instruction currently being executed
     impl16*: InstrImpl ## Implementation of the instructions for 16-bit mode
     impl32*: InstrImpl ## Implementation for 32-bit mode
@@ -246,13 +247,14 @@ proc addEchoHandler*(full: var FullImpl) =
 
   emu.logger.setHook(echoHandler)
 
-proc initFull*(emuset: EmuSetting, logger: EmuLogger = initEmuLogger()): FullImpl =
+proc initFull*(
+    emuset: EmuSetting, logger: EmuLogger = initEmuLogger()): FullImpl =
   ## Create full implementation of the evaluation core
   var logger = logger
   logger.logScope ev(eekInitEmulator)
   var emu = initEmulator(emuset, logger)
   let data = InstrData()
-  var full = FullImpl(emu: emu, data: data)
+  var full = FullImpl(emu: emu, data: data, logger: logger)
   assertRef(full.emu)
   full.impl16 = initInstrImpl16(initExecInstr(full.emu, full.data, false))
   full.impl32 = initInstrImpl32(initExecInstr(full.emu, full.data, true))

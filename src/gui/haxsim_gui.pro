@@ -2,19 +2,24 @@ QT     += core gui widgets
 TEMPLATE = app
 CONFIG += c++17
 
-SOURCES *= em_main.cpp
+SOURCES *= em_main.cpp \
+    simcore.cpp
 HEADERS *= build/nimcache/em_main.h \
-    build/generated/haxsim.h
+    simcore.hpp
+#    build/generated/haxsim.h
 INCLUDEPATH *= $$system(./get_nim_dir.sh)
-INCLUDEPATH *= $$PWD/build/nimcache $$PWD/build/generated
+INCLUDEPATH *= $$PWD/build/nimcache
 DEPENDPATH *= $$PWD/build/nimcache
 
 ROOT = $$PWD/../..
 
+INCLUDEPATH *= $$ROOT/nimcache/genny
 include($$ROOT/nimcache/nimcache.pri)
 
-#SOURCES *= $$files($$PWD/build/nimcache/*.c)
-LIBS += -L$$PWD/build -lem_main
+HEADERS *= $$files($$ROOT/nimcache/genny/*.h)
+#LIBS += -L$$PWD/build -lem_main
 
 DISTFILES += \
+    ../../nimcache/genny/haxsim.nim \
+    ../../nimcache/genny/internal.nim \
     em_main.nim
