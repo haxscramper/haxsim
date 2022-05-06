@@ -1,7 +1,14 @@
 #include "simcore.hpp"
+#include <QDebug>
 
 void simcore_cb(EmuEvent event, void* data) {
     SimCore* sim = (SimCore*)data;
+    auto     ev  = EmuEventCxx(event);
+    qDebug() << haxsim_emu_event_kind_to_string(ev.get_kind());
+    switch (ev.get_kind()) {
+        default: {
+        }
+    }
 }
 
 SimCore::SimCore(QObject* parent)
