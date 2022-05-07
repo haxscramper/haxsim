@@ -38,42 +38,46 @@ proc setA20gate*(this: var Memory, ena: bool): void =
 proc isEnaA20gate*(this: Memory): bool =
   return this.a20gate
 
-proc writeMem8*(this: var Memory, memAddr: U32, v: U8): void =
+proc writeMem8*(this: Memory, memAddr: U32, v: U8): void =
   # assert memAddr == 0xFF56, toHex(memAddr)
   assertRange(memAddr, 1)
   this.log ev(eekSetMem8, evalue(v, 8), memAddr)
   this.memory[memAddr] = v
 
 
-proc writeMem16*(this: var Memory, memAddr: U32, v: U16): void =
+proc writeMem16*(this: Memory, memAddr: U32, v: U16): void =
   assertRange(memAddr, 2)
   this.log ev(eekSetMem16, evalue(v, 16), memAddr)
   (cast[ptr U16](addr this.memory[memAddr]))[] = v
 
 
-proc writeMem32*(this: var Memory, memAddr: U32, v: U32): void =
+proc writeMem32*(this: Memory, memAddr: U32, v: U32): void =
   assertRange(memAddr, 4)
   this.log ev(eekSetMem32, evalue(v, 32), memAddr)
   (cast[ptr U32](addr this.memory[memAddr]))[] = v
 
 
-proc readMem32*(this: var Memory, memAddr: U32): U32 =
+proc readMem32*(this: Memory, memAddr: U32): U32 =
   assertRange(memAddr, 4)
   result = (cast[ptr U32](addr this.memory[memAddr]))[]
   this.log ev(eekGetMem32, evalue(result, 32), memAddr)
 
 
-proc readMem16*(this: var Memory, memAddr: U32): U16 =
+proc readMem16*(this: Memory, memAddr: U32): U16 =
   assertRange(memAddr, 2)
   result = (cast[ptr U16](addr this.memory[memAddr]))[]
   this.log ev(eekGetMem16, evalue(result, 16), memAddr)
 
-proc readMem8*(this: var Memory, memAddr: U32): U8 =
+proc readMem8*(this: Memory, memAddr: U32): U8 =
   assertRange(memAddr, 1)
   result = this.memory[memAddr]
   this.log ev(eekGetMem8, evalue(result, 8), memAddr)
 
-proc `[]`*(this: var Memory, memAddr: U32): U8 = readMem8(this, memAddr)
+proc `[]=`*(this: Memory, memAddr: EPointer, value: EByte) =
+    writeMem8(this, memAddr, value)
+
+proc `[]`*(this: Memory, memAddr: EPointer): EByte =
+  readMem8(this, memAddr)
 
 
 proc initMemory*(size: ESize, logger: EmuLogger): Memory =

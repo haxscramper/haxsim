@@ -1,4 +1,4 @@
-import instruction/[base, instruction]
+import instruction/[instruction]
 import instr_base
 import common
 import ./emu

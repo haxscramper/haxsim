@@ -1,14 +1,12 @@
 ## Main implementation file for the web UI. `em_main.c` calls into
 ## procedures exported in this file.
 
-import std/strformat
-import hmisc/core/all
 import hmisc/core/code_errors
-import hmisc/algo/procbox
 import maincpp, common, eventer
 import emulator/emulator
+import hardware/memory
 import compiler/assembler
-import instruction/instruction
+import instruction/[instruction, syntaxes]
 import pkg/genny
 
 template printedTrace*(body: untyped) =
@@ -19,6 +17,15 @@ template printedTrace*(body: untyped) =
     echo e.msg
     echo "Exception triggered"
     pprintStackTrace(e)
+
+proc getMem*(full: FullImpl, memAddr: EPointer): EByte =
+  full.emu.mem[memAddr]
+
+proc setMem*(full: FullImpl, memAddr: EPointer, value: EByte) =
+  full.emu.mem[memAddr] = value
+
+proc getMemSize*(full: FullImpl): int =
+  full.emu.mem.len()
 
 proc printTest*(arg: string)  =
   printedTrace():
@@ -64,9 +71,13 @@ else:
   exportEnums:
     EmuEventKind
     EmuValueSystem
+    Reg8T
+    Reg16T
+    Reg32T
 
   exportRawTypes "using ESize = unsigned int;"
   exportRawTypes "using EByte = unsigned char;"
+  exportRawTypes "using EPointer = unsigned short int;"
   exportSeq seq[EByte]:
     discard
 
@@ -106,6 +117,11 @@ else:
       emu
       data
       logger
+
+    procs:
+      getMem
+      setMem
+      getMemSize
 
     constructor:
       initFull(EmuSetting, EmuLogger)

@@ -10,7 +10,6 @@ import hardware/[processor, memory, io]
 import device/[dev_io]
 import instruction/[
   instruction,
-  base,
   instr16,
   instr32,
   parse,

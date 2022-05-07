@@ -4,17 +4,31 @@
 void simcore_cb(EmuEvent event, void* data) {
     SimCore* sim = (SimCore*)data;
     auto     ev  = EmuEventCxx(event);
-    qDebug() << haxsim_emu_event_kind_to_string(ev.get_kind());
+    using K      = EmuEventKind;
     switch (ev.get_kind()) {
+        case K::EEK_GET_MEM16:
+        case K::EEK_GET_MEM32:
+        case K::EEK_GET_MEM8: {
+            emit sim->memoryRead(ev);
+            break;
+        }
+
+        case K::EEK_SET_MEM8:
+        case K::EEK_SET_MEM16:
+        case K::EEK_SET_MEM32: {
+            emit sim->memoryWrite(ev);
+            break;
+        }
+
         default: {
         }
     }
 }
 
-SimCore::SimCore(QObject* parent)
+SimCore::SimCore(ESize memSize, QObject* parent)
     : QObject{parent}
     , logger(nullptr)
-    , impl(EmuSetting{}, logger.get_handle()) {
+    , impl(EmuSetting{memSize}, logger.get_handle()) {
     auto logger = EmuLoggerCxx(impl.get_logger());
     logger.set_raw_hook_payload(simcore_cb, this);
 }
