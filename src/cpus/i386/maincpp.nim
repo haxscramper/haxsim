@@ -96,39 +96,42 @@ proc parseCommands*(full: var FullImpl): seq[InstrData] =
     result.add tmp
 
 
+proc step*(full: var FullImpl) =
+  full.emu.logger.logScope(ev(eekStartLoopRun))
+  # Reset current instruction data to a new state
+  zeroMem(addr full.data[], sizeof(full.data[]))
+  try:
+    # Check if any device queued in new interupts
+    if full.emu.accs.chkIrq(full.emu.intr):
+      full.emu.cpu.doHalt(false)
+
+    # Handle existing interrupts, if any
+    full.emu.accs.handleInterrupt(full.emu.intr)
+
+    # Fetch instruction data into `full.data` field
+    fetch(full)
+
+    # Depending on the current mode of operation and optional operand
+    # size override, select instruction implementation operation.
+    if full.emu.cpu.isMode32() xor full.data.opSizeOverride:
+      discard exec(full.impl32)
+
+    else:
+      discard exec(full.impl16)
+
+  except EmuCpuException as e:
+    # CPU exception occurred, queue in new interrupt
+    full.log ev(EmuExceptionEvent, eekInterrupt).withIt do:
+      it.exception = e
+
+    full.emu.intr.queueInterrupt(e.kind.uint8, true)
+
+
 proc loop*(full: var FullImpl) =
   assertRef(full.impl16.get_emu())
   assertRef(full.impl16.get_emu())
-
   while not full.emu.cpu.isHalt():
-    full.emu.logger.logScope(ev(eekStartLoopRun))
-    # Reset current instruction data to a new state
-    zeroMem(addr full.data[], sizeof(full.data[]))
-    try:
-      # Check if any device queued in new interupts
-      if full.emu.accs.chkIrq(full.emu.intr):
-        full.emu.cpu.doHalt(false)
-
-      # Handle existing interrupts, if any
-      full.emu.accs.handleInterrupt(full.emu.intr)
-
-      # Fetch instruction data into `full.data` field
-      fetch(full)
-
-      # Depending on the current mode of operation and optional operand
-      # size override, select instruction implementation operation.
-      if full.emu.cpu.isMode32() xor full.data.opSizeOverride:
-        discard exec(full.impl32)
-
-      else:
-        discard exec(full.impl16)
-
-    except EmuCpuException as e:
-      # CPU exception occurred, queue in new interrupt
-      full.log ev(EmuExceptionEvent, eekInterrupt).withIt do:
-        it.exception = e
-
-      full.emu.intr.queueInterrupt(e.kind.uint8, true)
+    step(full)
 
 proc addEchoHandler*(full: var FullImpl) =
   var emu = full.emu

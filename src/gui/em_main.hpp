@@ -3,6 +3,7 @@
 
 #include "simcore.hpp"
 #include <QAbstractTableModel>
+#include <QCheckBox>
 #include <QDebug>
 #include <QDockWidget>
 #include <QLayout>
@@ -145,6 +146,61 @@ class MemoryTable : public QTableView
     explicit MemoryTable(SimCore* _core, QWidget* parent);
 };
 
+
+class EventItemDelegate : public QAbstractItemDelegate
+{
+
+    // QAbstractItemDelegate interface
+  public:
+    void paint(
+        QPainter*                   painter,
+        const QStyleOptionViewItem& option,
+        const QModelIndex&          index) const override {}
+
+    // QAbstractItemDelegate interface
+  public:
+    QSize sizeHint(
+        const QStyleOptionViewItem& option,
+        const QModelIndex&          index) const override {}
+};
+
+
+class EventModel : public QAbstractTableModel
+{
+    SimCore*  core;
+    const int fieldNum = 3;
+
+  public:
+    explicit EventModel(SimCore* _core);
+
+  public:
+    inline int rowCount(const QModelIndex& parent) const override {
+        return core->getEventNum();
+    }
+    inline int columnCount(const QModelIndex& parent) const override {
+        return fieldNum;
+    }
+    QVariant data(const QModelIndex& index, int role) const override;
+
+    inline void newRow(int idx) {
+        qDebug() << "Inserted row for event" << idx;
+        beginInsertRows(QModelIndex(), idx, idx);
+        endInsertRows();
+    }
+};
+
+
+class EventView : public QDockWidget
+{
+    Q_OBJECT
+    SimCore*                    core;
+    std::unique_ptr<EventModel> model;
+    QTableView*                 view;
+
+  public:
+    explicit EventView(SimCore* _core, QWidget* parent);
+};
+
 class CoreEditor : public QWidget
 {
     Q_OBJECT
@@ -156,8 +212,11 @@ class CoreEditor : public QWidget
   private:
     MemoryTable* table;
     struct Tools {
-        QToolBar*    bar;
+        QToolBar* bar;
+        /// Compile input source code
         QPushButton* compile;
+        /// Follow memory input and output operations
+        QCheckBox* followIO;
     } tools;
     QPlainTextEdit* code;
 };
@@ -180,14 +239,21 @@ class RegisterView : public DockWidget
     struct Segment {
         BitEditor *cs, *ds, *es, *fs, *gs, *ss;
     } segment;
+
     struct Main {
         BitEditor *eax, *ecx, *edx, *ebx, //
             *ax, *cx, *dx, *bx,           //
             *ah, *al, *ch, *cl, *dh, *dl, *bh, *bl;
+
     } main;
+
     struct Index {
         BitEditor *esp, *ebp, *esi, *edi, *sp, *bp, *si, *di;
     } index;
+
+    BitEditor* regs8[Reg8T_len];
+    BitEditor* regs16[Reg16T_len];
+    BitEditor* regs32[Reg32T_len];
 };
 
 class VgaView : public DockWidget
@@ -204,10 +270,11 @@ class MainWindow : public QMainWindow
     explicit MainWindow();
 
   private:
-    SimCore       core;
-    CoreEditor*   mem;
-    RegisterView* regs;
-    VgaView*      vga;
+    SimCore       core;   ///< Emulator core object
+    CoreEditor*   mem;    ///< Memory editor widget
+    RegisterView* regs;   ///< Register editor
+    VgaView*      vga;    ///< Vga emulator window
+    EventView*    events; ///< Event log widget
 
     struct Tools {
         QToolBar*    bar;

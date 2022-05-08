@@ -19,13 +19,23 @@ template printedTrace*(body: untyped) =
     pprintStackTrace(e)
 
 proc getMem*(full: FullImpl, memAddr: EPointer): EByte =
-  full.emu.mem[memAddr]
+  ## Return value from the specified location in the physica memory
+  full.emu.mem.memory[memAddr]
 
 proc setMem*(full: FullImpl, memAddr: EPointer, value: EByte) =
-  full.emu.mem[memAddr] = value
+  ## Set value at the specified location in the physical memory
+  full.emu.mem.memory[memAddr] = value
 
 proc getMemSize*(full: FullImpl): int =
+  ## Get physical memory size
   full.emu.mem.len()
+
+proc compileAndLoad*(full: FullImpl, str: string) =
+  ## Compile and load program starting at position zero
+  var prog = parseProgram(str)
+  prog.compile()
+  var bin = prog.data()
+  full.emu.loadBlob(bin, 0)
 
 proc printTest*(arg: string)  =
   printedTrace():
@@ -122,6 +132,8 @@ else:
       getMem
       setMem
       getMemSize
+      compileAndLoad
+      step
 
     constructor:
       initFull(EmuSetting, EmuLogger)

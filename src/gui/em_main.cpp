@@ -15,15 +15,24 @@
 
 void NimMain();
 
-MemoryTable::MemoryTable(SimCore* _core, QWidget* parent)
+MemoryTable::MemoryTable(SimCore* _core, QWidget* parent [[maybe_unused]])
     : core(_core), model(new MemoryModel(_core)) {
     setModel(model.get());
     setItemDelegate(new MemoryCellDelegate());
     resizeColumnsToContents();
     horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
     verticalHeader()->setSectionResizeMode(QHeaderView::ResizeToContents);
-    setMinimumWidth(400);
-    setMinimumHeight(400);
+    //    setMinimumWidth(400);
+    //    setMinimumHeight(400);
+
+    connect(core, &SimCore::fullMemoryReload, [this]() {
+        qDebug() << "Reloading memory table, triggered full data reload";
+        emit model->dataChanged(
+            model->index(0, 0),
+            model->index(
+                model->rowCount(QModelIndex()),
+                model->columnCount(QModelIndex())));
+    });
 }
 
 void greenBorder(QWidget* widget) {
@@ -105,13 +114,26 @@ CoreEditor::CoreEditor(SimCore* _core, QWidget* parent)
     , core(_core)
     , table(new MemoryTable(_core, this))
     , tools(Tools{
-          .bar     = new QToolBar(this),
-          .compile = new QPushButton("Compile", this)})
+          .bar      = new QToolBar(this),
+          .compile  = new QPushButton("Compile", this),
+          .followIO = new QCheckBox("Follow IO", this),
+      })
     , code(new QPlainTextEdit(this)) {
     auto lmain = new QHBoxLayout();
 
     setLayout(lmain);
     lmain->setContentsMargins(0, 0, 0, 0);
+
+    code->setPlainText(R"(mov edi, 0xFF56
+mov byte [bx], 65
+mov byte [bx+1], 0x7
+hlt
+)");
+
+    connect(tools.compile, &QPushButton::clicked, [this]() {
+        this->core->compileAndLoad(this->code->toPlainText());
+        emit this->core->fullMemoryReload();
+    });
 
     lmain->addWidget(stack(
         QBoxLayout::TopToBottom,
@@ -120,7 +142,9 @@ CoreEditor::CoreEditor(SimCore* _core, QWidget* parent)
 
     {
         tools.bar->addWidget(tools.compile);
+        tools.bar->addWidget(tools.followIO);
         tools.compile->setToolTip("Compile assembly source");
+        tools.followIO->setToolTip("Follow memory operations");
     }
 }
 
@@ -137,7 +161,11 @@ void addGridWidgets(
         l->addWidget(widget, row, col, 1, span);
         col += span;
     }
-    if (!label.isEmpty()) { l->addWidget(new QLabel(label), row, col); }
+    if (!label.isEmpty()) {
+        auto lab = new QLabel(label);
+        greenBorder(lab);
+        l->addWidget(lab, row, col);
+    }
 }
 
 RegisterView::RegisterView(QWidget* parent)
@@ -177,8 +205,37 @@ RegisterView::RegisterView(QWidget* parent)
           .bp  = new BitEditor(1, this, "bp"),
           .si  = new BitEditor(1, this, "si"),
           .di  = new BitEditor(1, this, "di"),
-      }) {
-
+      })
+    , regs8{
+          [int(Reg8T::AL)] = main.al,
+          [int(Reg8T::CL)] = main.cl,
+          [int(Reg8T::DL)] = main.dl,
+          [int(Reg8T::BL)] = main.bl,
+          [int(Reg8T::AH)] = main.ah,
+          [int(Reg8T::CH)] = main.ch,
+          [int(Reg8T::DH)] = main.dh,
+          [int(Reg8T::BH)] = main.bh,
+      }
+    , regs16{
+          [int(Reg16T::AX)] = main.ax,
+          [int(Reg16T::CX)] = main.cx,
+          [int(Reg16T::DX)] = main.dx,
+          [int(Reg16T::BX)] = main.bx,
+          [int(Reg16T::SP)] = index.sp,
+          [int(Reg16T::BP)] = index.bp,
+          [int(Reg16T::SI)] = index.si,
+          [int(Reg16T::DI)] = index.di,
+      }
+    , regs32{
+          [int(Reg32T::EAX)] = main.eax,
+          [int(Reg32T::ECX)] = main.ecx,
+          [int(Reg32T::EDX)] = main.edx,
+          [int(Reg32T::EBX)] = main.ebx,
+          [int(Reg32T::ESP)] = index.esp,
+          [int(Reg32T::EBP)] = index.ebp,
+          [int(Reg32T::ESI)] = index.esi,
+          [int(Reg32T::EDI)] = index.edi,
+     } {
     int row = 0;
 
     auto l = new QGridLayout();
@@ -191,6 +248,8 @@ RegisterView::RegisterView(QWidget* parent)
 
         auto lab = new QLabel("Accumulator");
         greenBorder(lab);
+        greenBorder(main.eax);
+        greenBorder(main.ax);
         l->addWidget(lab, row, 3, 2, 1, Qt::AlignCenter);
         addGridWidgets(l, {{main.eax, 1}, {main.ax, 2}}, ++row);
         addGridWidgets(l, {{main.ah, 1}, {main.al, 1}}, ++row, "", 1);
@@ -247,6 +306,7 @@ MainWindow::MainWindow()
     , mem(new CoreEditor(&core, this))
     , regs(new RegisterView(this))
     , vga(new VgaView(this))
+    , events(new EventView(&core, this))
     , tools(Tools{
           .bar      = new QToolBar(),
           .next     = new QPushButton("Next", this),
@@ -260,14 +320,29 @@ MainWindow::MainWindow()
     addToolBar(tools.bar);
     tools.bar->addWidget(tools.next);
     tools.bar->addWidget(tools.snapshot);
-    addDockWidget(Qt::RightDockWidgetArea, regs);
-    addDockWidget(Qt::RightDockWidgetArea, vga);
-    tabifyDockWidget(vga, regs);
+
+    connect(tools.next, &QPushButton::clicked, [this]() {
+        this->core.step();
+    });
+
+
+    { // Initial positioning of the dock widgets
+        addDockWidget(Qt::RightDockWidgetArea, regs);
+        addDockWidget(Qt::RightDockWidgetArea, vga);
+        addDockWidget(Qt::BottomDockWidgetArea, events);
+        tabifyDockWidget(vga, regs);
+    }
 }
 
 int main(int argc, char** argv) {
     NimMain();
+
     QApplication a(argc, argv);
+    QFile file(":/main/em_style.qss");
+    file.open(QFile::ReadOnly);
+    QString styleSheet = QLatin1String(file.readAll());
+    a.setStyleSheet(styleSheet);
+
     MainWindow   w;
     w.resize(1200, 1200);
     w.show();
@@ -285,4 +360,38 @@ void MemoryCellDelegate::commitAndCloseEditor() {
     BitEditor* editor = qobject_cast<BitEditor*>(sender());
     emit       commitData(editor);
     emit       closeEditor(editor);
+}
+
+EventModel::EventModel(SimCore* _core) : core(_core) {}
+
+QVariant EventModel::data(
+    const QModelIndex& index,
+    int                role [[maybe_unused]]) const {
+    auto ev = core->getEvent(index.row());
+    switch (index.column()) {
+        case 0:
+            return QString(haxsim_emu_event_kind_to_string(ev.get_kind()));
+        default: return QVariant("NONE");
+    }
+}
+
+EventView::EventView(SimCore* _core, QWidget* parent)
+    : QDockWidget("Events", parent)
+    , core(_core)
+    , model(new EventModel(_core))
+    , view(new QTableView()) {
+
+
+    view->setModel(model.get());
+    setWidget(view);
+    view->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+    view->verticalHeader()->setSectionResizeMode(
+        QHeaderView::ResizeToContents);
+
+
+
+
+    connect(core, &SimCore::newEvent, [this](int idx) {
+        this->model->newRow(idx);
+    });
 }

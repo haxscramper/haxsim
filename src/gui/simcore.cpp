@@ -23,6 +23,9 @@ void simcore_cb(EmuEvent event, void* data) {
         default: {
         }
     }
+
+    sim->addEvent(ev);
+    emit sim->newEvent(sim->getEventNum() - 1);
 }
 
 SimCore::SimCore(ESize memSize, QObject* parent)
@@ -32,3 +35,5 @@ SimCore::SimCore(ESize memSize, QObject* parent)
     auto logger = EmuLoggerCxx(impl.get_logger());
     logger.set_raw_hook_payload(simcore_cb, this);
 }
+
+void SimCore::step() { impl.step(); }

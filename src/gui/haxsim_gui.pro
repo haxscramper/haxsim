@@ -23,4 +23,8 @@ HEADERS *= $$files($$ROOT/nimcache/genny/*.h)
 DISTFILES += \
     ../../nimcache/genny/haxsim.nim \
     ../../nimcache/genny/internal.nim \
-    em_main.nim
+    em_main.nim \
+    em_style.qss
+
+RESOURCES += \
+    em_resource.qrc
