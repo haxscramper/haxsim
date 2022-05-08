@@ -163,7 +163,6 @@ void addGridWidgets(
     }
     if (!label.isEmpty()) {
         auto lab = new QLabel(label);
-        greenBorder(lab);
         l->addWidget(lab, row, col);
     }
 }
@@ -239,31 +238,26 @@ RegisterView::RegisterView(QWidget* parent)
     int row = 0;
 
     auto l = new QGridLayout();
-    l->setVerticalSpacing(0);
-    l->setHorizontalSpacing(0);
-    l->setContentsMargins(0, 0, 0, 0);
+        l->setVerticalSpacing(5);
+        l->setHorizontalSpacing(5);
+//    l->setContentsMargins(2, 2, 2, 2);
+    l->setSpacing(0);
+
 
     {
         l->addWidget(new QLabel("Main registers"), row, 0, 1, -1);
 
-        auto lab = new QLabel("Accumulator");
-        greenBorder(lab);
-        greenBorder(main.eax);
-        greenBorder(main.ax);
-        l->addWidget(lab, row, 3, 2, 1, Qt::AlignCenter);
-        addGridWidgets(l, {{main.eax, 1}, {main.ax, 2}}, ++row);
+        addGridWidgets(
+            l, {{main.eax, 1}, {main.ax, 2}}, ++row, "Accumulator");
         addGridWidgets(l, {{main.ah, 1}, {main.al, 1}}, ++row, "", 1);
 
-        l->addWidget(new QLabel("Count"), row, 3, 2, 1, Qt::AlignCenter);
-        addGridWidgets(l, {{main.ecx, 1}, {main.cx, 2}}, ++row);
+        addGridWidgets(l, {{main.ecx, 1}, {main.cx, 2}}, ++row, "Count");
         addGridWidgets(l, {{main.ch, 1}, {main.cl, 1}}, ++row, "", 1);
 
-        l->addWidget(new QLabel("Data"), row, 3, 2, 1, Qt::AlignCenter);
-        addGridWidgets(l, {{main.edx, 1}, {main.dx, 2}}, ++row);
+        addGridWidgets(l, {{main.edx, 1}, {main.dx, 2}}, ++row, "Data");
         addGridWidgets(l, {{main.dh, 1}, {main.dl, 1}}, ++row, "", 1);
 
-        l->addWidget(new QLabel("Base"), row, 3, 2, 1, Qt::AlignCenter);
-        addGridWidgets(l, {{main.ebx, 1}, {main.bx, 2}}, ++row);
+        addGridWidgets(l, {{main.ebx, 1}, {main.bx, 2}}, ++row, "Base");
         addGridWidgets(l, {{main.bh, 1}, {main.bl, 1}}, ++row, "", 1);
     }
 
@@ -285,6 +279,11 @@ RegisterView::RegisterView(QWidget* parent)
         addGridWidgets(l, {{segment.fs, 2}}, ++row, "F", 1);
         addGridWidgets(l, {{segment.gs, 2}}, ++row, "G", 1);
         addGridWidgets(l, {{segment.ss, 2}}, ++row, "Stack", 1);
+    }
+
+    for (int i = 0; i < row; ++i) {
+        l->setRowMinimumHeight(i, 0);
+        l->setRowStretch(i, 0);
     }
 
     QSpacerItem* item = new QSpacerItem(
@@ -338,12 +337,12 @@ int main(int argc, char** argv) {
     NimMain();
 
     QApplication a(argc, argv);
-    QFile file(":/main/em_style.qss");
+    QFile        file(":/main/em_style.qss");
     file.open(QFile::ReadOnly);
     QString styleSheet = QLatin1String(file.readAll());
     a.setStyleSheet(styleSheet);
 
-    MainWindow   w;
+    MainWindow w;
     w.resize(1200, 1200);
     w.show();
     return a.exec();
@@ -387,8 +386,6 @@ EventView::EventView(SimCore* _core, QWidget* parent)
     view->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
     view->verticalHeader()->setSectionResizeMode(
         QHeaderView::ResizeToContents);
-
-
 
 
     connect(core, &SimCore::newEvent, [this](int idx) {

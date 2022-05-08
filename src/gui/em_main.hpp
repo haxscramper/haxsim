@@ -33,8 +33,13 @@ class BitEditor : public QWidget
         connect(edit, &QLineEdit::editingFinished, [this]() {
             emit editingFinished();
         });
+        edit->setAlignment(Qt::AlignCenter);
+        edit->setSizePolicy(
+            QSizePolicy::Preferred, QSizePolicy::Preferred);
         setLayout(new QVBoxLayout());
+        layout()->setContentsMargins(0,0,0,0);
         layout()->addWidget(edit);
+        setContentsMargins(0, 0, 0, 0);
     }
 
     unsigned int getValue() const;
@@ -51,7 +56,7 @@ class MemoryCellDelegate : public QStyledItemDelegate
   public:
     inline QWidget* createEditor(
         QWidget*                    parent,
-        const QStyleOptionViewItem& option,
+        const QStyleOptionViewItem& option [[maybe_unused]],
         const QModelIndex&          index) const override {
         auto edit = new BitEditor(index.data().toUInt(), parent, "byte");
         auto pol  = edit->sizePolicy();
@@ -174,10 +179,12 @@ class EventModel : public QAbstractTableModel
     explicit EventModel(SimCore* _core);
 
   public:
-    inline int rowCount(const QModelIndex& parent) const override {
+    inline int rowCount(const QModelIndex& parent
+                        [[maybe_unused]]) const override {
         return core->getEventNum();
     }
-    inline int columnCount(const QModelIndex& parent) const override {
+    inline int columnCount(const QModelIndex& parent
+                           [[maybe_unused]]) const override {
         return fieldNum;
     }
     QVariant data(const QModelIndex& index, int role) const override;
