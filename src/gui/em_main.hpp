@@ -6,6 +6,7 @@
 #include <QCheckBox>
 #include <QDebug>
 #include <QDockWidget>
+#include <QElapsedTimer>
 #include <QLayout>
 #include <QLineEdit>
 #include <QMainWindow>
@@ -37,7 +38,7 @@ class BitEditor : public QWidget
         edit->setSizePolicy(
             QSizePolicy::Preferred, QSizePolicy::Preferred);
         setLayout(new QVBoxLayout());
-        layout()->setContentsMargins(0,0,0,0);
+        layout()->setContentsMargins(0, 0, 0, 0);
         layout()->addWidget(edit);
         setContentsMargins(0, 0, 0, 0);
     }
@@ -91,7 +92,8 @@ class MemoryCellDelegate : public QStyledItemDelegate
         const QStyleOptionViewItem& option,
         const QModelIndex&          index) const override {
         auto value = index.data().toUInt();
-        painter->drawText(option.rect, QString::number(value, 16));
+        painter->drawText(
+            option.rect, Qt::AlignCenter, QString::number(value, 16));
         return;
     }
 
@@ -155,18 +157,18 @@ class MemoryTable : public QTableView
 class EventItemDelegate : public QAbstractItemDelegate
 {
 
-    // QAbstractItemDelegate interface
-  public:
-    void paint(
-        QPainter*                   painter,
-        const QStyleOptionViewItem& option,
-        const QModelIndex&          index) const override {}
+    //    // QAbstractItemDelegate interface
+    //  public:
+    //    void paint(
+    //        QPainter*                   painter,
+    //        const QStyleOptionViewItem& option,
+    //        const QModelIndex&          index) const override {}
 
-    // QAbstractItemDelegate interface
-  public:
-    QSize sizeHint(
-        const QStyleOptionViewItem& option,
-        const QModelIndex&          index) const override {}
+    //    // QAbstractItemDelegate interface
+    //  public:
+    //    QSize sizeHint(
+    //        const QStyleOptionViewItem& option,
+    //        const QModelIndex&          index) const override {}
 };
 
 
@@ -190,7 +192,6 @@ class EventModel : public QAbstractTableModel
     QVariant data(const QModelIndex& index, int role) const override;
 
     inline void newRow(int idx) {
-        qDebug() << "Inserted row for event" << idx;
         beginInsertRows(QModelIndex(), idx, idx);
         endInsertRows();
     }
@@ -239,8 +240,10 @@ class DockWidget : public QDockWidget
 class RegisterView : public DockWidget
 {
     Q_OBJECT
+    SimCore* core;
+
   public:
-    explicit RegisterView(QWidget* parent);
+    explicit RegisterView(SimCore* _core, QWidget* parent);
 
   private:
     struct Segment {

@@ -18,6 +18,11 @@ template printedTrace*(body: untyped) =
     echo "Exception triggered"
     pprintStackTrace(e)
 
+proc getAddr*(ev: EmuEvent): uint32 = ev.memAddr.uint32()
+proc getValue8*(ev: EmuEvent): uint8 = fromMemBlob[uint8](ev.value.value)
+proc getValue16*(ev: EmuEvent): uint16 = fromMemBlob[uint16](ev.value.value)
+proc getValue32*(ev: EmuEvent): uint32 = fromMemBlob[uint32](ev.value.value)
+
 proc getMem*(full: FullImpl, memAddr: EPointer): EByte =
   ## Return value from the specified location in the physica memory
   full.emu.mem.memory[memAddr]
@@ -103,6 +108,13 @@ else:
       msg
       value
       size
+      memAddr
+
+    procs:
+      getAddr
+      getValue8
+      getValue16
+      getValue32
 
   exportRawTypes "using EmuEventHandler = void(*)(EmuEvent, void*);"
   exportRefObject InstrData:

@@ -89,7 +89,7 @@ QVariant MemoryModel::headerData(
                 16,
                 QLatin1Char('0')));
         } else {
-            return QVariant(QString("+0x%1").arg(section));
+            return QVariant(QString("+%1").arg(section));
         }
     } else {
         return QAbstractItemModel::headerData(section, orientation, role);
@@ -167,8 +167,9 @@ void addGridWidgets(
     }
 }
 
-RegisterView::RegisterView(QWidget* parent)
+RegisterView::RegisterView(SimCore *_core, QWidget* parent)
     : DockWidget("Registers", parent)
+    , core(_core)
     , segment(Segment{
           .cs = new BitEditor(2, this, "CS"),
           .ds = new BitEditor(2, this, "DS"),
@@ -238,9 +239,9 @@ RegisterView::RegisterView(QWidget* parent)
     int row = 0;
 
     auto l = new QGridLayout();
-        l->setVerticalSpacing(5);
-        l->setHorizontalSpacing(5);
-//    l->setContentsMargins(2, 2, 2, 2);
+    l->setVerticalSpacing(5);
+    l->setHorizontalSpacing(5);
+    //    l->setContentsMargins(2, 2, 2, 2);
     l->setSpacing(0);
 
 
@@ -293,7 +294,19 @@ RegisterView::RegisterView(QWidget* parent)
     auto w = new QWidget(this);
     w->setLayout(l);
     setWidget(w);
-    setMinimumWidth(400);
+
+    connect(core, &SimCore::reg8Assigned, [this](Reg8T reg, U8 value) {
+        this->regs8[int(reg)]->setValue(value);
+    });
+
+
+    connect(core, &SimCore::reg16Assigned, [this](Reg16T reg, U16 value) {
+        this->regs16[int(reg)]->setValue(value);
+    });
+
+    connect(core, &SimCore::reg32Assigned, [this](Reg32T reg, U32 value) {
+        this->regs32[int(reg)]->setValue(value);
+    });
 }
 
 
@@ -303,7 +316,7 @@ VgaView::VgaView(QWidget* parent) : DockWidget("Vga", parent) {}
 MainWindow::MainWindow()
     : core(256)
     , mem(new CoreEditor(&core, this))
-    , regs(new RegisterView(this))
+    , regs(new RegisterView(&core, this))
     , vga(new VgaView(this))
     , events(new EventView(&core, this))
     , tools(Tools{

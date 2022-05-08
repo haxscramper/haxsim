@@ -8,6 +8,13 @@
 template <typename T>
 using CL = const T&;
 
+using U8  = unsigned char;
+using U16 = unsigned short;
+using U32 = unsigned long;
+
+using I8  = char;
+using I16 = short;
+using I32 = long;
 
 Q_DECLARE_METATYPE(EmuEventCxx);
 
@@ -53,6 +60,13 @@ class SimCore : public QObject
     void newEvent(int);
     /// Require full memory reload from first to last cell
     void fullMemoryReload();
+
+    void reg8Assigned(Reg8T, U8);
+    void reg16Assigned(Reg16T, U16);
+    void reg32Assigned(Reg32T, U32);
+    void reg8Read(Reg8T, U8);
+    void reg16Read(Reg16T, U16);
+    void reg32Read(Reg32T, U32);
 
   public slots:
     void step();

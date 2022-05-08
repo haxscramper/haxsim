@@ -20,6 +20,38 @@ void simcore_cb(EmuEvent event, void* data) {
             break;
         }
 
+        case K::EEK_GET_REG8: {
+            emit sim->reg8Read(Reg8T(ev.get_value8()), ev.get_addr());
+            break;
+        }
+
+        case K::EEK_GET_REG16: {
+            emit sim->reg16Read(Reg16T(ev.get_value16()), ev.get_addr());
+            break;
+        }
+
+        case K::EEK_GET_REG32: {
+            emit sim->reg32Read(Reg32T(ev.get_value32()), ev.get_addr());
+            break;
+        }
+
+        case K::EEK_SET_REG8: {
+            emit sim->reg8Assigned(Reg8T(ev.get_value8()), ev.get_addr());
+            break;
+        }
+
+        case K::EEK_SET_REG16: {
+            emit sim->reg16Assigned(
+                Reg16T(ev.get_value16()), ev.get_addr());
+            break;
+        }
+
+        case K::EEK_SET_REG32: {
+            emit sim->reg32Assigned(
+                Reg32T(ev.get_value32()), ev.get_addr());
+            break;
+        }
+
         default: {
         }
     }

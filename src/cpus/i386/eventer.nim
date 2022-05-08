@@ -193,7 +193,9 @@ func evEnd*(): EmuEvent =
   EmuEvent(kind: eekEnd)
 
 proc writeEvent(logger: EmuLogger, event: EmuEvent) =
-  # echov "write event ", event[]
+  # echov "write event "
+  # echov logger[].enabled
+
   if logger.eventHandler.isNil():
     logger.buffer.add event
 
@@ -260,5 +262,7 @@ template noLog*(logger: var EmuLogger, body: untyped): untyped =
     body
     logger.enabled = old
   
-func initEmuLogger*(handler: EmuEventHandler = nil): EmuLogger =
-  EmuLogger(eventHandler: handler, enabled: true)
+proc initEmuLogger*(handler: EmuEventHandler = nil): EmuLogger =
+  new(result, proc(ev: EmuLogger) = echo "finalizing logger")
+  result.eventHandler = handler
+  result.enabled = true
