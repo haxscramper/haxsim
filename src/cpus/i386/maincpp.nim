@@ -136,6 +136,7 @@ proc loop*(full: var FullImpl) =
     step(full)
 
 proc addEchoHandler*(full: var FullImpl) =
+  assertRef(full.emu)
   var emu = full.emu
   var stack: seq[EmuEventKind]
   var show = true
@@ -143,12 +144,12 @@ proc addEchoHandler*(full: var FullImpl) =
   const showTrace: set[EmuEventKind] = { }
 
   proc echoHandler(ev: EmuEvent) =
+    assertRef(emu)
     if ev.kind in eekEndKinds:
       if stack.pop() in hideList:
         show = true
 
       return
-
 
     let indent = clt(repeat("  ", stack.len()))
     var res = &"[{stack.len():^3}]" & indent

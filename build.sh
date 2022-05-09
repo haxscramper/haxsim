@@ -3,7 +3,7 @@
 set -o nounset
 set -o errexit
 
-wip="${1:-cpp}"
+wip="${1:-imgui}"
 
 case $wip in
     "cpp")
@@ -42,6 +42,11 @@ case $wip in
         done
         echo "done all tests"
         ;;
+
+    "imgui")
+        nim c -r src/gui/em_imgui.nim
+        ;;
+
     "webui")
         cd src/gui
         ./build.sh
