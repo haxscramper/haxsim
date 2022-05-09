@@ -97,6 +97,8 @@ proc parseCommands*(full: var FullImpl): seq[InstrData] =
 
 
 proc step*(full: var FullImpl) =
+  assertRef(full)
+
   full.emu.logger.logScope(ev(eekStartLoopRun))
   # Reset current instruction data to a new state
   zeroMem(addr full.data[], sizeof(full.data[]))

@@ -22,16 +22,31 @@ type
     memSize*: ESize
 
   Emulator* = ref object
-    logger*: EmuLogger
+    objLogger: EmuLogger
     accs*: DataAccess
     intr*: Interrupt
     vga*: VGA
     fdd*: FDD
 
+func logger*(emu: Emulator): EmuLogger =
+  result = emu.objLogger
+  echov result.enabled
+
+func logger*(emu: var Emulator): var EmuLogger =
+  result = emu.objLogger
+  echov result.enabled
+
+func `logger=`*(emu: Emulator, logger: EmuLogger) =
+  echov logger.enabled
+  emu.objLogger = logger
+
 func io*(emu: Emulator): IO = emu.accs.io
 func io*(emu: var Emulator): var IO = emu.accs.io
 func cpu*(emu: Emulator): Processor = emu.accs.cpu
-func cpu*(emu: var Emulator): var Processor = emu.accs.cpu
+func cpu*(emu: var Emulator): var Processor =
+  result = emu.accs.cpu
+  # echov result.logger.enabled
+
 func mem*(emu: Emulator): Memory = emu.accs.mem
 func mem*(emu: var Emulator): var Memory = emu.accs.mem
 

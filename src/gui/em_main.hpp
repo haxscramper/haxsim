@@ -276,8 +276,11 @@ class VgaView : public DockWidget
 class MainWindow : public QMainWindow
 {
     Q_OBJECT
+    friend int main(int argc, char** argv);
+
   public:
     explicit MainWindow();
+    inline SimCore* getCore() { return &core; }
 
   private:
     SimCore       core;   ///< Emulator core object

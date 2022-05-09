@@ -4,7 +4,7 @@
 import hmisc/core/code_errors
 import maincpp, common, eventer
 import emulator/emulator
-import hardware/memory
+import hardware/[memory, processor]
 import compiler/assembler
 import instruction/[instruction, syntaxes]
 import pkg/genny
@@ -18,10 +18,13 @@ template printedTrace*(body: untyped) =
     echo "Exception triggered"
     pprintStackTrace(e)
 
+
 proc getAddr*(ev: EmuEvent): uint32 = ev.memAddr.uint32()
 proc getValue8*(ev: EmuEvent): uint8 = fromMemBlob[uint8](ev.value.value)
 proc getValue16*(ev: EmuEvent): uint16 = fromMemBlob[uint16](ev.value.value)
 proc getValue32*(ev: EmuEvent): uint32 = fromMemBlob[uint32](ev.value.value)
+
+proc getCPU*(e: Emulator): Processor = e.cpu()
 
 proc getMem*(full: FullImpl, memAddr: EPointer): EByte =
   ## Return value from the specified location in the physica memory
@@ -74,6 +77,11 @@ proc printTest*(arg: string)  =
     echo prog.data()
     echo "----"
 
+type ExceptionRef = ref Exception
+
+proc formatStackTrace*(ex: ExceptionRef): string =
+  getStackTrace(ex)
+
 when defined(directRun):
   printTest("mov ax, bx")
   printTest("mov ax, bx")
@@ -82,6 +90,16 @@ when defined(directRun):
 
 else:
   import std/[macros, compilesettings]
+
+  exportRawTypes """
+using U8  = unsigned char;
+using U16 = unsigned short;
+using U32 = unsigned long;
+
+using I8  = char;
+using I16 = short;
+using I32 = long;
+"""
 
   exportEnums:
     EmuEventKind
@@ -120,8 +138,13 @@ else:
   exportRefObject InstrData:
     discard
 
+  exportRefObject Processor:
+    procs:
+      setEip
+
   exportRefObject Emulator:
-    discard
+    procs:
+      getCpu
 
   exportObject EmuSetting:
     discard
@@ -133,6 +156,15 @@ else:
 
     constructor:
       initEmuLogger
+
+  exportRefObject ExceptionRef:
+    fields:
+      name
+      msg
+
+    procs:
+      formatStackTrace
+
 
   exportRefObject FullImpl:
     fields:

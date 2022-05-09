@@ -8,13 +8,6 @@
 template <typename T>
 using CL = const T&;
 
-using U8  = unsigned char;
-using U16 = unsigned short;
-using U32 = unsigned long;
-
-using I8  = char;
-using I16 = short;
-using I32 = long;
 
 Q_DECLARE_METATYPE(EmuEventCxx);
 
@@ -49,6 +42,10 @@ class SimCore : public QObject
         impl.compile_and_load(text.data());
     }
 
+    inline void setEip(U32 value) {
+        auto r = haxsim_emulator_get_cpu(impl.get_emu());
+        haxsim_processor_set_eip(&r, value);
+    }
 
   signals:
     /// Signal emitted on each memory write operation

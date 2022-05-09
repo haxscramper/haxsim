@@ -167,12 +167,12 @@ proc isProtected*(this: var Processor): bool =
   # implementation.
   return CR(this).isProtected()
 
-proc getEip*(this: var Processor): U32 =
+proc getEip*(this: Processor): U32 =
   result = this.eip
   this.log ev(eekGetEIP).withIt do:
     it.value = evalue(result)
 
-proc getIp*(this: var Processor): U32 =
+proc getIp*(this: Processor): U32 =
   result = this.ip
   this.log ev(eekGetIP).withIt do:
     it.value = evalue(result)

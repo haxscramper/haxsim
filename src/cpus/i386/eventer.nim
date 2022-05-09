@@ -264,5 +264,6 @@ template noLog*(logger: var EmuLogger, body: untyped): untyped =
   
 proc initEmuLogger*(handler: EmuEventHandler = nil): EmuLogger =
   new(result, proc(ev: EmuLogger) = echo "finalizing logger")
+  echo "Created emulator logger @0x", toHex(cast[int](result))
   result.eventHandler = handler
   result.enabled = true

@@ -7,6 +7,7 @@ import hardware/[processor, memory]
 
 proc getEmu*(this: InstrImpl): Emulator =
   result = this.exec.getEmu()
+  echov result.logger.enabled
   assertRef(result)
 
 

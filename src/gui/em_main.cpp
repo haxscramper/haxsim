@@ -346,6 +346,8 @@ MainWindow::MainWindow()
     }
 }
 
+bool flag = false;
+
 int main(int argc, char** argv) {
     NimMain();
 
@@ -356,6 +358,16 @@ int main(int argc, char** argv) {
     a.setStyleSheet(styleSheet);
 
     MainWindow w;
+
+    auto core = w.getCore();
+    core->setEip(0);
+
+    w.tools.next->click();
+    w.tools.next->click();
+    w.tools.next->click();
+
+    flag = true;
+
     w.resize(1200, 1200);
     w.show();
     return a.exec();
