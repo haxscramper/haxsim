@@ -7,11 +7,10 @@ import hardware/[processor, memory]
 
 proc getEmu*(this: InstrImpl): Emulator =
   result = this.exec.getEmu()
-  echov result.logger.enabled
   assertRef(result)
 
 
-proc getCodePos*(this: var InstrImpl): EPointer =
+proc getCodePos*(this: InstrImpl): EPointer =
   this.cpu.logger.noLog():
     result = ACS.transVirtualToPhysical(MODEEXEC, CS, this.cpu.getEIP())
 

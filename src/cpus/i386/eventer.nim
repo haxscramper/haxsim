@@ -254,13 +254,15 @@ func setRawHookPayload*(
   ) =
   emu.setHook(proc(event: EmuEvent) = hook(event, data))
 
-template noLog*(logger: var EmuLogger, body: untyped): untyped =
+template noLog*(logger: EmuLogger, body: untyped): untyped =
   ## Temporarily disable logging for `body` code block
   block:
     let old = logger.enabled
-    logger.enabled = false
+    cblock "disable logger":
+      logger.enabled = false
     body
-    logger.enabled = old
+    cblock "enable logger back":
+      logger.enabled = old
   
 proc initEmuLogger*(handler: EmuEventHandler = nil): EmuLogger =
   new(result, proc(ev: EmuLogger) = echo "finalizing logger")

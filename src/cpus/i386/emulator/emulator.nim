@@ -30,15 +30,20 @@ type
 
 func logger*(emu: Emulator): EmuLogger =
   result = emu.objLogger
-  echov result.enabled
+  # echov result.enabled
+  cblock "logger":
+    let en = result.enabled
 
 func logger*(emu: var Emulator): var EmuLogger =
   result = emu.objLogger
-  echov result.enabled
+  cblock "var logger":
+    let en =  result.enabled
 
 func `logger=`*(emu: Emulator, logger: EmuLogger) =
-  echov logger.enabled
+  # echov logger.enabled
   emu.objLogger = logger
+  cblock "logger=":
+    let en = logger.enabled
 
 func io*(emu: Emulator): IO = emu.accs.io
 func io*(emu: var Emulator): var IO = emu.accs.io
@@ -68,6 +73,7 @@ proc initEmulator*(set: EmuSetting, logger: EmuLogger): Emulator =
   emu.intr.setPic(picM, true)
   emu.intr.setPic(picS, false)
   emu.fdd = initFDD()
+  emu.accs = initDataAccess(set.memSize, logger)
 
   var
     pit = initPIT()
@@ -84,7 +90,7 @@ proc initEmulator*(set: EmuSetting, logger: EmuLogger): Emulator =
   picM.setIrq(6, emu.fdd)
   picS.setIrq(4, kb.getMouse())
   emu.logger = logger
-  emu.accs = initDataAccess(set.memSize, logger)
+  assertRef(emu.accs)
 
   assertRef(emu.accs.io.memory)
   emu.accs.io.setPortio(0x020, 2, picM.portio)

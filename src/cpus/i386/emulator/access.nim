@@ -38,7 +38,7 @@ type
     MODEEXEC
 
 type
-  DataAccess* = object of Hardware
+  DataAccess* = ref object of Hardware
     tlb*: Table[U32, PTE] ## 'Translation Lookaside Buffer'. is a memory
     ## cache that stores the recent translations of virtual memory to
     ## physical memory. It is used to reduce the time taken to access a
@@ -53,9 +53,8 @@ template log*(acs: DataAccess, event: EmuEvent, depth: int = -2): untyped =
 
 
 proc initDataAccess*(size: ESize, logger: EmuLogger): DataAccess =
-  asgnAux[Hardware](result, initHardware(size, logger))
-  assertRef(result.mem)
-  assertRef(result.io.memory)
+  let h: Hardware = initHardware(size, logger)
+  return DataAccess(mem: h.mem, io: h.io, cpu: h.cpu)
 
 import emulator/descriptor
 
@@ -98,13 +97,13 @@ proc setSegment*(this: var DataAccess, reg: SgRegT, sel: U16) =
   this.log ev(eekSetSegment, evalue(sg.raw, 16), reg.U8)
   this.cpu.setSgreg(reg, sg)
 
-proc getSegment*(this: var DataAccess, reg: SgRegT): U16 =
+proc getSegment*(this: DataAccess, reg: SgRegT): U16 =
   let sg: SGRegister = this.cpu.getSgreg(reg)
   result = sg.raw
   this.log ev(eekGetSegment, evalue(result, 16), reg.U8)
 
 proc transVirtualToLinear*(
-    this: var DataAccess, mode: acsmodeT, seg: SgRegT, vaddr: U32): U32 =
+    this: DataAccess, mode: acsmodeT, seg: SgRegT, vaddr: U32): U32 =
   ## Translate virtual (logical) address `vaddr` into linear address
 
   let CPL: U8 = this.getSegment(CS).U8 and 3
@@ -157,7 +156,7 @@ proc transVirtualToLinear*(
 
 
 
-proc searchTlb*(this: var DataAccess, vpn: U32, pte: var PTE): bool =
+proc searchTlb*(this: DataAccess, vpn: U32, pte: var PTE): bool =
   if vpn notin this.tlb:
     return false
 
@@ -165,12 +164,12 @@ proc searchTlb*(this: var DataAccess, vpn: U32, pte: var PTE): bool =
     pte = this.tlb[vpn]
     return true
 
-proc cacheTlb*(this: var DataAccess, vpn: U32, pte: PTE) =
+proc cacheTlb*(this: DataAccess, vpn: U32, pte: PTE) =
   this.tlb[vpn] = pte
 
 
 proc transVirtualToPhysical*(
-  this: var DataAccess, mode: acsmodeT, seg: SgRegT, vaddr: U32): U32 =
+  this: DataAccess, mode: acsmodeT, seg: SgRegT, vaddr: U32): U32 =
   ## Translate virtual address `varddr` to physical one. For full
   ## documentation see section 5.1 - "Page translation"
   this.logger.scope "Virtual to physical addrss"
