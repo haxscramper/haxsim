@@ -38,13 +38,6 @@ proc getMemSize*(full: FullImpl): int =
   ## Get physical memory size
   full.emu.mem.len()
 
-proc compileAndLoad*(full: FullImpl, str: string) =
-  ## Compile and load program starting at position zero
-  var prog = parseProgram(str)
-  prog.compile()
-  var bin = prog.data()
-  full.emu.loadBlob(bin, 0)
-
 proc printTest*(arg: string)  =
   printedTrace():
     echo "pressed button 'init'"

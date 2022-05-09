@@ -1,4 +1,6 @@
 nimcache
+em_main
+em_imgui
 em_drive
 em_main.js
 em_main.wasm*
@@ -6,6 +8,7 @@ imgui.ini
 httpserve
 build
 sokol
+imgui.ini
 em_result.*
 *.wasm*
 

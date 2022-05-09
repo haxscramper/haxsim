@@ -44,7 +44,10 @@ case $wip in
         ;;
 
     "imgui")
+        echo "starting compilation"
         nim c -r src/gui/em_imgui.nim
+        # ./src/gui/em_imgui run
+        echo "execution done"
         ;;
 
     "webui")
