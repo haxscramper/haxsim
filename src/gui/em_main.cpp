@@ -362,14 +362,15 @@ int main(int argc, char** argv) {
     auto core = w.getCore();
     core->setEip(0);
 
+    w.resize(1200, 1200);
+    w.show();
+
+    w.tools.next->click();
     w.tools.next->click();
     w.tools.next->click();
     w.tools.next->click();
 
     flag = true;
-
-    w.resize(1200, 1200);
-    w.show();
     return a.exec();
 }
 

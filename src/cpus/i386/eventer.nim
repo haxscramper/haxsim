@@ -103,7 +103,9 @@ type
     procStackTrace: seq[string]
 
     enabled*: bool
-    eventHandler*: EmuEventHandler
+    handleImpl*: proc(ev: EmuEvent, data: pointer) {.cdecl.}
+    handleEnv*: pointer
+
     buffer*: seq[EmuEvent]
 
 func getDeltaCalls*(
@@ -192,23 +194,21 @@ func ev*[T](der: typedesc[T], kind: EmuEventKind, msg: string = ""): T =
 func evEnd*(): EmuEvent =
   EmuEvent(kind: eekEnd)
 
+
+
 proc writeEvent(logger: EmuLogger, event: EmuEvent) =
-  # echov "write event "
-  # echov logger[].enabled
 
-  if logger.eventHandler.isNil():
-    logger.buffer.add event
+  logger.buffer.add event
+  if not logger.handleImpl.isNil():
+    let pr = logger.handleImpl
+    let en = logger.handleEnv
+    echo globalTick(), " [ ] ", toHex(cast[int](logger)),
+        " PR: ", cast[int](pr), " ENV: ", cast[int](en)
 
-  else:
-    var idx = 0
-    while idx < logger.buffer.high:
-      logger.eventHandler(logger.buffer[idx])
-      inc idx
+    for e in logger.buffer:
+      pr(e, en)
 
     logger.buffer.clear()
-    logger.eventHandler(event)
-
-
 
 func getTrace(): seq[StackTraceEntry] =
   {.cast(noSideEffect).}:
@@ -241,18 +241,26 @@ template scope*(logger: EmuLogger, name: string, depth: int = -3): untyped =
   event.msg = name
   logScope(logger, event, depth)
 
-func setHook*(emu: var EmuLogger, handler: EmuEventHandler) =
-  emu.eventHandler = handler
-
-func setRawHook*(emu: var EmuLogger, hook: proc(event: EmuEvent) {.cdecl.}) =
-  emu.setHook(proc(event: EmuEvent) = hook(event))
 
 func setRawHookPayload*(
-    emu: var EmuLogger,
+    emu: EmuLogger,
     hook: proc(event: EmuEvent, data: pointer) {.cdecl.},
     data: pointer
   ) =
-  emu.setHook(proc(event: EmuEvent) = hook(event, data))
+  emu.handleImpl = hook
+  emu.handleEnv = data
+
+func setHook*(emu: EmuLogger, handler: EmuEventHandler) =
+  let impl = rawProc(handler)
+  let env = rawEnv(handler)
+  setRawHookPayload(
+    emu,
+    cast[proc(e: EmuEvent, d: pointer) {.cdecl.}](impl),
+    env
+  )
+
+func setRawHook*(emu: EmuLogger, hook: proc(event: EmuEvent) {.cdecl.}) =
+  emu.setHook(proc(event: EmuEvent) = hook(event))
 
 template noLog*(logger: EmuLogger, body: untyped): untyped =
   ## Temporarily disable logging for `body` code block
@@ -263,9 +271,14 @@ template noLog*(logger: EmuLogger, body: untyped): untyped =
     body
     cblock "enable logger back":
       logger.enabled = old
-  
+
+var implPtr {.exportc.}: ptr typeof(EmuLogger.handleImpl)
+var loggerPtr {.exportc.}: ptr typeof(EmuLogger()[])
+
 proc initEmuLogger*(handler: EmuEventHandler = nil): EmuLogger =
   new(result, proc(ev: EmuLogger) = echo "finalizing logger")
   echo "Created emulator logger @0x", toHex(cast[int](result))
-  result.eventHandler = handler
+  setHook(result, handler)
+  implPtr = addr result.handleImpl
+  loggerPtr = addr result[]
   result.enabled = true

@@ -12,10 +12,15 @@ case $wip in
             cpp \
             -d=gennyProcHeaderPragmas='{.raises: [], cdecl, exportc, codegenDecl: "$# $#$#".}' \
             --noMain \
+            -d=hmin \
             --gc=refc \
             --noLinking \
+            --linetrace=off \
+            --stacktrace=off \
             --header=nimcache/genny/em_header.h \
             src/cpus/core.nim
+
+        # clang-format -i nimcache/*haxsim*.cpp
 
         prifile=nimcache/nimcache.pri
         echo "SOURCES *= \\" >$prifile

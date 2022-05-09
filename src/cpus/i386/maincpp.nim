@@ -46,7 +46,7 @@ proc init*() =
     setbuf(stdout, nil)
     setbuf(stderr, nil)
 
-proc fetch*(full: var FullImpl) =
+proc fetch*(full: FullImpl) =
   ## Fetch single instruction with it's associated prefixes, return true or
   ## false based on the presence of `0x66`-operand-override prefix.
   full.log ev(eekStartInstructionFetch)
@@ -96,7 +96,7 @@ proc parseCommands*(full: var FullImpl): seq[InstrData] =
     result.add tmp
 
 
-proc step*(full: var FullImpl) =
+proc step*(full: FullImpl) =
   assertRef(full)
 
   full.emu.logger.logScope(ev(eekStartLoopRun))

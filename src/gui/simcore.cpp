@@ -57,6 +57,7 @@ void simcore_cb(EmuEvent event, void* data) {
     }
 
     sim->addEvent(ev);
+    qDebug() << "Created new event num" << sim->getEventNum();
     emit sim->newEvent(sim->getEventNum() - 1);
 }
 

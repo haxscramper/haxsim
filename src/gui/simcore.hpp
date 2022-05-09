@@ -44,7 +44,7 @@ class SimCore : public QObject
 
     inline void setEip(U32 value) {
         auto r = haxsim_emulator_get_cpu(impl.get_emu());
-        haxsim_processor_set_eip(&r, value);
+        haxsim_processor_set_eip(r, value);
     }
 
   signals:

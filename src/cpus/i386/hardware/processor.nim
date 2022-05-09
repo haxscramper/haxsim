@@ -149,9 +149,9 @@ template log*(p: Processor, ev: EmuEvent, depth: int = -2): untyped =
   p.logger.log(ev, depth)
 
 proc eip*(this: Processor): U32 = this.field0.eip
-proc `eip=`*(this: var Processor, value: U32) = this.field0.eip = value
+proc `eip=`*(this: Processor, value: U32) = this.field0.eip = value
 proc ip*(this: Processor): U16 = this.field0.ip
-proc `ip=`*(this: var Processor, value: U16) = this.field0.ip = value
+proc `ip=`*(this: Processor, value: U16) = this.field0.ip = value
 
 proc isMode32*(this: var Processor): bool =
   return this.sgregs[CS].cache.flags.DB.bool
@@ -216,7 +216,7 @@ proc getDtregLimit*(this: Processor, n: DTregT): U16 =
   result = this.dtregs[n].limit
   this.log ev(eekGetDtRegLimit, evalue(result), n.U8)
 
-proc setEip*(this: var Processor, v: U32): void =
+proc setEip*(this: Processor, v: U32): void =
   this.eip = v
   assertRef(this.logger)
   this.log ev(eekSetEIP).withIt do:
