@@ -25,6 +25,12 @@ let ppconf = defaultPPrintConf.withIt do:
   # ]
 
 
+suite "Edge cases":
+  test "Empty input":
+    var full = initFull(EmuSetting(memSize: 256))
+    full.emu.cpu.setEip(0)
+    full.compileAndLoad(repeat(" ", 0xFF))
+
 suite "Register math":
   test "8-bit":
     check eval(["inc ah", "hlt"]).cpu[AH] == 1'u8
@@ -61,7 +67,7 @@ suite "Interrupts":
   test "Division by zero":
     let max = 0x84.ESize
     let idt = 0x50.ESize
-    var full = init([], log = true, memsize = max)
+    var full = init([], log = false, memsize = max)
     # Load instructions starting from zero
     full.loadAt(0): [
       "mov ax, 2",

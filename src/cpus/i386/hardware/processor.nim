@@ -185,7 +185,7 @@ proc getGpreg*(this: Processor, n: Reg16T): U16 =
   result = this.gpregs[Reg32T(n.int)].reg16
   this.log ev(eekGetReg16, evalue(result), n.U8)
 
-proc getGpreg*(this: Processor, n: Reg8T): U8 =
+proc getGpreg*(this: Processor, n: Reg8T, log: bool = true): U8 =
   if n < AH:
     result = this.gpregs[Reg32T(n.int)].reg8L
 

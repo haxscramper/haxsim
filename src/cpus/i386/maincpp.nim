@@ -345,6 +345,12 @@ proc eval*(
   full.loop()
   return full.emu
 
+proc compileAndLoad*(full: FullImpl, str: string) =
+  ## Compile and load program starting at position zero
+  var prog = parseProgram(str)
+  prog.compile()
+  var bin = prog.data()
+  full.emu.loadBlob(bin, 0)
 
 let basic = @[
   # `mov al, 4`

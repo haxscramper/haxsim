@@ -26,14 +26,6 @@ proc getValue32*(ev: EmuEvent): uint32 = fromMemBlob[uint32](ev.value.value)
 
 proc getCPU*(e: Emulator): Processor = e.cpu()
 
-proc getMem*(full: FullImpl, memAddr: EPointer): EByte =
-  ## Return value from the specified location in the physica memory
-  full.emu.mem.memory[memAddr]
-
-proc setMem*(full: FullImpl, memAddr: EPointer, value: EByte) =
-  ## Set value at the specified location in the physical memory
-  full.emu.mem.memory[memAddr] = value
-
 proc getMemSize*(full: FullImpl): int =
   ## Get physical memory size
   full.emu.mem.len()

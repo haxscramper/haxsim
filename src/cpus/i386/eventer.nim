@@ -193,6 +193,9 @@ func evEnd*(): EmuEvent =
   EmuEvent(kind: eekEnd)
 
 proc writeEvent(logger: EmuLogger, event: EmuEvent) =
+  if not logger.enabled:
+    return
+
   logger.buffer.add event
   if not logger.eventHandler.isNil():
     for e in logger.buffer:
@@ -259,7 +262,6 @@ template noLog*(logger: EmuLogger, body: untyped): untyped =
       logger.enabled = old
   
 proc initEmuLogger*(handler: EmuEventHandler = nil): EmuLogger =
-  new(result, proc(ev: EmuLogger) = echo "finalizing logger")
-  echo "Created emulator logger @0x", toHex(cast[int](result))
+  new(result)
   result.eventHandler = handler
   result.enabled = true

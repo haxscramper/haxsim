@@ -785,9 +785,8 @@ proc parseProgram*(prog: string): InstrProgram =
       dec commentStart
 
     let comment = tern(commentStart < 0, "", line[(commentStart + 1) .. ^1])
-    let text = strip(
-      line[0 .. tern(commentStart < 0, line.high, commentStart - 1)])
-
+    let send = tern(commentStart < 0, line.high, commentStart - 1)
+    let text = strip(line[0 .. send])
     if text.empty():
       if not comment.empty():
         result.stmts.add instrComment(comment)
