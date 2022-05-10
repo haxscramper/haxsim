@@ -172,7 +172,7 @@ proc getEip*(this: Processor): U32 =
   this.log ev(eekGetEIP).withIt do:
     it.value = evalue(result)
 
-proc getIp*(this: Processor): U32 =
+proc getIp*(this: Processor): U16 =
   result = this.ip
   this.log ev(eekGetIP).withIt do:
     it.value = evalue(result)

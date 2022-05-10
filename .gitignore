@@ -6,3 +6,4 @@ TAGS
 **/*.out
 nimcache
 build*
+/imgui.ini
