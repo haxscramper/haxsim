@@ -1,10 +1,20 @@
 import imgui, imgui/[impl_opengl, impl_glfw]
 import nimgl/[opengl, glfw]
-import std/[strformat, strutils, macros, math, lenientops]
+import std/[
+  strformat,
+  strutils,
+  macros,
+  math,
+  lenientops,
+  times,
+  sequtils
+]
+
 import maincpp, eventer, common
+import hmisc/algo/lexcast
 import emulator/emulator
 import compiler/assembler
-import hardware/processor
+import hardware/[processor, hardware]
 import hmisc/core/all
 import hmisc/other/oswrap
 
@@ -60,6 +70,20 @@ macro igColumns*(body: untyped): untyped =
   var idx = 0
   result = spliceEach(body, newCall("igTableSetColumnIndex", newLit(postInc(idx))))
 
+macro igLines*(body: untyped): untyped =
+  result = spliceEach(body, newCall("igSameLine"))
+
+proc igInputText*(
+    label: string,
+    text: var string,
+    flags: ImGuiInputTextFlags = 0.ImGuiInputTextFlags,
+    bufferSize: int = 64
+  ) =
+  var buffer = newString(text.len + bufferSize)
+  buffer[0 .. text.high] = text
+  igInputText(label.cstring, buffer.cstring, buffer.len.uint, flags)
+  text = buffer
+
 template igMainMenuBar*(body: untyped): untyped =
   ## Construct imgui menu bar
   if igBeginMainMenuBar():
@@ -72,15 +96,20 @@ template igMenu*(name: string, body: untyped): untyped =
     body
     igEndMenu()
 
+template igMenu*(name, tooltip: string, body: untyped): untyped =
+  igMenu(name):
+    body
+
+  igTooltip():
+    igText(tooltip)
+
 proc igMenuItemToggleBool*(toFalse, toTrue: string, value: var bool) =
   if value:
     if igMenuItem(toFalse):
-      echov "selected", toFalse
       value = false
 
   else:
     if igMenuItem(toTrue):
-      echov "selected", toTrue
       value = true
 
 template igItemWidth*(w: float, body: untyped): untyped =
@@ -103,6 +132,8 @@ proc igTableSetupColumns*(names: openarray[tuple[
   ## Configure names of the header row for table
   for (name, flags, width) in names:
     igTableSetupColumn(name, flags, width.float)
+
+  igTableHeadersRow()
 
 
 proc igTableSetupColumnWidths*(widths: openarray[int32]) =
@@ -142,6 +173,10 @@ template igTooltip*(body: untyped): untyped =
     body
     igEndToolTip()
 
+proc igTooltipText*(text: string) =
+  igTooltip():
+    igtext(text)
+
 proc igMenuItem*(name, tooltip: string): bool =
   ## Create menu item with given name and tooltip. Tooltip is shown in the
   ## regular text widget.
@@ -164,15 +199,29 @@ type
 
 
   UiState = ref object
-    full: FullImpl
-    io: UiIo
-    codeText: string
-    events: seq[EmuEvent]
-    memEnd: int
+    ## Global state of the UI
+    full: FullImpl ## Reference to the implementation core
+    io: UiIo ## Stored information about last IO performed by the emulator
+    ## core. Set and unset in the event processing hook. Note that 'IO'
+    ## here means any input-ouput operation performed by core on it's
+    ## memory, registers, ports, memory-mapped devices AND any external
+    ## elements.
+    codeText: string ## Current code inputed by user
+    eventShow: bool ## Intermediate field, used in event processing hook.
+    ## If true event is added int global list of events, otherwise it is
+    ## ignored. Set and unset in the hook
+    eventStack: seq[EmuEventKind] ## Intermediate field used in event
+    ## processing hook. Stores full trace of the current event parents in
+    ## order to determine if the event should be ignored.
+    events: seq[tuple[level: int, ev: EmuEvent]] ## Stored list of all the
+    ## processed events
+    memEnd: int ## Max range of memory to show in the editor widget
+    compileRes: string ## Message from the compilation result
 
     showSections: tuple[
-      showPortIo, showMemoryIo, showVGA: bool
-    ]
+      showPortIo, showMemoryIo, showVGA: bool,
+      interrupts, interruptQueue: bool
+    ] ## Which extra windows to show in the GUI
 
 type RegIO = enum ioIn, ioOut, ioNone
 proc showReg(name, value: string, io: RegIO) =
@@ -184,11 +233,9 @@ proc showReg(name, value: string, io: RegIO) =
 
   case io:
     of ioIn:
-      echov name, value, io
       igTableSetBgColor(CellBg, colors.red)
 
     of ioOut:
-      echov name, value, io
       igTableSetBgColor(CellBg, colors.green)
 
     else:
@@ -219,6 +266,62 @@ proc showReg(state: UiState, reg: Reg8T | Reg16T | Reg32T) =
     else: ioNone,
   )
 
+proc eventLog(state: UiState) =
+  let emu = state.full.emu
+  let max = state.events.high
+  let evRange = clamp(max - 10, 0, high(int)) .. max
+
+  igTable("events", 5):
+    igTableSetupColumns([
+      ("Id",    WidthFixed,   30i32),
+      ("Level", WidthStretch, 30i32),
+      ("Desc",  WidthStretch, 40i32),
+      ("Addr",  WidthStretch, 120i32),
+      ("Value", WidthStretch, 120i32)
+    ])
+
+    for id in evRange:
+      let (level, ev) = state.events[id]
+      var addrs: string
+      var value: string
+
+      if ev.kind in eekValueKinds:
+        value = $ev.value
+        case ev.kind:
+          of eekGetReg8, eekSetReg8:
+            addrs = format("$# ($#)", Reg8T(ev.memAddr), ev.memAddr)
+
+          of eekGetReg16, eekSetReg16:
+            addrs = format("$# ($#)", Reg16T(ev.memAddr), ev.memAddr)
+
+          of eekGetReg32, eekSetReg32:
+            addrs = format("$# ($#)", Reg32T(ev.memAddr), ev.memAddr)
+
+          of eekSetDtRegBase .. eekGetDtRegSelector:
+            addrs = $DtRegT(ev.memAddr)
+
+          of eekGetSegment, eekSetSegment:
+            addrs = $SgRegT(ev.memAddr)
+
+          of eekSetMem8 .. eekGetMem32, eekSetIo8 .. eekGetIo32:
+            let s = log2(emu.mem.len().float()).int()
+            addrs = "0x" & toHex(ev.memAddr)[^s .. ^1]
+
+          of eekEndInstructionFetch:
+            addrs = ev.msg
+            value = ev.value.value.mapIt(toHex(it, 2)).join(" ")
+
+          else:
+            discard
+
+
+      igRows():
+        igColumns():
+          igText(id)
+          igText(repeat("> ", level))
+          igText(ev.kind)
+          igText(addrs)
+          igText(value)
 
 var
   regWidths = (
@@ -356,6 +459,39 @@ proc cb(data: ptr ImGuiInputTextCallbackData): int32 {.cdecl.} =
 
 
 
+proc currentInstr(state: UiState) =
+  let i = state.full.data
+
+  igTable("Instruction data", 4):
+    igTableSetupColumns(["Name", "Raw", "Decode", "Description"])
+    igRows():
+      igColumns():
+        igText("Seg")
+        if i.preSegment.canGet(seg):
+          igText($seg)
+        else:
+          igText("none")
+
+      igColumns():
+        igText("MODRM")
+        igText(toBin(cast[U8](i.modrm), 8))
+        igTextf(
+          "rm:$# reg:$# mod:$#",
+          toBin(i.modrm.mod.uint, 2),
+          toBin(i.modrm.reg.uint, 3),
+          toBin(i.modrm.rm.uint, 3)
+        )
+
+      igColumns():
+        igText("OPC")
+        igText(toHexTrim(i.opcodeData.code))
+        igText(toOpcode(i.opcodeData.code))
+
+      igColumns():
+        igText("IMM")
+        igText(toHex(i.fieldImm.imm32.U32))
+
+
 proc codeEdit(state: UiState) =
   igInputTextMultiline(
     "",
@@ -365,6 +501,16 @@ proc codeEdit(state: UiState) =
     # callback = cb,
   )
 
+  if igButton("Compile"):
+    try:
+      state.full.compileAndLoad(state.codeText)
+      let nowfmt = now().format(isoDateFmtMsec)
+      state.compileRes = &"Compilation OK at {nowfmt}"
+
+    except InstrParseError as ex:
+      state.compileRes = &"Compilation failed: {ex.msg}"
+
+  igText(state.compileRes)
 
 
 proc igLogic(state: UiState) =
@@ -373,11 +519,43 @@ proc igLogic(state: UiState) =
   ## Main entry point for the visualization logic
   # igSetNextWindowSize(igVec(600, 600))
   igWindow("Main window TMP"):
-    if igButton("Next"):
-      state.io = UiIo()
-      full.step()
+    let cpu = state.full.emu.cpu
+
+    var eipText {.global.}: string
+
+    proc updateEip() =
+      full.logger.noLog():
+        eipText = "0x" & toHex(cpu.getEip())
+
+    if eipText.len == 0:
+      updateEip()
+
+    if igButton("Step"):
+      full.logger.doLog():
+        state.io = UiIo()
+        full.step()
+        updateEip()
 
     full.logger.noLog():
+      igSameLine()
+      if igButton("--EIP"):
+        cpu.setEip(cpu.getEip() - 1)
+        updateEip()
+
+      igSameLine()
+
+      if igButton("++EIP"):
+        cpu.setEip(cpu.getEip() + 1)
+        updateEip()
+
+      igSameLine()
+      igInputText("EIP", eipText, orEnum([CHarsHexadecimal, CharsUppercase]))
+      igSameLine()
+      if igButton("Load"):
+        echov eipText
+        cpu.setEip(lexcast[U32](eipText))
+
+
       const memw = ((memConf.perRow + 1) * (memConf.cellWidth + 5)) +
             (memConf.prefixWidth + 40)
 
@@ -407,18 +585,41 @@ proc igLogic(state: UiState) =
 
             echov "Selected logs save"
 
-        igMenu("Show/hide"):
+        igMenu("Show/hide", "Show or hide extra memory operations"):
           igMenuItemToggleBool(
             "Show port IO",
             "Hide port IO",
             state.showSections.showPortIO
           )
 
+          igTooltipText(
+            "Toggle visibility of the port input/output operations")
+
           igMenuItemToggleBool(
-            "Show memory IO",
-            "Hide memory IO",
+            "Show memory-mapped IO",
+            "Hide memory-mapped IO",
             state.showSections.showMemoryIO
           )
+
+          igTooltipText(
+            "Toggle visibility of the memory-mapped input/ouput operations")
+
+        igMenu(
+          "Memory structures",
+          "Additional visualization for in-memory data structures"):
+            igMenuItemToggleBool(
+              "Show interrupt table",
+              "Hide interrupt table",
+              state.showSections.interrupts
+            )
+
+            igTooltipText("Show IVT (interrupt vector table)")
+
+            igMenuItemToggleBool(
+              "Show interrupt queue",
+              "Hide interrupt queue",
+              state.showSections.interrupts
+            )
 
       igTable("table", 3, BordersV):
         igTableSetupColumn("Memory", WidthFixed, float32(memw))
@@ -441,25 +642,54 @@ proc igLogic(state: UiState) =
               codeEdit(state)
             regTable(state)
 
+      currentInstr(state)
+      eventLog(state)
 
+const hideList: set[EmuEventKind] = { eekStartInstructionFetch }
 
 proc event(state: UiState, ev: EmuEvent) =
-  state.events.add  ev
-  echov ev.kind
   var io {.byaddr.} = state.io
   case ev.kind:
     of eekGetReg8: io.lastRegRead.reg8 = some Reg8T(ev.memAddr)
     of eekSetReg8: io.lastRegWrite.reg8 = some Reg8T(ev.memAddr)
+    of eekGetReg16: io.lastRegRead.reg16 = some Reg16T(ev.memAddr)
+    of eekSetReg16: io.lastRegWrite.reg16 = some Reg16T(ev.memAddr)
+    of eekGetReg32: io.lastRegRead.reg32 = some Reg32T(ev.memAddr)
+    of eekSetReg32: io.lastRegWrite.reg32 = some Reg32T(ev.memAddr)
     else:
       discard
+
+  if ev.kind in eekEndKinds:
+    if state.eventStack.pop() in hideList:
+      state.eventShow = true
+
+    return
+
+  state.events.add((state.eventStack.len, ev))
+
+  if ev.kind in eekStartKinds:
+    if ev.kind in hideList:
+      state.eventShow = false
+
+    state.eventStack.add ev.kind
 
 proc main() =
   assert glfwInit()
 
   var full = initFull(EmuSetting(memSize: 256))
   full.emu.cpu.setEip(0)
-  var uiState = UiState(full: full, memEnd: 256)
-  full.logger.setHook(proc(ev: EmuEvent) = event(uiState, ev))
+  var uiState = UiState(
+    full: full,
+    memEnd: 256,
+    eventShow: true
+  )
+  full.addEchoHandler()
+  let hook = full.logger.eventHandler
+  full.logger.setHook(
+    proc(ev: EmuEvent) =
+      hook(ev)
+      event(uiState, ev)
+  )
 
   uiState.codeText = """
 mov ax, 2
@@ -505,8 +735,21 @@ hlt
     igOpenGL3NewFrame()
     igGlfwNewFrame()
     igNewFrame()
-    # Call main logic implementation function
-    igLogic(uiState)
+
+    try:
+      # Call main logic implementation function
+      igLogic(uiState)
+
+    except Exception as ex:
+      igText(&"""
+Exception occured in the main core implementation
+
+Name: {ex.name}
+Msg:
+{ex.msg}
+Trace:
+{getStackTrace(ex)}
+""")
 
     igRender()
 

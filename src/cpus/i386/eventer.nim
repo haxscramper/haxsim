@@ -255,11 +255,18 @@ template noLog*(logger: EmuLogger, body: untyped): untyped =
   ## Temporarily disable logging for `body` code block
   block:
     let old = logger.enabled
-    cblock "disable logger":
-      logger.enabled = false
+    logger.enabled = false
     body
-    cblock "enable logger back":
-      logger.enabled = old
+    logger.enabled = old
+
+template doLog*(logger: EmuLogger, body: untyped): untyped =
+  ## Temporarily disable logging for `body` code block
+  block:
+    let old = logger.enabled
+    logger.enabled = true
+    body
+    logger.enabled = old
+
   
 proc initEmuLogger*(handler: EmuEventHandler = nil): EmuLogger =
   new(result)
