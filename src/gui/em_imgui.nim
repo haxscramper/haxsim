@@ -32,6 +32,12 @@ proc setMem*(full: FullImpl, memAddr: EPointer, value: EByte) =
   full.emu.mem.memory[memAddr] = value
 
 
+proc writeJson(writer: var JsonSerializer, value: EmuEvent) =
+  writeJsonObject(writer, value, multiline = false, isAcyclic = true)
+
+proc writeJson(writer: var JsonSerializer, value: EmuLogger) =
+  writeJsonObject(writer, value, multiline = false, isAcyclic = true)
+
 template spliceEach(
     stmts: NimNode, mid: NimNode, before: bool = true): NimNode =
   block:
@@ -660,7 +666,13 @@ proc menuBar(state: UiState) =
         "Save logs",
         "Save current event logs to file"):
 
-        echov "Selected logs save"
+        let file = saveFileDialog("Save emulator logs", "/tmp/logs.json")
+        if file.canGet(path):
+          let str = withItWriter():
+            it.writeJsonItems(state.events, multiline = true)
+
+          writeFile(path, str)
+
 
     igMenu("Show/hide", "Show or hide extra memory operations"):
       igMenuItemToggleBool(

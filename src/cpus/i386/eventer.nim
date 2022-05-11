@@ -1,5 +1,6 @@
 import std/[strutils, math]
 import membase
+import hmisc/hasts/json_serde
 import hmisc/core/all
 
 type
@@ -80,7 +81,7 @@ type
     eecLowLevelMemory
 
   EmuEvent* = ref object of RootObj
-    stackTrace*: seq[StackTraceEntry]
+    stackTrace* {.Serde(SerSkip).}: seq[StackTraceEntry]
 
     category*: EmuEventCategory
     kind*: EmuEventKind
@@ -88,7 +89,7 @@ type
     size*: uint64
     value*: EmuValue
     msg*: string
-    info*: typeof(instantiationInfo())
+    info* {.Serde(SerSkip).}: typeof(instantiationInfo())
 
   EmuValueSystem* = enum evs2, evs8, evs10, evs16
 
