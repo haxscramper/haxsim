@@ -10,6 +10,9 @@ import std/[
   sequtils
 ]
 
+import tinyfiledialogs
+
+import hmisc/hasts/json_serde
 import maincpp, eventer, common
 import hmisc/algo/[lexcast, clformat_interpolate, clformat]
 import hmisc/types/colorstring
@@ -19,6 +22,7 @@ import hardware/[processor, hardware, eflags, memory]
 import hmisc/core/all
 import hmisc/other/oswrap
 
+
 proc getMem*(full: FullImpl, memAddr: EPointer): EByte =
   ## Return value from the specified location in the physica memory
   full.emu.mem.memory[memAddr]
@@ -26,7 +30,6 @@ proc getMem*(full: FullImpl, memAddr: EPointer): EByte =
 proc setMem*(full: FullImpl, memAddr: EPointer, value: EByte) =
   ## Set value at the specified location in the physical memory
   full.emu.mem.memory[memAddr] = value
-
 
 
 template spliceEach(
@@ -649,8 +652,9 @@ proc menuBar(state: UiState) =
       if igMenuItem(
         "Save state",
         "Save current emulator state from file"):
-
-        echov "Selected state save"
+        let file = saveFileDialog("Save emulator state", "/tmp/state.json")
+        if file.canGet(path):
+          writeFile(path, toJson(state.full.emu.cpu))
 
       if igMenuItem(
         "Save logs",
@@ -882,6 +886,8 @@ proc event(state: UiState, ev: EmuEvent) =
       state.eventShow = false
 
     state.eventStack.add ev.kind
+
+
 
 proc main() =
   assert glfwInit()

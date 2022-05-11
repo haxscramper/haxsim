@@ -3,6 +3,7 @@ import eflags
 import cr
 import instruction/syntaxes
 export Reg32T, Reg16T, Reg8T, SgRegT, DTregT
+import hmisc/hasts/json_serde
 
 type
   GPRegister* {.union.} = object
@@ -132,7 +133,7 @@ type
 
   ProcessorObj* =  object of CR
     ## Current state of the CPU
-    logger*: EmuLogger ## Reference to main logger instance
+    logger* {.Serde(SerSkip).}: EmuLogger ## Reference to main logger instance
     eflags*: Eflags ## Extended execution flags
     field0*: InstructionPointer ## Value of the instruction pointer
     gpregs*: array[Reg32T, GPRegister] ## General-purpose registers

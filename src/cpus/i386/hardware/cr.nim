@@ -1,4 +1,5 @@
 import common
+import hmisc/hasts/json_serde
 
 ## Implementation of the control register and associated logic.
 
@@ -86,7 +87,7 @@ type
     cr2*: CRCr2
     cr3*: CRCr3
     cr4*: CRCr4
-    cr*: array[5, ptr U32] ## Access ref registers by index
+    cr* {.Serde(SerSkip).}: array[5, ptr U32] ## Access ref registers by index
 
 proc getCrn*(this: CR, n: NBits[3]): U32 =
   assert n.int < this.cr.len
