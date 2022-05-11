@@ -11,10 +11,11 @@ import std/[
 ]
 
 import maincpp, eventer, common
-import hmisc/algo/lexcast
-import emulator/emulator
+import hmisc/algo/[lexcast, clformat_interpolate, clformat]
+import hmisc/types/colorstring
+import emulator/[emulator, interrupt]
 import compiler/assembler
-import hardware/[processor, hardware]
+import hardware/[processor, hardware, eflags, memory]
 import hmisc/core/all
 import hmisc/other/oswrap
 
@@ -145,9 +146,12 @@ template igGroup*(body: untyped): untyped =
   body
   igEndGroup()
 
-template igWindow*(name: string, body: untyped): untyped =
+template igWindow*(
+    name: string,
+    flags: ImGuiWindowFlags = ImGuiWindowFlags.None,
+    body: untyped): untyped =
   ## Create new imgui window
-  igBegin(name, nil, ImGuiWindowFlags.None)
+  igBegin(name, nil, flags)
   body
   igEnd()
 
@@ -174,8 +178,30 @@ template igTooltip*(body: untyped): untyped =
     igEndToolTip()
 
 proc igTooltipText*(text: string) =
+  ## If previous element is hovered on, show tooltip with provided text
   igTooltip():
     igtext(text)
+
+proc igTooltipNum*(num: SomeUnsignedInt) =
+  ## If previous element is hovered on, show tooltip with more elaborate
+  ## description of the unsgined integer value
+  igTooltip():
+    igText(&"""
+bin: {toBin(num, sizeof(num))}
+dec: {num}
+hex: {toHex(num)}
+""")
+
+proc igHexText*(num: SomeUnsignedInt, trim: bool = false) =
+  ## Show hexadecimal text field, and if the item is hovered on, provide
+  ## tooltip with more elaborate description
+  if trim:
+    igText(toHexTrim(num))
+
+  else:
+    igText(toHex(num))
+
+  igTooltipNum(num)
 
 proc igMenuItem*(name, tooltip: string): bool =
   ## Create menu item with given name and tooltip. Tooltip is shown in the
@@ -198,6 +224,11 @@ type
     ]
 
 
+  StoredState = object
+    cpu: ProcessorObj
+    mem: MemoryObj
+    time: DateTime
+
   UiState = ref object
     ## Global state of the UI
     full: FullImpl ## Reference to the implementation core
@@ -218,9 +249,12 @@ type
     memEnd: int ## Max range of memory to show in the editor widget
     compileRes: string ## Message from the compilation result
 
+    states: seq[StoredState]
+
     showSections: tuple[
       showPortIo, showMemoryIo, showVGA: bool,
-      interrupts, interruptQueue: bool
+      interrupts, interruptQueue: bool,
+      loggingTable, stateRestore: bool
     ] ## Which extra windows to show in the GUI
 
 type RegIO = enum ioIn, ioOut, ioNone
@@ -322,6 +356,79 @@ proc eventLog(state: UiState) =
           igText(ev.kind)
           igText(addrs)
           igText(value)
+
+proc tooltip(cpu: ProcessorObj): string =
+  template h(it: untyped): untyped = toHex(cpu[it])
+
+  cpu.logger.noLog():
+    result = $clfmt"""
+EFLAGS:  {toBin(cpu.eflags.getEflags(), 32)}
+                       111111110000000000
+                       765432109876543210
+                       ||||||||||||||||||
+                       VR N`IODITSZ A P1C
+                            O
+EIP: {toHex(cpu.eip):<   }  P
+IP:      {toHex(cpu.ip):<}  L
+
+EAX: {h(EAX):<     } ESP: {h(ESP)}
+AX:      {h(AX):<  } SP:      {h(SP)}
+AH:      {h(AH):<  } EBP: {h(EBP)}
+AL:        {h(AL):<} BP:      {h(BP)}
+ECX: {h(ECX):<     } ESI: {h(ESI)}
+CX:      {h(CX):<  } SI:      {h(SI)}
+CH:      {h(CH):<  } EDI: {h(EDI)}
+CL:        {h(CL):<} DI:      {h(DI)}
+EBX: {h(EBX):<     }
+BX:      {h(BX):<  } CS:  {toHex(cpu.getSgReg(CS).raw)}
+BH:      {h(BH):<  } DS:  {toHex(cpu.getSgReg(DS).raw)}
+BL:        {h(BL):<} ES:  {toHex(cpu.getSgReg(ES).raw)}
+EDX: {h(EDX):<     } FS:  {toHex(cpu.getSgReg(FS).raw)}
+DX:      {h(DX):<  } GS:  {toHex(cpu.getSgReg(GS).raw)}
+DH:      {h(DH):<  } SS:  {toHex(cpu.getSgReg(SS).raw)}
+DL:        {h(DL):<}
+"""
+
+proc stateStore(state: UiState) =
+  igTable("Stored state", 4):
+    igTableSetupColumns([
+      ("Time", WidthFixed, 200i32),
+      ("Full", WidthFixed, 70i32),
+      ("CPU", WidthStretch, 120i32),
+      ("Memory", WidthStretch, 120i32)
+    ])
+
+    var restoreFull = false
+    for saved in state.states:
+      igRows():
+        igColumns():
+          igText(format(isoDateFmtMsec, saved.time))
+          if igButton("All"):
+            restoreFull = true
+
+          igText(saved.cpu.tooltip())
+          igText(saved.mem.dumpMem())
+
+        igColumns():
+          igText("")
+          igText("")
+          if igButton("CPU restore") or restoreFull:
+            state.full.emu.cpu[] = saved.cpu
+            restoreFull = false
+
+          if igButton("MEM restore") or restoreFull:
+            state.full.emu.mem[] = saved.mem
+            restoreFull = false
+
+
+          
+
+proc currentState(state: UiState): StoredState =
+  StoredState(
+    cpu: state.full.emu.cpu[],
+    mem: state.full.emu.mem[],
+    time: now()
+  )
 
 var
   regWidths = (
@@ -513,14 +620,111 @@ proc codeEdit(state: UiState) =
   igText(state.compileRes)
 
 
-proc igLogic(state: UiState) =
+proc menuBar(state: UiState) =
+  igMainMenuBar():
+    igMenu("File"):
+      if igMenuItem(
+        "Load binary",
+        "Load compiled binary file into memory, startin at position 0"):
+
+        echov "Selected file open"
+
+      if igMenuItem(
+        "Load state",
+        "Load saved emulator state from file"):
+
+        echov "Selected state open"
+
+      if igMenuItem(
+        "Save state",
+        "Save current emulator state from file"):
+
+        echov "Selected state save"
+
+      if igMenuItem(
+        "Save logs",
+        "Save current event logs to file"):
+
+        echov "Selected logs save"
+
+    igMenu("Show/hide", "Show or hide extra memory operations"):
+      igMenuItemToggleBool(
+        "Hide port IO",
+        "Show port IO",
+        state.showSections.showPortIO
+      )
+
+      igTooltipText(
+        "Toggle visibility of the port input/output operations")
+
+      igMenuItemToggleBool(
+        "Hide memory-mapped IO",
+        "Show memory-mapped IO",
+        state.showSections.showMemoryIO
+      )
+
+      igTooltipText(
+        "Toggle visibility of the memory-mapped input/ouput operations")
+
+    igMenu(
+      "State, loggin",
+      "Show or hide operations related to logging, emulator state save"
+    ):
+      igMenuItemToggleBool(
+        "Hide logging table",
+        "Show logging table",
+        state.showSections.loggingTable
+      )
+
+      igTooltipText("Show or hide event log table")
+
+      igMenuItemToggleBool(
+        "Hide stored state list",
+        "Show stored state list",
+        state.showSections.stateRestore
+      )
+
+    igMenu(
+      "Memory structures",
+      "Additional visualization for in-memory data structures"):
+        igMenuItemToggleBool(
+          "Hide interrupt table",
+          "Show interrupt table",
+          state.showSections.interrupts
+        )
+
+        igTooltipText("Show IVT (interrupt vector table)")
+
+        igMenuItemToggleBool(
+          "Hide interrupt queue",
+          "Show interrupt queue",
+          state.showSections.interrupts
+        )
+
+
+proc mainWindow(state: UiState) =
   let full = state.full
 
-  ## Main entry point for the visualization logic
-  # igSetNextWindowSize(igVec(600, 600))
-  igWindow("Main window TMP"):
-    let cpu = state.full.emu.cpu
+  block:
+    # Space for the main emnu bar
+    const menuH = 18
+    var size = igGetIO().displaySize
+    size.y -= menuH
+    # Configure positioning and size of the next ('main') window to occupy
+    # the whole 'real' window.
+    igSetNextWindowSize(size)
+    igSetNextWindowPos(igVec(0, menuH))
 
+
+  igWindow("Main window TMP" , orEnum([
+    # Hide title bar, don
+    NoTitleBar,
+    # Don't focus on the 'main' window if it is pressed
+    NoBringToFrontOnFocus,
+    # Window is fixed in position and cannot be resized
+    ImGuiWindowFlags.NoResize, NoMove
+  ])):
+    let cpu = state.full.emu.cpu
     var eipText {.global.}: string
 
     proc updateEip() =
@@ -535,6 +739,11 @@ proc igLogic(state: UiState) =
         state.io = UiIo()
         full.step()
         updateEip()
+
+    igSameLine()
+    if igButton("Store state"):
+      state.states.add state.currentState()
+
 
     full.logger.noLog():
       igSameLine()
@@ -555,71 +764,8 @@ proc igLogic(state: UiState) =
         echov eipText
         cpu.setEip(lexcast[U32](eipText))
 
-
       const memw = ((memConf.perRow + 1) * (memConf.cellWidth + 5)) +
             (memConf.prefixWidth + 40)
-
-      igMainMenuBar():
-        igMenu("File"):
-          if igMenuItem(
-            "Load binary",
-            "Load compiled binary file into memory, startin at position 0"):
-
-            echov "Selected file open"
-
-          if igMenuItem(
-            "Load state",
-            "Load saved emulator state from file"):
-
-            echov "Selected state open"
-
-          if igMenuItem(
-            "Save state",
-            "Save current emulator state from file"):
-
-            echov "Selected state save"
-
-          if igMenuItem(
-            "Save logs",
-            "Save current event logs to file"):
-
-            echov "Selected logs save"
-
-        igMenu("Show/hide", "Show or hide extra memory operations"):
-          igMenuItemToggleBool(
-            "Show port IO",
-            "Hide port IO",
-            state.showSections.showPortIO
-          )
-
-          igTooltipText(
-            "Toggle visibility of the port input/output operations")
-
-          igMenuItemToggleBool(
-            "Show memory-mapped IO",
-            "Hide memory-mapped IO",
-            state.showSections.showMemoryIO
-          )
-
-          igTooltipText(
-            "Toggle visibility of the memory-mapped input/ouput operations")
-
-        igMenu(
-          "Memory structures",
-          "Additional visualization for in-memory data structures"):
-            igMenuItemToggleBool(
-              "Show interrupt table",
-              "Hide interrupt table",
-              state.showSections.interrupts
-            )
-
-            igTooltipText("Show IVT (interrupt vector table)")
-
-            igMenuItemToggleBool(
-              "Show interrupt queue",
-              "Hide interrupt queue",
-              state.showSections.interrupts
-            )
 
       igTable("table", 3, BordersV):
         igTableSetupColumn("Memory", WidthFixed, float32(memw))
@@ -643,7 +789,60 @@ proc igLogic(state: UiState) =
             regTable(state)
 
       currentInstr(state)
+
+
+
+
+proc igLogic(state: UiState) =
+  ## Main entry point for the visualization logic
+  let full = state.full
+
+  # Configure main menu bar
+  menuBar(state)
+  # Show unmovable 'main' window
+  mainWindow(state)
+
+  # Depending on the menu state, show movable 'additional' windows.
+  let show = state.showSections
+  if show.loggingTable:
+    igWindow("Logging table"):
       eventLog(state)
+
+  if show.stateRestore:
+    igWindow("Stored state"):
+      stateStore(state)
+
+  if show.interrupts:
+    full.logger.noLog():
+      igWindow("Interrupts"):
+        igTable("interrupts", 5):
+          let cpu = full.emu.cpu
+          var mem = full.emu.mem
+          igTableSetupColumns([
+            ("IDX",     WidthFixed, 40i32),
+            ("ADDR",    WidthFixed, 60i32),
+            ("desc",    WidthStretch, 40i32),
+            ("segment", WidthFixed, 70i32),
+            ("offset",  WidthFixed, 70i32)
+          ])
+          # Iterate from the first interrupt to the last one, or until the
+          # end of the memory (for demonstration purposes smaller memory
+          # size could be used, which might lead to the truncated IVT)
+          let base = cpu.getDtregBase(IDTR)
+          for idx in 0u8 .. 0xFFu8:
+            let offset = idx * sizeof(IVT).U32()
+            let adr = base + offset
+            if mem.len() <= int(adr + sizeof(IVT).U32() - 1):
+              break
+
+            let ivt = mem.readDataBlob[:IVT](adr)
+            igRows():
+              igColumns():
+                igText(toHex(idx))
+                igText(toHex(adr))
+                igText("")
+                igHexText(ivt.segment)
+                igHexText(ivt.offset)
 
 const hideList: set[EmuEventKind] = { eekStartInstructionFetch }
 
@@ -683,6 +882,7 @@ proc main() =
     memEnd: 256,
     eventShow: true
   )
+  # uiState.showSections.stateRestore = true
   full.addEchoHandler()
   let hook = full.logger.eventHandler
   full.logger.setHook(
@@ -705,7 +905,7 @@ hlt
   glfwWindowHint(GLFWContextVersionMinor, 1)
   glfwWindowHint(GLFWOpenglForwardCompat, GLFW_TRUE)
   glfwWindowHint(GLFWOpenglProfile, GLFW_OPENGL_CORE_PROFILE)
-  glfwWindowHint(GLFWResizable, GLFW_FALSE)
+  glfwWindowHint(GLFWResizable, GLFW_TRUE)
 
   var w: GLFWWindow = glfwCreateWindow(1920, 1080)
   if w == nil:

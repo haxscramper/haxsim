@@ -194,7 +194,7 @@ proc retf*(this: var InstrImpl) =
   this.exec.retf()
 
 proc int3*(this: var InstrImpl) =
-  MEM.dumpMem((ACS.getSegment(SS) shl 4) + CPU[ESP] - 0x40, 0x80.csizeT)
+  echo MEM.dumpMem((ACS.getSegment(SS) shl 4) + CPU[ESP] - 0x40, 0x80.csizeT)
 
 proc intImm8*(this: var InstrImpl) =
   INT.queueInterrupt(this.imm8.U8, false)

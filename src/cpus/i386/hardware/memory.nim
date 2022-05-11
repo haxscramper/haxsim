@@ -22,15 +22,16 @@ template INRANGE*(memAddr: untyped, memLen: untyped): untyped {.dirty.} =
   (int(memAddr + memLen - 1) < this.memory.len())
 
 type
-  Memory* = ref object
+  MemoryObj* = object
     logger*: EmuLogger
     memory*: seq[U8]
     a20gate*: bool
 
-template log*(mem: Memory, ev: EmuEvent) =
+  Memory* = ref MemoryObj
+  AnyMemory* = Memory | MemoryObj
+
+template log*(mem: ANyMemory, ev: EmuEvent) =
   mem.logger.log(ev, -2)
-
-
 
 proc setA20gate*(this: var Memory, ena: bool): void =
   this.a20gate = ena
@@ -86,20 +87,27 @@ proc initMemory*(size: ESize, logger: EmuLogger): Memory =
 proc destroyMemory*(this: var Memory): void =
   discard
 
-func len*(mem: Memory): int = mem.memory.len()
+func len*(mem: AnyMemory): int = mem.memory.len()
 
 proc dumpMem*(
-    this: Memory,
+    this: AnyMemory,
     memAddr: EPointer = 0,
-    size: ESize = ESize(this.len())
-  ): void =
-
-  const perRow = 16
+    size: ESize = ESize(this.len()),
+    perRow: int = 16
+  ): string =
+  ## Dump memory starting at position `memAddr` up until the `size`
+  ## elements. Can be used to dump full memor block (default), or show a
+  ## smaller chunk.
   let memAddr = (memAddr and not((0x10 - 1)).U32())
   let numLen = int(ceil(log10(float(memAddr + size))))
-  echo repeat(" ", numLen), "  ", mapIt(0 ..< perRow, toHex(it)[^1..^1].align(2)).join(" ")
+  result.add repeat(
+    " ", numLen),
+      "  ",
+      mapIt(0 ..< perRow, toHex(it)[^1..^1].align(2)).join(" ")
 
-  for line in ceil(memAddr.float / perRow).int .. ceil(float(memAddr + size) / perRow).int:
+  for line in
+    ceil(float(memAddr) / float(perRow)).int ..
+    ceil(float(memAddr + size) / float(perRow)).int:
     var buf = toHex(line * perRow)[^numLen .. ^1] & ": "
     var hasValue = false
     for cell in (line * perRow) ..< (line + 1) * perRow:
@@ -109,7 +117,8 @@ proc dumpMem*(
         buf.add " "
 
     if hasValue:
-      echo buf
+      result.add "\n"
+      result.add buf
 
 proc readData*(
   this: var Memory, dst: EPointer, srcAddr: EPointer, size: ESize): ESize =

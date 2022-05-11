@@ -144,48 +144,49 @@ type
     halt*: bool ## Is execution halted?
 
   Processor* = ref ProcessorObj ## Reference type for the processor
+  AnyProc = Processor | ProcessorObj
 
-template log*(p: Processor, ev: EmuEvent, depth: int = -2): untyped =
+template log*(p: AnyProc, ev: EmuEvent, depth: int = -2): untyped =
   p.logger.log(ev, depth)
 
-proc eip*(this: Processor): U32 = this.field0.eip
-proc `eip=`*(this: Processor, value: U32) = this.field0.eip = value
-proc ip*(this: Processor): U16 = this.field0.ip
-proc `ip=`*(this: Processor, value: U16) = this.field0.ip = value
+proc eip*(this: AnyProc): U32 = this.field0.eip
+proc `eip=`*(this: AnyProc, value: U32) = this.field0.eip = value
+proc ip*(this: AnyProc): U16 = this.field0.ip
+proc `ip=`*(this: AnyProc, value: U16) = this.field0.ip = value
 
-proc isMode32*(this: var Processor): bool =
+proc isMode32*(this: var AnyProc): bool =
   return this.sgregs[CS].cache.flags.DB.bool
 
-func `[]`*(this: var Processor, reg: SgRegT): var SGRegister = this.sgregs[reg]
+func `[]`*(this: var AnyProc, reg: SgRegT): var SGRegister = this.sgregs[reg]
 
-proc setMode32*(this: var Processor, mode: bool) =
+proc setMode32*(this: var AnyProc, mode: bool) =
   this[CS].cache.flags.DB = mode.U8
 
-proc isProtected*(this: var Processor): bool =
+proc isProtected*(this: var AnyProc): bool =
   # FIXME will cause infinite recursion because original implementation of
-  # the processor called into `CR::isProtected()` for the parent class
+  # the AnyProc called into `CR::isProtected()` for the parent class
   # implementation.
   return CR(this).isProtected()
 
-proc getEip*(this: Processor): U32 =
+proc getEip*(this: AnyProc): U32 =
   result = this.eip
   this.log ev(eekGetEIP).withIt do:
     it.value = evalue(result)
 
-proc getIp*(this: Processor): U16 =
+proc getIp*(this: AnyProc): U16 =
   result = this.ip
   this.log ev(eekGetIP).withIt do:
     it.value = evalue(result)
 
-proc getGpreg*(this: Processor, n: Reg32T): U32 =
+proc getGpreg*(this: AnyProc, n: Reg32T): U32 =
   result = this.gpregs[n].reg32
   this.log ev(eekGetReg32, evalue(result), n.U8)
 
-proc getGpreg*(this: Processor, n: Reg16T): U16 =
+proc getGpreg*(this: AnyProc, n: Reg16T): U16 =
   result = this.gpregs[Reg32T(n.int)].reg16
   this.log ev(eekGetReg16, evalue(result), n.U8)
 
-proc getGpreg*(this: Processor, n: Reg8T, log: bool = true): U8 =
+proc getGpreg*(this: AnyProc, n: Reg8T, log: bool = true): U8 =
   if n < AH:
     result = this.gpregs[Reg32T(n.int)].reg8L
 
@@ -196,12 +197,12 @@ proc getGpreg*(this: Processor, n: Reg8T, log: bool = true): U8 =
     it.memAddr = n.uint64
     it.value = evalue(result)
 
-proc `[]`*(this: Processor, reg: Reg8T): U8 = this.getGPreg(reg)
-proc `[]`*(this: Processor, reg: Reg16T): U16 = this.getGPreg(reg)
-proc `[]`*(this: Processor, reg: Reg32T): U32 = this.getGPreg(reg)
+proc `[]`*(this: AnyProc, reg: Reg8T): U8 = this.getGPreg(reg)
+proc `[]`*(this: AnyProc, reg: Reg16T): U16 = this.getGPreg(reg)
+proc `[]`*(this: AnyProc, reg: Reg32T): U32 = this.getGPreg(reg)
 
 
-proc getSgreg*(this: Processor, n: SgRegT): SgRegister =
+proc getSgreg*(this: AnyProc, n: SgRegT): SgRegister =
   result = this.sgregs[n]
 
 proc getDtregSelector*(this: Processor, n: DTregT): U32 =
