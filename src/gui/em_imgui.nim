@@ -155,6 +155,17 @@ template igWindow*(
   body
   igEnd()
 
+
+template igWindow*(
+    name: string,
+    isOpen: var bool,
+    flags: ImGuiWindowFlags = ImGuiWindowFlags.None,
+    body: untyped): untyped =
+  ## Create new imgui window
+  igBegin(name, addr isOpen, flags)
+  body
+  igEnd()
+
 proc orEnum[E: enum](values: openarray[E]): E =
   var res: I32
   for val in values:
@@ -803,18 +814,18 @@ proc igLogic(state: UiState) =
   mainWindow(state)
 
   # Depending on the menu state, show movable 'additional' windows.
-  let show = state.showSections
+  var show {.byaddr.} = state.showSections
   if show.loggingTable:
-    igWindow("Logging table"):
+    igWindow("Logging table", show.loggingTable):
       eventLog(state)
 
   if show.stateRestore:
-    igWindow("Stored state"):
+    igWindow("Stored state", show.loggingTable):
       stateStore(state)
 
   if show.interrupts:
     full.logger.noLog():
-      igWindow("Interrupts"):
+      igWindow("Interrupts", show.interrupts):
         igTable("interrupts", 5):
           let cpu = full.emu.cpu
           var mem = full.emu.mem
