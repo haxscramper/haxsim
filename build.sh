@@ -3,7 +3,7 @@
 set -o nounset
 set -o errexit
 
-wip="${1:-imgui}"
+wip="${1:-win}"
 
 case $wip in
     "cpp")
@@ -48,6 +48,12 @@ case $wip in
         nim c -r src/gui/em_imgui.nim
         # ./src/gui/em_imgui run
         echo "execution done"
+        ;;
+
+    "win")
+        echo "Starting win"
+
+        echo "done win"
         ;;
 
     "webui")
