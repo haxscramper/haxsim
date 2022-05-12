@@ -17,7 +17,7 @@ import maincpp, eventer, common
 import hmisc/algo/[lexcast, clformat_interpolate, clformat]
 import hmisc/types/colorstring
 import emulator/[emulator, interrupt]
-import compiler/assembler
+import compiler/[assembler, external]
 import hardware/[processor, hardware, eflags, memory]
 import hmisc/core/all
 import hmisc/other/oswrap
@@ -190,6 +190,11 @@ template igTable*(
     body
     igEndTable()
 
+proc igCheckBox*(label: string, value: var bool): bool =
+  igCheckBox(label.cstring, addr value)
+
+
+
 template igTooltip*(body: untyped): untyped =
   ## If previous item is hovered on, show tooltip described by `body`
   if igIsItemHovered():
@@ -201,6 +206,10 @@ proc igTooltipText*(text: string) =
   ## If previous element is hovered on, show tooltip with provided text
   igTooltip():
     igtext(text)
+
+proc igButton*(name, tip: string): bool =
+  result = igButton(name)
+  igTooltipText(tip)
 
 proc igTooltipNum*(num: SomeUnsignedInt) =
   ## If previous element is hovered on, show tooltip with more elaborate
@@ -271,6 +280,7 @@ type
 
     states: seq[StoredState]
 
+    autoCleanOnCompile: bool
     showSections: tuple[
       showPortIo, showMemoryIo, showVGA: bool,
       interrupts, interruptQueue: bool,
@@ -619,6 +629,18 @@ proc currentInstr(state: UiState) =
         igText(toHex(i.fieldImm.imm32.U32))
 
 
+proc clearState(state: UiState) =
+  let full = state.full
+  full.logger.noLog():
+    let cpu = full.emu.cpu[]
+    initProcessor(full.emu.cpu, full.logger)
+    full.emu.mem[] = initMemory(ESize(full.emu.mem.len()), full.logger)[]
+    state.events.clear()
+
+    full.emu.cpu.withResIt do:
+      it.eip = cpu.eip
+
+
 proc codeEdit(state: UiState) =
   igInputTextMultiline(
     "",
@@ -628,14 +650,57 @@ proc codeEdit(state: UiState) =
     # callback = cb,
   )
 
-  if igButton("Compile"):
+  var compiled = true
+  if igButton(
+    "Compile",
+    "Compile using built-in assembler implementation (note - experimental)"
+  ):
     try:
-      state.full.compileAndLoad(state.codeText)
-      let nowfmt = now().format(isoDateFmtMsec)
-      state.compileRes = &"Compilation OK at {nowfmt}"
+      var prog = parseProgram(state.codeText)
+      prog.compile()
+      var bin = prog.data()
+
+      compiled = true
+      if state.autoCleanOnCompile:
+        clearState(state)
+
+      state.full.emu.loadBlob(bin, 0)
 
     except InstrParseError as ex:
       state.compileRes = &"Compilation failed: {ex.msg}"
+
+  igSameLine()
+  if igButton(
+    "Compile via `nasm`",
+    "Compile using external shell command 'nasm'"
+  ):
+    try:
+      let asmf = getAppTempFile("stored_asm.asm")
+      let binf = getAppTempFile("compiled_asm.bin")
+      mkDir binf.dir()
+
+      asmf.writeFile(state.codeText)
+      compileAsm(asmf, binf)
+
+      compiled = true
+      if state.autoCleanOnCompile:
+        clearState(state)
+
+      state.full.emu.loadBlob(readFile(binf))
+
+    except ShellError as ex:
+      state.compileRes = &"Compilation failed: {ex.msg}"
+
+  igSameLine()
+  discard igCheckBox("Clean memory on compile", state.autoCleanOnCompile)
+  igTooltipText("""
+After each successful recompilation program memory
+and CPU state is completely wiped""")
+
+  if compiled:
+    let nowfmt = now().format(isoDateFmtMsec)
+    state.compileRes = &"Compilation OK at {nowfmt}"
+
 
   igText(state.compileRes)
 
@@ -768,9 +833,20 @@ proc mainWindow(state: UiState) =
         updateEip()
 
     igSameLine()
-    if igButton("Store state"):
+    if igButton(
+      "Store state",
+      "Add current state to the list of stores"
+    ):
       state.states.add state.currentState()
 
+    igSameLine()
+    if igButton(
+      "Clear state",
+      """Completely clean current emulator state,
+including event lots, register values,
+stored values in memory."""
+    ):
+      clearState(state)
 
     full.logger.noLog():
       igSameLine()
@@ -909,7 +985,8 @@ proc main() =
   var uiState = UiState(
     full: full,
     memEnd: 256,
-    eventShow: true
+    eventShow: true,
+    autoCleanOnCompile: true
   )
   # uiState.showSections.stateRestore = true
   full.addEchoHandler()

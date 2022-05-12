@@ -24,6 +24,13 @@ func asMemPointer*(s: var MemData, pos: EPointer): MemPointer =
 func memBlob*(size: ESize): MemData =
   newSeq[EByte](size.int)
 
+func toMemBlob*(it: string, result: var MemData) =
+  result = memBlob(ESize(it.len))
+  copymem(
+    dest   = addr result[0],
+    source = unsafeAddr it[0],
+    size   = ESize(len(result)))
+
 func toMemBlob*[T](it: T, result: var MemData) =
   result = memBlob(ESize(sizeof(it)))
   var arr = cast[PUarray[EByte]](unsafeAddr it)

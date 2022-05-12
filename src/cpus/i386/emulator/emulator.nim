@@ -128,6 +128,12 @@ proc loadBlob*(this: var Emulator, blob: var MemData, pos: uint32 = 0) =
   assertRef(this.accs.mem)
   this.accs.mem.writeDataBlob(pos, blob)
 
+proc loadBlob*(this: var Emulator, blob: string, pos: uint32 = 0) =
+  assertRef(this.accs.mem)
+  var resblob: MemData
+  toMemBlob(blob, resblob)
+  this.accs.mem.writeDataBlob(pos, resblob)
+
 proc loadBinary*(
     this: var Emulator, fname: cstring, memAddr: uint32,
     offset: uint32, size: int64): void =

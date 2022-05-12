@@ -296,30 +296,47 @@ proc doHalt*(this: var Processor, h: bool): void =
 import hardware/[cr, eflags]
 import common
 
-proc initProcessor*(logger: EmuLogger): Processor =
-  assertRef(logger)
-  logger.logScope ev(eekInitCPU)
-  result = Processor(logger: logger)
-  initCR(result)
+proc initProcessor*(pr: var AnyProc, logger: EmuLogger) =
+  ## Initialize new processor state, or clear any values from the existing,
+  ## and reset to default.
+  when pr is ref:
+    if isNil(pr):
+      new(pr)
+    else:
+      pr[] = ProcessorObj()
+
+  else:
+    pr = ProcessorObj()
+
+  pr.logger = logger
+  initCR(pr)
   assertRef(logger)
   # Processor execution starts from specific memory location that stores
   # BIOS. This memory might be mapped to a ROM chip.
-  result.set_eip(0x0000fff0)
-  result.set_crn(0, 0x60000010)
-  result.eflags.set_eflags(0x00000002)
-  result.sgregs[CS].data = cast[SgRegisterData](0xf000)
-  result.sgregs[CS].cache.base = 0xffff0000u32
-  result.sgregs[CS].cache.flags.typ.segc = 1
+  pr.set_eip(0x0000fff0)
+  pr.set_crn(0, 0x60000010)
+  pr.eflags.set_eflags(0x00000002)
+  pr.sgregs[CS].data = cast[SgRegisterData](0xf000)
+  pr.sgregs[CS].cache.base = 0xffff0000u32
+  pr.sgregs[CS].cache.flags.typ.segc = 1
   for i in ES .. GS:
-    result.sgregs[i].cache.limit = 0xffff
-    result.sgregs[i].cache.flags.P = 1
-    result.sgregs[i].cache.flags.typ.A = 1
-    result.sgregs[i].cache.flags.typ.data.w = 1
+    pr.sgregs[i].cache.limit = 0xffff
+    pr.sgregs[i].cache.flags.P = 1
+    pr.sgregs[i].cache.flags.typ.A = 1
+    pr.sgregs[i].cache.flags.typ.data.w = 1
 
-  result.dtregs[IDTR].base  = 0x0000
-  result.dtregs[IDTR].limit = 0xffff
-  result.dtregs[GDTR].base  = 0x0000
-  result.dtregs[GDTR].limit = 0xffff
-  result.dtregs[LDTR].base  = 0x0000
-  result.dtregs[LDTR].limit = 0xffff
-  result.halt = false
+  pr.dtregs[IDTR].base  = 0x0000
+  pr.dtregs[IDTR].limit = 0xffff
+  pr.dtregs[GDTR].base  = 0x0000
+  pr.dtregs[GDTR].limit = 0xffff
+  pr.dtregs[LDTR].base  = 0x0000
+  pr.dtregs[LDTR].limit = 0xffff
+  pr.halt = false
+
+
+
+
+proc initProcessor*(logger: EmuLogger): Processor =
+  assertRef(logger)
+  logger.logScope ev(eekInitCPU)
+  initProcessor(result, logger)
