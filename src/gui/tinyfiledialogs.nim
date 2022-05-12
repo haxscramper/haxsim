@@ -12,14 +12,14 @@ when defined(windows):
   ##  Here are some functions to help you convert between UTF-16 UTF-8 MBSC
   proc utf8toMbcs*(aUtf8string: cstring): cstring {.
       importc: "tinyfd_utf8toMbcs".}
-  proc utf16toMbcs*(aUtf16string: ptr wchar_t): cstring {.
+  proc utf16toMbcs*(aUtf16string: WideCString): cstring {.
       importc: "tinyfd_utf16toMbcs".}
-  proc mbcsTo16*(aMbcsString: cstring): ptr wchar_t {.
+  proc mbcsTo16*(aMbcsString: cstring): WideCString {.
       importc: "tinyfd_mbcsTo16".}
   proc mbcsTo8*(aMbcsString: cstring): cstring {.importc: "tinyfd_mbcsTo8".}
-  proc utf8to16*(aUtf8string: cstring): ptr wchar_t {.
+  proc utf8to16*(aUtf8string: cstring): WideCString {.
       importc: "tinyfd_utf8to16".}
-  proc utf16to8*(aUtf16string: ptr wchar_t): cstring {.
+  proc utf16to8*(aUtf16string: WideCString): cstring {.
       importc: "tinyfd_utf16to8".}
 ## ****************************************************************************************************
 ## ****************************************************************************************************
@@ -187,15 +187,15 @@ proc colorChooser*(aTitle: cstring, aDefaultHexRGB: cstring;
 
 when defined(windows):
   ##  windows only - utf-16 version
-  proc notifyPopupW*(aTitle: ptr wchar_t, aMessage: ptr wchar_t;
-                           aIconType: ptr wchar_t): cint {.
+  proc notifyPopupW*(aTitle: WideCString, aMessage: WideCString;
+                           aIconType: WideCString): cint {.
       importc: "tinyfd_notifyPopupW".}
     ##  NULL or L""
     ##  NULL or L"" may contain \n \t
   ##  L"info" L"warning" L"error"
   ##  windows only - utf-16 version
-  proc messageBoxW*(aTitle: ptr wchar_t, aMessage: ptr wchar_t;
-                          aDialogType: ptr wchar_t, aIconType: ptr wchar_t;
+  proc messageBoxW*(aTitle: WideCString, aMessage: WideCString;
+                          aDialogType: WideCString, aIconType: WideCString;
                           aDefaultButton: cint): cint {.
       importc: "tinyfd_messageBoxW".}
     ##  NULL or L""
@@ -205,18 +205,18 @@ when defined(windows):
   ##  0 for cancel/no , 1 for ok/yes
   ##  returns 0 for cancel/no , 1 for ok/yes
   ##  windows only - utf-16 version
-  proc inputBoxW*(aTitle: ptr wchar_t, aMessage: ptr wchar_t;
-                        aDefaultInput: ptr wchar_t): ptr wchar_t {.
+  proc inputBoxW*(aTitle: WideCString, aMessage: WideCString;
+                        aDefaultInput: WideCString): WideCString {.
       importc: "tinyfd_inputBoxW".}
     ##  NULL or L""
     ##  NULL or L"" (\n nor \t not respected)
   ##  NULL passwordBox, L"" inputbox
   ##  windows only - utf-16 version
-  proc saveFileDialogW*(aTitle: ptr wchar_t;
-                              aDefaultPathAndFile: ptr wchar_t;
+  proc saveFileDialogW*(aTitle: WideCString;
+                              aDefaultPathAndFile: WideCString;
                               aNumOfFilterPatterns: cint;
-                              aFilterPatterns: ptr ptr wchar_t;
-                              aSingleFilterDescription: ptr wchar_t): ptr wchar_t {.
+                              aFilterPatterns: ptr WideCString;
+                              aSingleFilterDescription: WideCString): WideCString {.
       importc: "tinyfd_saveFileDialogW".}
     ##  NULL or L""
     ##  NULL or L""
@@ -225,12 +225,12 @@ when defined(windows):
   ##  NULL or L"text files"
   ##  returns NULL on cancel
   ##  windows only - utf-16 version
-  proc openFileDialogW*(aTitle: ptr wchar_t;
-                              aDefaultPathAndFile: ptr wchar_t;
+  proc openFileDialogW*(aTitle: WideCString;
+                              aDefaultPathAndFile: WideCString;
                               aNumOfFilterPatterns: cint;
-                              aFilterPatterns: ptr ptr wchar_t;
-                              aSingleFilterDescription: ptr wchar_t;
-                              aAllowMultipleSelects: cint): ptr wchar_t {.
+                              aFilterPatterns: ptr WideCString;
+                              aSingleFilterDescription: WideCString;
+                              aAllowMultipleSelects: cint): WideCString {.
       importc: "tinyfd_openFileDialogW".}
     ##  NULL or L""
     ##  NULL or L""
@@ -241,15 +241,15 @@ when defined(windows):
   ##  in case of multiple files, the separator is |
   ##  returns NULL on cancel
   ##  windows only - utf-16 version
-  proc selectFolderDialogW*(aTitle: ptr wchar_t, aDefaultPath: ptr wchar_t): ptr wchar_t {.
+  proc selectFolderDialogW*(aTitle: WideCString, aDefaultPath: WideCString): WideCString {.
       importc: "tinyfd_selectFolderDialogW".}
     ##  NULL or L""
   ##  NULL or L""
   ##  returns NULL on cancel
   ##  windows only - utf-16 version
-  proc colorChooserW*(aTitle: ptr wchar_t, aDefaultHexRGB: ptr wchar_t;
+  proc colorChooserW*(aTitle: WideCString, aDefaultHexRGB: WideCString;
                             aDefaultRGB: array[3, cuchar];
-                            aoResultRGB: array[3, cuchar]): ptr wchar_t {.
+                            aoResultRGB: array[3, cuchar]): WideCString {.
       importc: "tinyfd_colorChooserW".}
     ##  NULL or L""
     ##  NULL or L"#FF0000"

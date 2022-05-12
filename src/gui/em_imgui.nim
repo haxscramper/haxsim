@@ -23,11 +23,11 @@ import hmisc/core/all
 import hmisc/other/oswrap
 
 
-proc getMem*(full: FullImpl, memAddr: EPointer): EByte =
+proc getMem*(full: FullImpl, memAddr: EPtr): EByte =
   ## Return value from the specified location in the physica memory
   full.emu.mem.memory[memAddr]
 
-proc setMem*(full: FullImpl, memAddr: EPointer, value: EByte) =
+proc setMem*(full: FullImpl, memAddr: EPtr, value: EByte) =
   ## Set value at the specified location in the physical memory
   full.emu.mem.memory[memAddr] = value
 
@@ -278,6 +278,7 @@ type
     memEnd: int ## Max range of memory to show in the editor widget
     compileRes: string ## Message from the compilation result
 
+    pointedMem: Slice[EPtr]
     states: seq[StoredState]
 
     autoCleanOnCompile: bool
@@ -286,6 +287,14 @@ type
       interrupts, interruptQueue: bool,
       loggingTable, stateRestore: bool
     ] ## Which extra windows to show in the GUI
+
+
+
+proc igMemText*(state: UiState, mem: EPtr, size: ESize) =
+  igText(toHex(mem))
+  igTooltip():
+    igText(state.full.getMem(mem))
+    state.pointedMem = mem ..< (mem + EPtr(size))
 
 type RegIO = enum ioIn, ioOut, ioNone
 proc showReg(name, value: string, io: RegIO) =
@@ -579,10 +588,10 @@ proc memTable(
         if cell < state.memEnd:
           hasValue = true
           let isEip = cell.U32 == full.emu.cpu.getEip()
-          if isEip:
+          if isEip or (cell.EPtr in state.pointedMem):
             igTableSetBgColor(CellBg, igGetColorU32(igCol32(120, 20, 20)))
 
-          igText(toHex(getMem(full, EPointer(cell))))
+          igText(toHex(getMem(full, EPtr(cell))))
           if isEip:
             igTooltip():
               igText(
@@ -900,6 +909,8 @@ proc igLogic(state: UiState) =
   ## Main entry point for the visualization logic
   let full = state.full
 
+  # state.pointedMem = high(EPtr)..high(EPointer)
+
   # Configure main menu bar
   menuBar(state)
   # Show unmovable 'main' window
@@ -931,18 +942,19 @@ proc igLogic(state: UiState) =
           # Iterate from the first interrupt to the last one, or until the
           # end of the memory (for demonstration purposes smaller memory
           # size could be used, which might lead to the truncated IVT)
-          let base = cpu.getDtregBase(IDTR)
+          const ivts = sizeof(IVT).ESize()
+          let base: EPtr = cpu.getDtregBase(IDTR)
           for idx in 0u8 .. 0xFFu8:
-            let offset = idx * sizeof(IVT).U32()
-            let adr = base + offset
-            if mem.len() <= int(adr + sizeof(IVT).U32() - 1):
+            let offset = EPtr(idx * ivts)
+            let adr: EPtr = base + offset
+            if mem.len() <= int(adr + ivts - 1):
               break
 
-            let ivt = mem.readDataBlob[:IVT](adr)
+            let ivt = readDataBlob[IVT](mem, adr)
             igRows():
               igColumns():
                 igText(toHex(idx))
-                igText(toHex(adr))
+                state.igMemText(adr, ivts)
                 igText("")
                 igHexText(ivt.segment)
                 igHexText(ivt.offset)

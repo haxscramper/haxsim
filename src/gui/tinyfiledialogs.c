@@ -64,10 +64,10 @@ Thanks for contributions, bug corrections & thorough testing to:
 #    endif
 #endif
 
-#include <ctype.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <ctype.h>
 #include <sys/stat.h>
 
 #ifdef _WIN32
@@ -77,20 +77,20 @@ Thanks for contributions, bug corrections & thorough testing to:
 #    ifndef _WIN32_WINNT
 #        define _WIN32_WINNT 0x0500
 #    endif
+#    include <windows.h>
 #    include <commdlg.h>
+#    include <shlobj.h>
 #    include <conio.h>
 #    include <direct.h>
-#    include <shlobj.h>
-#    include <windows.h>
 #    define TINYFD_NOCCSUNICODE
 #    define SLASH "\\"
 #else
-#    include <dirent.h> /* on old systems try <sys/dir.h> instead */
 #    include <limits.h>
-#    include <signal.h> /* on old systems try <sys/signal.h> instead */
-#    include <sys/utsname.h>
-#    include <termios.h>
 #    include <unistd.h>
+#    include <dirent.h> /* on old systems try <sys/dir.h> instead */
+#    include <termios.h>
+#    include <sys/utsname.h>
+#    include <signal.h> /* on old systems try <sys/signal.h> instead */
 #    define SLASH "/"
 #endif /* _WIN32 */
 

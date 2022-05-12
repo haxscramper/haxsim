@@ -7,6 +7,7 @@ type
 
   ESize* = uint
   EPointer* = uint32
+  EPtr* = uint32
   EByte* = uint8
   EWord* = uint16
   EDWord* = uint32
