@@ -17,6 +17,7 @@ import hmisc/hasts/json_serde
 import maincpp, eventer, common
 import hmisc/algo/[lexcast, clformat_interpolate, clformat]
 import hmisc/types/colorstring
+import instruction/instruction
 import emulator/[emulator, interrupt]
 import compiler/[assembler, external]
 import hardware/[processor, hardware, eflags, memory]
@@ -212,7 +213,7 @@ proc igButton*(name, tip: string): bool =
   result = igButton(name)
   igTooltipText(tip)
 
-proc igTooltipNum*(num: SomeUnsignedInt) =
+proc igTooltipNum*(num: SomeInteger) =
   ## If previous element is hovered on, show tooltip with more elaborate
   ## description of the unsgined integer value
   igTooltip():
@@ -222,7 +223,7 @@ dec: {num}
 hex: {toHex(num)}
 """)
 
-proc igHexText*(num: SomeUnsignedInt, trim: bool = false) =
+proc igHexText*(num: SomeInteger, trim: bool = false) =
   ## Show hexadecimal text field, and if the item is hovered on, provide
   ## tooltip with more elaborate description
   if trim:
@@ -249,6 +250,12 @@ proc igColor*(color: Color, alpha: U8 = 255): U32 =
   let (r, g, b) = color.extractRgb()
   return igGetColorU32(igCol32(r.U8, g.U8, b.U8, alpha))
 
+proc igTableBg*(
+    color: Color,
+    target: ImGuiTableBgTarget = CellBg,
+    alpha: U8 = 255) =
+
+  igTableSetBgColor(target, igColor(color, alpha))
 
 type
   UiIo = object
@@ -291,7 +298,7 @@ type
     showSections: tuple[
       showPortIo, showMemoryIo, showVGA: bool,
       interrupts, interruptQueue: bool,
-      loggingTable, stateRestore: bool
+      loggingTable, stateRestore, disassembler: bool
     ] ## Which extra windows to show in the GUI
 
 
@@ -598,6 +605,93 @@ proc memTable(
                 "Current value of the EIP is $#" % [
                   toHex(full.emu.cpu.getEip())])
 
+proc diassebmler(state: UiState) =
+  let eipstart = state.full.emu.cpu.eip
+  var full = state.full
+  full.emu.cpu.eip = 0
+  full.logger.noLog(): igTable("disassembler table", 8, orEnum([
+    Resizable,
+    ImGuiTableFlags.Reorderable
+  ])):
+    igTableSetupColumns([
+      ("Pref", WidthFixed, 30i32),
+      ("Raw", WidthFixed, 200i32),
+      ("Opc", WidthFixed, 35i32),
+      ("Desc", WidthStretch, 0i32),
+      ("MODRM", WidthStretch, 0i32),
+      ("SIB", WidthStretch, 0i32),
+      ("DISP", WidthStretch, 0i32),
+      ("IMM", WidthStretch, 0i32),
+      # ("Edit flags", WidthStretch, 0i32),
+      # ("Read flags", WidthStretch, 0i32)
+    ])
+
+    for cmd in full.parseCommands(toHlt = false, toMem = EPointer(0xFF)):
+      igRows():
+        igColumns():
+          # Prefix
+          block:
+            if eipstart in cmd.instrRange.start .. cmd.instrRange.final:
+              igTableBg(colRed, RowBg0, 30)
+
+            if cmd.preSegment.canGet(seg): igText($seg); igSameLine()
+            if cmd.opSizeOverride: igText("66"); igSameLine()
+            if cmd.addrSizeOverride: igText("67"); igSameLine()
+
+          # Raw
+          block:
+            igMemText(
+              state,
+              cmd.instrRange.start,
+              cmd.instrRange.final - cmd.instrRange.start
+            )
+
+            igSameLine()
+
+            var text: string = " = "
+            var first = true
+            for idx in cmd.instrRange.start .. cmd.instrRange.final:
+              if not first: text.add " "
+              first = false
+              text.add(toHex(full.getMem(idx)))
+
+            igText(text)
+
+          # Opc
+          igText($cmd.opcodeData.code)
+
+          # Description
+          igText($cmd.opcodeData.code.toOpcode())
+
+          # Modrm
+          if cmd.hadModrm:
+            igHexText(cast[U8](cmd.modrm))
+
+          else:
+            igText("-")
+
+          # DSIB
+          if cmd.hadDSib:
+            igText(cast[U8](cmd.dsib))
+
+          else:
+            igText("-")
+
+          # DISP
+          case cmd.hadDisp:
+            of NoData: igText("-")
+            of Data8: igHexText(cmd.fieldDisp.disp8)
+            of Data16: igHexText(cmd.fieldDisp.disp16)
+            of Data32: igHexText(cmd.fieldDisp.disp32)
+
+          # IMM
+          case cmd.hadImm:
+            of NoData: igText("-")
+            of Data8: igHexText(cmd.fieldDisp.disp8)
+            of Data16: igHexText(cmd.fieldDisp.disp16)
+            of Data32: igHexText(cmd.fieldDisp.disp32)
+
+  state.full.emu.cpu.eip = eipstart
 
 proc cb(data: ptr ImGuiInputTextCallbackData): int32 {.cdecl.} =
   discard
@@ -659,7 +753,7 @@ proc codeEdit(state: UiState) =
     # callback = cb,
   )
 
-  var compiled = true
+  var compiled = false
   if igButton(
     "Compile",
     "Compile using built-in assembler implementation (note - experimental)"
@@ -797,6 +891,12 @@ proc menuBar(state: UiState) =
         igTooltipText("Show IVT (interrupt vector table)")
 
         igMenuItemToggleBool(
+          "Hide dissasembler",
+          "Show dissasembler",
+          state.showSections.disassembler
+        )
+
+        igMenuItemToggleBool(
           "Hide interrupt queue",
           "Show interrupt queue",
           state.showSections.interrupts
@@ -870,6 +970,12 @@ stored values in memory."""
         updateEip()
 
       igSameLine()
+
+      if igButton("EIP=0"):
+        cpu.setEip(0)
+        updateEip()
+
+      igSameLine()
       igInputText("EIP", eipText, orEnum([CHarsHexadecimal, CharsUppercase]))
       igSameLine()
       if igButton("Load"):
@@ -922,6 +1028,10 @@ proc igLogic(state: UiState) =
   if show.stateRestore:
     igWindow("Stored state", show.loggingTable):
       stateStore(state)
+
+  if show.disassembler:
+    igWindow("Diassembler", show.disassembler):
+      diassebmler(state)
 
   if show.interrupts:
     full.logger.noLog():

@@ -53,6 +53,8 @@ type
   OpcodeData* = object
     code*: uint16
 
+  HadData* = enum NoData, Data8, Data16, Data32
+
   InstrData* = ref object
     preSegment*: Option[SgRegT] ## Segment override (which one?) prefix was
                                 ## used for the instruction.
@@ -63,10 +65,19 @@ type
     preRepeat*: repT
     segment*: SgRegT
     opcodeData*: OpcodeData
+
+    hadModrm*: bool
     modrm*: ModRM
+
+    hadDSib*: bool
     fieldDSib*: InstrDataDSib
+
+    hadDisp*: HadData
     fieldDisp*: InstrDataDisp
+
+    hadImm*: HadData
     fieldImm*: InstrDataImm
+
     ptr16*: int16
     moffs*: uint32
 

@@ -101,6 +101,7 @@ proc parseOpcode*(this: var InstrImpl): void =
 
 proc parseModrm32*(this: var InstrImpl): void =
   if this.mod != modRegAddr and this.rm == 4:
+    this.idata.hadDSib = true
     this.idata.dSIB = ACS.getCode8(0)
     CPU.updateEIp(1)
 
@@ -111,11 +112,13 @@ proc parseModrm32*(this: var InstrImpl): void =
      # displacement with only addressing mode
     (this.mod == modIndSib and this.base == 5):
 
+    this.idata.hadDisp = Data32
     this.idata.disp32 = ACS.getCode32(0).int32()
     CPU.updateEIp(4)
 
   elif this.mod == modDispByte:
     # Byte displacement
+    this.idata.hadDisp = Data8
     this.idata.disp8 = ACS.getCode8(0).int8
     CPU.updateEIp(1)
 
@@ -129,19 +132,21 @@ proc parseModrm16*(this: var InstrImpl): void =
      # Doubleword displacement
      this.mod == modDispDWord:
 
+    this.idata.hadDisp = Data16
     this.idata.disp16 = ACS.getCode32(0).int16()
     CPU.updateEIp(2)
 
   elif this.mod == modDispByte:
     # Byte signed displacement
     let code = ACS.getCode8(0)
-    echov code.toHexTrim()
+    this.idata.hadDisp = Data8
     this.idata.disp8 = code.int8
     CPU.updateEIp(1)
 
 proc parseModrmSibDisp*(this: var InstrImpl): void =
   ## Parse MODRM byte and potential subsequent SIB and displacement bytes
   this.idata.modrm = cast[ModRM](ACS.getCode8(0))
+  this.idata.hadModrm = true
   CPU.updateEIp(1)
   if CPU.isMode32() xor this.idata.addrSizeOverride:
     this.parseModrm32()
@@ -189,6 +194,7 @@ proc parse*(this: var InstrImpl): void =
     # default, and override was in order to access 32-bit data blob.
     this.assertCodeAhead(4, "4-byte immediate" & tern(
       ovrrd, " due to override", ""))
+    this.idata.hadImm = Data32
     this.idata.imm32 = cast[int32](ACS.getCode32(0))
     CPU.updateEIp(4)
 
@@ -196,11 +202,13 @@ proc parse*(this: var InstrImpl): void =
     this.assertCodeAhead(2, "2-byte immediate" & tern(
       ovrrd, " due to override", ""))
 
+    this.idata.hadImm = Data16
     this.idata.imm16 = cast[int16](ACS.getCode16(0))
     CPU.updateEIp(2)
 
   elif iParseImm8 in this.chk[op]:
     this.assertCodeAhead(1, "1-byte immediate")
+    this.idata.hadImm = Data16
     this.idata.imm8 = cast[int8](ACS.getCode8(0))
     CPU.updateEIp(1)
 

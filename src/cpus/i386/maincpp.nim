@@ -85,10 +85,20 @@ proc fetch*(full: FullImpl) =
     copymem(it.value.value, p, size)
 
 
-proc parseCommands*(full: var FullImpl): seq[InstrData] =
+proc parseCommands*(
+    full: var FullImpl,
+    toHlt: bool = true,
+    toMem: EPointer = 0
+  ): seq[InstrData] =
   ## Parse all commands from current memory position, without executing
   ## them. Used for testing purposes.
-  while full.data.opcode() != 0xF4:
+  while (
+    if toHlt: full.data.opcode() != 0xF4
+    elif toMem != 0:
+      full.emu.cpu.eip < toMem and
+      (full.emu.cpu.eip < full.emu.mem.len().EPointer())
+    else: full.emu.cpu.eip < full.emu.mem.len().EPointer()
+  ):
     zeroMem(addr full.data[], sizeof(full.data[]))
     fetch(full)
     var tmp = InstrData()
