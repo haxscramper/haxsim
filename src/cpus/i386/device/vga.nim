@@ -598,32 +598,36 @@ proc initDAC*(v: VGA): DAC =
   dac.portio = wrapPortIO(dac, in8, out8)
   return dac
 
-proc rgbImage*(this: var VGA, buffer: var seq[U8], size: int): void =
+type VgaImage* = seq[seq[tuple[r, g, b: U8]]]
+
+proc rgbImage*(this: var VGA, buffer: var VgaImage): void =
   ## Fill image buffer of `size*3` with `R,G,B` value triples
   let mode: gmodeT = this.gc.graphicMode()
-  var idx = 0
-  for i in 0 ..< size:
-    let attrIdx: U8 =
-      if toBool(mode.int xor MODETEXT.int):
-        this.gc.attrIndexGraphic(i.U32)
+  let width = buffer[0].len()
+  for row in 0 ..< buffer.len():
+    for col in 0 ..< width:
+      let i = width * row + col
 
-      else:
-        this.crt.attrIndexText(i.U32)
+      let attrIdx: U8 =
+        if toBool(mode.int xor MODETEXT.int):
+          this.gc.attrIndexGraphic(i.U32)
 
-    let dacIdx: U8 =
-      if toBool(mode.int xor MODEGRAPHIC256.int):
-        this.attr.dacIndex(attrIdx)
-      else:
-        attrIdx
+        else:
+          this.crt.attrIndexText(i.U32)
 
-    let rgb: U32 = this.dac.translateRgb(dacIdx)
+      let dacIdx: U8 =
+        if toBool(mode.int xor MODEGRAPHIC256.int):
+          this.attr.dacIndex(attrIdx)
+        else:
+          attrIdx
 
-    buffer[idx] = U8(rgb and 0xFF)
-    inc idx
-    buffer[idx] = U8((rgb shr 8) and 0xFF)
-    inc idx
-    buffer[idx] = U8((rgb shr 16) and 0xFF)
-    inc idx
+      let rgb: U32 = this.dac.translateRgb(dacIdx)
+
+      buffer[row][col] = (
+        r: U8(rgb and 0xFF),
+        g: U8((rgb shr 8) and 0xFF),
+        b: U8((rgb shr 16) and 0xFF)
+      )
 
 proc txtBuffer*(
     this: var VGA, offset: U32 = 0x8000): seq[seq[tuple[ch: char, attr: U8]]] =

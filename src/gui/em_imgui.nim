@@ -20,6 +20,7 @@ import hmisc/types/colorstring
 import instruction/instruction
 import emulator/[emulator, interrupt]
 import compiler/[assembler, external]
+import device/[vga]
 import hardware/[processor, hardware, eflags, memory]
 import hmisc/core/all
 import hmisc/other/oswrap
@@ -115,15 +116,6 @@ template igMenu*(name, tooltip: string, body: untyped): untyped =
   igTooltip():
     igText(tooltip)
 
-proc igMenuItemToggleBool*(toFalse, toTrue: string, value: var bool) =
-  if value:
-    if igMenuItem(toFalse):
-      value = false
-
-  else:
-    if igMenuItem(toTrue):
-      value = true
-
 template igItemWidth*(w: float, body: untyped): untyped =
   igPushItemWidth(w)
   body
@@ -192,6 +184,16 @@ template igTable*(
     body
     igEndTable()
 
+template igTab*(name: string, body: untyped): untyped =
+  if igBeginTabItem(name):
+    body
+    igEndTabItem()
+
+template igTabBar*(name: string, body: untyped): untyped =
+  if igBeginTabBar(name):
+    body
+    igEndTabBar()
+
 proc igCheckBox*(label: string, value: var bool): bool =
   igCheckBox(label.cstring, addr value)
 
@@ -208,6 +210,14 @@ proc igTooltipText*(text: string) =
   ## If previous element is hovered on, show tooltip with provided text
   igTooltip():
     igtext(text)
+
+proc igMenuItemToggleBool*(name, hint: string, value: var bool) =
+  if igMenuItem(name):
+    value = not value
+
+  igTooltipText(hint)
+
+
 
 proc igButton*(name, tip: string): bool =
   result = igButton(name)
@@ -293,6 +303,7 @@ type
 
     pointedMem: Slice[EPtr]
     states: seq[StoredState]
+    autoExec: bool
 
     autoCleanOnCompile: bool
     showSections: tuple[
@@ -301,6 +312,7 @@ type
       loggingTable, stateRestore, disassembler: bool
     ] ## Which extra windows to show in the GUI
 
+    vgaImage: VgaImage
 
 
 proc igMemText*(state: UiState, mem: EPtr, size: ESize) =
@@ -327,15 +339,15 @@ proc showReg(state: UiState, reg: Reg8T | Reg16T | Reg32T) =
   let io = state.io
   var wrote, read: bool
   when reg is Reg8T:
-    read = (io.lastRegRead.reg8.canGet(r) and r == reg)
+    read = (io.lastRegRead.reg8.canGet(rv) and rv == reg)
     wrote = (io.lastRegWrite.reg8.canGet(w) and w == reg)
 
   elif reg is Reg16T:
-    read = (io.lastRegRead.reg16.canGet(r) and r == reg)
+    read = (io.lastRegRead.reg16.canGet(rv) and rv == reg)
     wrote = (io.lastRegWrite.reg16.canGet(w) and w == reg)
 
   elif reg is Reg32T:
-    read = (io.lastRegRead.reg32.canGet(r) and r == reg)
+    read = (io.lastRegRead.reg32.canGet(rv) and rv == reg)
     wrote = (io.lastRegWrite.reg32.canGet(w) and w == reg)
 
   showReg(
@@ -693,6 +705,33 @@ proc diassebmler(state: UiState) =
 
   state.full.emu.cpu.eip = eipstart
 
+
+proc vgaWindow*(state: UiState) =
+  var vga = state.full.emu.vga
+  igTabBar("Tab bar"):
+    igTab("Text"):
+      let buf = vga.txtBuffer()
+      var res: string = "-----\n"
+      for line in buf:
+        res.add "["
+        for (c, attr) in line:
+          res.add tern(c == '\x00', ' ', c)
+
+        res.add "]\n"
+
+      res.add "-----"
+
+      igText(res)
+
+    igTab("Registers"):
+      igText("VGA registers")
+
+    igTab("Video"):
+      if vga.needRefresh():
+        vga.rgbImage(state.vgaImage)
+
+      igText("VIDEO")
+
 proc cb(data: ptr ImGuiInputTextCallbackData): int32 {.cdecl.} =
   discard
   # glob.codeLen = data.bufTextLen
@@ -842,39 +881,37 @@ proc menuBar(state: UiState) =
           writeFile(path, str)
 
 
-    igMenu("Show/hide", "Show or hide extra memory operations"):
+    igMenu("Devices", "External devices"):
       igMenuItemToggleBool(
-        "Hide port IO",
-        "Show port IO",
+        "Port IO",
+        "Toggle visibility of the port input/output operations",
         state.showSections.showPortIO
       )
 
-      igTooltipText(
-        "Toggle visibility of the port input/output operations")
-
       igMenuItemToggleBool(
-        "Hide memory-mapped IO",
-        "Show memory-mapped IO",
+        "Memory-mapped IO",
+        "Toggle visibility of the memory-mapped input/ouput operations",
         state.showSections.showMemoryIO
       )
 
-      igTooltipText(
-        "Toggle visibility of the memory-mapped input/ouput operations")
+      igMenuItemToggleBool(
+        "VGA",
+        "VGA",
+        state.showSections.showVga
+      )
 
     igMenu(
       "State, loggin",
       "Show or hide operations related to logging, emulator state save"
     ):
       igMenuItemToggleBool(
-        "Hide logging table",
-        "Show logging table",
+        "Logging table",
+        "Show or hide event log table",
         state.showSections.loggingTable
       )
 
-      igTooltipText("Show or hide event log table")
-
       igMenuItemToggleBool(
-        "Hide stored state list",
+        "Stored state list",
         "Show stored state list",
         state.showSections.stateRestore
       )
@@ -883,22 +920,20 @@ proc menuBar(state: UiState) =
       "Memory structures",
       "Additional visualization for in-memory data structures"):
         igMenuItemToggleBool(
-          "Hide interrupt table",
-          "Show interrupt table",
+          "Interrupt table",
+          "Show IVT (interrupt vector table)",
           state.showSections.interrupts
         )
 
-        igTooltipText("Show IVT (interrupt vector table)")
-
         igMenuItemToggleBool(
-          "Hide dissasembler",
-          "Show dissasembler",
+          "Dissasembler",
+          "Dissasembler",
           state.showSections.disassembler
         )
 
         igMenuItemToggleBool(
-          "Hide interrupt queue",
-          "Show interrupt queue",
+          "Interrupt queue",
+          "Interrupt queue",
           state.showSections.interrupts
         )
 
@@ -935,7 +970,11 @@ proc mainWindow(state: UiState) =
     if eipText.len == 0:
       updateEip()
 
-    if igButton("Step"):
+    discard igCheckBox("Exec all", state.autoExec)
+    igSameLine()
+    if igButton("Step") or (
+      state.autoExec and not full.emu.cpu.isHalt()
+    ):
       full.logger.doLog():
         state.io = UiIo()
         full.step()
@@ -1025,6 +1064,10 @@ proc igLogic(state: UiState) =
     igWindow("Logging table", show.loggingTable):
       eventLog(state)
 
+  if show.showVga:
+    igWindow("VGA", show.showVga):
+      vgaWindow(state)
+
   if show.stateRestore:
     igWindow("Stored state", show.loggingTable):
       stateStore(state)
@@ -1111,9 +1154,10 @@ proc main() =
     full: full,
     memEnd: 256,
     eventShow: true,
-    autoCleanOnCompile: true
+    autoCleanOnCompile: true,
+    autoExec: true
   )
-  # uiState.showSections.stateRestore = true
+  uiState.showSections.showVga = true
   full.addEchoHandler()
   let hook = full.logger.eventHandler
   full.logger.setHook(
@@ -1123,9 +1167,35 @@ proc main() =
   )
 
   uiState.codeText = """
-mov ax, 2
-mov bx, 2
-mov cx, 2
+mov dx, 0x3C2
+mov al, 0b10
+out dx, al
+
+mov dx, 0x3C4
+mov al, 0x02
+out dx, al
+
+mov dx, 0x3C5
+mov al, 0b11
+out dx, al
+
+mov dx, 0x03b4
+mov al, 0x1
+out dx, al
+mov dx, 0x03b5
+mov al, 0x28
+out dx, al
+
+mov dx, 0x03b4
+mov al, 0x12
+out dx, al
+mov dx, 0x03b5
+mov al, 0x19
+out dx, al
+
+mov ebx, 0xB8000
+mov byte [ebx], 65
+mov byte [ebx+1], 0x7
 hlt
 """
 
