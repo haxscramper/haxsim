@@ -3,7 +3,7 @@
 set -o nounset
 set -o errexit
 
-wip="${1:-win}"
+wip="${1:-imgui}"
 
 case $wip in
     "cpp")
@@ -56,6 +56,7 @@ case $wip in
             --passl=-lole32 \
             --passl=-oleaut32 \
             --passl=-lcomdlg32 \
+            --out=src/gui/em_imgui.exe \
             -d=mingw src/gui/em_imgui.nim
         echo "done win"
         ;;

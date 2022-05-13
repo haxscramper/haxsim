@@ -2,6 +2,7 @@ import imgui, imgui/[impl_opengl, impl_glfw]
 import nimgl/[opengl, glfw]
 import std/[
   strformat,
+  colors,
   strutils,
   macros,
   math,
@@ -244,6 +245,11 @@ proc igVec*(x, y, z, w: float): ImVec4 = ImVec4(x: x, y: y, z: z, w: w)
 proc igCol32*(r, g, b: uint8, a: uint8 = 255): uint32 =
   (a.uint32 shl 24) or (b.uint32 shl 16) or (g.uint32 shl 8) or (r.uint32)
 
+proc igColor*(color: Color, alpha: U8 = 255): U32 =
+  let (r, g, b) = color.extractRgb()
+  return igGetColorU32(igCol32(r.U8, g.U8, b.U8, alpha))
+
+
 type
   UiIo = object
     lastRegWrite, lastRegRead: tuple[
@@ -298,18 +304,12 @@ proc igMemText*(state: UiState, mem: EPtr, size: ESize) =
 
 type RegIO = enum ioIn, ioOut, ioNone
 proc showReg(name, value: string, io: RegIO) =
-  let
-    colors = (
-      red: igGetColorU32(igCol32(120, 20, 20)),
-      green: igGetColorU32(igCol32(20, 120, 20))
-    )
-
   case io:
     of ioIn:
-      igTableSetBgColor(CellBg, colors.red)
+      igTableSetBgColor(CellBg, igColor(colRed, 30))
 
     of ioOut:
-      igTableSetBgColor(CellBg, colors.green)
+      igTableSetBgColor(CellBg, igColor(colGreen, 30))
 
     else:
       discard
@@ -589,7 +589,7 @@ proc memTable(
           hasValue = true
           let isEip = cell.U32 == full.emu.cpu.getEip()
           if isEip or (cell.EPtr in state.pointedMem):
-            igTableSetBgColor(CellBg, igGetColorU32(igCol32(120, 20, 20)))
+            igTableSetBgColor(CellBg, igColor(colRed, 30))
 
           igText(toHex(getMem(full, EPtr(cell))))
           if isEip:
@@ -909,13 +909,10 @@ proc igLogic(state: UiState) =
   ## Main entry point for the visualization logic
   let full = state.full
 
-  # state.pointedMem = high(EPtr)..high(EPointer)
+  state.pointedMem = high(EPtr)..high(EPointer)
 
   # Configure main menu bar
   menuBar(state)
-  # Show unmovable 'main' window
-  mainWindow(state)
-
   # Depending on the menu state, show movable 'additional' windows.
   var show {.byaddr.} = state.showSections
   if show.loggingTable:
@@ -958,6 +955,12 @@ proc igLogic(state: UiState) =
                 igText("")
                 igHexText(ivt.segment)
                 igHexText(ivt.offset)
+
+
+  # Show unmovable 'main' window
+  mainWindow(state)
+
+
 
 const hideList: set[EmuEventKind] = { eekStartInstructionFetch }
 
