@@ -8,3 +8,5 @@ nimcache
 **/build/*
 **/build-*
 /imgui.ini
+*.exe
+*.dll

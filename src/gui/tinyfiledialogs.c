@@ -3074,13 +3074,14 @@ char* tinyfd_saveFileDialog(
         strcpy(lBuff, "Save file in ");
         strcat(lBuff, getCurDir());
 
-        lPointerInputBox = tinyfd_inputBox(NULL, NULL, NULL); /* obtain a
-                                                                 pointer on
-                                                                 the
-                                                                 current
-                                                                 content of
-                                                                 tinyfd_inputBox
-                                                               */
+        lPointerInputBox = tinyfd_inputBox(
+            NULL, NULL, NULL); /* obtain a
+                                  pointer on
+                                  the
+                                  current
+                                  content of
+                                  tinyfd_inputBox
+                                */
         if (lPointerInputBox)
             strcpy(lString, lPointerInputBox); /* preserve the current
                                                   content of
@@ -3183,13 +3184,14 @@ char* tinyfd_openFileDialog(
         }
         strcpy(lBuff, "Open file from ");
         strcat(lBuff, getCurDir());
-        lPointerInputBox = tinyfd_inputBox(NULL, NULL, NULL); /* obtain a
-                                                                 pointer on
-                                                                 the
-                                                                 current
-                                                                 content of
-                                                                 tinyfd_inputBox
-                                                               */
+        lPointerInputBox = tinyfd_inputBox(
+            NULL, NULL, NULL); /* obtain a
+                                  pointer on
+                                  the
+                                  current
+                                  content of
+                                  tinyfd_inputBox
+                                */
         if (lPointerInputBox)
             strcpy(lString, lPointerInputBox); /* preserve the current
                                                   content of
@@ -3254,13 +3256,14 @@ char* tinyfd_selectFolderDialog(
         }
         strcpy(lBuff, "Select folder from ");
         strcat(lBuff, getCurDir());
-        lPointerInputBox = tinyfd_inputBox(NULL, NULL, NULL); /* obtain a
-                                                                 pointer on
-                                                                 the
-                                                                 current
-                                                                 content of
-                                                                 tinyfd_inputBox
-                                                               */
+        lPointerInputBox = tinyfd_inputBox(
+            NULL, NULL, NULL); /* obtain a
+                                  pointer on
+                                  the
+                                  current
+                                  content of
+                                  tinyfd_inputBox
+                                */
         if (lPointerInputBox)
             strcpy(lString, lPointerInputBox); /* preserve the current
                                                   content of
@@ -3346,12 +3349,13 @@ char* tinyfd_colorChooser(
         RGB2Hex(aDefaultRGB, lDefaultHexRGB);
     }
 
-    lPointerInputBox = tinyfd_inputBox(NULL, NULL, NULL); /* obtain a
-                                                             pointer on the
-                                                             current
-                                                             content of
-                                                             tinyfd_inputBox
-                                                           */
+    lPointerInputBox = tinyfd_inputBox(
+        NULL, NULL, NULL); /* obtain a
+                              pointer on the
+                              current
+                              content of
+                              tinyfd_inputBox
+                            */
     if (lPointerInputBox)
         strcpy(lString, lPointerInputBox); /* preserve the current content
                                               of tinyfd_inputBox */
@@ -6331,13 +6335,14 @@ char* tinyfd_saveFileDialog(
         }
         strcpy(lBuff, "Save file in ");
         strcat(lBuff, getCurDir());
-        lPointerInputBox = tinyfd_inputBox(NULL, NULL, NULL); /* obtain a
-                                                                 pointer on
-                                                                 the
-                                                                 current
-                                                                 content of
-                                                                 tinyfd_inputBox
-                                                               */
+        lPointerInputBox = tinyfd_inputBox(
+            NULL, NULL, NULL); /* obtain a
+                                  pointer on
+                                  the
+                                  current
+                                  content of
+                                  tinyfd_inputBox
+                                */
         if (lPointerInputBox)
             strcpy(lString, lPointerInputBox); /* preserve the current
                                                   content of
@@ -6871,13 +6876,14 @@ frontmost of process \\\"Python\\\" to true' ''');");
         }
         strcpy(lBuff, "Open file from ");
         strcat(lBuff, getCurDir());
-        lPointerInputBox = tinyfd_inputBox(NULL, NULL, NULL); /* obtain a
-                                                                 pointer on
-                                                                 the
-                                                                 current
-                                                                 content of
-                                                                 tinyfd_inputBox
-                                                               */
+        lPointerInputBox = tinyfd_inputBox(
+            NULL, NULL, NULL); /* obtain a
+                                  pointer on
+                                  the
+                                  current
+                                  content of
+                                  tinyfd_inputBox
+                                */
         if (lPointerInputBox)
             strcpy(lDialogString, lPointerInputBox); /* preserve the
                                                         current content of
@@ -7223,13 +7229,14 @@ frontmost of process \\\"Python\\\" to true' ''');");
         }
         strcpy(lBuff, "Select folder from ");
         strcat(lBuff, getCurDir());
-        lPointerInputBox = tinyfd_inputBox(NULL, NULL, NULL); /* obtain a
-                                                                 pointer on
-                                                                 the
-                                                                 current
-                                                                 content of
-                                                                 tinyfd_inputBox
-                                                               */
+        lPointerInputBox = tinyfd_inputBox(
+            NULL, NULL, NULL); /* obtain a
+                                  pointer on
+                                  the
+                                  current
+                                  content of
+                                  tinyfd_inputBox
+                                */
         if (lPointerInputBox)
             strcpy(lDialogString, lPointerInputBox); /* preserve the
                                                         current content of
@@ -7549,13 +7556,14 @@ frontmost of process \\\"Python\\\" to true' ''');");
         if (aTitle && !strcmp(aTitle, "tinyfd_query")) {
             return tinyfd_inputBox(aTitle, NULL, NULL);
         }
-        lPointerInputBox = tinyfd_inputBox(NULL, NULL, NULL); /* obtain a
-                                                                 pointer on
-                                                                 the
-                                                                 current
-                                                                 content of
-                                                                 tinyfd_inputBox
-                                                               */
+        lPointerInputBox = tinyfd_inputBox(
+            NULL, NULL, NULL); /* obtain a
+                                  pointer on
+                                  the
+                                  current
+                                  content of
+                                  tinyfd_inputBox
+                                */
         if (lPointerInputBox)
             strcpy(lDialogString, lPointerInputBox); /* preserve the
                                                         current content of

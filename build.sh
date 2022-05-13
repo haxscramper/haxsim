@@ -3,7 +3,7 @@
 set -o nounset
 set -o errexit
 
-wip="${1:-imgui}"
+wip="${1:-win}"
 
 case $wip in
     "cpp")
