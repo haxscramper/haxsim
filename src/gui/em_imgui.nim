@@ -3,12 +3,17 @@ import nimgl/[opengl, glfw]
 import std/[
   strformat,
   colors,
+  sugar,
+  compilesettings,
   strutils,
   macros,
   math,
+  algorithm,
+  tables,
   lenientops,
   times,
-  sequtils
+  sequtils,
+  os
 ]
 
 import tinyfiledialogs
@@ -20,11 +25,26 @@ import hmisc/types/colorstring
 import instruction/instruction
 import emulator/[emulator, interrupt]
 import compiler/[assembler, external]
-import device/[vga]
+import device/[vga, dev_io]
 import hardware/[processor, hardware, eflags, memory]
 import hmisc/core/all
 import hmisc/other/oswrap
 
+
+proc formatTrace*(ex: ref Exception): string =
+  const root = querySetting(projectFull).splitFile().dir
+  for e in ex.getStackTraceEntries():
+    let rel = relativePath($e.filename, root)
+    result.add $rel
+    result.add "("
+    result.add $e.line
+    result.add ") "
+    result.add $e.procname
+    result.add "\n"
+
+proc getValue8*(ev: EmuEvent): uint8 = fromMemBlob[uint8](ev.value.value)
+proc getValue16*(ev: EmuEvent): uint16 = fromMemBlob[uint16](ev.value.value)
+proc getValue32*(ev: EmuEvent): uint32 = fromMemBlob[uint32](ev.value.value)
 
 proc getMem*(full: FullImpl, memAddr: EPtr): EByte =
   ## Return value from the specified location in the physica memory
@@ -90,6 +110,10 @@ macro igColumns*(body: untyped): untyped =
   ## numbers. `igText("A"); igText("B")` -> `igTableSetColumnIndex(0); igText("A")`
   var idx = 0
   result = spliceEach(body, newCall("igTableSetColumnIndex", newLit(postInc(idx))))
+
+template igNextColumns*(body: untyped): untyped =
+  igTableNextRow()
+  igColumns(body)
 
 macro igLines*(body: untyped): untyped =
   result = spliceEach(body, newCall("igSameLine"))
@@ -314,6 +338,10 @@ type
     mem: MemoryObj
     time: DateTime
 
+  PortIoItem = object
+    size: HadData
+    data: U32
+
   UiState = ref object
     ## Global state of the UI
     full: FullImpl ## Reference to the implementation core
@@ -334,19 +362,41 @@ type
     memEnd: int ## Max range of memory to show in the editor widget
     compileRes: string ## Message from the compilation result
 
-    pointedMem: Slice[EPtr]
-    states: seq[StoredState]
-    autoExec: bool
+    pointedMem: Slice[EPtr] ## If user is currently hovering over widget
+    ## that shows memory address
+    states: seq[StoredState] ## List of previous compilation states, stored
+    ## in the widget.
+    userInPorts, userOutPorts: Table[U16, PortIoItem] ## For ports that are
+    ## not automatically connected to other pats of the compiler but
+    ## provided by user instead.
+    autoExec: bool ## Automatically execute "next" step. Note - this is
+    ## different from "exec all" button. First one is just an automation
+    ## for repeated "step" press. Second one disconnects all logging,
+    ## executes block of code until `hlt` or exception is encountered and
+    ## then connects things back.
 
-    autoCleanOnCompile: bool
+    autoCleanOnCompile: bool ## Automatically wipe memory and other state
+    ## if input code recompilation was requested.
     showSections: tuple[
       showPortIo, showMemoryIo, showVGA: bool,
       interrupts, interruptQueue: bool,
-      loggingTable, stateRestore, disassembler: bool
+      loggingTable, stateRestore, disassembler: bool,
+      settings: bool
     ] ## Which extra windows to show in the GUI
 
-    vgaImage: VgaImage
-    lastStepErr: ref CatchableError
+    portInHistory, portOutHistory: Table[U16, seq[PortIoItem]] ##  Full
+    ## port history - each time 'read' or 'write' event is triggered it is
+    ## written in here.
+
+    vgaImage: VgaImage ## Current active VGA image, if any. It is expensive
+                       ## to compute each time, so vga has `needsRefresh`
+                       ## flag, and we only update image if it has changed.
+    lastStepErr: ref CatchableError ## Last error in the instruction
+    ## evaluation. Only catches certain errors, such as out-of-memory
+    ## checks in the emulator. Other things are bubbled up. Set if `step()`
+    ## raied exception, and is reset on the next step (if user decides to
+    ## proceed ignoring error). If non-nil, automatic evaluation stops
+    ## until further notice.
 
 
 proc igMemText*(state: UiState, mem: EPtr, size: ESize) =
@@ -766,6 +816,76 @@ proc vgaWindow*(state: UiState) =
 
       igText("VIDEO")
 
+proc portHistory(state: UiState, its: seq[PortIoItem]) =
+  var text: string
+  for item in its:
+    text.add toHex(
+      item.data,
+      case item.size:
+        of Data8: 8
+        of Data16: 16
+        of Data32: 32
+        of NoData: 0
+    )
+
+    text.add "\n"
+
+  igText(text)
+
+proc userPort(state: UiState, idx: U16) =
+  var port {.byaddr.} = state.userInPorts[idx]
+  let val = port.data.U8()
+  let bitidx: array[8, U8] = [
+    0: 0b0000_0001u8,
+    1: 0b0000_0010u8,
+    2: 0b0000_0100u8,
+    3: 0b0000_1000u8,
+    4: 0b0001_0000u8,
+    5: 0b0010_0000u8,
+    6: 0b0100_0000u8,
+    7: 0b1000_0000u8,
+  ]
+
+  var res: U8
+  for idx in 0 .. 7:
+    var bit = bool(val and bitidx[idx])
+    discard igCheckbox(&"{idx} = {tern(bit, '0', '1')}", bit)
+    if bit:
+      res = res or bitidx[idx]
+
+    else:
+      res = res and not bitidx[idx]
+
+  igHexText(res)
+
+  port.data = res
+
+proc portWindow(state: UiState) =
+  ## Construct widget with port IO information and configuration.
+  var ports: seq[U16]
+  for key, _ in state.portInHistory: ports.add key
+  for key, _ in state.portOutHistory: ports.add key
+  sort(ports)
+
+  igTable("ports", 5, orEnum([Borders, RowBg])):
+    igTableSetupColumns(["Addr", "IN", "", "OUT", ""])
+    for port in ports:
+      igNextColumns():
+        igHexText(port)
+        if port in state.portInHistory:
+          portHistory(state, state.portInHistory[port])
+
+        if port in state.userInPorts:
+          userPort(state, port)
+
+        else:
+          igText("sys")
+          igTooltipText("Port cannot be modified by user")
+
+        if port in state.portOutHistory:
+          portHistory(state, state.portOutHistory[port])
+
+
 proc cb(data: ptr ImGuiInputTextCallbackData): int32 {.cdecl.} =
   discard
   # glob.codeLen = data.bufTextLen
@@ -1006,18 +1126,11 @@ proc mainWindow(state: UiState) =
 
     discard igCheckBox("Exec all", state.autoExec)
     igSameLine()
-    # Either button was explicitly pressed
-    if igButton("Step") or (
-      # Or executing run automatically
-      state.autoExec and
-      # Stop on explicit halt
-      not full.emu.cpu.isHalt() and
-      # Or if malformed code was encountered
-      state.lastStepErr.isNil()
-    ):
+    # Either button was explicitly pressed or automatic execution is
+    # enabled.
+    if igButton("Step") or state.autoExec:
       full.logger.doLog():
         if cpu.eip < full.emu.mem.len().ESize():
-          echov cpu.eip
           state.io = UiIo()
           try:
             full.step()
@@ -1025,7 +1138,14 @@ proc mainWindow(state: UiState) =
 
           except EmuMemoryError as err:
             state.lastStepErr = err
+            state.autoExec = false
 
+          except EmuIoError as err:
+            state.lastStepErr = err
+            state.autoExec = false
+
+          if full.emu.cpu.isHalt():
+            state.autoExec = false
 
           updateEip()
 
@@ -1095,10 +1215,20 @@ stored values in memory."""
             regTable(state)
 
       currentInstr(state)
-      if state.lastStepErr.notNil():
+      let err = state.lastStepErr
+      if err.notNil():
         igTextColored(
           igVec(colRed),
-          state.lastStepErr.msg.stripSgr())
+          &"""
+User code error
+
+err: {err.name}
+msg: {err.msg.stripSgr()}
+trc:
+{formatTrace(err)}
+"""
+
+        )
 
 
 
@@ -1128,6 +1258,10 @@ proc igLogic(state: UiState) =
   if show.disassembler:
     igWindow("Diassembler", show.disassembler):
       diassebmler(state)
+
+  if show.showPortIO:
+    igWindow("Port IO", show.showPortIO):
+      portWindow(state)
 
   if show.interrupts:
     full.logger.noLog():
@@ -1179,6 +1313,23 @@ proc event(state: UiState, ev: EmuEvent) =
     of eekSetReg16: io.lastRegWrite.reg16 = some Reg16T(ev.memAddr)
     of eekGetReg32: io.lastRegRead.reg32 = some Reg32T(ev.memAddr)
     of eekSetReg32: io.lastRegWrite.reg32 = some Reg32T(ev.memAddr)
+    of eekInIoDone, eekOutIo:
+      let (data, val) = case ev.size.int:
+        of 8: (Data8, ev.getValue8().U32())
+        of 16: (Data16, ev.getValue16().U32())
+        of 32: (Data32, ev.getValue32().U32())
+        else: (NoData, 0u32)
+
+      if ev.kind == eekOutIo:
+        state.portOutHistory.mgetOrPut(ev.memAddr.U16, @[]).add PortIoItem(
+          size: data, data: val
+        )
+
+      else:
+        state.portInHistory.mgetOrPut(ev.memAddr.U16, @[]).add PortIoItem(
+          size: data, data: val
+        )
+
     else:
       discard
 
@@ -1231,9 +1382,22 @@ mov ebx, 0xB8000
 mov byte [ebx], 65
 mov byte [ebx+1], 0x7
 hlt
+
+in al, 0x5
+in al, 0x5
+in al, 0x5
+in al, 0x5
+in al, 0x5
 """
 
-  # text = ""
+  if false:
+    text = """
+in al, 0x5
+in al, 0x5
+in al, 0x5
+in al, 0x5
+in al, 0x5
+"""
 
   let size = 256
   var full = initFull(EmuSetting(memSize: size.ESize()))
@@ -1244,9 +1408,25 @@ hlt
     eventShow: true,
     autoCleanOnCompile: true,
     codeText: text,
-    autoExec: true
+    autoExec: false
   )
-  uiState.showSections.showVga = true
+
+  var io = full.emu.accs.io
+
+  # Create ports indexed from zero to fifteen, and create associated
+  # closures. In future this should probably be configurable, but for the
+  # purposes of demonstration it is more than enough.
+  for idx in 0u16 .. 0xFu16:
+    uiState.userOutPorts[idx] = PortIoItem()
+    uiState.userInPorts[idx] = PortIoItem()
+    capture idx:
+      io.setPortIO(idx, 1, initPortIO(
+        &"Port {idx}",
+        proc(port: U16): U8 = uiState.userInPorts[idx].data.U8(),
+        proc(port: U16, v: U8) = uiState.userOutPorts[idx].data = U32(v)
+      ))
+
+  uiState.showSections.showPortIO = true
   full.addEchoHandler()
   let hook = full.logger.eventHandler
   full.logger.setHook(
@@ -1332,6 +1512,7 @@ Trace:
   context.igDestroyContext()
   w.destroyWindow()
   glfwTerminate()
+  echo "ended"
 
 let params = getCommandLineParams()
 if not params.empty() and params.first() == "run":

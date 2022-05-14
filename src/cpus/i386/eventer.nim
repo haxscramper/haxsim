@@ -66,7 +66,8 @@ type
     eekCodePrefix = "code prefix"
 
     eekGetMemBlob = "read blob"
-    eekInIO = "io in"
+    eekInIOStart = "io in start"
+    eekInIODone = "io in done"
     eekOutIO = "io out"
     # value kind end
 
@@ -155,7 +156,9 @@ func evalueBlob*[T](
 const
   eekStartKinds* = {
     eekInitEmulator .. eekGetCode, eekInterruptHandler,
-    eekScope
+    eekScope, eekInIOStart
+  } - {
+    eekInIoDone
   }
 
   eekValueKinds* = {

@@ -154,6 +154,7 @@ proc addEchoHandler*(full: var FullImpl) =
   const showTrace: set[EmuEventKind] = { }
 
   proc echoHandler(ev: EmuEvent) =
+    # echov ev.kind, ev.info
     assertRef(emu)
     if ev.kind in eekEndKinds:
       if stack.pop() in hideList:

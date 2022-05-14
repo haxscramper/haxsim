@@ -20,10 +20,6 @@ template printedTrace*(body: untyped) =
 
 
 proc getAddr*(ev: EmuEvent): uint32 = ev.memAddr.uint32()
-proc getValue8*(ev: EmuEvent): uint8 = fromMemBlob[uint8](ev.value.value)
-proc getValue16*(ev: EmuEvent): uint16 = fromMemBlob[uint16](ev.value.value)
-proc getValue32*(ev: EmuEvent): uint32 = fromMemBlob[uint32](ev.value.value)
-
 proc getCPU*(e: Emulator): Processor = e.cpu()
 
 proc getMemSize*(full: FullImpl): int =
