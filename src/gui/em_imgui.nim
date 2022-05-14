@@ -60,6 +60,14 @@ template spliceEach(
 proc igDrag*(label: string, value: var int32) =
   igDragInt(label.cstring, addr value)
 
+template igPopup*(name: string, body: untyped): untyped =
+  if igBeginPopupContextItem(name):
+    try:
+      body
+
+    finally:
+      igEndPopup()
+
 proc igText*(args: varargs[string, `$`]) =
   ## Imgui text widget construction call overload with automatic string
   ## conversion
@@ -70,7 +78,7 @@ proc igTextf*(fmt: string, args: varargs[string, `$`]) =
   ## Create imgui text using string formatting from strformat. Usage is
   ## identical to regular `strutils.format`
   let str = format(fmt, args)
-  igText(str.cstring())
+  igText(str)
 
 macro igRows*(body: untyped): untyped =
   ## Splice each statement in bodu with `igTableNextRow()`. Shortcut for
@@ -100,14 +108,20 @@ proc igInputText*(
 template igMainMenuBar*(body: untyped): untyped =
   ## Construct imgui menu bar
   if igBeginMainMenuBar():
-    body
-    igEndMainMenuBar()
+    try:
+      body
+
+    finally:
+      igEndMainMenuBar()
 
 template igMenu*(name: string, body: untyped): untyped =
   ## Start new imgui menu item
   if igBeginMenu(name):
-    body
-    igEndMenu()
+    try:
+      body
+
+    finally:
+      igEndMenu()
 
 template igMenu*(name, tooltip: string, body: untyped): untyped =
   igMenu(name):
@@ -118,8 +132,11 @@ template igMenu*(name, tooltip: string, body: untyped): untyped =
 
 template igItemWidth*(w: float, body: untyped): untyped =
   igPushItemWidth(w)
-  body
-  igPopItemWidth()
+  try:
+    body
+
+  finally:
+    igPopItemWidth()
 
 proc igTableSetupColumns*(names: openarray[string]) =
   ## Configure names of the header row for table
@@ -146,8 +163,11 @@ proc igTableSetupColumnWidths*(widths: openarray[int32]) =
 
 template igGroup*(body: untyped): untyped =
   igBeginGroup()
-  body
-  igEndGroup()
+  try:
+    body
+
+  finally:
+    igEndGroup()
 
 template igWindow*(
     name: string,
@@ -155,8 +175,10 @@ template igWindow*(
     body: untyped): untyped =
   ## Create new imgui window
   igBegin(name, nil, flags)
-  body
-  igEnd()
+  try:
+    body
+  finally:
+    igEnd()
 
 
 template igWindow*(
@@ -166,8 +188,10 @@ template igWindow*(
     body: untyped): untyped =
   ## Create new imgui window
   igBegin(name, addr isOpen, flags)
-  body
-  igEnd()
+  try:
+    body
+  finally:
+    igEnd()
 
 proc orEnum[E: enum](values: openarray[E]): E =
   var res: I32
@@ -181,8 +205,11 @@ template igTable*(
     flags: ImGuiTableFlags = 0.ImGuiTableFlags, body: untyped): untyped =
   ## Wrap body in imgui table construction calls
   if igBeginTable(name, columns.int32):
-    body
-    igEndTable()
+    try:
+      body
+
+    finally:
+      igEndTable()
 
 template igTab*(name: string, body: untyped): untyped =
   if igBeginTabItem(name):
@@ -191,20 +218,24 @@ template igTab*(name: string, body: untyped): untyped =
 
 template igTabBar*(name: string, body: untyped): untyped =
   if igBeginTabBar(name):
-    body
-    igEndTabBar()
+    try:
+      body
+
+    finally:
+      igEndTabBar()
 
 proc igCheckBox*(label: string, value: var bool): bool =
   igCheckBox(label.cstring, addr value)
-
-
 
 template igTooltip*(body: untyped): untyped =
   ## If previous item is hovered on, show tooltip described by `body`
   if igIsItemHovered():
     igBeginTooltip()
-    body
-    igEndToolTip()
+    try:
+      body
+
+    finally:
+      igEndToolTip()
 
 proc igTooltipText*(text: string) =
   ## If previous element is hovered on, show tooltip with provided text
@@ -216,8 +247,6 @@ proc igMenuItemToggleBool*(name, hint: string, value: var bool) =
     value = not value
 
   igTooltipText(hint)
-
-
 
 proc igButton*(name, tip: string): bool =
   result = igButton(name)
@@ -976,9 +1005,11 @@ proc mainWindow(state: UiState) =
       state.autoExec and not full.emu.cpu.isHalt()
     ):
       full.logger.doLog():
-        state.io = UiIo()
-        full.step()
-        updateEip()
+        if cpu.eip < full.emu.mem.len().ESize():
+          echov cpu.eip
+          state.io = UiIo()
+          full.step()
+          updateEip()
 
     igSameLine()
     if igButton(
@@ -1147,26 +1178,7 @@ proc event(state: UiState, ev: EmuEvent) =
 
 proc main() =
   assert glfwInit()
-
-  var full = initFull(EmuSetting(memSize: 256))
-  full.emu.cpu.setEip(0)
-  var uiState = UiState(
-    full: full,
-    memEnd: 256,
-    eventShow: true,
-    autoCleanOnCompile: true,
-    autoExec: true
-  )
-  uiState.showSections.showVga = true
-  full.addEchoHandler()
-  let hook = full.logger.eventHandler
-  full.logger.setHook(
-    proc(ev: EmuEvent) =
-      hook(ev)
-      event(uiState, ev)
-  )
-
-  uiState.codeText = """
+  var text = """
 mov dx, 0x3C2
 mov al, 0b10
 out dx, al
@@ -1199,6 +1211,29 @@ mov byte [ebx+1], 0x7
 hlt
 """
 
+  # text = ""
+
+
+  let size = 256
+  var full = initFull(EmuSetting(memSize: size.ESize()))
+  full.emu.cpu.setEip(0)
+  var uiState = UiState(
+    full: full,
+    memEnd: size,
+    eventShow: true,
+    autoCleanOnCompile: true,
+    codeText: text,
+    autoExec: true
+  )
+  uiState.showSections.showVga = true
+  full.addEchoHandler()
+  let hook = full.logger.eventHandler
+  full.logger.setHook(
+    proc(ev: EmuEvent) =
+      hook(ev)
+      event(uiState, ev)
+  )
+
   full.compileAndLoad(uiState.codeText)
 
 
@@ -1230,6 +1265,7 @@ hlt
 
   igStyleColorsLight(igGetStyle())
 
+  var errText = ""
   while not w.windowShouldClose:
     glfwPollEvents()
 
@@ -1239,10 +1275,19 @@ hlt
 
     try:
       # Call main logic implementation function
-      igLogic(uiState)
+      if errText.empty():
+        igLogic(uiState)
+
+      else:
+        igWindow("Error"):
+          igText(errText)
+          igPopup("Copy RMB"):
+            if igButton("Copy"):
+              igSetClipboardText(errText)
+              igCloseCurrentPopup()
 
     except Exception as ex:
-      igText(&"""
+      errText = &"""
 Exception occured in the main core implementation
 
 Name: {ex.name}
@@ -1250,7 +1295,9 @@ Msg:
 {ex.msg}
 Trace:
 {getStackTrace(ex)}
-""")
+"""
+
+      echo errText
 
     igRender()
 
