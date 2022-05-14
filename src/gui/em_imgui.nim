@@ -289,6 +289,10 @@ proc igColor*(color: Color, alpha: U8 = 255): U32 =
   let (r, g, b) = color.extractRgb()
   return igGetColorU32(igCol32(r.U8, g.U8, b.U8, alpha))
 
+proc igVec*(color: Color, alpha: U8 = 255): ImVec4 =
+  let (r, g, b) = color.extractRgb()
+  return ImVec4(x: r.float, y: g.float, z: b.float, w: alpha.float)
+
 proc igTableBg*(
     color: Color,
     target: ImGuiTableBgTarget = CellBg,
@@ -342,6 +346,7 @@ type
     ] ## Which extra windows to show in the GUI
 
     vgaImage: VgaImage
+    lastStepErr: ref CatchableError
 
 
 proc igMemText*(state: UiState, mem: EPtr, size: ESize) =
@@ -1001,14 +1006,27 @@ proc mainWindow(state: UiState) =
 
     discard igCheckBox("Exec all", state.autoExec)
     igSameLine()
+    # Either button was explicitly pressed
     if igButton("Step") or (
-      state.autoExec and not full.emu.cpu.isHalt()
+      # Or executing run automatically
+      state.autoExec and
+      # Stop on explicit halt
+      not full.emu.cpu.isHalt() and
+      # Or if malformed code was encountered
+      state.lastStepErr.isNil()
     ):
       full.logger.doLog():
         if cpu.eip < full.emu.mem.len().ESize():
           echov cpu.eip
           state.io = UiIo()
-          full.step()
+          try:
+            full.step()
+            state.lastStepErr = nil
+
+          except EmuMemoryError as err:
+            state.lastStepErr = err
+
+
           updateEip()
 
     igSameLine()
@@ -1077,6 +1095,10 @@ stored values in memory."""
             regTable(state)
 
       currentInstr(state)
+      if state.lastStepErr.notNil():
+        igTextColored(
+          igVec(colRed),
+          state.lastStepErr.msg.stripSgr())
 
 
 
@@ -1212,7 +1234,6 @@ hlt
 """
 
   # text = ""
-
 
   let size = 256
   var full = initFull(EmuSetting(memSize: size.ESize()))
