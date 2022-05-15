@@ -35,7 +35,6 @@ proc setPortio*(this: var IO, memAddr: U16, len: csizeT, dev: PortIO) =
   # backed it up, so I commented this piece out.
   #
   # let memAddr = (memAddr and not(1u16))
-  echov "Adding port IO", memAddr
   this.portIo[memAddr] = dev
   this.portIoMap[memAddr] = len
 

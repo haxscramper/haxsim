@@ -1126,6 +1126,9 @@ proc mainWindow(state: UiState) =
 
     discard igCheckBox("Exec all", state.autoExec)
     igSameLine()
+    igText(&"FPS: {igGetIO().framerate:.2f}")
+
+    igSameLine()
     # Either button was explicitly pressed or automatic execution is
     # enabled.
     if igButton("Step") or state.autoExec:
@@ -1166,6 +1169,7 @@ stored values in memory."""
       clearState(state)
 
     full.logger.noLog():
+
       igSameLine()
       if igButton("--EIP"):
         cpu.setEip(cpu.getEip() - 1)
@@ -1184,7 +1188,8 @@ stored values in memory."""
         updateEip()
 
       igSameLine()
-      igInputText("EIP", eipText, orEnum([CHarsHexadecimal, CharsUppercase]))
+      igItemWidth(240):
+        igInputText("EIP", eipText, orEnum([CHarsHexadecimal, CharsUppercase]))
       igSameLine()
       if igButton("Load"):
         echov eipText
@@ -1229,8 +1234,6 @@ trc:
 """
 
         )
-
-
 
 
 proc igLogic(state: UiState) =

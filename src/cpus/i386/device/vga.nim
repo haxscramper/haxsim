@@ -24,13 +24,15 @@ type
     MODEGRAPHIC
     MODEGRAPHIC256
 
+  DisplayMemory* = array[4, seq[U8]]
+
   VGA* = ref object
     ## Main VGA object
     logger*: EmuLogger
     mor*: VGAMor
     portio*: PortIO
     memio*: MemoryIO
-    plane*: array[4, seq[U8]]
+    plane*: DisplayMemory
     refresh*: bool
     seq*: Sequencer
     crt*: CRT
@@ -849,14 +851,14 @@ proc out8*(this: var GraphicController, memAddr: U16, v: U8): void =
     else:
       discard
 
-proc in8*(this: var Attribute, memAddr: U16): U8 =
-  case memAddr:
+proc in8*(this: var Attribute, port: U16): U8 =
+  case port:
     of 0x3C0: return cast[U8](this.acar)
     of 0x3C1: return this.regs[this.acar.INDX][]
     else: return high(U8)
 
-proc out8*(this: var Attribute, memAddr: U16, v: U8): void =
-  case memAddr:
+proc out8*(this: var Attribute, port: U16, v: U8): void =
+  case port:
     of 0x3C0:
       chkRegidx(this, v)
       this.acar = cast[AttributeAcar](v)
