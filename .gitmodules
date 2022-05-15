@@ -1,0 +1,15 @@
+[submodule "deps/hmisc"]
+	path = deps/hmisc
+	url = https://github.com/haxscramper/hmisc.git
+[submodule "imgui"]
+	path = imgui
+	url = https://github.com/nimgl/imgui.git
+[submodule "deps/imgui"]
+	path = deps/imgui
+	url = https://github.com/nimgl/imgui.git
+[submodule "deps/nimgl"]
+	path = deps/nimgl
+	url = https://github.com/nimgl/nimgl.git
+[submodule "deps/regex"]
+	path = deps/regex
+	url = https://github.com/nitely/nim-regex.git
