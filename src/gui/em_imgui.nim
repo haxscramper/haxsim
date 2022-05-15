@@ -42,9 +42,9 @@ proc formatTrace*(ex: ref Exception): string =
     result.add $e.procname
     result.add "\n"
 
-proc getValue8*(ev: EmuEvent): uint8 = fromMemBlob[uint8](ev.value.value)
-proc getValue16*(ev: EmuEvent): uint16 = fromMemBlob[uint16](ev.value.value)
-proc getValue32*(ev: EmuEvent): uint32 = fromMemBlob[uint32](ev.value.value)
+proc getValue8*(ev: EmuEvent): U8 = fromMemBlob[U8](ev.value.value)
+proc getValue16*(ev: EmuEvent): U16 = fromMemBlob[U16](ev.value.value)
+proc getValue32*(ev: EmuEvent): U32 = fromMemBlob[U32](ev.value.value)
 
 proc getMem*(full: FullImpl, memAddr: EPtr): EByte =
   ## Return value from the specified location in the physica memory
@@ -77,7 +77,7 @@ template spliceEach(
 
     result
 
-proc igDrag*(label: string, value: var int32) =
+proc igDrag*(label: string, value: var I32) =
   igDragInt(label.cstring, addr value)
 
 template igPopup*(name: string, body: untyped): untyped =
@@ -117,6 +117,19 @@ template igNextColumns*(body: untyped): untyped =
 
 macro igLines*(body: untyped): untyped =
   result = spliceEach(body, newCall("igSameLine"))
+
+proc igSliderInt*(
+    name: string,
+    value: var I32,
+    vmin: I32 = -100i32,
+    vmax: I32 = 100i32,
+    valueFormat: string = "%d",
+    flags: ImGuiSliderFlags = ImGuiSliderFlags(0)
+  ): bool =
+
+  return igSliderInt(
+    name.cstring, addr value, vmin, vmax, valueFormat.cstring, flags)
+
 
 proc igInputText*(
     label: string,
@@ -171,7 +184,7 @@ proc igTableSetupColumns*(names: openarray[string]) =
 proc igTableSetupColumns*(names: openarray[tuple[
     name: string,
     flags: ImGuiTableColumnFlags,
-    width: int32
+    width: I32
   ]]) =
 
   ## Configure names of the header row for table
@@ -181,9 +194,9 @@ proc igTableSetupColumns*(names: openarray[tuple[
   igTableHeadersRow()
 
 
-proc igTableSetupColumnWidths*(widths: openarray[int32]) =
+proc igTableSetupColumnWidths*(widths: openarray[I32]) =
   for idx, width in widths:
-    igSetColumnWidth(idx.int32, width.float)
+    igSetColumnWidth(idx.I32, width.float)
 
 template igGroup*(body: untyped): untyped =
   igBeginGroup()
@@ -228,7 +241,7 @@ template igTable*(
     name: string, columns: int,
     flags: ImGuiTableFlags = 0.ImGuiTableFlags, body: untyped): untyped =
   ## Wrap body in imgui table construction calls
-  if igBeginTable(name, columns.int32):
+  if igBeginTable(name, columns.I32):
     try:
       body
 
@@ -306,8 +319,8 @@ proc igMenuItem*(name, tooltip: string): bool =
 
 proc igVec*(x, y: float): ImVec2 = ImVec2(x: x, y: y)
 proc igVec*(x, y, z, w: float): ImVec4 = ImVec4(x: x, y: y, z: z, w: w)
-proc igCol32*(r, g, b: uint8, a: uint8 = 255): uint32 =
-  (a.uint32 shl 24) or (b.uint32 shl 16) or (g.uint32 shl 8) or (r.uint32)
+proc igCol32*(r, g, b: U8, a: U8 = 255): U32 =
+  (a.U32 shl 24) or (b.U32 shl 16) or (g.U32 shl 8) or (r.U32)
 
 proc igColor*(color: Color, alpha: U8 = 255): U32 =
   let (r, g, b) = color.extractRgb()
@@ -336,6 +349,7 @@ type
   StoredState = object
     cpu: ProcessorObj
     mem: MemoryObj
+    inPorts, outPorts: Table[U16, PortIoItem]
     time: DateTime
 
   PortIoItem = object
@@ -532,15 +546,37 @@ DL:        {h(DL):<}
 """
 
 proc stateStore(state: UiState) =
-  igTable("Stored state", 4):
+  proc portTable(ports: Table[U16, PortIoItem]) =
+    igTable("ports", 2):
+      for idx in toSeq(keys(ports)).sorted():
+        igRows():
+          igColumns():
+            igText($idx)
+            case ports[idx].size:
+              of Data8: igHexText(ports[idx].data.U8())
+              of Data16: igHexText(ports[idx].data.U16())
+              of Data32: igHexText(ports[idx].data.U32())
+              of NoData: igText("")
+
+  const perRow = 8
+
+  igTable("Stored state", 6):
     igTableSetupColumns([
       ("Time", WidthFixed, 200i32),
       ("Full", WidthFixed, 70i32),
-      ("CPU", WidthStretch, 120i32),
-      ("Memory", WidthStretch, 120i32)
+      ("CPU", WidthFixed, 270i32),
+      ("Memory", WidthFixed, I32(24 * perRow + 30)),
+      ("In port", WidthFixed, 120i32),
+      ("Out port", WidthFixed, 120i32)
     ])
 
     var restoreFull = false
+    var usedFull = false # I can't set 'restore full' to false immediately,
+                         # because that would prevent other values to be
+                         # assigned. Instead I need to check if 'full' has
+                         # actually been used, and change it only after all
+                         # possible assignments have been completed.
+
     for saved in state.states:
       igRows():
         igColumns():
@@ -549,18 +585,31 @@ proc stateStore(state: UiState) =
             restoreFull = true
 
           igText(saved.cpu.tooltip())
-          igText(saved.mem.dumpMem())
+          igText(saved.mem.dumpMem(perRow = perRow))
+          portTable(saved.inPorts)
+          portTable(saved.outPorts)
 
         igColumns():
           igText("")
           igText("")
           if igButton("CPU restore") or restoreFull:
             state.full.emu.cpu[] = saved.cpu
-            restoreFull = false
+            usedFull = restoreFull
 
           if igButton("MEM restore") or restoreFull:
             state.full.emu.mem[] = saved.mem
-            restoreFull = false
+            usedFull = restoreFull
+
+          if igButton("In port restore") or restoreFull:
+            state.userInPorts = saved.inPorts
+            usedFull = restoreFull
+
+          if igButton("Out port restore") or restoreFull:
+            state.userOutPorts = saved.outPorts
+            usedFull = restoreFull
+
+      if usedFull:
+        restoreFull = false
 
 
           
@@ -569,6 +618,8 @@ proc currentState(state: UiState): StoredState =
   StoredState(
     cpu: state.full.emu.cpu[],
     mem: state.full.emu.mem[],
+    inPorts: state.userInPorts,
+    outPorts: state.userOutPorts,
     time: now()
   )
 
@@ -687,7 +738,7 @@ proc memTable(
       for idx in 0 ..< perRow:
         let cell = line * perRow + idx
 
-        igTableSetColumnIndex(idx.int32 + 1)
+        igTableSetColumnIndex(idx.I32 + 1)
         if cell < state.memEnd:
           hasValue = true
           let isEip = cell.U32 == full.emu.cpu.getEip()
@@ -816,6 +867,8 @@ proc vgaWindow*(state: UiState) =
 
       igText("VIDEO")
 
+
+
 proc portHistory(state: UiState, its: seq[PortIoItem]) =
   var text: string
   for item in its:
@@ -886,7 +939,7 @@ proc portWindow(state: UiState) =
           portHistory(state, state.portOutHistory[port])
 
 
-proc cb(data: ptr ImGuiInputTextCallbackData): int32 {.cdecl.} =
+proc cb(data: ptr ImGuiInputTextCallbackData): I32 {.cdecl.} =
   discard
   # glob.codeLen = data.bufTextLen
 
@@ -1420,8 +1473,8 @@ in al, 0x5
   # closures. In future this should probably be configurable, but for the
   # purposes of demonstration it is more than enough.
   for idx in 0u16 .. 0xFu16:
-    uiState.userOutPorts[idx] = PortIoItem()
-    uiState.userInPorts[idx] = PortIoItem()
+    uiState.userOutPorts[idx] = PortIoItem(size: Data8)
+    uiState.userInPorts[idx] = PortIoItem(size: Data8)
     capture idx:
       io.setPortIO(idx, 1, initPortIO(
         &"Port {idx}",
@@ -1465,7 +1518,7 @@ in al, 0x5
 
   var show_demo: bool = true
   var somefloat: float32 = 0.0f
-  var counter: int32 = 0
+  var counter: I32 = 0
 
   igStyleColorsLight(igGetStyle())
 
