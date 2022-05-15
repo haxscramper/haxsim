@@ -13,3 +13,6 @@
 [submodule "deps/regex"]
 	path = deps/regex
 	url = https://github.com/nitely/nim-regex.git
+[submodule "deps/unicodedb"]
+	path = deps/unicodedb
+	url = https://github.com/nitely/nim-unicodedb.git
