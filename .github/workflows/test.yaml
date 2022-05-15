@@ -7,12 +7,28 @@ jobs:
 
     runs-on: ubuntu-latest
     steps:
+      - run: |
+          sudo apt-get install -y libx11-dev libgl1-mesa-dev xorg-dev
+
       - uses: actions/checkout@v2
         with:
           submodules: recursive
-      - uses: alaviss/setup-nim@master
-        with:
-          version: "version-1-6-0"
-          path: "nim"
-      - run: "nim --version"
-      - run: "./build.sh"
+
+      - run: |
+          wget https://nim-lang.org/download/nim-1.6.0-linux_x64.tar.xz
+          tar xf nim-1.6.0-linux_x64.tar.xz
+          pushd nim-1.6.0
+          ./install.sh $PWD
+          export PATH="$PWD/bin:$PATH"
+          popd
+
+          git clone --recursive https://github.com/cimgui/cimgui.git
+          pushd cimgui
+          cmake .
+          make -j12
+          sudo cp cimgui.so /usr/lib/cimgui.so
+          popd
+
+          echo $PATH
+          nim --version
+          ./build.sh
