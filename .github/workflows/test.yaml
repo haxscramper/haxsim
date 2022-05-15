@@ -17,10 +17,7 @@ jobs:
       - run: |
           wget https://nim-lang.org/download/nim-1.6.0-linux_x64.tar.xz
           tar xf nim-1.6.0-linux_x64.tar.xz
-          pushd nim-1.6.0
-          ./install.sh $PWD
-          export PATH="$PWD/bin:$PATH"
-          popd
+          export PATH="$PWD/nim-1.6.0/bin:$PATH"
 
           git clone --recursive https://github.com/cimgui/cimgui.git
           pushd cimgui
