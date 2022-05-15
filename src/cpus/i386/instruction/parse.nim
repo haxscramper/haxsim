@@ -66,11 +66,13 @@ proc parsePrefix*(this: var InstrImpl) =
       # Switch operand size to the opposite one
       of 0x66:
         this.idata.opSizeOverride = true
+        this.idata.opSizeOverrideExplicit = true
         ev.msg = "operand side override"
 
       # Switch address size to the opposite
       of 0x67:
         this.idata.addrSizeOverride = true
+        this.idata.addrSizeOverrideExplicit = true
         ev.msg = "address size override"
 
       # Repeat string operations until non-zero

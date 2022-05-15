@@ -66,6 +66,10 @@ proc fetch*(full: FullImpl) =
   # proper set of flags for parsing. Opcode implementation is not triggered
   # here.
   if isMode32 xor full.data.opSizeOverride:
+    # Change address size override as well - if only `66` (opcode size) was
+    # used previously, change address as well. If both `66` and `67`
+    # (address size) were triggered, changes negate each other and data is
+    # still non-inverted.
     full.data.addrSizeOverride = not(isMode32 xor full.data.addrSizeOverride)
     parse(full.impl32)
 

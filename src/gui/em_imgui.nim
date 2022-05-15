@@ -294,7 +294,7 @@ proc igTooltipNum*(num: SomeInteger) =
   ## description of the unsgined integer value
   igTooltip():
     igText(&"""
-bin: {toBin(num, sizeof(num))}
+bin: {toBin(num, 8 * sizeof(num))}
 dec: {num}
 hex: {toHex(num)}
 """)
@@ -413,11 +413,11 @@ type
     ## until further notice.
 
 
-proc igMemText*(state: UiState, mem: EPtr, size: ESize) =
+proc igMemText*(state: UiState, mem, final: EPtr) =
   igText(toHex(mem))
   igTooltip():
-    igText(state.full.getMem(mem))
-    state.pointedMem = mem ..< (mem + EPtr(size))
+    igText(toHex(state.full.getMem(mem)))
+    state.pointedMem = mem .. final
 
 type RegIO = enum ioIn, ioOut, ioNone
 proc showReg(name, value: string, io: RegIO) =
@@ -765,10 +765,10 @@ proc diassebmler(state: UiState) =
       ("Raw", WidthFixed, 200i32),
       ("Opc", WidthFixed, 35i32),
       ("Desc", WidthStretch, 0i32),
-      ("MODRM", WidthStretch, 0i32),
-      ("SIB", WidthStretch, 0i32),
-      ("DISP", WidthStretch, 0i32),
-      ("IMM", WidthStretch, 0i32),
+      ("MODRM", WidthFixed, 30i32),
+      ("SIB", WidthFixed, 30i32),
+      ("DISP", WidthFixed, 80i32),
+      ("IMM", WidthFixed, 80i32),
       # ("Edit flags", WidthStretch, 0i32),
       # ("Read flags", WidthStretch, 0i32)
     ])
@@ -781,16 +781,27 @@ proc diassebmler(state: UiState) =
             if eipstart in cmd.instrRange.start .. cmd.instrRange.final:
               igTableBg(colRed, RowBg0, 30)
 
-            if cmd.preSegment.canGet(seg): igText($seg); igSameLine()
-            if cmd.opSizeOverride: igText("66"); igSameLine()
-            if cmd.addrSizeOverride: igText("67"); igSameLine()
+            if cmd.preSegment.canGet(seg):
+              igText($seg)
+              igSameLine()
+
+            let mode32 = full.emu.cpu.isMode32()
+
+            if cmd.opSizeOverrideExplicit:
+              igText("66")
+              igTooltipText("Size override prefix")
+              igSameLine()
+
+            if cmd.addrSizeOverrideExplicit:
+              igText("67")
+              igTooltipText("Address override prefix")
 
           # Raw
           block:
             igMemText(
               state,
               cmd.instrRange.start,
-              cmd.instrRange.final - cmd.instrRange.start
+              cmd.instrRange.final
             )
 
             igSameLine()
@@ -805,7 +816,7 @@ proc diassebmler(state: UiState) =
             igText(text)
 
           # Opc
-          igText($cmd.opcodeData.code)
+          igHexText(cmd.opcodeData.code)
 
           # Description
           igText($cmd.opcodeData.code.toOpcode())
@@ -834,9 +845,9 @@ proc diassebmler(state: UiState) =
           # IMM
           case cmd.hadImm:
             of NoData: igText("-")
-            of Data8: igHexText(cmd.fieldDisp.disp8)
-            of Data16: igHexText(cmd.fieldDisp.disp16)
-            of Data32: igHexText(cmd.fieldDisp.disp32)
+            of Data8: igHexText(cmd.fieldImm.imm8)
+            of Data16: igHexText(cmd.fieldImm.imm16)
+            of Data32: igHexText(cmd.fieldImm.imm32)
 
   state.full.emu.cpu.eip = eipstart
 
@@ -1245,7 +1256,6 @@ stored values in memory."""
         igInputText("EIP", eipText, orEnum([CHarsHexadecimal, CharsUppercase]))
       igSameLine()
       if igButton("Load"):
-        echov eipText
         cpu.setEip(lexcast[U32](eipText))
 
       const memw = ((memConf.perRow + 1) * (memConf.cellWidth + 5)) +
@@ -1347,7 +1357,7 @@ proc igLogic(state: UiState) =
             igRows():
               igColumns():
                 igText(toHex(idx))
-                state.igMemText(adr, ivts)
+                state.igMemText(adr, EPtr(adr + ivts - 1))
                 igText("")
                 igHexText(ivt.segment)
                 igHexText(ivt.offset)

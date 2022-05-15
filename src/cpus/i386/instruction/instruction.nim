@@ -58,9 +58,11 @@ type
   InstrData* = ref object
     preSegment*: Option[SgRegT] ## Segment override (which one?) prefix was
                                 ## used for the instruction.
+    opSizeOverrideExplicit*: bool
     opSizeOverride*: bool ## "Operand size change" prefix was used for this
                         ## instruction?
-    addrSizeOverride*: bool ## "Address size change" prefix was used for this
+    addrSizeOverrideExplicit*: bool
+    addrSizeOverrideF: bool ## "Address size change" prefix was used for this
                           ## instruction?
     preRepeat*: repT
     segment*: SgRegT
@@ -124,6 +126,11 @@ type
     instr*: InstrData
 
   instrfuncT* = proc(this: var InstrImpl)
+
+func `addrSizeOverride=`*(data: InstrData, value: bool) =
+  data.addrSizeOverrideF = value
+
+func `addrSizeOverride`*(data: InstrData): bool = data.addrSizeOverrideF
 
 template log*(instr: InstrImpl, ev: EmuEvent): untyped =
   instr.exec.emu.logger.log(ev, -2)
