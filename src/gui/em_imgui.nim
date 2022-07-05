@@ -950,10 +950,6 @@ proc portWindow(state: UiState) =
           portHistory(state, state.portOutHistory[port])
 
 
-proc cb(data: ptr ImGuiInputTextCallbackData): I32 {.cdecl.} =
-  discard
-  # glob.codeLen = data.bufTextLen
-
 
 
 proc currentInstr(state: UiState) =
@@ -1001,13 +997,14 @@ proc clearState(state: UiState) =
       it.eip = cpu.eip
 
 
+
+import hmisc/other/hpprint
+
 proc codeEdit(state: UiState) =
   igInputTextMultiline(
     "",
     state.codeText.cstring,
     0xFFFF,
-    # flags = ImGuiInputTextFlags.CallbackEdit,
-    # callback = cb,
   )
 
   var compiled = false
@@ -1016,7 +1013,7 @@ proc codeEdit(state: UiState) =
     "Compile using built-in assembler implementation (note - experimental)"
   ):
     try:
-      var prog = parseProgram(state.codeText)
+      var prog = parseProgram($state.codeText.cstring)
       prog.compile()
       var bin = prog.data()
 
@@ -1038,15 +1035,16 @@ proc codeEdit(state: UiState) =
       let asmf = getAppTempFile("stored_asm.asm")
       let binf = getAppTempFile("compiled_asm.bin")
       mkDir binf.dir()
-
-      asmf.writeFile(state.codeText)
+      let code = $state.codeText.cstring
+      asmf.writeFile(code)
       compileAsm(asmf, binf)
-
       compiled = true
       if state.autoCleanOnCompile:
         clearState(state)
 
-      state.full.emu.loadBlob(readFile(binf))
+      let f = readFile(binf)
+      # echov f
+      state.full.emu.loadBlob(f)
 
     except ShellError as ex:
       state.compileRes = &"Compilation failed: {ex.msg}"

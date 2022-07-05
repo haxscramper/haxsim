@@ -89,9 +89,8 @@ proc andAxImm16*(this: var InstrImpl) =
   CPU.eflags.updateAND(ax, this.imm16.U16)
 
 proc subRm16R16*(this: var InstrImpl) =
-  var r16, rm16: U16
-  rm16 = this.exec.getRm16()
-  r16 = this.exec.getR16()
+  let rm16 = this.exec.getRm16()
+  let r16 = this.exec.getR16()
   this.exec.setRm16(rm16 - r16)
   CPU.eflags.updateSUB(rm16, r16)
 
